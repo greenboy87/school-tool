@@ -88,11 +88,11 @@
             </div>
             <div>
               <h3>Schüler hinzufügen</h3>
-              <p class="hint">Einen Namen pro Zeile einfügen – „Nachname, Vorname“ oder „Vorname Nachname“. Die Liste wird automatisch alphabetisch nach Nachname sortiert.</p>
+              <p class="hint">Einen Namen pro Zeile einfügen – „Nachname, Vorname“ oder „Vorname Nachname“. Die Liste wird automatisch alphabetisch nach Nachname sortiert. Du kannst auch direkt die Klassenliste als PDF importieren – die gefundenen Namen erscheinen dann hier zur Kontrolle.</p>
               <textarea id="student-input" rows="10" placeholder="Bach, Leonhard&#10;Bitter, Nico&#10;…"></textarea>
               <div class="btn-row">
                 <button id="btn-add-students" class="primary">Hinzufügen</button>
-                <label class="file-btn">📄 Aus Datei (.txt/.csv)<input type="file" id="student-file" accept=".txt,.csv" hidden></label>
+                <label class="file-btn">📄 Aus Datei (PDF/.txt/.csv)<input type="file" id="student-file" accept=".txt,.csv,.pdf,application/pdf" hidden></label>
               </div>
             </div>
           </div>
@@ -188,6 +188,7 @@
 
 <footer class="footer hint">Alle Daten werden nur lokal in deinem Browser gespeichert (kein Server). Regelmäßig ein 💾 Backup machen – z.&thinsp;B. am Schuljahresende oder vor einem Browserwechsel.</footer>
 
+<script src="js/vendor/pdf.min.js"></script>
 <script src="js/store.js"></script>
 <script src="js/noise.js"></script>
 <script src="js/classes.js"></script>

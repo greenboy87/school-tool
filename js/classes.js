@@ -49,13 +49,24 @@ const Classes = {
       this.addStudents(ta.value);
       ta.value = '';
     });
-    document.getElementById('student-file').addEventListener('change', e => {
+    document.getElementById('student-file').addEventListener('change', async e => {
       const file = e.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => this.addStudents(reader.result);
-      reader.readAsText(file);
       e.target.value = '';
+      if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
+        try {
+          const names = await this.extractNamesFromPdf(file);
+          if (!names.length) { alert('In der PDF wurden keine Namen gefunden.'); return; }
+          document.getElementById('student-input').value = names.join('\n');
+          alert(`${names.length} Namen gefunden. Bitte im Textfeld kontrollieren und dann „Hinzufügen“ klicken.`);
+        } catch (err) {
+          alert('PDF konnte nicht gelesen werden: ' + err.message);
+        }
+      } else {
+        const reader = new FileReader();
+        reader.onload = () => this.addStudents(reader.result);
+        reader.readAsText(file);
+      }
     });
 
     // Projekte
@@ -159,6 +170,41 @@ const Classes = {
     const parts = line.split(/\s+/);
     const last = parts.pop();
     return { first: parts.join(' '), last };
+  },
+
+  /* Klassenlisten-PDF: Text auslesen, Zeilen rekonstruieren und Namen herausfiltern */
+  async extractNamesFromPdf(file) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/vendor/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const lines = [];
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const page = await pdf.getPage(n);
+      const content = await page.getTextContent();
+      // Textstücke nach Y-Position zu Zeilen gruppieren
+      const rows = new Map();
+      for (const item of content.items) {
+        if (!item.str.trim()) continue;
+        const y = Math.round(item.transform[5] / 3) * 3;
+        if (!rows.has(y)) rows.set(y, []);
+        rows.get(y).push(item);
+      }
+      [...rows.entries()]
+        .sort((a, b) => b[0] - a[0])
+        .forEach(([, items]) => {
+          items.sort((a, b) => a.transform[4] - b.transform[4]);
+          lines.push(items.map(i => i.str.trim()).join(' '));
+        });
+    }
+    const skip = /klassenliste|klassenleitung|insgesamt|männlich|weiblich|schule|stand\s*:|^\s*nr\.?\s+name/i;
+    const names = [];
+    for (let line of lines) {
+      if (skip.test(line)) continue;
+      line = line.replace(/^\s*\d+\s+/, '').trim();       // laufende Nummer entfernen
+      // Nur Zeilen der Form „Nachname, Vorname“ übernehmen
+      const m = line.match(/^([A-Za-zÄÖÜäöüßéèáà' -]+,\s*[A-Za-zÄÖÜäöüßéèáà' .-]+?)\s*(?:\d.*)?$/);
+      if (m && m[1].includes(',')) names.push(m[1].trim());
+    }
+    return names;
   },
 
   addStudents(text) {
