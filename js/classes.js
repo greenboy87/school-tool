@@ -11,12 +11,26 @@ const Classes = {
 
     // Klassen aus früheren Versionen um Schuljahr, Jahrgangsstufe und Stunden ergänzen
     let migrated = false;
+    if (!this.data.migrations) this.data.migrations = {};
+    // Einmalig: Start mit dem laufenden Schuljahr, auch für vorher angelegte Klassen
+    if (!this.data.migrations.startYear) {
+      this.data.classes.forEach(c => c.year = this.currentSchoolYear());
+      this.data.migrations.startYear = true;
+      migrated = true;
+    }
     for (const c of this.data.classes) {
       if (!c.year) { c.year = this.currentSchoolYear(); migrated = true; }
       if (c.grade === undefined) { c.grade = this.gradeFromName(c.name); migrated = true; }
       if (!c.lessons) { c.lessons = {}; migrated = true; }
     }
     if (migrated) this.persist();
+
+    if (!this.SHOW_YEARS) {
+      document.querySelector('.year-filter').hidden = true;
+      document.getElementById('new-class-year').hidden = true;
+      document.querySelector('.new-class-row').classList.add('single');
+      document.getElementById('btn-carry-class').hidden = true;
+    }
 
     document.getElementById('new-class-year').value = this.currentSchoolYear();
     document.getElementById('form-new-class').addEventListener('submit', e => {
@@ -182,10 +196,16 @@ const Classes = {
   persist() { Store.save(this.data); },
 
   /* ---------- Schuljahr ---------- */
-  /* Das Schuljahr wechselt im August: Juli 2026 → „2025/26“, September 2026 → „2026/27“ */
+  /* Auf „false“ bleiben Schuljahr-Auswahl, Jahresfeld und die Übernahme ins Folgejahr
+     ausgeblendet – das Schuljahr wird trotzdem bei jeder Klasse mitgespeichert.
+     Für die Jahresübersicht später einfach auf true setzen. */
+  SHOW_YEARS: false,
+
+  /* Der Wechsel passiert im Juli: In den Sommerferien plant man schon das kommende
+     Schuljahr. Juli 2026 → „2026/27“, Juni 2026 → „2025/26“. */
   currentSchoolYear(d = new Date()) {
     const y = d.getFullYear();
-    const start = d.getMonth() >= 7 ? y : y - 1;
+    const start = d.getMonth() >= 6 ? y : y - 1;
     return `${start}/${String(start + 1).slice(2)}`;
   },
 
@@ -255,7 +275,8 @@ const Classes = {
     const sel = document.getElementById('year-filter');
     if (this.yearFilter === undefined) {
       const cur = this.currentSchoolYear();
-      this.yearFilter = this.data.classes.some(c => c.year === cur) ? cur : 'all';
+      this.yearFilter = !this.SHOW_YEARS ? 'all'
+        : (this.data.classes.some(c => c.year === cur) ? cur : 'all');
     }
     sel.innerHTML = '';
     for (const [val, label] of [['all', 'alle'], ...this.years().map(y => [y, y])]) {
@@ -297,7 +318,8 @@ const Classes = {
     document.getElementById('class-empty').hidden = !!cls;
     document.getElementById('class-detail').hidden = !cls;
     if (!cls) return;
-    const sub = [cls.grade ? `Jgst. ${cls.grade}` : null, cls.year].filter(Boolean).join(' · ');
+    const sub = [cls.grade ? `Jgst. ${cls.grade}` : null,
+                 this.SHOW_YEARS ? cls.year : null].filter(Boolean).join(' · ');
     document.getElementById('class-title').innerHTML = '';
     document.getElementById('class-title').append(cls.name);
     if (sub) {

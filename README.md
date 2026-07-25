@@ -47,10 +47,15 @@ Internet ohnehin nicht erreichbar.
   gemacht hast
 
 ### Schuljahre
-- Jede Klasse hat Jahrgangsstufe und Schuljahr; die Seitenleiste filtert danach
-- **Nächstes Schuljahr**: legt eine Kopie der Klasse an (Stufe +1, Name hochgezählt,
-  Schüler übernommen, Stunden und Noten starten neu). Die alte Klasse bleibt als
-  Rückblick erhalten – so wächst die Übersicht über die Jahre.
+Jede Klasse speichert Jahrgangsstufe und Schuljahr mit (Wechsel im Juli, damit in den
+Sommerferien schon das kommende Jahr geplant wird).
+
+Die **Bedienelemente dazu sind vorerst ausgeblendet** – zu sehen sind nur Name und
+Jahrgangsstufe. Zum Aktivieren `SHOW_YEARS: true` in `js/classes.js` setzen; dann
+erscheinen der Schuljahr-Filter in der Seitenleiste, das Jahresfeld beim Anlegen und der
+Knopf **Nächstes Schuljahr**. Der legt eine Kopie der Klasse an (Stufe +1, Name
+hochgezählt, Schüler übernommen, Stunden und Noten starten neu); die alte Klasse bleibt
+als Rückblick erhalten.
 
 Kommen neue Ordner in die Stundensammlung, lässt sich `js/topics-seed.js` neu erzeugen;
 die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene Themen in Ruhe.
