@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🚦 Lärmampel</title>
-<link rel="stylesheet" href="style.css">
-<script src="js/theme.js"></script>
-<script src="js/auth.js"></script>
+<link rel="stylesheet" href="style.css?v=3">
+<script src="js/theme.js?v=3"></script>
+<script src="js/auth.js?v=3"></script>
 </head>
 <body class="popup-body">
   <div class="popup-ampel">
@@ -19,7 +19,7 @@
     <div class="popup-alarm-count hint">🔴 Rotfärbungen: <strong id="alarm-count">0</strong></div>
     <button id="btn-mic" class="primary small">🎤 Start</button>
   </div>
-<script src="js/noise.js"></script>
+<script src="js/noise.js?v=3"></script>
 <script>
   const meter = new NoiseMeter({
     dbEl: document.getElementById('db-value'),
@@ -40,6 +40,8 @@
   });
   // Grenzwert live übernehmen, wenn er im Hauptfenster geändert wird
   window.addEventListener('storage', () => meter.reloadThreshold());
+  // Laufende Messung zählt als Nutzung – die Ampel soll sich im Unterricht nicht sperren
+  setInterval(() => { if (meter.running) { Auth._lastWrite = 0; Auth.touch(); } }, 60000);
 </script>
 </body>
 </html>

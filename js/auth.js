@@ -1,11 +1,16 @@
 /* Zugangssperre für die ganze Seite.
+   Die Freigabe läuft nach TIMEOUT_MIN Minuten ohne Nutzung ab; solange gearbeitet
+   wird, verlängert sie sich automatisch. Liegt der Rechner unberührt herum,
+   sperrt sich die Seite von selbst wieder.
+
    Hinweis: Das läuft komplett im Browser und hält neugierige Blicke ab
    (Smartboard, Lehrerpult) – es ist kein serverseitiger Schutz.
    Die Schülerdaten liegen ohnehin nur lokal im Browser, nicht im Netz. */
 const Auth = {
-  KEY: 'schooltool-unlocked',
+  KEY: 'schooltool-unlock',
   // SHA-256 des Passworts, damit es nicht im Klartext im Quelltext steht
   HASH: '398991009da1d251792eb353a0b7b185bc83e71e12e489e73228b554fc6cebc5',
+  TIMEOUT_MIN: 120,
 
   async hash(str) {
     if (!(window.crypto && crypto.subtle)) return null;
@@ -18,59 +23,95 @@ const Auth = {
     return h ? h === this.HASH : pw.trim() === 'menu'; // Fallback ohne crypto.subtle
   },
 
+  _read() {
+    try { return JSON.parse(localStorage.getItem(this.KEY)); }
+    catch (e) { return null; }
+  },
+
+  _write() {
+    localStorage.setItem(this.KEY, JSON.stringify({ h: this.HASH, t: Date.now() }));
+    this._lastWrite = Date.now();
+  },
+
   isUnlocked() {
-    return localStorage.getItem(this.KEY) === this.HASH;
+    const e = this._read();
+    if (!e || e.h !== this.HASH) return false;
+    if (Date.now() - e.t > this.TIMEOUT_MIN * 60000) {
+      localStorage.removeItem(this.KEY);
+      return false;
+    }
+    return true;
+  },
+
+  /* Zeitstempel auffrischen (gedrosselt, damit nicht bei jedem Tastendruck geschrieben wird) */
+  touch() {
+    if (Date.now() - (this._lastWrite || 0) < 30000) return;
+    if (this.isUnlocked()) this._write();
   },
 
   unlock() {
-    localStorage.setItem(this.KEY, this.HASH);
+    this._write();
     document.documentElement.classList.remove('locked');
     const screen = document.getElementById('lock-screen');
     if (screen) screen.remove();
+    this._watch();
   },
 
   lock() {
     localStorage.removeItem(this.KEY);
-    location.reload();
+    document.documentElement.classList.add('locked');
+    this._build();
   },
 
-  /* Sperrbildschirm aufbauen; wird sofort beim Laden aufgerufen */
+  /* Aktivität verfolgen und regelmäßig prüfen, ob die Freigabe abgelaufen ist */
+  _watch() {
+    if (this._watching) return;
+    this._watching = true;
+    ['pointerdown', 'keydown', 'wheel'].forEach(ev =>
+      document.addEventListener(ev, () => this.touch(), { passive: true }));
+    setInterval(() => { if (!this.isUnlocked()) this.lock(); }, 30000);
+  },
+
+  _build() {
+    if (document.getElementById('lock-screen')) return;
+    const wrap = document.createElement('div');
+    wrap.id = 'lock-screen';
+    wrap.className = 'lock-screen';
+    wrap.innerHTML = `
+      <form class="lock-box" autocomplete="off">
+        <div class="lock-icon">🔒</div>
+        <h1>School-Tool</h1>
+        <p>Bitte Passwort eingeben</p>
+        <input type="password" id="lock-pw" placeholder="Passwort" autocomplete="current-password" autofocus>
+        <button type="submit" class="primary">Entsperren</button>
+        <p class="lock-error" id="lock-error" hidden>Falsches Passwort</p>
+      </form>`;
+    document.body.appendChild(wrap);
+    const input = wrap.querySelector('#lock-pw');
+    const err = wrap.querySelector('#lock-error');
+    const box = wrap.querySelector('.lock-box');
+    wrap.querySelector('form').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (await this.check(input.value)) {
+        this.unlock();
+      } else {
+        err.hidden = false;
+        input.value = '';
+        input.focus();
+        box.classList.remove('shake');
+        void wrap.offsetWidth; // Animation neu starten
+        box.classList.add('shake');
+      }
+    });
+    input.focus();
+  },
+
   init() {
-    if (this.isUnlocked()) return;
+    localStorage.removeItem('schooltool-unlocked'); // Altlast aus früherer Version
+    if (this.isUnlocked()) { this._watch(); return; }
     document.documentElement.classList.add('locked');
-    const build = () => {
-      const wrap = document.createElement('div');
-      wrap.id = 'lock-screen';
-      wrap.className = 'lock-screen';
-      wrap.innerHTML = `
-        <form class="lock-box" autocomplete="off">
-          <div class="lock-icon">🔒</div>
-          <h1>School-Tool</h1>
-          <p>Bitte Passwort eingeben</p>
-          <input type="password" id="lock-pw" placeholder="Passwort" autocomplete="current-password" autofocus>
-          <button type="submit" class="primary">Entsperren</button>
-          <p class="lock-error" id="lock-error" hidden>Falsches Passwort</p>
-        </form>`;
-      document.body.appendChild(wrap);
-      const input = wrap.querySelector('#lock-pw');
-      const err = wrap.querySelector('#lock-error');
-      wrap.querySelector('form').addEventListener('submit', async e => {
-        e.preventDefault();
-        if (await this.check(input.value)) {
-          this.unlock();
-        } else {
-          err.hidden = false;
-          input.value = '';
-          input.focus();
-          wrap.querySelector('.lock-box').classList.remove('shake');
-          void wrap.offsetWidth; // Animation neu starten
-          wrap.querySelector('.lock-box').classList.add('shake');
-        }
-      });
-      input.focus();
-    };
-    if (document.body) build();
-    else document.addEventListener('DOMContentLoaded', build);
+    if (document.body) this._build();
+    else document.addEventListener('DOMContentLoaded', () => this._build());
   },
 };
 

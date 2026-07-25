@@ -7,8 +7,13 @@ Werkzeugkasten für den Unterricht – läuft komplett im Browser, ohne Server.
 
 ## Zugang
 
-Die Seite ist mit einem Passwort geschützt. Nach der Eingabe bleibt der Browser entsperrt,
-bis du oben auf **🔒 Sperren** klickst (oder die Browserdaten löschst).
+Die Seite ist mit einem Passwort geschützt. Nach der Eingabe bleibt sie entsperrt, solange du
+damit arbeitest – die Freigabe läuft **nach 2 Stunden ohne Nutzung** ab und die Seite sperrt
+sich dann von selbst. Sofort sperren kannst du jederzeit über **🔒 Sperren** in der Kopfzeile.
+Eine laufende Lärmampel-Messung zählt als Nutzung, damit sich die Ampel im Unterricht nicht
+mitten in der Stunde sperrt.
+
+Die Dauer steht in `js/auth.js` (`TIMEOUT_MIN`) und lässt sich dort anpassen.
 
 Hinweis: Der Schutz läuft im Browser und hält neugierige Blicke ab (Smartboard, Lehrerpult) –
 technisch versierte Personen können ihn umgehen. Er ersetzt keinen serverseitigen Schutz.
