@@ -5,6 +5,16 @@ Werkzeugkasten für den Unterricht – läuft komplett im Browser, ohne Server.
 
 **Live:** https://greenboy87.github.io/school-tool/
 
+## Zugang
+
+Die Seite ist mit einem Passwort geschützt. Nach der Eingabe bleibt der Browser entsperrt,
+bis du oben auf **🔒 Sperren** klickst (oder die Browserdaten löschst).
+
+Hinweis: Der Schutz läuft im Browser und hält neugierige Blicke ab (Smartboard, Lehrerpult) –
+technisch versierte Personen können ihn umgehen. Er ersetzt keinen serverseitigen Schutz.
+Da alle Klassen- und Notendaten ausschließlich lokal im Browser liegen, sind sie über das
+Internet ohnehin nicht erreichbar.
+
 ## Funktionen
 
 ### 🚦 Lärmampel

@@ -112,6 +112,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  /* ----- Sperren ----- */
+  document.getElementById('btn-lock').addEventListener('click', () => {
+    if (confirm('Seite sperren? Zum Weiterarbeiten musst du das Passwort erneut eingeben.')) Auth.lock();
+  });
+
   /* ----- Backup ----- */
   document.getElementById('btn-export').addEventListener('click', () => Store.exportBackup());
   document.getElementById('btn-import').addEventListener('click', () =>

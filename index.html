@@ -6,6 +6,7 @@
 <title>School-Tool – Lehrer-Werkzeuge</title>
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏫</text></svg>">
+<script src="js/auth.js"></script>
 </head>
 <body>
 
@@ -19,6 +20,7 @@
   <div class="backup-btns">
     <button id="btn-export" title="Alle Daten als Datei sichern">💾 Backup</button>
     <button id="btn-import" title="Backup-Datei wiederherstellen">📂 Wiederherstellen</button>
+    <button id="btn-lock" title="Seite sperren – beim nächsten Öffnen wird wieder das Passwort verlangt">🔒 Sperren</button>
     <input type="file" id="import-file" accept=".json" hidden>
   </div>
 </header>

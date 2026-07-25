@@ -203,6 +203,33 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .alarm-config input[type="number"] { width: 4.2em; padding: .2rem .4rem; }
 .popup-alarm-count { color: #aab2c5; }
 
+/* ---------- Sperrbildschirm ---------- */
+html.locked, html.locked body { overflow: hidden; }
+html.locked body > *:not(.lock-screen) { display: none !important; }
+
+.lock-screen {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, #2c3550, #171b28);
+  padding: 1.5rem;
+}
+.lock-box {
+  background: var(--card); border-radius: 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+  padding: 2rem 2.2rem; text-align: center; width: 100%; max-width: 340px;
+}
+.lock-icon { font-size: 2.6rem; line-height: 1; margin-bottom: .3rem; }
+.lock-box h1 { font-size: 1.3rem; margin-bottom: .2em; }
+.lock-box p { color: var(--muted); font-size: .9rem; margin: 0 0 1.2rem; }
+.lock-box input { width: 100%; text-align: center; font-size: 1.1rem; margin-bottom: .8rem; }
+.lock-box button { width: 100%; font-size: 1rem; padding: .6rem; }
+.lock-error { color: var(--danger); font-weight: 600; margin: .8rem 0 0 !important; }
+.lock-box.shake { animation: lock-shake .35s; }
+@keyframes lock-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
 /* ---------- Rot-Alarm ---------- */
 .alarm-overlay {
   position: fixed; inset: 0; z-index: 999;
