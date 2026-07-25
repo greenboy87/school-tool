@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
           pipWin.document.head.appendChild(style);
         } catch (e) { /* fremde Sheets ignorieren */ }
       }
+      Theme.apply(Theme.current(), pipWin.document);
       pipWin.document.body.className = 'popup-body';
       pipWin.document.body.innerHTML = `
         <div class="popup-ampel">
@@ -111,6 +112,10 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Schwebendes Fenster konnte nicht geöffnet werden: ' + e.message);
     }
   });
+
+  /* ----- Theme ----- */
+  Theme.updateButton();
+  document.getElementById('btn-theme').addEventListener('click', () => Theme.toggle());
 
   /* ----- Sperren ----- */
   document.getElementById('btn-lock').addEventListener('click', () => {

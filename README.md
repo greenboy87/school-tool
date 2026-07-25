@@ -32,6 +32,10 @@ Internet ohnehin nicht erreichbar.
 - Notenliste drucken oder als CSV exportieren
 - Sitzplan (PDF oder Bild) pro Klasse hochladen und anzeigen
 
+### 🎨 Design
+- Dunkles Design als Standard; über **☀️ Hell** in der Kopfzeile wechselst du zum hellen.
+  Die Wahl bleibt gespeichert.
+
 ### 🎲 Extras
 - Zufalls-Schüler-Auslosung (fair: jeder kommt einmal dran, bevor jemand doppelt drankommt)
 - Arbeitsphasen-Timer mit Gong
