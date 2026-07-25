@@ -9,17 +9,34 @@ const Classes = {
   init() {
     this.data = Store.load();
 
+    document.getElementById('new-class-year').value = this.currentSchoolYear();
     document.getElementById('form-new-class').addEventListener('submit', e => {
       e.preventDefault();
       const input = document.getElementById('new-class-name');
+      const gradeEl = document.getElementById('new-class-grade');
+      const yearEl = document.getElementById('new-class-year');
       const name = input.value.trim();
       if (!name) return;
-      const cls = { id: Store.uid(), name, students: [], projects: [] };
+      const cls = {
+        id: Store.uid(), name,
+        grade: parseInt(gradeEl.value, 10) || this.gradeFromName(name),
+        year: yearEl.value.trim() || this.currentSchoolYear(),
+        students: [], projects: [], lessons: {},
+      };
       this.data.classes.push(cls);
       this.persist();
       input.value = '';
+      gradeEl.value = '';
+      this.yearFilter = cls.year;
       this.selectClass(cls.id);
     });
+
+    document.getElementById('year-filter').addEventListener('change', e => {
+      this.yearFilter = e.target.value;
+      this.renderClassList();
+    });
+
+    document.getElementById('btn-carry-class').addEventListener('click', () => this.carryToNextYear());
 
     document.getElementById('btn-delete-class').addEventListener('click', () => {
       const cls = this.currentClass();
@@ -154,6 +171,61 @@ const Classes = {
   },
 
   persist() { Store.save(this.data); },
+
+  /* ---------- Schuljahr ---------- */
+  /* Das Schuljahr wechselt im August: Juli 2026 → „2025/26“, September 2026 → „2026/27“ */
+  currentSchoolYear(d = new Date()) {
+    const y = d.getFullYear();
+    const start = d.getMonth() >= 7 ? y : y - 1;
+    return `${start}/${String(start + 1).slice(2)}`;
+  },
+
+  nextSchoolYear(year) {
+    const m = String(year || '').match(/^(\d{4})/);
+    const start = m ? parseInt(m[1], 10) + 1 : new Date().getFullYear();
+    return `${start}/${String(start + 1).slice(2)}`;
+  },
+
+  /* Jahrgangsstufe im Namen: „5c Musik“ → 5. Die Ziffer darf direkt an einem
+     Buchstaben kleben („5c“), deshalb keine Wortgrenze. */
+  GRADE_RE: /(^|\D)(10|[5-9])(?!\d)/,
+
+  gradeFromName(name) {
+    const m = String(name).match(this.GRADE_RE);
+    return m ? parseInt(m[2], 10) : null;
+  },
+
+  /* Klassennamen hochzählen: „5c Musik“ → „6c Musik“ */
+  nextClassName(name, grade) {
+    if (!grade || grade >= 10) return name;
+    return name.replace(this.GRADE_RE, (_, pre) => pre + (grade + 1));
+  },
+
+  carryToNextYear() {
+    const cls = this.currentClass();
+    if (!cls) return;
+    const year = this.nextSchoolYear(cls.year);
+    const grade = cls.grade ? Math.min(10, cls.grade + 1) : null;
+    const name = this.nextClassName(cls.name, cls.grade);
+    if (!confirm(`Kopie für ${year} anlegen?\n\n„${name}“${grade ? ', Jahrgangsstufe ' + grade : ''}\n` +
+      `${cls.students.length} Schüler werden übernommen, Stunden und Noten starten neu.\n` +
+      `„${cls.name}“ bleibt als Rückblick erhalten.`)) return;
+    const copy = {
+      id: Store.uid(), name, grade, year,
+      students: cls.students.map(s => ({ ...s, id: Store.uid() })),
+      projects: [], lessons: {},
+    };
+    this.data.classes.push(copy);
+    this.persist();
+    this.yearFilter = year;
+    this.selectClass(copy.id);
+  },
+
+  years() {
+    const set = new Set(this.data.classes.map(c => c.year).filter(Boolean));
+    set.add(this.currentSchoolYear());
+    return [...set].sort().reverse();
+  },
   currentClass() { return this.data.classes.find(c => c.id === this.currentClassId) || null; },
   currentProject() {
     const cls = this.currentClass();
@@ -170,15 +242,42 @@ const Classes = {
 
   /* ---------- Rendern ---------- */
   renderClassList() {
+    // Schuljahr-Auswahl
+    const sel = document.getElementById('year-filter');
+    if (this.yearFilter === undefined) {
+      const cur = this.currentSchoolYear();
+      this.yearFilter = this.data.classes.some(c => c.year === cur) ? cur : 'all';
+    }
+    sel.innerHTML = '';
+    for (const [val, label] of [['all', 'alle'], ...this.years().map(y => [y, y])]) {
+      const o = document.createElement('option');
+      o.value = val;
+      o.textContent = label;
+      sel.appendChild(o);
+    }
+    sel.value = this.yearFilter;
+
     const ul = document.getElementById('class-list');
     ul.innerHTML = '';
-    for (const cls of this.data.classes) {
+    const shown = this.data.classes.filter(c =>
+      this.yearFilter === 'all' || (c.year || '') === this.yearFilter);
+    for (const cls of shown) {
       const li = document.createElement('li');
       li.classList.toggle('active', cls.id === this.currentClassId);
-      li.innerHTML = `<span></span><span class="count"></span>`;
-      li.firstChild.textContent = cls.name;
-      li.lastChild.textContent = `${cls.students.length} SuS`;
+      const name = document.createElement('span');
+      name.textContent = cls.name;
+      const count = document.createElement('span');
+      count.className = 'count';
+      const doneCount = Object.values(cls.lessons || {}).filter(e => e.s === 'done').length;
+      count.textContent = `${cls.students.length} SuS` + (doneCount ? ` · ${doneCount} Std.` : '');
+      li.append(name, count);
       li.addEventListener('click', () => this.selectClass(cls.id));
+      ul.appendChild(li);
+    }
+    if (!shown.length) {
+      const li = document.createElement('li');
+      li.className = 'hint';
+      li.textContent = 'Keine Klassen in diesem Schuljahr.';
       ul.appendChild(li);
     }
     if (typeof Tools !== 'undefined') Tools.refreshClassSelect();
@@ -189,11 +288,20 @@ const Classes = {
     document.getElementById('class-empty').hidden = !!cls;
     document.getElementById('class-detail').hidden = !cls;
     if (!cls) return;
-    document.getElementById('class-title').textContent = cls.name;
+    const sub = [cls.grade ? `Jgst. ${cls.grade}` : null, cls.year].filter(Boolean).join(' · ');
+    document.getElementById('class-title').innerHTML = '';
+    document.getElementById('class-title').append(cls.name);
+    if (sub) {
+      const span = document.createElement('span');
+      span.className = 'class-sub';
+      span.textContent = sub;
+      document.getElementById('class-title').appendChild(span);
+    }
     this.renderStudents();
     this.renderProjects();
     this.renderGroupResult();
     this.renderSeatplan();
+    if (typeof Lessons !== 'undefined') Lessons.render();
   },
 
   /* ---------- Schüler ---------- */

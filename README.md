@@ -37,6 +37,24 @@ Internet ohnehin nicht erreichbar.
 - Notenliste drucken oder als CSV exportieren
 - Sitzplan (PDF oder Bild) pro Klasse hochladen und anzeigen
 
+### Stunden (Themen-Fortschritt)
+- Katalog mit 211 Stundenthemen, erzeugt aus den Ordnern in iCloud unter
+  `3_Unterrichtsstunden/Musikseminarsave` (siehe `js/topics-seed.js`)
+- Pro Klasse je Thema **Offen / Läuft / Fertig** – mit Datum, für Projekte über mehrere Wochen
+- Fortschrittsbalken, Suche und Filter; Themen werden nach Jahrgangsstufe vorgefiltert
+- Eigene Themen anlegen: gelten **global** und bleiben dauerhaft erhalten
+- Bei jedem Thema wird angezeigt, in welchen anderen Klassen/Schuljahren du es schon
+  gemacht hast
+
+### Schuljahre
+- Jede Klasse hat Jahrgangsstufe und Schuljahr; die Seitenleiste filtert danach
+- **Nächstes Schuljahr**: legt eine Kopie der Klasse an (Stufe +1, Name hochgezählt,
+  Schüler übernommen, Stunden und Noten starten neu). Die alte Klasse bleibt als
+  Rückblick erhalten – so wächst die Übersicht über die Jahre.
+
+Kommen neue Ordner in die Stundensammlung, lässt sich `js/topics-seed.js` neu erzeugen;
+die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene Themen in Ruhe.
+
 ### Design
 - Dunkles Design als Standard; über **Hell** in der Kopfzeile wechselst du zum hellen.
   Die Wahl bleibt gespeichert.

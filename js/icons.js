@@ -33,6 +33,8 @@ const Icons = {
     reset:     '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
     alert:     '<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/>',
     plus:      '<path d="M12 5v14M5 12h14"/>',
+    list:      '<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>',
+    calendar:  '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     chevronUp:   '<path d="m6 15 6-6 6 6"/>',
     chevronDown: '<path d="m6 9 6 6 6-6"/>',
     x:         '<path d="M18 6 6 18M6 6l12 12"/>',

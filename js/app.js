@@ -1,6 +1,7 @@
 /* App-Verdrahtung: Haupttabs, Lärmampel-Steuerung, Backup */
 document.addEventListener('DOMContentLoaded', () => {
   Classes.init();
+  Lessons.init();
   Tools.init();
 
   /* ----- Haupttabs ----- */
