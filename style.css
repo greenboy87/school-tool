@@ -145,7 +145,9 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 
 .student-list { margin: 0; padding-left: 1.6em; line-height: 1.9; }
 .student-list .del { visibility: hidden; border: none; background: none; color: var(--danger); cursor: pointer; font-size: .85em; }
-.student-list li:hover .del { visibility: visible; }
+.student-list .move { visibility: hidden; border: none; background: none; color: var(--muted); cursor: pointer; font-size: .75em; padding: 0 .15em; }
+.student-list .move:hover { color: var(--accent); }
+.student-list li:hover .del, .student-list li:hover .move { visibility: visible; }
 
 /* ---------- Projekte ---------- */
 .projekt-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
@@ -175,6 +177,10 @@ input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); ou
 .group-box { border: 1px solid var(--border); border-radius: var(--radius); padding: .8rem 1rem; min-width: 170px; }
 .group-box h4 { margin: 0 0 .4em; color: var(--accent-dark); }
 .group-box ul { margin: 0; padding-left: 1.2em; line-height: 1.7; }
+.group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; }
+.group-box input.grade.single { width: 3em; font-size: .85em; }
+#group-import-text { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .82rem; width: 100%; }
+#group-import-preview .inline-form { margin-top: .5rem; }
 
 .seatplan-view { margin-top: 1rem; }
 .seatplan-view iframe { width: 100%; height: 75vh; border: 1px solid var(--border); border-radius: 8px; }

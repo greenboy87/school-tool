@@ -87,15 +87,17 @@
         <section id="subtab-schueler" class="subtab-page active card">
           <div class="two-col">
             <div>
-              <h3>Klassenliste (<span id="student-count">0</span>)</h3>
+              <h3>Klassenliste (<span id="student-count">0</span>) <button id="btn-sort-students" class="small" title="Ganze Liste alphabetisch nach Nachname sortieren">A–Z sortieren</button></h3>
+              <p class="hint">Mit ▲▼ neben einem Namen änderst du die Reihenfolge von Hand.</p>
               <ol id="student-list" class="student-list"></ol>
             </div>
             <div>
               <h3>Schüler hinzufügen</h3>
-              <p class="hint">Einen Namen pro Zeile einfügen – „Nachname, Vorname“ oder „Vorname Nachname“. Die Liste wird automatisch alphabetisch nach Nachname sortiert. Du kannst auch direkt die Klassenliste als PDF importieren – die gefundenen Namen erscheinen dann hier zur Kontrolle.</p>
+              <p class="hint">Einen Namen pro Zeile einfügen – „Nachname, Vorname“ oder „Vorname Nachname“. „Einsortieren“ sortiert die Liste alphabetisch, „Ans Ende anhängen“ setzt neue Schüler unten an die Liste (z.&thinsp;B. bei Klassenwechsel unterm Schuljahr). Du kannst auch direkt die Klassenliste als PDF importieren – die gefundenen Namen erscheinen dann hier zur Kontrolle.</p>
               <textarea id="student-input" rows="10" placeholder="Bach, Leonhard&#10;Bitter, Nico&#10;…"></textarea>
               <div class="btn-row">
-                <button id="btn-add-students" class="primary">Hinzufügen</button>
+                <button id="btn-add-students" class="primary">Hinzufügen (A–Z einsortieren)</button>
+                <button id="btn-append-students">Ans Ende anhängen</button>
                 <label class="file-btn">📄 Aus Datei (PDF/.txt/.csv)<input type="file" id="student-file" accept=".txt,.csv,.pdf,application/pdf" hidden></label>
               </div>
             </div>
@@ -143,6 +145,21 @@
             <button id="btn-save-groups" hidden>💾 Als Projekt speichern</button>
           </div>
           <div id="group-result" class="group-result"></div>
+          <hr>
+          <h3>Gruppen aus Dokument importieren</h3>
+          <p class="hint">PDF mit einer Gruppen-Tabelle hochladen (z.&thinsp;B. dein Word-Dokument als PDF exportiert, Spalten „Gruppe“ und „Produkt/Thema“). Die Gruppen werden in der Reihenfolge des Dokuments übernommen. Getippte Noten werden mit ausgelesen – handschriftliche Noten kann das Tool nicht erkennen, die trägst du in der Vorschau oder danach als Gruppennote nach.</p>
+          <label class="file-btn">📄 Gruppen-PDF wählen<input type="file" id="groups-pdf" accept=".pdf,application/pdf" hidden></label>
+          <div id="group-import-preview" hidden>
+            <p class="hint">Zur Kontrolle – eine Zeile pro Gruppe im Format <code>Produkt/Thema | Note | Namen</code>. Du kannst hier direkt korrigieren oder Noten eintragen, bevor du übernimmst. Schüler, die noch nicht in der Klassenliste stehen, werden unten angehängt.</p>
+            <textarea id="group-import-text" rows="8" spellcheck="false"></textarea>
+            <div class="inline-form">
+              <input type="text" id="group-import-name" placeholder="Projektname">
+              <input type="date" id="group-import-date">
+              <button id="btn-group-import-save" class="primary">✅ Als Projekt übernehmen</button>
+              <button id="btn-group-import-cancel">Abbrechen</button>
+            </div>
+            <p class="hint" id="group-import-info"></p>
+          </div>
         </section>
 
         <section id="subtab-sitzplan" class="subtab-page card">

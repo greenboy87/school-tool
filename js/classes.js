@@ -46,8 +46,20 @@ const Classes = {
     // Schüler
     document.getElementById('btn-add-students').addEventListener('click', () => {
       const ta = document.getElementById('student-input');
-      this.addStudents(ta.value);
+      this.addStudents(ta.value, false);
       ta.value = '';
+    });
+    document.getElementById('btn-append-students').addEventListener('click', () => {
+      const ta = document.getElementById('student-input');
+      this.addStudents(ta.value, true);
+      ta.value = '';
+    });
+    document.getElementById('btn-sort-students').addEventListener('click', () => {
+      const cls = this.currentClass();
+      if (!cls) return;
+      this.sortStudents(cls);
+      this.persist();
+      this.renderStudents();
     });
     document.getElementById('student-file').addEventListener('change', async e => {
       const file = e.target.files[0];
@@ -97,6 +109,31 @@ const Classes = {
     // Gruppen
     document.getElementById('btn-make-groups').addEventListener('click', () => this.makeGroups());
     document.getElementById('btn-save-groups').addEventListener('click', () => this.saveGroupsAsProject());
+
+    // Gruppen-Import aus PDF
+    document.getElementById('groups-pdf').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      e.target.value = '';
+      try {
+        const { title, groups } = await this.extractGroupsFromPdf(file);
+        if (!groups.length) { alert('In der PDF wurde keine Gruppen-Tabelle erkannt.'); return; }
+        document.getElementById('group-import-text').value = groups
+          .map(g => `${g.product || 'Gruppe'} | ${g.grade || '-'} | ${g.names.join(', ')}`)
+          .join('\n');
+        document.getElementById('group-import-name').value = title || file.name.replace(/\.pdf$/i, '');
+        document.getElementById('group-import-date').value = new Date().toISOString().slice(0, 10);
+        document.getElementById('group-import-info').textContent =
+          `${groups.length} Gruppen mit insgesamt ${groups.reduce((a, g) => a + g.names.length, 0)} Namen erkannt.`;
+        document.getElementById('group-import-preview').hidden = false;
+      } catch (err) {
+        alert('PDF konnte nicht gelesen werden: ' + err.message);
+      }
+    });
+    document.getElementById('btn-group-import-cancel').addEventListener('click', () => {
+      document.getElementById('group-import-preview').hidden = true;
+    });
+    document.getElementById('btn-group-import-save').addEventListener('click', () => this.saveImportedGroups());
 
     // Sitzplan
     document.getElementById('seatplan-file').addEventListener('change', async e => {
@@ -207,14 +244,14 @@ const Classes = {
     return names;
   },
 
-  addStudents(text) {
+  addStudents(text, append = false) {
     const cls = this.currentClass();
     if (!cls) return;
     for (const line of text.split(/\r?\n/)) {
       const n = this.parseName(line);
       if (n) cls.students.push({ id: Store.uid(), first: n.first, last: n.last });
     }
-    this.sortStudents(cls);
+    if (!append) this.sortStudents(cls);
     this.persist();
     this.renderClassList();
     this.renderStudents();
@@ -232,10 +269,27 @@ const Classes = {
     const ol = document.getElementById('student-list');
     document.getElementById('student-count').textContent = cls.students.length;
     ol.innerHTML = '';
-    for (const s of cls.students) {
+    cls.students.forEach((s, idx) => {
       const li = document.createElement('li');
       const span = document.createElement('span');
       span.textContent = this.studentName(s) + ' ';
+      const move = (dir) => {
+        const j = idx + dir;
+        if (j < 0 || j >= cls.students.length) return;
+        [cls.students[idx], cls.students[j]] = [cls.students[j], cls.students[idx]];
+        this.persist();
+        this.renderStudents();
+      };
+      const up = document.createElement('button');
+      up.className = 'move';
+      up.textContent = '▲';
+      up.title = 'Nach oben verschieben';
+      up.addEventListener('click', () => move(-1));
+      const down = document.createElement('button');
+      down.className = 'move';
+      down.textContent = '▼';
+      down.title = 'Nach unten verschieben';
+      down.addEventListener('click', () => move(1));
       const del = document.createElement('button');
       del.className = 'del';
       del.textContent = '✕';
@@ -247,9 +301,9 @@ const Classes = {
         this.renderClassList();
         this.renderStudents();
       });
-      li.append(span, del);
+      li.append(span, up, down, del);
       ol.appendChild(li);
-    }
+    });
   },
 
   /* ---------- Projekte & Noten ---------- */
@@ -336,16 +390,19 @@ const Classes = {
         const box = document.createElement('div');
         box.className = 'group-box';
         const h = document.createElement('h4');
-        h.textContent = `Gruppe ${i + 1} `;
+        const label = (p.groupNames && p.groupNames[i]) ? ` – ${p.groupNames[i]}` : '';
+        h.textContent = `Gruppe ${i + 1}${label} `;
         const input = document.createElement('input');
         input.className = 'grade';
         input.placeholder = 'Note';
         input.title = 'Note für die ganze Gruppe – wird allen Mitgliedern zugewiesen';
+        // Wenn alle Mitglieder dieselbe Note haben, diese anzeigen
+        const memberGrades = g.map(sid => p.grades[sid] || '');
+        if (memberGrades.length && memberGrades.every(x => x && x === memberGrades[0])) input.value = memberGrades[0];
         input.addEventListener('change', () => {
           g.forEach(sid => { if (input.value.trim()) p.grades[sid] = input.value.trim(); });
           this.persist();
-          this.renderGradeTable();
-          document.getElementById('grade-summary').textContent = this.summaryText(p);
+          this.renderProjectDetail();
         });
         h.appendChild(input);
         const ul = document.createElement('ul');
@@ -353,7 +410,21 @@ const Classes = {
           const s = cls.students.find(x => x.id === sid);
           if (!s) return;
           const li = document.createElement('li');
-          li.textContent = this.studentName(s);
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = this.studentName(s) + ' ';
+          const single = document.createElement('input');
+          single.className = 'grade single';
+          single.placeholder = '·';
+          single.title = `Einzelnote für ${this.studentName(s)} – überschreibt die Gruppennote`;
+          single.value = p.grades[s.id] || '';
+          single.addEventListener('change', () => {
+            if (single.value.trim()) p.grades[s.id] = single.value.trim();
+            else delete p.grades[s.id];
+            this.persist();
+            this.renderGradeTable();
+            document.getElementById('grade-summary').textContent = this.summaryText(p);
+          });
+          li.append(nameSpan, single);
           ul.appendChild(li);
         });
         box.append(h, ul);
@@ -361,7 +432,7 @@ const Classes = {
       });
       const hint = document.createElement('p');
       hint.className = 'hint';
-      hint.textContent = 'Gruppennote eintragen → sie wird automatisch jedem Gruppenmitglied in der Klassenliste unten zugeordnet. Einzelne Noten kannst du danach in der Tabelle noch anpassen.';
+      hint.textContent = 'Gruppennote eintragen → sie gilt für alle Mitglieder. Soll ein einzelner Schüler abweichen (z. B. Gruppe Note 1, ein Schüler Note 2), trägst du seine Note einfach in das Feld neben seinem Namen ein.';
       groupsInfo.append(hint, wrap);
     }
 
@@ -481,6 +552,129 @@ const Classes = {
     this.pendingGroups = null;
     this.renderGroupResult();
     // Zum Projekte-Tab wechseln, damit direkt benotet werden kann
+    document.querySelector('[data-subtab="projekte"]').click();
+  },
+
+  /* ---------- Gruppen-Import aus PDF ---------- */
+  /* Liest eine zweispaltige Tabelle „Gruppe | Produkt/Thema“: links Namen
+     (kommagetrennt, ggf. über mehrere Zeilen), rechts Produkt und evtl. getippte Note.
+     Neue Tabellenzeile = rechts steht wieder Text, nachdem die Namensliste
+     der vorigen Gruppe abgeschlossen war (letzte Zeile ohne Komma). */
+  async extractGroupsFromPdf(file) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/vendor/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+    const groups = [];
+    let title = '';
+    let cur = null;
+    let curClosed = true;
+
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const page = await pdf.getPage(n);
+      const content = await page.getTextContent();
+      const pageWidth = page.getViewport({ scale: 1 }).width;
+      // Spaltengrenze: x-Position der Überschrift „Produkt“/„Thema“, sonst 55 % der Seitenbreite
+      let split = pageWidth * 0.55;
+      for (const item of content.items) {
+        if (/^\s*(produkt|thema|note)\b/i.test(item.str)) { split = item.transform[4] - 5; break; }
+      }
+      // Textstücke zu Zeilen gruppieren
+      const rows = new Map();
+      for (const item of content.items) {
+        if (!item.str.trim()) continue;
+        const y = Math.round(item.transform[5] / 3) * 3;
+        if (!rows.has(y)) rows.set(y, []);
+        rows.get(y).push(item);
+      }
+      const lines = [...rows.entries()].sort((a, b) => b[0] - a[0]).map(([, items]) => {
+        items.sort((a, b) => a.transform[4] - b.transform[4]);
+        const left = items.filter(i => i.transform[4] < split).map(i => i.str.trim()).join(' ').trim();
+        const right = items.filter(i => i.transform[4] >= split).map(i => i.str.trim()).join(' ').trim();
+        return { left, right };
+      });
+
+      for (const line of lines) {
+        if (/gruppe\s*\(|vor-\s*und\s*nachnamen|^\s*(produkt|thema|note)\s*$/i.test(line.left + ' ' + line.right)) continue;
+        if (line.right && curClosed) {
+          if (cur) groups.push(cur);
+          cur = { namesRaw: [], product: line.right };
+          curClosed = false;
+        } else if (line.right && cur) {
+          cur.product += ' ' + line.right; // mehrzeiliger Produktname
+        }
+        if (line.left) {
+          if (!cur) { if (!title) title = line.left; continue; } // Titelzeile vor der Tabelle
+          cur.namesRaw.push(line.left);
+          curClosed = !/,\s*$/.test(line.left); // Zeile ohne Schlusskomma beendet die Namensliste
+        }
+      }
+    }
+    if (cur) groups.push(cur);
+
+    return {
+      title,
+      groups: groups.map(g => {
+        let chunks = g.namesRaw.join(',').split(',').map(s => s.trim()).filter(Boolean);
+        // Einzelwörter verwerfen, die in einem anderen Namen derselben Gruppe stecken (Tippfehler-Duplikate)
+        chunks = chunks.filter((c, i) =>
+          c.includes(' ') || !chunks.some((o, j) => j !== i && o.toLowerCase().includes(c.toLowerCase())));
+        let product = g.product.trim();
+        let grade = '';
+        const m = product.match(/\s([1-6](?:[.,]\d)?[+-]?)$/); // getippte Note am Ende
+        if (m) { grade = m[1]; product = product.slice(0, m.index).trim(); }
+        return { product, grade, names: chunks };
+      }).filter(g => g.names.length),
+    };
+  },
+
+  _capitalize(s) {
+    return s.replace(/(^|[\s-])(\p{Ll})/gu, (_, p, c) => p + c.toUpperCase());
+  },
+
+  /* Namen der Klassenliste zuordnen; Unbekannte werden unten angehängt */
+  findOrCreateStudent(cls, nameStr, created) {
+    const n = this.parseName(nameStr);
+    if (!n || !n.last) return null;
+    const norm = s => (s || '').toLowerCase().trim();
+    let s = cls.students.find(x => norm(x.last) === norm(n.last) &&
+      (norm(x.first) === norm(n.first) || norm(x.first).startsWith(norm(n.first)) || norm(n.first).startsWith(norm(x.first))));
+    if (!s) {
+      s = { id: Store.uid(), first: this._capitalize(n.first), last: this._capitalize(n.last) };
+      cls.students.push(s);
+      created.push(this.studentName(s));
+    }
+    return s.id;
+  },
+
+  saveImportedGroups() {
+    const cls = this.currentClass();
+    if (!cls) return;
+    const name = document.getElementById('group-import-name').value.trim() || 'Importiertes Projekt';
+    const date = document.getElementById('group-import-date').value || new Date().toISOString().slice(0, 10);
+    const created = [];
+    const groups = [], groupNames = [], grades = {};
+    for (const line of document.getElementById('group-import-text').value.split(/\r?\n/)) {
+      if (!line.trim()) continue;
+      const parts = line.split('|');
+      if (parts.length < 3) { alert(`Zeile hat nicht das Format „Produkt | Note | Namen“:\n${line}`); return; }
+      const product = parts[0].trim();
+      const grade = parts[1].trim().replace(/^-$/, '');
+      const ids = parts.slice(2).join('|').split(',').map(s => s.trim()).filter(Boolean)
+        .map(nm => this.findOrCreateStudent(cls, nm, created)).filter(Boolean);
+      if (!ids.length) continue;
+      groups.push(ids);
+      groupNames.push(product);
+      if (grade) ids.forEach(id => grades[id] = grade);
+    }
+    if (!groups.length) { alert('Keine Gruppen gefunden.'); return; }
+    const p = { id: Store.uid(), name, date, entered: false, grades, groups, groupNames };
+    cls.projects.push(p);
+    this.currentProjectId = p.id;
+    this.persist();
+    document.getElementById('group-import-preview').hidden = true;
+    this.renderClassList();
+    this.renderStudents();
+    this.renderProjects();
+    if (created.length) alert(`Neu in die Klassenliste aufgenommen (unten angehängt):\n${created.join('\n')}`);
     document.querySelector('[data-subtab="projekte"]').click();
   },
 
