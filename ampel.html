@@ -14,12 +14,14 @@
       <div class="light green" id="light-green"></div>
     </div>
     <div class="db-display small"><span id="db-value">–</span><span class="db-unit">dB</span></div>
+    <div class="popup-alarm-count hint">🔴 Rotfärbungen: <strong id="alarm-count">0</strong></div>
     <button id="btn-mic" class="primary small">🎤 Start</button>
   </div>
 <script src="js/noise.js"></script>
 <script>
   const meter = new NoiseMeter({
     dbEl: document.getElementById('db-value'),
+    alarmCountEl: document.getElementById('alarm-count'),
     lights: {
       red: document.getElementById('light-red'),
       yellow: document.getElementById('light-yellow'),

@@ -3,16 +3,21 @@
    für den Klassenzimmer-Einsatz aber völlig ausreichend. */
 class NoiseMeter {
   constructor(els) {
-    this.els = els; // { dbEl, lights: {red, yellow, green}, barEl?, violationsEl? }
+    this.els = els; // { dbEl, lights: {red, yellow, green}, barEl?, violationsEl?, alarmCountEl? }
     this.running = false;
     this.smoothed = 0;
     this.violations = 0;
     this.redHoldUntil = 0;
+    this.redSince = null;   // seit wann durchgehend rot
+    this.alarm = false;     // Vollbild-Rot aktiv, bis manuell zurückgesetzt
+    this.alarmCount = 0;
     this.reloadThreshold();
+    this._buildAlarmOverlay();
   }
 
   reloadThreshold() {
     this.threshold = parseInt(localStorage.getItem('ampel-threshold') || '70', 10);
+    this.alarmDelay = parseFloat(localStorage.getItem('ampel-alarm-delay') || '3');
   }
 
   setThreshold(v) {
@@ -20,7 +25,53 @@ class NoiseMeter {
     localStorage.setItem('ampel-threshold', String(v));
   }
 
-  get warnLevel() { return this.threshold - 5; }
+  setAlarmDelay(v) {
+    this.alarmDelay = v;
+    localStorage.setItem('ampel-alarm-delay', String(v));
+  }
+
+  /* Vollbild-Overlay im jeweiligen Fenster (Hauptseite, Popup oder PiP) anlegen */
+  _buildAlarmOverlay() {
+    const doc = this.els.lights.red.ownerDocument;
+    this.overlay = doc.createElement('div');
+    this.overlay.className = 'alarm-overlay';
+    const msg = doc.createElement('div');
+    msg.className = 'alarm-msg';
+    msg.textContent = '🔴 ZU LAUT!';
+    this.overlayCount = doc.createElement('div');
+    this.overlayCount.className = 'alarm-count';
+    const btn = doc.createElement('button');
+    btn.className = 'alarm-reset';
+    btn.textContent = 'Zurücksetzen';
+    btn.addEventListener('click', () => this.resetAlarm());
+    this.overlay.append(msg, this.overlayCount, btn);
+    doc.body.appendChild(this.overlay);
+  }
+
+  _triggerAlarm() {
+    this.alarm = true;
+    this.alarmCount++;
+    this.overlayCount.textContent = `${this.alarmCount}. Rotfärbung`;
+    this.overlay.classList.add('on');
+    if (this.els.alarmCountEl) this.els.alarmCountEl.textContent = this.alarmCount;
+  }
+
+  resetAlarm() {
+    this.alarm = false;
+    this.redSince = null;
+    this.redHoldUntil = 0;
+    this.smoothed = 0;
+    this.overlay.classList.remove('on');
+  }
+
+  resetAlarmCount() {
+    this.alarmCount = 0;
+    if (this.els.alarmCountEl) this.els.alarmCountEl.textContent = '0';
+  }
+
+  // Großzügige Gelbzone: ab 10 dB unter dem Grenzwert, damit die Klasse
+  // rechtzeitig Feedback bekommt, bevor es Rot wird
+  get warnLevel() { return this.threshold - 10; }
 
   async start() {
     this.stream = await navigator.mediaDevices.getUserMedia({
@@ -68,9 +119,23 @@ class NoiseMeter {
       this.violations++;
       this.redHoldUntil = now + 2000; // Rot mind. 2 s halten
     }
+    // Gelb mind. 3 s halten, damit das Feedback sichtbar bleibt
+    if (db >= this.warnLevel && db < this.threshold) this.yellowHoldUntil = now + 3000;
     let state = 'green';
     if (now < this.redHoldUntil || db >= this.threshold) state = 'red';
-    else if (db >= this.warnLevel) state = 'yellow';
+    else if (db >= this.warnLevel || now < (this.yellowHoldUntil || 0)) state = 'yellow';
+
+    // Dauer-Rot überwachen → nach alarmDelay Sekunden Vollbild-Alarm
+    if (!this.alarm) {
+      if (state === 'red') {
+        if (this.redSince === null) this.redSince = now;
+        else if (now - this.redSince >= this.alarmDelay * 1000) this._triggerAlarm();
+      } else {
+        this.redSince = null;
+      }
+    } else {
+      state = 'red'; // während des Alarms bleibt die Ampel rot
+    }
     this._setLights(state);
 
     if (this.els.dbEl) this.els.dbEl.textContent = Math.round(db);

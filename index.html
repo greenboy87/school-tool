@@ -41,6 +41,10 @@
           <input type="range" id="threshold" min="40" max="100" value="70">
         </label>
         <p class="hint">Gelb ab <span id="warn-value">65</span> dB · Überschreitungen: <strong id="violations">0</strong></p>
+        <p class="hint alarm-config">🔴 Vollbild-Alarm nach <input type="number" id="alarm-delay" min="1" max="30" step="0.5" value="3"> s Dauer-Rot
+          · Rotfärbungen: <strong id="alarm-count">0</strong>
+          <button id="btn-alarm-count-reset" class="small" title="Zähler auf 0 setzen (z. B. zu Stundenbeginn)">Zähler zurücksetzen</button>
+        </p>
         <div class="btn-row">
           <button id="btn-mic" class="primary">🎤 Mikrofon starten</button>
           <button id="btn-popup" title="Kleines Fenster, das du neben eine Präsentation legen kannst">🗔 Als Popup öffnen</button>

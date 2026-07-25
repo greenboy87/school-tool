@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     dbEl: document.getElementById('db-value'),
     barEl: document.getElementById('db-bar'),
     violationsEl: document.getElementById('violations'),
+    alarmCountEl: document.getElementById('alarm-count'),
     lights: {
       red: document.getElementById('light-red'),
       yellow: document.getElementById('light-yellow'),
@@ -30,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const updateThresholdUi = () => {
     const v = parseInt(slider.value, 10);
     document.getElementById('threshold-value').textContent = v;
-    document.getElementById('warn-value').textContent = v - 5;
+    document.getElementById('warn-value').textContent = v - 10;
     marker.style.left = Math.min(100, v / 110 * 100) + '%';
   };
   slider.value = localStorage.getItem('ampel-threshold') || '70';
@@ -39,6 +40,14 @@ document.addEventListener('DOMContentLoaded', () => {
     meter.setThreshold(parseInt(slider.value, 10));
     updateThresholdUi();
   });
+
+  const alarmDelay = document.getElementById('alarm-delay');
+  alarmDelay.value = localStorage.getItem('ampel-alarm-delay') || '3';
+  alarmDelay.addEventListener('change', () => {
+    const v = parseFloat(alarmDelay.value);
+    if (v >= 1) meter.setAlarmDelay(v);
+  });
+  document.getElementById('btn-alarm-count-reset').addEventListener('click', () => meter.resetAlarmCount());
 
   const btnMic = document.getElementById('btn-mic');
   btnMic.addEventListener('click', async () => {
@@ -85,9 +94,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="light green"></div>
           </div>
           <div class="db-display small"><span id="pip-db">–</span><span class="db-unit">dB</span></div>
+          <div class="popup-alarm-count hint">🔴 <strong id="pip-alarm-count">0</strong>×</div>
         </div>`;
       const pipMeter = new NoiseMeter({
         dbEl: pipWin.document.getElementById('pip-db'),
+        alarmCountEl: pipWin.document.getElementById('pip-alarm-count'),
         lights: {
           red: pipWin.document.querySelector('.light.red'),
           yellow: pipWin.document.querySelector('.light.yellow'),
