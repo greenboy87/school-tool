@@ -9,6 +9,15 @@ const Classes = {
   init() {
     this.data = Store.load();
 
+    // Klassen aus früheren Versionen um Schuljahr, Jahrgangsstufe und Stunden ergänzen
+    let migrated = false;
+    for (const c of this.data.classes) {
+      if (!c.year) { c.year = this.currentSchoolYear(); migrated = true; }
+      if (c.grade === undefined) { c.grade = this.gradeFromName(c.name); migrated = true; }
+      if (!c.lessons) { c.lessons = {}; migrated = true; }
+    }
+    if (migrated) this.persist();
+
     document.getElementById('new-class-year').value = this.currentSchoolYear();
     document.getElementById('form-new-class').addEventListener('submit', e => {
       e.preventDefault();
