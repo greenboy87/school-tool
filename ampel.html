@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🚦 Lärmampel</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="popup-body">
+  <div class="popup-ampel">
+    <div class="traffic-light compact">
+      <div class="light red" id="light-red"></div>
+      <div class="light yellow" id="light-yellow"></div>
+      <div class="light green" id="light-green"></div>
+    </div>
+    <div class="db-display small"><span id="db-value">–</span><span class="db-unit">dB</span></div>
+    <button id="btn-mic" class="primary small">🎤 Start</button>
+  </div>
+<script src="js/noise.js"></script>
+<script>
+  const meter = new NoiseMeter({
+    dbEl: document.getElementById('db-value'),
+    lights: {
+      red: document.getElementById('light-red'),
+      yellow: document.getElementById('light-yellow'),
+      green: document.getElementById('light-green'),
+    },
+  });
+  const btn = document.getElementById('btn-mic');
+  btn.addEventListener('click', async () => {
+    if (meter.running) { meter.stop(); btn.textContent = '🎤 Start'; }
+    else {
+      try { await meter.start(); btn.textContent = '⏹ Stopp'; }
+      catch (e) { alert('Mikrofon-Zugriff nicht möglich: ' + e.message); }
+    }
+  });
+  // Grenzwert live übernehmen, wenn er im Hauptfenster geändert wird
+  window.addEventListener('storage', () => meter.reloadThreshold());
+</script>
+</body>
+</html>
