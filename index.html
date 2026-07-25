@@ -4,25 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/theme.js?v=3"></script>
-<script src="js/auth.js?v=3"></script>
+<script src="js/icons.js?v=4"></script>
+<script src="js/theme.js?v=4"></script>
+<script src="js/auth.js?v=4"></script>
 </head>
 <body>
 
 <header class="topbar">
-  <h1>🏫 School-Tool</h1>
+  <h1 data-icon="school">School-Tool</h1>
   <nav class="main-tabs">
-    <button class="tab-btn active" data-tab="ampel">🚦 Lärmampel</button>
-    <button class="tab-btn" data-tab="klassen">📚 Klassen &amp; Noten</button>
-    <button class="tab-btn" data-tab="tools">🎲 Extras</button>
+    <button class="tab-btn active" data-tab="ampel" data-icon="traffic">Lärmampel</button>
+    <button class="tab-btn" data-tab="klassen" data-icon="book">Klassen &amp; Noten</button>
+    <button class="tab-btn" data-tab="tools" data-icon="sparkles">Extras</button>
   </nav>
   <div class="backup-btns">
-    <button id="btn-export" title="Alle Daten als Datei sichern">💾 Backup</button>
-    <button id="btn-import" title="Backup-Datei wiederherstellen">📂 Wiederherstellen</button>
-    <button id="btn-theme" title="Zum hellen Design wechseln">☀️ Hell</button>
-    <button id="btn-lock" title="Sofort sperren. Von selbst sperrt sich die Seite nach 2 Stunden ohne Nutzung.">🔒 Sperren</button>
+    <button id="btn-export" data-icon="download" title="Alle Daten als Datei sichern">Backup</button>
+    <button id="btn-import" data-icon="upload" title="Backup-Datei wiederherstellen">Wiederherstellen</button>
+    <button id="btn-theme" title="Zum hellen Design wechseln">Hell</button>
+    <button id="btn-lock" data-icon="lock" title="Sofort sperren. Von selbst sperrt sich die Seite nach 2 Stunden ohne Nutzung.">Sperren</button>
     <input type="file" id="import-file" accept=".json" hidden>
   </div>
 </header>
@@ -45,14 +46,14 @@
           <input type="range" id="threshold" min="40" max="100" value="70">
         </label>
         <p class="hint">Gelb ab <span id="warn-value">65</span> dB · Überschreitungen: <strong id="violations">0</strong></p>
-        <p class="hint alarm-config">🔴 Vollbild-Alarm nach <input type="number" id="alarm-delay" min="1" max="30" step="0.5" value="3"> s Dauer-Rot
+        <p class="hint alarm-config" data-icon="alert">Vollbild-Alarm nach <input type="number" id="alarm-delay" min="1" max="30" step="0.5" value="3"> s Dauer-Rot
           · Rotfärbungen: <strong id="alarm-count">0</strong>
           <button id="btn-alarm-count-reset" class="small" title="Zähler auf 0 setzen (z. B. zu Stundenbeginn)">Zähler zurücksetzen</button>
         </p>
         <div class="btn-row">
-          <button id="btn-mic" class="primary">🎤 Mikrofon starten</button>
-          <button id="btn-popup" title="Kleines Fenster, das du neben eine Präsentation legen kannst">🗔 Als Popup öffnen</button>
-          <button id="btn-pip" title="Schwebendes Mini-Fenster, bleibt immer im Vordergrund (Chrome/Edge)">📌 Immer im Vordergrund</button>
+          <button id="btn-mic" class="primary" data-icon="mic">Mikrofon starten</button>
+          <button id="btn-popup" data-icon="window" title="Kleines Fenster, das du neben eine Präsentation legen kannst">Als Popup öffnen</button>
+          <button id="btn-pip" data-icon="pip" title="Schwebendes Mini-Fenster, bleibt immer im Vordergrund (Chrome/Edge)">Immer im Vordergrund</button>
         </div>
         <p class="hint">Tipp: „Immer im Vordergrund“ öffnet ein schwebendes Mini-Fenster, das auch über einer Vollbild-Präsentation sichtbar bleibt (funktioniert in Chrome &amp; Edge).</p>
       </div>
@@ -73,17 +74,17 @@
     </aside>
     <section class="klassen-main">
       <div id="class-empty" class="card empty-state">
-        <p>👈 Wähle links eine Klasse aus oder lege eine neue an.</p>
+        <p>Wähle links eine Klasse aus oder lege eine neue an.</p>
         <p class="hint">Danach kannst du die Klassenliste einfügen, Gruppen auslosen, Noten verwalten und den Sitzplan hochladen.</p>
       </div>
       <div id="class-detail" hidden>
         <div class="class-header card">
           <h2 id="class-title"></h2>
           <nav class="sub-tabs">
-            <button class="subtab-btn active" data-subtab="schueler">👥 Schüler</button>
-            <button class="subtab-btn" data-subtab="projekte">📝 Projekte &amp; Noten</button>
-            <button class="subtab-btn" data-subtab="gruppen">🎲 Gruppen</button>
-            <button class="subtab-btn" data-subtab="sitzplan">🪑 Sitzplan</button>
+            <button class="subtab-btn active" data-subtab="schueler" data-icon="users">Schüler</button>
+            <button class="subtab-btn" data-subtab="projekte" data-icon="clipboard">Projekte &amp; Noten</button>
+            <button class="subtab-btn" data-subtab="gruppen" data-icon="shuffle">Gruppen</button>
+            <button class="subtab-btn" data-subtab="sitzplan" data-icon="grid">Sitzplan</button>
           </nav>
           <button id="btn-delete-class" class="danger small">Klasse löschen</button>
         </div>
@@ -92,7 +93,7 @@
           <div class="two-col">
             <div>
               <h3>Klassenliste (<span id="student-count">0</span>) <button id="btn-sort-students" class="small" title="Ganze Liste alphabetisch nach Nachname sortieren">A–Z sortieren</button></h3>
-              <p class="hint">Mit ▲▼ neben einem Namen änderst du die Reihenfolge von Hand.</p>
+              <p class="hint">Mit den Pfeilen neben einem Namen änderst du die Reihenfolge von Hand.</p>
               <ol id="student-list" class="student-list"></ol>
             </div>
             <div>
@@ -102,7 +103,7 @@
               <div class="btn-row">
                 <button id="btn-add-students" class="primary">Hinzufügen (A–Z einsortieren)</button>
                 <button id="btn-append-students">Ans Ende anhängen</button>
-                <label class="file-btn">📄 Aus Datei (PDF/.txt/.csv)<input type="file" id="student-file" accept=".txt,.csv,.pdf,application/pdf" hidden></label>
+                <label class="file-btn" data-icon="file">Aus Datei (PDF/.txt/.csv)<input type="file" id="student-file" accept=".txt,.csv,.pdf,application/pdf" hidden></label>
               </div>
             </div>
           </div>
@@ -123,8 +124,8 @@
             <div class="projekt-header">
               <h3 id="project-title"></h3>
               <div class="btn-row">
-                <button id="btn-print-project" title="Notenliste drucken">🖨️ Drucken</button>
-                <button id="btn-export-project" title="Als CSV speichern">⬇️ CSV</button>
+                <button id="btn-print-project" data-icon="printer" title="Notenliste drucken">Drucken</button>
+                <button id="btn-export-project" data-icon="download" title="Als CSV speichern">CSV</button>
                 <button id="btn-delete-project" class="danger small">Projekt löschen</button>
               </div>
             </div>
@@ -145,21 +146,21 @@
               </select>
             </label>
             <input type="number" id="group-n" min="2" max="15" value="4">
-            <button id="btn-make-groups" class="primary">🎲 Auslosen</button>
-            <button id="btn-save-groups" hidden>💾 Als Projekt speichern</button>
+            <button id="btn-make-groups" class="primary" data-icon="shuffle">Auslosen</button>
+            <button id="btn-save-groups" data-icon="check" hidden>Als Projekt speichern</button>
           </div>
           <div id="group-result" class="group-result"></div>
           <hr>
           <h3>Gruppen aus Dokument importieren</h3>
           <p class="hint">PDF mit einer Gruppen-Tabelle hochladen (z.&thinsp;B. dein Word-Dokument als PDF exportiert, Spalten „Gruppe“ und „Produkt/Thema“). Die Gruppen werden in der Reihenfolge des Dokuments übernommen. Getippte Noten werden mit ausgelesen – handschriftliche Noten kann das Tool nicht erkennen, die trägst du in der Vorschau oder danach als Gruppennote nach.</p>
-          <label class="file-btn">📄 Gruppen-PDF wählen<input type="file" id="groups-pdf" accept=".pdf,application/pdf" hidden></label>
+          <label class="file-btn" data-icon="file">Gruppen-PDF wählen<input type="file" id="groups-pdf" accept=".pdf,application/pdf" hidden></label>
           <div id="group-import-preview" hidden>
             <p class="hint">Zur Kontrolle – eine Zeile pro Gruppe im Format <code>Produkt/Thema | Note | Namen</code>. Du kannst hier direkt korrigieren oder Noten eintragen, bevor du übernimmst. Schüler, die noch nicht in der Klassenliste stehen, werden unten angehängt.</p>
             <textarea id="group-import-text" rows="8" spellcheck="false"></textarea>
             <div class="inline-form">
               <input type="text" id="group-import-name" placeholder="Projektname">
               <input type="date" id="group-import-date">
-              <button id="btn-group-import-save" class="primary">✅ Als Projekt übernehmen</button>
+              <button id="btn-group-import-save" class="primary" data-icon="check">Als Projekt übernehmen</button>
               <button id="btn-group-import-cancel">Abbrechen</button>
             </div>
             <p class="hint" id="group-import-info"></p>
@@ -170,7 +171,7 @@
           <div class="projekt-header">
             <h3>Sitzplan</h3>
             <div class="btn-row">
-              <label class="file-btn primary">⬆️ Sitzplan hochladen (PDF/Bild)<input type="file" id="seatplan-file" accept="application/pdf,image/*" hidden></label>
+              <label class="file-btn primary" data-icon="upload">Sitzplan hochladen (PDF/Bild)<input type="file" id="seatplan-file" accept="application/pdf,image/*" hidden></label>
               <button id="btn-delete-seatplan" class="danger small" hidden>Entfernen</button>
             </div>
           </div>
@@ -185,39 +186,39 @@
 <main id="tab-tools" class="tab-page">
   <div class="tools-grid">
     <section class="card">
-      <h2>🙋 Zufalls-Schüler</h2>
+      <h2 data-icon="userCheck">Zufalls-Schüler</h2>
       <p class="hint">Lost einen Schüler aus der gewählten Klasse aus – z.&thinsp;B. fürs Abfragen oder Vorspielen. Bereits gezogene Schüler kommen erst wieder dran, wenn alle dran waren.</p>
       <div class="inline-form">
         <select id="picker-class"></select>
-        <button id="btn-pick" class="primary">🎯 Auslosen</button>
-        <button id="btn-pick-reset" class="small">Zurücksetzen</button>
+        <button id="btn-pick" class="primary" data-icon="target">Auslosen</button>
+        <button id="btn-pick-reset" class="small" data-icon="reset">Zurücksetzen</button>
       </div>
       <div id="picker-result" class="picker-result">–</div>
       <p class="hint" id="picker-remaining"></p>
     </section>
     <section class="card">
-      <h2>⏱️ Arbeitsphasen-Timer</h2>
+      <h2 data-icon="timer">Arbeitsphasen-Timer</h2>
       <p class="hint">Countdown für Gruppen- oder Stillarbeit. Bei Ablauf ertönt ein Gong.</p>
       <div class="inline-form">
         <button class="timer-preset" data-min="5">5 min</button>
         <button class="timer-preset" data-min="10">10 min</button>
         <button class="timer-preset" data-min="15">15 min</button>
         <input type="number" id="timer-custom" min="1" max="90" placeholder="min">
-        <button id="btn-timer-start" class="primary">▶ Start</button>
-        <button id="btn-timer-stop">⏹ Stopp</button>
+        <button id="btn-timer-start" class="primary" data-icon="play">Start</button>
+        <button id="btn-timer-stop" data-icon="stop">Stopp</button>
       </div>
       <div id="timer-display" class="timer-display">–:–</div>
     </section>
   </div>
 </main>
 
-<footer class="footer hint">Alle Daten werden nur lokal in deinem Browser gespeichert (kein Server). Regelmäßig ein 💾 Backup machen – z.&thinsp;B. am Schuljahresende oder vor einem Browserwechsel.</footer>
+<footer class="footer hint">Alle Daten werden nur lokal in deinem Browser gespeichert (kein Server). Regelmäßig ein Backup machen – z.&thinsp;B. am Schuljahresende oder vor einem Browserwechsel.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/store.js?v=3"></script>
-<script src="js/noise.js?v=3"></script>
-<script src="js/classes.js?v=3"></script>
-<script src="js/tools.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="js/store.js?v=4"></script>
+<script src="js/noise.js?v=4"></script>
+<script src="js/classes.js?v=4"></script>
+<script src="js/tools.js?v=4"></script>
+<script src="js/app.js?v=4"></script>
 </body>
 </html>

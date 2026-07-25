@@ -282,17 +282,17 @@ const Classes = {
       };
       const up = document.createElement('button');
       up.className = 'move';
-      up.textContent = '▲';
+      up.innerHTML = Icons.raw('chevronUp');
       up.title = 'Nach oben verschieben';
       up.addEventListener('click', () => move(-1));
       const down = document.createElement('button');
       down.className = 'move';
-      down.textContent = '▼';
+      down.innerHTML = Icons.raw('chevronDown');
       down.title = 'Nach unten verschieben';
       down.addEventListener('click', () => move(1));
       const del = document.createElement('button');
       del.className = 'del';
-      del.textContent = '✕';
+      del.innerHTML = Icons.raw('x');
       del.title = 'Schüler entfernen';
       del.addEventListener('click', () => {
         if (!confirm(`${this.studentName(s)} aus der Liste entfernen?`)) return;
@@ -346,6 +346,7 @@ const Classes = {
       const name = document.createElement('span');
       name.className = 'pname';
       name.textContent = p.name;
+      if (p.entered) name.insertAdjacentHTML('beforeend', Icons.raw('check', 'entered-mark'));
       const date = document.createElement('span');
       date.className = 'pdate';
       date.textContent = p.date ? new Date(p.date + 'T12:00').toLocaleDateString('de-DE') : '';

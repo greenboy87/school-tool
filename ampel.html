@@ -3,10 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🚦 Lärmampel</title>
-<link rel="stylesheet" href="style.css?v=3">
-<script src="js/theme.js?v=3"></script>
-<script src="js/auth.js?v=3"></script>
+<title>Lärmampel</title>
+<link rel="stylesheet" href="style.css?v=4">
+<script src="js/icons.js?v=4"></script>
+<script src="js/theme.js?v=4"></script>
+<script src="js/auth.js?v=4"></script>
 </head>
 <body class="popup-body">
   <div class="popup-ampel">
@@ -16,10 +17,10 @@
       <div class="light green" id="light-green"></div>
     </div>
     <div class="db-display small"><span id="db-value">–</span><span class="db-unit">dB</span></div>
-    <div class="popup-alarm-count hint">🔴 Rotfärbungen: <strong id="alarm-count">0</strong></div>
-    <button id="btn-mic" class="primary small">🎤 Start</button>
+    <div class="popup-alarm-count hint" data-icon="alert">Rotfärbungen:&nbsp;<strong id="alarm-count">0</strong></div>
+    <button id="btn-mic" class="primary small" data-icon="mic">Start</button>
   </div>
-<script src="js/noise.js?v=3"></script>
+<script src="js/noise.js?v=4"></script>
 <script>
   const meter = new NoiseMeter({
     dbEl: document.getElementById('db-value'),
@@ -32,9 +33,9 @@
   });
   const btn = document.getElementById('btn-mic');
   btn.addEventListener('click', async () => {
-    if (meter.running) { meter.stop(); btn.textContent = '🎤 Start'; }
+    if (meter.running) { meter.stop(); btn.innerHTML = Icons.raw('mic') + 'Start'; }
     else {
-      try { await meter.start(); btn.textContent = '⏹ Stopp'; }
+      try { await meter.start(); btn.innerHTML = Icons.raw('stop') + 'Stopp'; }
       catch (e) { alert('Mikrofon-Zugriff nicht möglich: ' + e.message); }
     }
   });

@@ -37,7 +37,7 @@ class NoiseMeter {
     this.overlay.className = 'alarm-overlay';
     const msg = doc.createElement('div');
     msg.className = 'alarm-msg';
-    msg.textContent = '🔴 ZU LAUT!';
+    msg.innerHTML = Icons.raw('volume') + 'ZU LAUT!';
     this.overlayCount = doc.createElement('div');
     this.overlayCount.className = 'alarm-count';
     const btn = doc.createElement('button');

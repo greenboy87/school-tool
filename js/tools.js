@@ -59,7 +59,7 @@ const Tools = {
       out.textContent = Classes.studentName(r);
       if (++ticks > 12) {
         clearInterval(anim);
-        out.textContent = '🎯 ' + Classes.studentName(chosen);
+        out.innerHTML = Icons.raw('target') + Classes.studentName(chosen);
         this.updateRemaining();
       }
     }, 80);
@@ -102,7 +102,7 @@ const Tools = {
     d.classList.toggle('warning', left <= 60);
     if (left <= 0) {
       this.stopTimer();
-      d.textContent = '⏰ Zeit um!';
+      d.innerHTML = Icons.raw('timer') + 'Zeit um!';
       this.gong();
     }
   },

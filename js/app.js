@@ -53,11 +53,11 @@ document.addEventListener('DOMContentLoaded', () => {
   btnMic.addEventListener('click', async () => {
     if (meter.running) {
       meter.stop();
-      btnMic.textContent = '🎤 Mikrofon starten';
+      btnMic.innerHTML = Icons.raw('mic') + 'Mikrofon starten';
     } else {
       try {
         await meter.start();
-        btnMic.textContent = '⏹ Messung stoppen';
+        btnMic.innerHTML = Icons.raw('stop') + 'Messung stoppen';
       } catch (e) {
         alert('Mikrofon-Zugriff nicht möglich. Bitte im Browser erlauben.\n(' + e.message + ')');
       }

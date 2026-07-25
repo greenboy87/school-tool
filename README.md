@@ -37,9 +37,15 @@ Internet ohnehin nicht erreichbar.
 - Notenliste drucken oder als CSV exportieren
 - Sitzplan (PDF oder Bild) pro Klasse hochladen und anzeigen
 
-### 🎨 Design
-- Dunkles Design als Standard; über **☀️ Hell** in der Kopfzeile wechselst du zum hellen.
+### Design
+- Dunkles Design als Standard; über **Hell** in der Kopfzeile wechselst du zum hellen.
   Die Wahl bleibt gespeichert.
+- Einheitliche Strich-Icons statt Emojis (`js/icons.js`); sie übernehmen automatisch die
+  Textfarbe des jeweiligen Themes.
+
+**Hinweis zum Aktualisieren:** Die eingebundenen Dateien tragen eine Versionsnummer
+(`style.css?v=4`). Nach Änderungen an CSS/JS diese Nummer in `index.html` und `ampel.html`
+hochzählen – sonst zeigen Browser noch die zwischengespeicherte alte Fassung.
 
 ### 🎲 Extras
 - Zufalls-Schüler-Auslosung (fair: jeder kommt einmal dran, bevor jemand doppelt drankommt)

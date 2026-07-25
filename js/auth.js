@@ -79,7 +79,7 @@ const Auth = {
     wrap.className = 'lock-screen';
     wrap.innerHTML = `
       <form class="lock-box" autocomplete="off">
-        <div class="lock-icon">🔒</div>
+        <div class="lock-icon">${Icons.raw('lock')}</div>
         <h1>School-Tool</h1>
         <p>Bitte Passwort eingeben</p>
         <input type="password" id="lock-pw" placeholder="Passwort" autocomplete="current-password" autofocus>

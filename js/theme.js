@@ -26,7 +26,7 @@ const Theme = {
     const btn = document.getElementById('btn-theme');
     if (!btn) return;
     const dark = this.current() === 'dark';
-    btn.textContent = dark ? '☀️ Hell' : '🌙 Dunkel';
+    btn.innerHTML = Icons.raw(dark ? 'sun' : 'moon') + (dark ? 'Hell' : 'Dunkel');
     btn.title = dark ? 'Zum hellen Design wechseln' : 'Zum dunklen Design wechseln';
   },
 
