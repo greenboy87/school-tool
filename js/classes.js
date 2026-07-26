@@ -150,6 +150,13 @@ const Classes = {
     document.getElementById('btn-make-groups').addEventListener('click', () => this.makeGroups());
     document.getElementById('btn-save-groups').addEventListener('click', () => this.saveGroupsAsProject());
 
+    // Gruppen von Hand zusammenstellen
+    document.getElementById('btn-add-manual-group').addEventListener('click', () => {
+      this.manualGroups.push({ name: '', members: ['', '', '', ''] });
+      this.renderManualGroups();
+    });
+    document.getElementById('btn-save-manual').addEventListener('click', () => this.saveManualGroups());
+
     // Gruppen-Import aus PDF: erst lokal (kostenlos), bei Bedarf per KI
     document.getElementById('groups-pdf').addEventListener('change', e => {
       const file = e.target.files[0];
@@ -259,7 +266,7 @@ const Classes = {
       f => isPdf(f) || /\.(txt|csv)$/i.test(f.name),
       'PDF, TXT oder CSV mit der Klassenliste',
       f => this.handleStudentFile(f));
-    this.makeDropZone(document.getElementById('subtab-gruppen'),
+    this.makeDropZone(document.getElementById('subtab-projekte'),
       isPdf, 'PDF mit der Gruppeneinteilung',
       f => this.handleGroupsFile(f));
     this.makeDropZone(document.getElementById('subtab-sitzplan'),
@@ -477,6 +484,7 @@ const Classes = {
     this.renderStudents();
     this.renderProjects();
     this.renderGroupResult();
+    this.renderManualGroups();
     this.renderSeatplan();
     if (typeof Lessons !== 'undefined') Lessons.render();
   },
@@ -670,8 +678,32 @@ const Classes = {
     const detail = document.getElementById('project-detail');
     detail.hidden = !p;
     if (!p) return;
-    const dateStr = p.date ? new Date(p.date + 'T12:00').toLocaleDateString('de-DE') : '';
-    document.getElementById('project-title').textContent = `${p.name}${dateStr ? ' – ' + dateStr : ''} (${cls.name})`;
+    // Titel ist direkt bearbeitbar, Datum daneben änderbar
+    const titel = document.getElementById('project-title');
+    titel.innerHTML = '';
+    const nameFeld = document.createElement('input');
+    nameFeld.type = 'text';
+    nameFeld.className = 'cell-input project-name';
+    nameFeld.value = p.name;
+    nameFeld.title = 'Projektnamen ändern';
+    nameFeld.addEventListener('change', () => {
+      const neu = nameFeld.value.trim();
+      if (!neu) { nameFeld.value = p.name; return; }
+      p.name = neu;
+      this.persist();
+      this.renderProjects();
+    });
+    const datumFeld = document.createElement('input');
+    datumFeld.type = 'date';
+    datumFeld.className = 'cell-input project-date';
+    datumFeld.value = p.date || '';
+    datumFeld.title = 'Datum ändern';
+    datumFeld.addEventListener('change', () => {
+      p.date = datumFeld.value;
+      this.persist();
+      this.renderProjects();
+    });
+    titel.append(nameFeld, datumFeld);
 
     // Gruppen-Schnelleingabe, falls das Projekt aus einer Gruppenauslosung entstand
     const groupsInfo = document.getElementById('project-groups-info');
@@ -846,6 +878,114 @@ const Classes = {
     this.renderGroupResult();
     // Zum Projekte-Tab wechseln, damit direkt benotet werden kann
     document.querySelector('[data-subtab="projekte"]').click();
+  },
+
+  /* ---------- Gruppen von Hand zusammenstellen ---------- */
+  manualGroups: [],
+
+  /* Vorschlagsliste für die Eingabefelder aus der aktuellen Klassenliste */
+  fillStudentDatalist() {
+    const dl = document.getElementById('student-options');
+    const cls = this.currentClass();
+    if (!dl) return;
+    dl.innerHTML = '';
+    if (!cls) return;
+    for (const s of cls.students) {
+      const o = document.createElement('option');
+      o.value = this.studentName(s);
+      dl.appendChild(o);
+    }
+  },
+
+  renderManualGroups() {
+    const wrap = document.getElementById('manual-groups');
+    if (!wrap) return;
+    this.fillStudentDatalist();
+    wrap.innerHTML = '';
+    if (!this.manualGroups.length) {
+      wrap.innerHTML = '<p class="hint">Noch keine Gruppe angelegt – auf „Gruppe hinzufügen“ klicken.</p>';
+      return;
+    }
+    this.manualGroups.forEach((g, gi) => {
+      const box = document.createElement('div');
+      box.className = 'group-box';
+
+      const kopf = document.createElement('div');
+      kopf.className = 'manual-head';
+      const name = document.createElement('input');
+      name.type = 'text';
+      name.className = 'cell-input';
+      name.placeholder = `Gruppe ${gi + 1} – Name/Thema`;
+      name.value = g.name;
+      name.addEventListener('input', () => g.name = name.value);
+      const weg = document.createElement('button');
+      weg.className = 'small danger';
+      weg.innerHTML = Icons.raw('x');
+      weg.title = 'Diese Gruppe entfernen';
+      weg.addEventListener('click', () => {
+        this.manualGroups.splice(gi, 1);
+        this.renderManualGroups();
+      });
+      kopf.append(name, weg);
+
+      const liste = document.createElement('div');
+      liste.className = 'manual-members';
+      g.members.forEach((m, mi) => {
+        const feld = document.createElement('input');
+        feld.type = 'text';
+        feld.className = 'cell-input';
+        feld.setAttribute('list', 'student-options');
+        feld.placeholder = 'Name …';
+        feld.value = m;
+        feld.addEventListener('input', () => g.members[mi] = feld.value);
+        liste.appendChild(feld);
+      });
+
+      const mehr = document.createElement('button');
+      mehr.className = 'small';
+      mehr.textContent = '+ Feld';
+      mehr.title = 'Noch einen Schüler zu dieser Gruppe';
+      mehr.addEventListener('click', () => { g.members.push(''); this.renderManualGroups(); });
+
+      box.append(kopf, liste, mehr);
+      wrap.appendChild(box);
+    });
+  },
+
+  saveManualGroups() {
+    const cls = this.currentClass();
+    if (!cls) return;
+    const gefuellt = this.manualGroups
+      .map(g => ({ name: g.name.trim(), members: g.members.map(m => m.trim()).filter(Boolean) }))
+      .filter(g => g.members.length);
+    if (!gefuellt.length) { alert('Es sind noch keine Namen eingetragen.'); return; }
+
+    const name = document.getElementById('manual-project-name').value.trim();
+    if (!name) { alert('Bitte einen Projektnamen eintragen.'); return; }
+    const date = document.getElementById('manual-project-date').value || new Date().toISOString().slice(0, 10);
+
+    const created = [];
+    const groups = [], groupNames = [];
+    gefuellt.forEach((g, i) => {
+      const ids = g.members.map(m => this.findOrCreateStudent(cls, m, created)).filter(Boolean);
+      if (!ids.length) return;
+      groups.push(ids);
+      groupNames.push(g.name || `Gruppe ${i + 1}`);
+    });
+
+    const p = { id: Store.uid(), name, date, entered: false, grades: {}, groups, groupNames };
+    cls.projects.push(p);
+    this.currentProjectId = p.id;
+    this.manualGroups = [];
+    document.getElementById('manual-project-name').value = '';
+    this.persist();
+    this.renderClassList();
+    this.renderStudents();
+    this.renderManualGroups();
+    this.renderProjects();
+    if (created.length) {
+      alert(`Projekt angelegt.\n\nNeu in die Klassenliste aufgenommen (unten angehängt):\n${created.join('\n')}`);
+    }
   },
 
   /* ---------- Gruppen-Import aus PDF ---------- */

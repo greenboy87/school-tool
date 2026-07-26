@@ -3,6 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
   Classes.init();
   Lessons.init();
   Band.init();
+  Notes.init();
+  Sync.init();
   Tools.init();
 
   /* ----- Haupttabs ----- */

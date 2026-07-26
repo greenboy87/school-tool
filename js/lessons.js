@@ -9,27 +9,55 @@ const Lessons = {
   init() {
     this.syncCatalog();
 
-    document.getElementById('form-new-topic').addEventListener('submit', e => {
+    // Thema zur Klasse hinzufügen – per Vorschlagsliste aus der Sammlung
+    document.getElementById('form-add-lesson').addEventListener('submit', e => {
       e.preventDefault();
-      const nameEl = document.getElementById('new-topic-name');
-      const gradeEl = document.getElementById('new-topic-grades');
-      const name = nameEl.value.trim();
-      if (!name) return;
-      const grades = (gradeEl.value.match(/\d{1,2}/g) || [])
-        .map(Number).filter(g => g >= 5 && g <= 10);
-      if (Classes.data.topics.some(t => t.name.toLowerCase() === name.toLowerCase())) {
-        alert('Dieses Thema gibt es schon.');
-        return;
-      }
-      Classes.data.topics.push({ id: Store.uid(), name, grades, custom: true });
-      Classes.persist();
-      nameEl.value = '';
-      gradeEl.value = '';
-      this.render();
+      this.addTypedTopic();
     });
+    document.getElementById('lesson-filter').addEventListener('input', () => this.render());
+    document.getElementById('lesson-only-grade').addEventListener('input', () => this.fillTopicOptions());
+  },
 
-    ['lesson-search', 'lesson-filter', 'lesson-only-grade'].forEach(id =>
-      document.getElementById(id).addEventListener('input', () => this.render()));
+  /* Getipptes Thema der Klasse zuordnen; unbekannte Themen auf Nachfrage anlegen */
+  addTypedTopic() {
+    const cls = Classes.currentClass();
+    const feld = document.getElementById('lesson-add');
+    const name = feld.value.trim();
+    if (!cls || !name) return;
+
+    let topic = Classes.data.topics.find(t => !t.hidden && t.name.toLowerCase() === name.toLowerCase());
+    if (!topic) {
+      if (!confirm(`„${name}“ steht noch nicht in deiner Themensammlung.\n\nJetzt neu anlegen? ` +
+        'Das Thema steht danach in allen Klassen zur Verfügung.')) return;
+      const grades = cls.grade ? [cls.grade] : [];
+      topic = { id: Store.uid(), name, grades, custom: true };
+      Classes.data.topics.push(topic);
+    }
+
+    const l = this.lessonsOf(cls);
+    if (l[topic.id]) { alert(`„${topic.name}“ ist dieser Klasse schon zugeordnet.`); feld.value = ''; return; }
+    l[topic.id] = { s: 'open', added: Date.now() };
+    Classes.persist();
+    feld.value = '';
+    this.render();
+  },
+
+  /* Vorschlagsliste füllen: passende Jahrgangsstufe, ohne bereits zugeordnete */
+  fillTopicOptions() {
+    const dl = document.getElementById('topic-options');
+    const cls = Classes.currentClass();
+    if (!dl || !cls) return;
+    const nurStufe = document.getElementById('lesson-only-grade').checked;
+    const schonDa = this.lessonsOf(cls);
+    dl.innerHTML = '';
+    for (const t of Classes.data.topics) {
+      if (t.hidden || schonDa[t.id]) continue;
+      if (nurStufe && cls.grade && t.grades && t.grades.length && !t.grades.includes(cls.grade)) continue;
+      const o = document.createElement('option');
+      o.value = t.name;
+      if (t.grades && t.grades.length) o.label = 'Kl. ' + this.gradeLabel(t.grades);
+      dl.appendChild(o);
+    }
   },
 
   /* Neue Themen aus dem Katalog übernehmen, vorhandene unangetastet lassen */
@@ -54,22 +82,26 @@ const Lessons = {
   setState(cls, topicId, state) {
     const l = this.lessonsOf(cls);
     const today = new Date().toISOString().slice(0, 10);
-    if (state === 'open') {
-      delete l[topicId];
-    } else {
-      const entry = l[topicId] || {};
-      entry.s = state;
-      if (state === 'progress') { entry.d1 = entry.d1 || today; delete entry.d2; }
-      if (state === 'done') { entry.d1 = entry.d1 || today; entry.d2 = today; }
-      l[topicId] = entry;
-    }
+    const entry = l[topicId] || { added: Date.now() };
+    entry.s = state;
+    if (state === 'open') { delete entry.d1; delete entry.d2; }
+    if (state === 'progress') { entry.d1 = entry.d1 || today; delete entry.d2; }
+    if (state === 'done') { entry.d1 = entry.d1 || today; entry.d2 = today; }
+    l[topicId] = entry;
+    Classes.persist();
+    this.render();
+  },
+
+  /* Thema wieder aus der Klasse nehmen (die Sammlung bleibt unberührt) */
+  removeTopic(cls, topicId) {
+    delete this.lessonsOf(cls)[topicId];
     Classes.persist();
     this.render();
   },
 
   stateOf(cls, topicId) {
     const e = this.lessonsOf(cls)[topicId];
-    return e ? e.s : 'open';
+    return e ? (e.s || 'open') : 'open';
   },
 
   /* In welchen anderen Klassen wurde das Thema schon abgeschlossen? */
@@ -80,41 +112,44 @@ const Lessons = {
       .map(c => `${c.name}${c.year ? ' (' + c.year + ')' : ''}`);
   },
 
+  /* Nur die Themen, die dieser Klasse zugeordnet sind – in der Reihenfolge des Hinzufügens */
+  assignedTopics(cls) {
+    const l = this.lessonsOf(cls);
+    return Object.keys(l)
+      .map(id => ({ topic: Classes.data.topics.find(t => t.id === id), eintrag: l[id] }))
+      .filter(x => x.topic)
+      .sort((a, b) => (a.eintrag.added || 0) - (b.eintrag.added || 0))
+      .map(x => x.topic);
+  },
+
   visibleTopics(cls) {
-    const q = document.getElementById('lesson-search').value.trim().toLowerCase();
     const filter = document.getElementById('lesson-filter').value;
-    const onlyGrade = document.getElementById('lesson-only-grade').checked;
-    return Classes.data.topics.filter(t => {
-      if (t.hidden) return false;
-      if (onlyGrade && cls.grade && t.grades && t.grades.length &&
-          !t.grades.includes(cls.grade)) return false;
-      if (q && !t.name.toLowerCase().includes(q)) return false;
-      const st = this.stateOf(cls, t.id);
-      if (filter !== 'all' && filter !== st) return false;
-      return true;
-    });
+    return this.assignedTopics(cls)
+      .filter(t => filter === 'all' || this.stateOf(cls, t.id) === filter);
   },
 
   render() {
     const cls = Classes.currentClass();
     if (!cls) return;
+    this.fillTopicOptions();
     const list = document.getElementById('lesson-list');
     const topics = this.visibleTopics(cls);
 
-    // Fortschritt über alle (sichtbaren, klassenpassenden) Themen
-    const relevant = Classes.data.topics.filter(t => !t.hidden &&
-      (!cls.grade || !t.grades || !t.grades.length || t.grades.includes(cls.grade)));
-    const done = relevant.filter(t => this.stateOf(cls, t.id) === 'done').length;
-    const running = relevant.filter(t => this.stateOf(cls, t.id) === 'progress').length;
-    document.getElementById('lesson-progress').textContent =
-      `${done} von ${relevant.length} Themen abgeschlossen` +
-      (running ? ` · ${running} laufend` : '');
+    // Fortschritt bezieht sich auf die zugeordneten Themen
+    const zugeordnet = this.assignedTopics(cls);
+    const done = zugeordnet.filter(t => this.stateOf(cls, t.id) === 'done').length;
+    const running = zugeordnet.filter(t => this.stateOf(cls, t.id) === 'progress').length;
+    document.getElementById('lesson-progress').textContent = zugeordnet.length
+      ? `${done} von ${zugeordnet.length} Themen abgeschlossen` + (running ? ` · ${running} laufend` : '')
+      : 'noch keine Themen zugeordnet';
     const bar = document.getElementById('lesson-bar');
-    bar.style.width = relevant.length ? (done / relevant.length * 100) + '%' : '0%';
+    bar.style.width = zugeordnet.length ? (done / zugeordnet.length * 100) + '%' : '0%';
 
     list.innerHTML = '';
     if (!topics.length) {
-      list.innerHTML = '<p class="hint">Keine Themen gefunden – Filter oder Suche anpassen.</p>';
+      list.innerHTML = zugeordnet.length
+        ? '<p class="hint">Mit diesem Filter ist gerade nichts zu sehen.</p>'
+        : '<p class="hint">Noch nichts geplant – oben ein Thema tippen und hinzufügen.</p>';
       return;
     }
     for (const t of topics) {
@@ -152,19 +187,16 @@ const Lessons = {
         b.addEventListener('click', () => this.setState(cls, t.id, key));
         btns.appendChild(b);
       }
-      if (t.custom) {
-        const del = document.createElement('button');
-        del.className = 'small danger';
-        del.innerHTML = Icons.raw('x');
-        del.title = 'Eigenes Thema aus dem Katalog entfernen';
-        del.addEventListener('click', () => {
-          if (!confirm(`Thema „${t.name}“ dauerhaft entfernen?`)) return;
-          Classes.data.topics = Classes.data.topics.filter(x => x.id !== t.id);
-          Classes.persist();
-          this.render();
-        });
-        btns.appendChild(del);
-      }
+      const weg = document.createElement('button');
+      weg.className = 'small danger';
+      weg.innerHTML = Icons.raw('x');
+      weg.title = 'Thema aus dieser Klasse nehmen (bleibt in der Sammlung erhalten)';
+      weg.addEventListener('click', () => {
+        if (this.stateOf(cls, t.id) !== 'open' &&
+            !confirm(`„${t.name}“ aus der Klasse nehmen? Der bisherige Stand geht dabei verloren.`)) return;
+        this.removeTopic(cls, t.id);
+      });
+      btns.appendChild(weg);
 
       li.append(main, btns);
       list.appendChild(li);

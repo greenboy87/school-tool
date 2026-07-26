@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=12">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=9"></script>
-<script src="js/theme.js?v=9"></script>
-<script src="js/auth.js?v=9"></script>
+<script src="js/icons.js?v=12"></script>
+<script src="js/theme.js?v=12"></script>
+<script src="js/auth.js?v=12"></script>
 </head>
 <body>
 
@@ -18,9 +18,12 @@
     <button class="tab-btn active" data-tab="ampel" data-icon="traffic">Lärmampel</button>
     <button class="tab-btn" data-tab="klassen" data-icon="book">Klassen &amp; Noten</button>
     <button class="tab-btn" data-tab="band" data-icon="music">Schulband</button>
+    <button class="tab-btn" data-tab="notizen" data-icon="clipboard">Notizen</button>
     <button class="tab-btn" data-tab="tools" data-icon="sparkles">Extras</button>
   </nav>
   <div class="backup-btns">
+    <button id="btn-sync" data-icon="upload" title="Daten automatisch in eine Datei schreiben (z. B. in iCloud Drive)">Datei verbinden</button>
+    <span class="hint sync-status" id="sync-status"></span>
     <button id="btn-export" data-icon="download" title="Alle Daten als Datei sichern">Backup</button>
     <button id="btn-import" data-icon="upload" title="Backup-Datei wiederherstellen">Wiederherstellen</button>
     <button id="btn-theme" title="Zum hellen Design wechseln">Hell</button>
@@ -74,14 +77,15 @@
       <form id="form-new-class" class="new-class-form">
         <input type="text" id="new-class-name" placeholder="z.&thinsp;B. 5c Musik" required>
         <div class="new-class-row">
-          <select id="new-class-grade" title="Jahrgangsstufe – steuert, welche Themen vorgeschlagen werden">
-            <option value="">Stufe …</option>
+          <select id="new-class-grade" title="Jahrgangsstufe der neuen Klasse – steuert, welche Stundenthemen vorgeschlagen werden. Wirkt erst beim Anlegen.">
+            <option value="">Jahrgangsstufe …</option>
             <option>5</option><option>6</option><option>7</option>
             <option>8</option><option>9</option><option>10</option>
           </select>
           <input type="text" id="new-class-year" title="Schuljahr" placeholder="Schuljahr">
         </div>
         <button type="submit" class="primary" data-icon="plus">Klasse anlegen</button>
+        <p class="hint">Name eintragen, Jahrgangsstufe wählen, dann „Klasse anlegen“. Die Stufe allein bewirkt noch nichts – sie legt fest, welche Stundenthemen später vorgeschlagen werden.</p>
       </form>
     </aside>
     <section class="klassen-main">
@@ -96,7 +100,6 @@
             <button class="subtab-btn active" data-subtab="schueler" data-icon="users">Schüler</button>
             <button class="subtab-btn" data-subtab="projekte" data-icon="clipboard">Projekte &amp; Noten</button>
             <button class="subtab-btn" data-subtab="stunden" data-icon="list">Stunden</button>
-            <button class="subtab-btn" data-subtab="gruppen" data-icon="shuffle">Gruppen</button>
             <button class="subtab-btn" data-subtab="sitzplan" data-icon="grid">Sitzplan</button>
           </nav>
           <button id="btn-carry-class" class="small" title="Kopie dieser Klasse für das nächste Schuljahr anlegen (Schüler bleiben, Stunden starten neu)">Nächstes Schuljahr</button>
@@ -152,38 +155,12 @@
             <table class="grade-table" id="grade-table"></table>
             <p class="grade-summary" id="grade-summary"></p>
           </div>
-        </section>
 
-        <section id="subtab-stunden" class="subtab-page card">
-          <div class="projekt-header">
-            <h3>Stundenthemen</h3>
-            <p class="hint" id="lesson-progress"></p>
-          </div>
-          <div class="lesson-bar-wrap"><div class="lesson-bar" id="lesson-bar"></div></div>
-          <div class="inline-form lesson-tools">
-            <input type="search" id="lesson-search" placeholder="Thema suchen …">
-            <label>Anzeigen:
-              <select id="lesson-filter">
-                <option value="all">alle</option>
-                <option value="open">nur offene</option>
-                <option value="progress">nur laufende</option>
-                <option value="done">nur fertige</option>
-              </select>
-            </label>
-            <label class="check-label"><input type="checkbox" id="lesson-only-grade" checked> nur Themen dieser Jahrgangsstufe</label>
-          </div>
-          <ul id="lesson-list" class="lesson-list"></ul>
           <hr>
-          <h3>Eigenes Thema hinzufügen</h3>
-          <p class="hint">Wird global gespeichert und steht danach in allen Klassen zur Verfügung – auch in den nächsten Schuljahren.</p>
-          <form id="form-new-topic" class="inline-form">
-            <input type="text" id="new-topic-name" placeholder="Thema, z.&thinsp;B. Filmmusik selbst komponieren" required>
-            <input type="text" id="new-topic-grades" placeholder="Klassen, z.&thinsp;B. 7, 8" size="14">
-            <button type="submit" class="primary" data-icon="plus">Thema anlegen</button>
-          </form>
-        </section>
-
-        <section id="subtab-gruppen" class="subtab-page card">
+          <h3>Gruppenarbeit</h3>
+          <p class="hint">Gruppen gehören immer zu einem Projekt: Lose sie hier aus oder
+            importiere eine fertige Einteilung – beides landet als neues Projekt in der Liste
+            oben. Für Projekte mit Einzelbewertung brauchst du diesen Teil nicht.</p>
           <h3>Zufallsgruppen bilden</h3>
           <div class="inline-form">
             <label>Modus:
@@ -197,6 +174,19 @@
             <button id="btn-save-groups" data-icon="check" hidden>Als Projekt speichern</button>
           </div>
           <div id="group-result" class="group-result"></div>
+
+          <hr>
+          <h4>Gruppen selbst zusammenstellen</h4>
+          <p class="hint">Beim Tippen schlägt das Feld Namen aus der Klassenliste vor – ein Klick auf den Vorschlag genügt, dann ist der Schüler sicher richtig verknüpft. Leere Felder werden beim Speichern ignoriert.</p>
+          <datalist id="student-options"></datalist>
+          <div id="manual-groups" class="group-result"></div>
+          <div class="inline-form">
+            <button id="btn-add-manual-group" data-icon="plus">Gruppe hinzufügen</button>
+            <input type="text" id="manual-project-name" placeholder="Projektname">
+            <input type="date" id="manual-project-date">
+            <button id="btn-save-manual" class="primary" data-icon="check">Als Projekt speichern</button>
+          </div>
+
           <hr>
           <h3>Gruppen aus Dokument importieren</h3>
           <p class="hint">PDF mit deiner Gruppeneinteilung hochladen – egal welches Layout. Digitale Tabellen liest das Tool selbst (kostenlos). Gescannte, abfotografierte oder handschriftliche Dokumente wertet auf Wunsch die KI aus – die erkennt auch handschriftliche Noten und Gruppennamen. Die Gruppen werden in der Reihenfolge des Dokuments übernommen.</p>
@@ -227,6 +217,36 @@
           </div>
         </section>
 
+        <section id="subtab-stunden" class="subtab-page card">
+          <div class="projekt-header">
+            <h3>Stundenthemen dieser Klasse</h3>
+            <p class="hint" id="lesson-progress"></p>
+          </div>
+          <div class="lesson-bar-wrap"><div class="lesson-bar" id="lesson-bar"></div></div>
+
+          <form id="form-add-lesson" class="inline-form lesson-tools">
+            <input type="search" id="lesson-add" list="topic-options" size="42" autocomplete="off"
+              placeholder="Thema tippen – Vorschläge aus deiner Sammlung erscheinen …">
+            <datalist id="topic-options"></datalist>
+            <button type="submit" class="primary" data-icon="plus">Zur Klasse hinzufügen</button>
+            <label class="check-label"><input type="checkbox" id="lesson-only-grade" checked> Vorschläge auf die Jahrgangsstufe begrenzen</label>
+          </form>
+          <p class="hint">Es erscheinen nur die Themen, die du dieser Klasse zugeordnet hast – so bleibt der Überblick. Steht ein getipptes Thema noch nicht in der Sammlung, wird es auf Nachfrage neu angelegt und steht dann überall zur Verfügung.</p>
+
+          <div class="inline-form">
+            <label class="check-label">Anzeigen:
+              <select id="lesson-filter">
+                <option value="all">alle</option>
+                <option value="open">nur offene</option>
+                <option value="progress">nur laufende</option>
+                <option value="done">nur fertige</option>
+              </select>
+            </label>
+          </div>
+          <ul id="lesson-list" class="lesson-list"></ul>
+        </section>
+
+
         <section id="subtab-sitzplan" class="subtab-page card">
           <div class="projekt-header">
             <h3>Sitzplan</h3>
@@ -249,6 +269,7 @@
     <nav class="sub-tabs">
       <button class="bandtab-btn active" data-bandtab="mitglieder" data-icon="users">Mitglieder</button>
       <button class="bandtab-btn" data-bandtab="songs" data-icon="music">Songs</button>
+      <button class="bandtab-btn" data-bandtab="ideen" data-icon="sparkles">Songvorschläge</button>
       <button class="bandtab-btn" data-bandtab="termine" data-icon="calendar">Termine &amp; Auftritte</button>
       <button class="bandtab-btn" data-bandtab="proben" data-icon="list">Probenplan</button>
     </nav>
@@ -266,6 +287,7 @@
             <option value="technik">nur Technikteam</option>
           </select>
         </label>
+        <button id="btn-sync-members" data-icon="users" title="Mitglieder mit den Schülern aus deinen Klassenlisten verknüpfen">Mit Klassen abgleichen</button>
         <button id="btn-print-members" data-icon="printer">Drucken</button>
         <button id="btn-export-members" data-icon="download">CSV</button>
       </div>
@@ -289,6 +311,19 @@
       <input type="text" id="member-instrument" placeholder="Instrument / Aufgabe">
       <button type="submit" class="primary" data-icon="plus">Aufnehmen</button>
     </form>
+
+    <details class="ai-settings">
+      <summary class="hint">Mehrere Mitglieder auf einmal einfügen</summary>
+      <p class="hint">Eine Zeile pro Person, Felder mit <code>;</code> oder Tabulator getrennt:
+        <code>Name; Klasse; Instrument</code>. Eine führende Nummer wird ignoriert, du kannst
+        also auch direkt aus einer Tabelle kopieren. Steht als Instrument „Tech“, landet die
+        Person automatisch im Technikteam – alle anderen im Bereich, der oben eingestellt ist.</p>
+      <textarea id="member-bulk" rows="6" spellcheck="false"
+        placeholder="Timm, Nico; 7a; E-Bass&#10;Kellerer, Alexander; 7b; E-Bass&#10;Lingelbach, Ina; 7e; Tech"></textarea>
+      <div class="btn-row">
+        <button id="btn-bulk-members" class="primary" data-icon="plus">Alle aufnehmen</button>
+      </div>
+    </details>
   </section>
 
   <!-- Songs -->
@@ -309,6 +344,27 @@
       <input type="text" id="song-title" placeholder="Titel" required>
       <input type="text" id="song-artist" placeholder="Interpret">
       <button type="submit" class="primary" data-icon="plus">Song anlegen</button>
+    </form>
+  </section>
+
+  <!-- Songvorschläge -->
+  <section id="bandtab-ideen" class="bandtab-page card">
+    <div class="projekt-header">
+      <h3>Songvorschläge (<span id="idea-count">0</span>)</h3>
+      <div class="btn-row">
+        <button id="btn-print-ideas" data-icon="printer">Alle drucken</button>
+        <button id="btn-print-ideas-sel" data-icon="printer">Ausgewählte drucken</button>
+      </div>
+    </div>
+    <p class="hint">Sammelstelle für Stücke, die noch nicht im Repertoire sind – funktioniert genau wie der Song-Bereich. Mit dem Pfeil rechts wanderst du einen Vorschlag mit allen Angaben nach „Songs“.</p>
+    <table class="band-table songs-table" id="idea-table"></table>
+
+    <hr>
+    <h3>Vorschlag hinzufügen</h3>
+    <form id="form-new-idea" class="inline-form">
+      <input type="text" id="idea-title" placeholder="Titel" required>
+      <input type="text" id="idea-artist" placeholder="Interpret">
+      <button type="submit" class="primary" data-icon="plus">Vorschlag anlegen</button>
     </form>
   </section>
 
@@ -377,6 +433,22 @@
   </section>
 </main>
 
+<!-- ========== NOTIZEN ========== -->
+<main id="tab-notizen" class="tab-page">
+  <section class="card">
+    <div class="projekt-header">
+      <h2 data-icon="clipboard">Notizen</h2>
+      <div class="btn-row">
+        <span class="hint" id="notes-status"></span>
+        <button id="btn-print-notes" data-icon="printer">Drucken</button>
+      </div>
+    </div>
+    <p class="hint">Freier Platz für alles, was dir zwischendurch einfällt – Material bestellen, Raum reservieren, Ideen für die nächste Stunde. Wird automatisch gespeichert.</p>
+    <textarea id="notes-text" class="notes-area" rows="22" spellcheck="true"
+      placeholder="Einfach lostippen …"></textarea>
+  </section>
+</main>
+
 <!-- ========== EXTRAS ========== -->
 <main id="tab-tools" class="tab-page">
   <div class="tools-grid">
@@ -410,14 +482,16 @@
 <footer class="footer hint">Alle Daten werden nur lokal in deinem Browser gespeichert (kein Server). Regelmäßig ein Backup machen – z.&thinsp;B. am Schuljahresende oder vor einem Browserwechsel.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/topics-seed.js?v=9"></script>
-<script src="js/ai-import.js?v=9"></script>
-<script src="js/store.js?v=9"></script>
-<script src="js/noise.js?v=9"></script>
-<script src="js/classes.js?v=9"></script>
-<script src="js/lessons.js?v=9"></script>
-<script src="js/band.js?v=9"></script>
-<script src="js/tools.js?v=9"></script>
-<script src="js/app.js?v=9"></script>
+<script src="js/topics-seed.js?v=12"></script>
+<script src="js/ai-import.js?v=12"></script>
+<script src="js/store.js?v=12"></script>
+<script src="js/noise.js?v=12"></script>
+<script src="js/classes.js?v=12"></script>
+<script src="js/lessons.js?v=12"></script>
+<script src="js/band.js?v=12"></script>
+<script src="js/notes.js?v=12"></script>
+<script src="js/sync.js?v=12"></script>
+<script src="js/tools.js?v=12"></script>
+<script src="js/app.js?v=12"></script>
 </body>
 </html>

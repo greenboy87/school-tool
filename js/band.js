@@ -10,7 +10,7 @@ const Band = {
     const data = Classes.data;
     if (!data.band) data.band = {};
     const b = data.band;
-    ['members', 'songs', 'gigs', 'rehearsals'].forEach(k => { if (!Array.isArray(b[k])) b[k] = []; });
+    ['members', 'songs', 'ideas', 'gigs', 'rehearsals'].forEach(k => { if (!Array.isArray(b[k])) b[k] = []; });
     return b;
   },
   save() { Classes.persist(); },
@@ -52,6 +52,25 @@ const Band = {
       document.getElementById('member-class').value = this.shortClass(cls.name);
       document.getElementById('member-instrument').focus();
     });
+    document.getElementById('btn-bulk-members').addEventListener('click', () => {
+      const ta = document.getElementById('member-bulk');
+      const neue = this.parseMemberLines(ta.value, document.getElementById('member-area').value);
+      if (!neue.length) { alert('Keine verwertbaren Zeilen gefunden.\nFormat: Name; Klasse; Instrument'); return; }
+      this.d().members.push(...neue);
+      this.save();
+      ta.value = '';
+      const verknuepft = this.syncWithClasses();
+      this.renderMembers();
+      alert(`${neue.length} Mitglieder aufgenommen.` +
+        (verknuepft ? `\n${verknuepft} davon konnten direkt einem Schüler aus deinen Klassenlisten zugeordnet werden.` : ''));
+    });
+    document.getElementById('btn-sync-members').addEventListener('click', () => {
+      const n = this.syncWithClasses();
+      this.renderMembers();
+      alert(n ? `${n} Mitglieder wurden mit Schülern aus deinen Klassenlisten verknüpft.`
+              : 'Es gab nichts Neues zu verknüpfen – entweder sind schon alle zugeordnet, ' +
+                'oder die Namen stehen (noch) in keiner Klassenliste.');
+    });
     document.getElementById('member-filter').addEventListener('change', () => this.renderMembers());
     document.getElementById('btn-print-members').addEventListener('click', () => this.printMembers());
     document.getElementById('btn-export-members').addEventListener('click', () => this.exportMembers());
@@ -76,6 +95,28 @@ const Band = {
       const sel = [...document.querySelectorAll('#song-table input.song-pick:checked')].map(c => c.dataset.id);
       if (!sel.length) { alert('Keine Songs ausgewählt.'); return; }
       this.printSongs(this.d().songs.filter(s => sel.includes(s.id)), 'Songs (Auswahl)');
+    });
+
+    /* ---- Songvorschläge ---- */
+    document.getElementById('form-new-idea').addEventListener('submit', e => {
+      e.preventDefault();
+      const title = document.getElementById('idea-title').value.trim();
+      if (!title) return;
+      this.d().ideas.push({
+        id: Store.uid(), title,
+        artist: document.getElementById('idea-artist').value.trim(),
+        key: '', capo: '', tempo: '', notes: '',
+      });
+      this.save();
+      document.getElementById('idea-title').value = '';
+      document.getElementById('idea-artist').value = '';
+      this.renderIdeas();
+    });
+    document.getElementById('btn-print-ideas').addEventListener('click', () => this.printSongs(this.d().ideas, 'Songvorschläge'));
+    document.getElementById('btn-print-ideas-sel').addEventListener('click', () => {
+      const sel = [...document.querySelectorAll('#idea-table input.song-pick:checked')].map(c => c.dataset.id);
+      if (!sel.length) { alert('Keine Vorschläge ausgewählt.'); return; }
+      this.printSongs(this.d().ideas.filter(s => sel.includes(s.id)), 'Songvorschläge (Auswahl)');
     });
 
     /* ---- Termine ---- */
@@ -157,8 +198,10 @@ const Band = {
   },
 
   renderAll() {
+    this.syncWithClasses();   // erkennt auch Klassenlisten, die erst später dazukommen
     this.renderMembers();
     this.renderSongs();
+    this.renderIdeas();
     this.renderGigs();
     this.renderRehearsals();
     this.fillClassPicker();
@@ -187,6 +230,69 @@ const Band = {
     if (ka[0] !== kb[0]) return ka[0] - kb[0];
     if (ka[1] !== kb[1]) return ka[1] < kb[1] ? -1 : 1;
     return a.name.localeCompare(b.name, 'de');
+  },
+
+  /* Mehrere Zeilen „Name; Klasse; Instrument“ einlesen (auch mit Tabulatoren) */
+  parseMemberLines(text, standardBereich) {
+    const out = [];
+    for (let line of String(text || '').split(/\r?\n/)) {
+      line = line.trim().replace(/^\d+[.)]?\s+/, '');   // laufende Nummer weg
+      if (!line) continue;
+      const teile = line.split(/\t|;|\|/).map(s => s.trim());
+      const name = teile[0];
+      if (!name) continue;
+      const instrument = teile[2] || '';
+      out.push({
+        id: Store.uid(), name,
+        klasse: teile[1] || '',
+        // „Tech“ als Instrument heißt Technikteam
+        area: /^tech/i.test(instrument) ? 'technik' : standardBereich,
+        instrument,
+      });
+    }
+    return out;
+  },
+
+  /* Namen über alle Klassenlisten suchen – beide Namensreihenfolgen, ohne Groß-/Kleinschreibung */
+  matchStudents(name) {
+    const n = Classes.parseName(name);
+    if (!n || !n.last) return [];
+    const norm = s => (s || '').toLowerCase().trim();
+    const treffer = [];
+    for (const cls of Classes.data.classes) {
+      for (const s of cls.students) {
+        const passt = [n, { first: n.last, last: n.first }].some(c => c.last &&
+          norm(s.last) === norm(c.last) &&
+          (!norm(c.first) || norm(s.first) === norm(c.first) ||
+           norm(s.first).startsWith(norm(c.first)) || norm(c.first).startsWith(norm(s.first))));
+        if (passt) treffer.push({ cls, s });
+      }
+    }
+    return treffer;
+  },
+
+  /* Bandmitglieder mit Schülern aus den Klassenlisten verknüpfen.
+     Läuft auch automatisch beim Öffnen – Klassenlisten, die erst später
+     dazukommen, werden dadurch nachträglich erkannt. Bei mehreren gleichnamigen
+     Schülern wird bewusst nicht verknüpft, um Fehlzuordnungen zu vermeiden. */
+  syncWithClasses() {
+    let neu = 0, geaendert = false;
+    for (const m of this.d().members) {
+      if (m.studentId) {
+        const cls = Classes.data.classes.find(c => c.id === m.classId);
+        const s = cls && cls.students.find(x => x.id === m.studentId);
+        if (!s) { delete m.studentId; delete m.classId; geaendert = true; }  // Schüler gelöscht
+        continue;
+      }
+      const treffer = this.matchStudents(m.name);
+      if (treffer.length !== 1) continue;
+      m.studentId = treffer[0].s.id;
+      m.classId = treffer[0].cls.id;
+      if (!m.klasse) m.klasse = this.shortClass(treffer[0].cls.name);
+      neu++; geaendert = true;
+    }
+    if (geaendert) this.save();
+    return neu;
   },
 
   filteredMembers() {
@@ -233,7 +339,18 @@ const Band = {
       const tdK = document.createElement('td');
       tdK.appendChild(this.editable(m.klasse, '–', v => { m.klasse = v; this.save(); this.renderMembers(); }, 5));
       const tdN = document.createElement('td');
-      tdN.appendChild(this.editable(m.name, '', v => { if (v) { m.name = v; this.save(); this.renderMembers(); } }, 20));
+      const namensZelle = document.createElement('div');
+      namensZelle.className = 'name-cell';
+      namensZelle.appendChild(this.editable(m.name, '', v => { if (v) { m.name = v; this.save(); this.renderMembers(); } }, 20));
+      if (m.studentId) {
+        const mark = document.createElement('span');
+        mark.className = 'link-mark';
+        mark.innerHTML = Icons.raw('check');
+        const cls = Classes.data.classes.find(c => c.id === m.classId);
+        mark.title = 'Mit der Klassenliste verknüpft' + (cls ? ` (${cls.name})` : '');
+        namensZelle.appendChild(mark);
+      }
+      tdN.appendChild(namensZelle);
 
       const tdA = document.createElement('td');
       const sel = document.createElement('select');
@@ -300,17 +417,24 @@ const Band = {
     this.download(csv, 'Schulband-Mitglieder.csv', 'text/csv;charset=utf-8');
   },
 
-  /* ---------- Songs ---------- */
+  /* ---------- Songs und Songvorschläge ---------- */
   renderSongs() {
-    const table = document.getElementById('song-table');
+    this.renderSongTable(this.d().songs, 'song-table', 'song-count', false);
+    this.fillGigSongPicker();
+  },
+  renderIdeas() {
+    this.renderSongTable(this.d().ideas, 'idea-table', 'idea-count', true);
+  },
+
+  /* Beide Listen sehen gleich aus; Vorschläge haben zusätzlich „nach Songs kopieren“ */
+  renderSongTable(songs, tableId, countId, istVorschlag) {
+    const table = document.getElementById(tableId);
     if (!table) return;
-    const songs = this.d().songs;
-    document.getElementById('song-count').textContent = songs.length;
+    document.getElementById(countId).textContent = songs.length;
     table.innerHTML = '<tr><th></th><th>Titel</th><th>Interpret</th><th>Tonart</th><th>Capo</th>' +
       '<th>Tempo</th><th>Anmerkungen</th><th></th></tr>';
     if (!songs.length) {
-      table.innerHTML += '<tr><td colspan="8" class="hint">Noch keine Songs angelegt.</td></tr>';
-      this.fillGigSongPicker();
+      table.innerHTML += `<tr><td colspan="8" class="hint">Noch ${istVorschlag ? 'keine Vorschläge' : 'keine Songs'} angelegt.</td></tr>`;
       return;
     }
     for (const s of songs) {
@@ -325,7 +449,7 @@ const Band = {
       tdPick.appendChild(pick);
 
       const tdT = document.createElement('td');
-      tdT.appendChild(this.editable(s.title, '', v => { if (v) { s.title = v; this.save(); this.renderAll(); } }, 22));
+      tdT.appendChild(this.editable(s.title, '', v => { if (v) { s.title = v; this.save(); } }, 22));
       const tdA = document.createElement('td');
       tdA.appendChild(this.editable(s.artist, '–', v => { s.artist = v; this.save(); }, 16));
 
@@ -374,15 +498,40 @@ const Band = {
       tdN.appendChild(notes);
 
       const tdX = document.createElement('td');
+      tdX.className = 'row-actions';
+
+      if (istVorschlag) {
+        const copy = document.createElement('button');
+        copy.className = 'small';
+        copy.innerHTML = Icons.raw('check');
+        copy.title = 'Mit allen Angaben nach „Songs“ kopieren';
+        copy.addEventListener('click', () => {
+          const schonDa = this.d().songs.some(x => x.title.toLowerCase() === s.title.toLowerCase());
+          if (schonDa && !confirm(`„${s.title}“ steht schon in den Songs. Trotzdem noch einmal kopieren?`)) return;
+          this.d().songs.push({ ...s, id: Store.uid() });
+          this.save();
+          this.renderAll();
+          alert(`„${s.title}“ ist jetzt im Song-Bereich.`);
+        });
+        tdX.appendChild(copy);
+      }
+
       const del = document.createElement('button');
       del.className = 'small danger';
       del.innerHTML = Icons.raw('x');
-      del.title = 'Song löschen';
+      del.title = istVorschlag ? 'Vorschlag löschen' : 'Song löschen';
       del.addEventListener('click', () => {
-        if (!confirm(`Song „${s.title}“ löschen? Er verschwindet auch aus Setlisten und Probenplänen.`)) return;
-        this.d().songs = this.d().songs.filter(x => x.id !== s.id);
-        this.d().gigs.forEach(g => g.songIds = g.songIds.filter(id => id !== s.id));
-        this.d().rehearsals.forEach(r => delete r.songs[s.id]);
+        const frage = istVorschlag
+          ? `Vorschlag „${s.title}“ löschen?`
+          : `Song „${s.title}“ löschen? Er verschwindet auch aus Setlisten und Probenplänen.`;
+        if (!confirm(frage)) return;
+        if (istVorschlag) {
+          this.d().ideas = this.d().ideas.filter(x => x.id !== s.id);
+        } else {
+          this.d().songs = this.d().songs.filter(x => x.id !== s.id);
+          this.d().gigs.forEach(g => g.songIds = g.songIds.filter(id => id !== s.id));
+          this.d().rehearsals.forEach(r => delete r.songs[s.id]);
+        }
         this.save();
         this.renderAll();
       });
@@ -391,7 +540,6 @@ const Band = {
       tr.append(tdPick, tdT, tdA, tdK, tdC, tdTe, tdN, tdX);
       table.appendChild(tr);
     }
-    this.fillGigSongPicker();
   },
 
   songLine(s) {
@@ -570,7 +718,8 @@ const Band = {
     table.innerHTML = '<tr><th>geprobt</th><th>Song</th><th>Anmerkung zu dieser Probe</th></tr>';
     const songs = this.d().songs;
     if (!songs.length) {
-      table.innerHTML += '<tr><td colspan="3" class="hint">Erst im Bereich „Songs“ Stücke anlegen.</td></tr>';
+      table.innerHTML += '<tr><td colspan="3" class="hint">Hier erscheint jeder Song mit einem ' +
+        'eigenen Anmerkungsfeld, sobald du im Bereich „Songs“ Stücke angelegt hast.</td></tr>';
       return;
     }
     for (const s of songs) {
