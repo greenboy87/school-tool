@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   Classes.init();
   Lessons.init();
+  Band.init();
   Tools.init();
 
   /* ----- Haupttabs ----- */

@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=9">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=7"></script>
-<script src="js/theme.js?v=7"></script>
-<script src="js/auth.js?v=7"></script>
+<script src="js/icons.js?v=9"></script>
+<script src="js/theme.js?v=9"></script>
+<script src="js/auth.js?v=9"></script>
 </head>
 <body>
 
@@ -17,6 +17,7 @@
   <nav class="main-tabs">
     <button class="tab-btn active" data-tab="ampel" data-icon="traffic">Lärmampel</button>
     <button class="tab-btn" data-tab="klassen" data-icon="book">Klassen &amp; Noten</button>
+    <button class="tab-btn" data-tab="band" data-icon="music">Schulband</button>
     <button class="tab-btn" data-tab="tools" data-icon="sparkles">Extras</button>
   </nav>
   <div class="backup-btns">
@@ -105,8 +106,12 @@
         <section id="subtab-schueler" class="subtab-page active card">
           <div class="two-col">
             <div>
-              <h3>Klassenliste (<span id="student-count">0</span>) <button id="btn-sort-students" class="small" title="Ganze Liste alphabetisch nach Nachname sortieren">A–Z sortieren</button></h3>
-              <p class="hint">Mit den Pfeilen neben einem Namen änderst du die Reihenfolge von Hand.</p>
+              <h3>Klassenliste (<span id="student-count">0</span>)</h3>
+              <div class="btn-row">
+                <button id="btn-sort-students" class="small" title="Ganze Liste alphabetisch nach Nachname sortieren">A–Z sortieren</button>
+                <button id="btn-clear-students" class="small danger" data-icon="trash" title="Alle Schüler dieser Klasse aus der Liste entfernen">Liste leeren</button>
+              </div>
+              <p class="hint">Zum Umsortieren einen Namen am Griff links anfassen und an die neue Stelle ziehen (geht auch per Finger auf dem Tablet).</p>
               <ol id="student-list" class="student-list"></ol>
             </div>
             <div>
@@ -194,10 +199,23 @@
           <div id="group-result" class="group-result"></div>
           <hr>
           <h3>Gruppen aus Dokument importieren</h3>
-          <p class="hint">PDF mit einer Gruppen-Tabelle hochladen (z.&thinsp;B. dein Word-Dokument als PDF exportiert, Spalten „Gruppe“ und „Produkt/Thema“). Die Gruppen werden in der Reihenfolge des Dokuments übernommen. Getippte Noten werden mit ausgelesen – handschriftliche Noten kann das Tool nicht erkennen, die trägst du in der Vorschau oder danach als Gruppennote nach.</p>
-          <label class="file-btn" data-icon="file">Gruppen-PDF wählen<input type="file" id="groups-pdf" accept=".pdf,application/pdf" hidden></label>
+          <p class="hint">PDF mit deiner Gruppeneinteilung hochladen – egal welches Layout. Digitale Tabellen liest das Tool selbst (kostenlos). Gescannte, abfotografierte oder handschriftliche Dokumente wertet auf Wunsch die KI aus – die erkennt auch handschriftliche Noten und Gruppennamen. Die Gruppen werden in der Reihenfolge des Dokuments übernommen.</p>
+          <div class="btn-row">
+            <label class="file-btn" data-icon="file">Gruppen-PDF wählen<input type="file" id="groups-pdf" accept=".pdf,application/pdf" hidden></label>
+            <button id="btn-ai-import" data-icon="sparkles" hidden>Mit KI auslesen</button>
+            <span id="ai-status" class="hint"></span>
+          </div>
+          <details class="ai-settings">
+            <summary class="hint">KI-Import einrichten (eigener Anthropic-API-Schlüssel)</summary>
+            <p class="hint">Für die KI-Auswertung wird das PDF an die Claude-API (Anthropic) gesendet – inklusive der darin stehenden Schülernamen. Du brauchst einen eigenen API-Schlüssel von <code>console.anthropic.com</code>; er wird nur in diesem Browser gespeichert. Kosten trägst du selbst über dein Anthropic-Konto: für ein 1–2-seitiges Gruppenblatt meist wenige Cent, bei langen gescannten Heften (z.&thinsp;B. 50 Seiten) grob 1–2&nbsp;$.</p>
+            <div class="inline-form">
+              <input type="password" id="ai-key" placeholder="API-Schlüssel (sk-ant-…)" autocomplete="off">
+              <button id="btn-ai-key-save" class="small">Speichern</button>
+              <span id="ai-key-status" class="hint"></span>
+            </div>
+          </details>
           <div id="group-import-preview" hidden>
-            <p class="hint">Zur Kontrolle – eine Zeile pro Gruppe im Format <code>Produkt/Thema | Note | Namen</code>. Du kannst hier direkt korrigieren oder Noten eintragen, bevor du übernimmst. Schüler, die noch nicht in der Klassenliste stehen, werden unten angehängt.</p>
+            <p class="hint">Zur Kontrolle – eine Zeile pro Gruppe im Format <code>Name/Produkt | Gruppennote | Namen</code>. Einzelnoten stehen als <code>Name=Note</code> direkt beim Schüler. Du kannst hier korrigieren oder Noten eintragen, bevor du übernimmst. Schüler, die noch nicht in der Klassenliste stehen, werden unten angehängt.</p>
             <textarea id="group-import-text" rows="8" spellcheck="false"></textarea>
             <div class="inline-form">
               <input type="text" id="group-import-name" placeholder="Projektname">
@@ -222,6 +240,141 @@
       </div>
     </section>
   </div>
+</main>
+
+<!-- ========== SCHULBAND ========== -->
+<main id="tab-band" class="tab-page">
+  <div class="class-header card">
+    <h2 data-icon="music">Schulband</h2>
+    <nav class="sub-tabs">
+      <button class="bandtab-btn active" data-bandtab="mitglieder" data-icon="users">Mitglieder</button>
+      <button class="bandtab-btn" data-bandtab="songs" data-icon="music">Songs</button>
+      <button class="bandtab-btn" data-bandtab="termine" data-icon="calendar">Termine &amp; Auftritte</button>
+      <button class="bandtab-btn" data-bandtab="proben" data-icon="list">Probenplan</button>
+    </nav>
+  </div>
+
+  <!-- Mitglieder -->
+  <section id="bandtab-mitglieder" class="bandtab-page active card">
+    <div class="projekt-header">
+      <h3>Mitglieder (<span id="member-count">0</span>)</h3>
+      <div class="btn-row">
+        <label class="check-label">Anzeigen:
+          <select id="member-filter">
+            <option value="alle">Band und Technik</option>
+            <option value="band">nur Schulband</option>
+            <option value="technik">nur Technikteam</option>
+          </select>
+        </label>
+        <button id="btn-print-members" data-icon="printer">Drucken</button>
+        <button id="btn-export-members" data-icon="download">CSV</button>
+      </div>
+    </div>
+    <p class="hint">Die Liste ist nach Klassen sortiert (5a, 5b, 6a … 10d). Schüler ohne Klassenangabe stehen am Ende.</p>
+    <table class="band-table" id="member-table"></table>
+
+    <hr>
+    <h3>Mitglied aufnehmen</h3>
+    <form id="form-new-member" class="inline-form">
+      <select id="member-from-class" title="Schüler aus einer bereits angelegten Klasse übernehmen">
+        <option value="">aus Klasse übernehmen …</option>
+      </select>
+      <input type="text" id="member-name" placeholder="Name" required>
+      <input type="text" id="member-class" placeholder="Klasse, z.&thinsp;B. 7c" size="8">
+      <select id="member-area">
+        <option value="band">Schulband</option>
+        <option value="technik">Technikteam</option>
+        <option value="beide">beides</option>
+      </select>
+      <input type="text" id="member-instrument" placeholder="Instrument / Aufgabe">
+      <button type="submit" class="primary" data-icon="plus">Aufnehmen</button>
+    </form>
+  </section>
+
+  <!-- Songs -->
+  <section id="bandtab-songs" class="bandtab-page card">
+    <div class="projekt-header">
+      <h3>Songs (<span id="song-count">0</span>)</h3>
+      <div class="btn-row">
+        <button id="btn-print-songs" data-icon="printer">Alle drucken</button>
+        <button id="btn-print-songs-sel" data-icon="printer">Ausgewählte drucken</button>
+      </div>
+    </div>
+    <p class="hint">Tonart, Capo und Tempo lassen sich direkt anklicken bzw. eintragen; das Notizfeld ist freier Text (z.&thinsp;B. „Intro 2× Gitarre solo, Schluss ritardando“).</p>
+    <table class="band-table songs-table" id="song-table"></table>
+
+    <hr>
+    <h3>Song hinzufügen</h3>
+    <form id="form-new-song" class="inline-form">
+      <input type="text" id="song-title" placeholder="Titel" required>
+      <input type="text" id="song-artist" placeholder="Interpret">
+      <button type="submit" class="primary" data-icon="plus">Song anlegen</button>
+    </form>
+  </section>
+
+  <!-- Termine -->
+  <section id="bandtab-termine" class="bandtab-page card">
+    <div class="projekt-header">
+      <h3>Termine &amp; Auftritte</h3>
+      <form id="form-new-gig" class="inline-form">
+        <input type="text" id="gig-name" placeholder="Anlass, z.&thinsp;B. Sommerkonzert" required>
+        <input type="date" id="gig-date">
+        <button type="submit" class="primary" data-icon="plus">Termin anlegen</button>
+      </form>
+    </div>
+    <ul id="gig-list" class="project-list"></ul>
+    <div id="gig-detail" hidden>
+      <hr>
+      <div class="projekt-header">
+        <h3 id="gig-title"></h3>
+        <div class="btn-row">
+          <button id="btn-print-gig" data-icon="printer">Setlist drucken</button>
+          <button id="btn-delete-gig" class="danger small">Termin löschen</button>
+        </div>
+      </div>
+      <div class="gig-fields inline-form">
+        <label>Datum <input type="date" id="gig-f-date"></label>
+        <label>Uhrzeit <input type="text" id="gig-f-time" size="6" placeholder="19:00"></label>
+        <label>Ort <input type="text" id="gig-f-place" placeholder="Aula"></label>
+      </div>
+      <label class="gig-note">Notizen zum Termin
+        <textarea id="gig-f-notes" rows="2" placeholder="Soundcheck 17:00, Technik: 2 Monitore …"></textarea>
+      </label>
+      <h4>Setlist (<span id="gig-song-count">0</span>)</h4>
+      <p class="hint">Reihenfolge per Griff ziehen. Die Anmerkungen aus dem Song-Bereich werden mitgedruckt.</p>
+      <ol id="gig-songs" class="student-list"></ol>
+      <div class="inline-form">
+        <select id="gig-add-song"><option value="">Song zur Setlist hinzufügen …</option></select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Probenplan -->
+  <section id="bandtab-proben" class="bandtab-page card">
+    <div class="projekt-header">
+      <h3>Probenplan</h3>
+      <form id="form-new-rehearsal" class="inline-form">
+        <input type="date" id="rehearsal-date" required>
+        <button type="submit" class="primary" data-icon="plus">Probentermin anlegen</button>
+      </form>
+    </div>
+    <ul id="rehearsal-list" class="project-list"></ul>
+    <div id="rehearsal-detail" hidden>
+      <hr>
+      <div class="projekt-header">
+        <h3 id="rehearsal-title"></h3>
+        <div class="btn-row">
+          <button id="btn-print-rehearsal" data-icon="printer">Drucken</button>
+          <button id="btn-delete-rehearsal" class="danger small">Probe löschen</button>
+        </div>
+      </div>
+      <label class="gig-note">Notizen zur Probe
+        <textarea id="rehearsal-notes" rows="2" placeholder="Wer gefehlt hat, allgemeine Beobachtungen …"></textarea>
+      </label>
+      <p class="hint">Angehakt = an diesem Termin geprobt. Ins Feld daneben kommt, was du dir merken willst (z.&thinsp;B. „Tempo schneller“, „Bridge nochmal“).</p>
+      <table class="band-table" id="rehearsal-table"></table>
+    </div>
+  </section>
 </main>
 
 <!-- ========== EXTRAS ========== -->
@@ -257,12 +410,14 @@
 <footer class="footer hint">Alle Daten werden nur lokal in deinem Browser gespeichert (kein Server). Regelmäßig ein Backup machen – z.&thinsp;B. am Schuljahresende oder vor einem Browserwechsel.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/topics-seed.js?v=7"></script>
-<script src="js/store.js?v=7"></script>
-<script src="js/noise.js?v=7"></script>
-<script src="js/classes.js?v=7"></script>
-<script src="js/lessons.js?v=7"></script>
-<script src="js/tools.js?v=7"></script>
-<script src="js/app.js?v=7"></script>
+<script src="js/topics-seed.js?v=9"></script>
+<script src="js/ai-import.js?v=9"></script>
+<script src="js/store.js?v=9"></script>
+<script src="js/noise.js?v=9"></script>
+<script src="js/classes.js?v=9"></script>
+<script src="js/lessons.js?v=9"></script>
+<script src="js/band.js?v=9"></script>
+<script src="js/tools.js?v=9"></script>
+<script src="js/app.js?v=9"></script>
 </body>
 </html>

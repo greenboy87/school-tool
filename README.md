@@ -60,6 +60,26 @@ als Rückblick erhalten.
 Kommen neue Ordner in die Stundensammlung, lässt sich `js/topics-seed.js` neu erzeugen;
 die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene Themen in Ruhe.
 
+### Schulband
+- **Mitglieder** aus verschiedenen Klassen, jeweils mit Klasse, Bereich (Schulband /
+  Technikteam / beides) und Instrument bzw. Aufgabe. Die Liste ist natürlich nach Klassen
+  sortiert (5a, 5b … 10d) und lässt sich gefiltert drucken oder als CSV exportieren.
+  Namen können per Auswahlliste aus bestehenden Klassen übernommen werden.
+- **Songs** mit Tonart, Capo, Tempo (BPM) und freien Anmerkungen. Drucken lassen sich
+  alle Songs, eine Auswahl oder die Setlist eines Auftritts – immer samt Anmerkungen.
+- **Termine & Auftritte** mit Datum, Uhrzeit, Ort, Notizen und einer Setlist, deren
+  Reihenfolge sich ziehen lässt.
+- **Probenplan**: eigene Probentermine anlegen und je Song festhalten, ob er geprobt
+  wurde, mit Anmerkung („Tempo schneller“). Auch druckbar.
+
+### KI-Import für gescannte und handschriftliche Gruppenlisten
+Digitale PDFs liest das Tool selbst (kostenlos). Für Scans, Fotos und Handschrift gibt es
+im Gruppen-Reiter **„Mit KI auslesen“**: Das PDF wird an die Claude-API geschickt, die
+Gruppen, Gruppennamen sowie getippte *und* handschriftliche Noten erkennt. Voraussetzung
+ist ein eigener Anthropic-API-Schlüssel (nur lokal gespeichert, Kosten über das eigene
+Konto – ein Gruppenblatt kostet meist wenige Cent). Vor der Übernahme erscheint immer eine
+Kontrollvorschau.
+
 ### Design
 - Dunkles Design als Standard; über **Hell** in der Kopfzeile wechselst du zum hellen.
   Die Wahl bleibt gespeichert.

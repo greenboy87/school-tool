@@ -101,24 +101,24 @@ const Classes = {
       this.persist();
       this.renderStudents();
     });
-    document.getElementById('student-file').addEventListener('change', async e => {
+    document.getElementById('btn-clear-students').addEventListener('click', () => {
+      const cls = this.currentClass();
+      if (!cls) return;
+      if (!cls.students.length) { alert('Die Liste ist schon leer.'); return; }
+      if (!confirm(`Alle ${cls.students.length} Schüler aus „${cls.name}“ entfernen?\n\n` +
+        'Projekte und Stunden der Klasse bleiben erhalten; bereits vergebene Noten ' +
+        'verlieren aber ihre Zuordnung.')) return;
+      cls.students = [];
+      this.persist();
+      this.renderClassList();
+      this.renderStudents();
+      this.renderProjects();
+    });
+
+    document.getElementById('student-file').addEventListener('change', e => {
       const file = e.target.files[0];
-      if (!file) return;
       e.target.value = '';
-      if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) {
-        try {
-          const names = await this.extractNamesFromPdf(file);
-          if (!names.length) { alert('In der PDF wurden keine Namen gefunden.'); return; }
-          document.getElementById('student-input').value = names.join('\n');
-          alert(`${names.length} Namen gefunden. Bitte im Textfeld kontrollieren und dann „Hinzufügen“ klicken.`);
-        } catch (err) {
-          alert('PDF konnte nicht gelesen werden: ' + err.message);
-        }
-      } else {
-        const reader = new FileReader();
-        reader.onload = () => this.addStudents(reader.result);
-        reader.readAsText(file);
-      }
+      if (file) this.handleStudentFile(file);
     });
 
     // Projekte
@@ -150,25 +150,29 @@ const Classes = {
     document.getElementById('btn-make-groups').addEventListener('click', () => this.makeGroups());
     document.getElementById('btn-save-groups').addEventListener('click', () => this.saveGroupsAsProject());
 
-    // Gruppen-Import aus PDF
-    document.getElementById('groups-pdf').addEventListener('change', async e => {
+    // Gruppen-Import aus PDF: erst lokal (kostenlos), bei Bedarf per KI
+    document.getElementById('groups-pdf').addEventListener('change', e => {
       const file = e.target.files[0];
-      if (!file) return;
       e.target.value = '';
-      try {
-        const { title, groups } = await this.extractGroupsFromPdf(file);
-        if (!groups.length) { alert('In der PDF wurde keine Gruppen-Tabelle erkannt.'); return; }
-        document.getElementById('group-import-text').value = groups
-          .map(g => `${g.product || 'Gruppe'} | ${g.grade || '-'} | ${g.names.join(', ')}`)
-          .join('\n');
-        document.getElementById('group-import-name').value = title || file.name.replace(/\.pdf$/i, '');
-        document.getElementById('group-import-date').value = new Date().toISOString().slice(0, 10);
-        document.getElementById('group-import-info').textContent =
-          `${groups.length} Gruppen mit insgesamt ${groups.reduce((a, g) => a + g.names.length, 0)} Namen erkannt.`;
-        document.getElementById('group-import-preview').hidden = false;
-      } catch (err) {
-        alert('PDF konnte nicht gelesen werden: ' + err.message);
+      if (file) this.handleGroupsFile(file);
+    });
+
+    document.getElementById('btn-ai-import').addEventListener('click', () => {
+      if (!this.pendingGroupFile) return;
+      if (!AiImport.getKey()) {
+        alert('Bitte zuerst unter „KI-Import einrichten“ einen API-Schlüssel hinterlegen.');
+        return;
       }
+      this.runAiImport();
+    });
+
+    // API-Schlüssel verwalten
+    const keyInput = document.getElementById('ai-key');
+    const keyStatus = document.getElementById('ai-key-status');
+    if (AiImport.getKey()) { keyInput.value = AiImport.getKey(); keyStatus.textContent = 'Schlüssel gespeichert.'; }
+    document.getElementById('btn-ai-key-save').addEventListener('click', () => {
+      AiImport.setKey(keyInput.value);
+      keyStatus.textContent = AiImport.getKey() ? 'Schlüssel gespeichert.' : 'Schlüssel entfernt.';
     });
     document.getElementById('btn-group-import-cancel').addEventListener('click', () => {
       document.getElementById('group-import-preview').hidden = true;
@@ -176,13 +180,14 @@ const Classes = {
     document.getElementById('btn-group-import-save').addEventListener('click', () => this.saveImportedGroups());
 
     // Sitzplan
-    document.getElementById('seatplan-file').addEventListener('change', async e => {
+    document.getElementById('seatplan-file').addEventListener('change', e => {
       const file = e.target.files[0];
-      if (!file || !this.currentClassId) return;
-      await Store.putSeatplan(this.currentClassId, file);
       e.target.value = '';
-      this.renderSeatplan();
+      if (file) this.handleSeatplanFile(file);
     });
+
+    // Dateien lassen sich auch einfach in den jeweiligen Bereich ziehen
+    this.setupDropZones();
     document.getElementById('btn-delete-seatplan').addEventListener('click', async () => {
       if (!confirm('Sitzplan entfernen?')) return;
       await Store.deleteSeatplan(this.currentClassId);
@@ -194,6 +199,147 @@ const Classes = {
   },
 
   persist() { Store.save(this.data); },
+
+  /* ---------- Dateien: Auswahl-Dialog und Ziehen führen hierher ---------- */
+  async handleStudentFile(file) {
+    if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
+      try {
+        const names = await this.extractNamesFromPdf(file);
+        if (!names.length) { alert('In der PDF wurden keine Namen gefunden.'); return; }
+        document.getElementById('student-input').value = names.join('\n');
+        alert(`${names.length} Namen gefunden. Bitte im Textfeld kontrollieren und dann „Hinzufügen“ klicken.`);
+      } catch (err) {
+        alert('PDF konnte nicht gelesen werden: ' + err.message);
+      }
+    } else {
+      const reader = new FileReader();
+      reader.onload = () => this.addStudents(reader.result);
+      reader.readAsText(file);
+    }
+  },
+
+  async handleGroupsFile(file) {
+    this.pendingGroupFile = file;
+    document.getElementById('btn-ai-import').hidden = false;
+    try {
+      const { title, groups } = await this.extractGroupsFromPdf(file);
+      if (!groups.length) throw new Error('leer');
+      this.showGroupPreview(
+        title || file.name.replace(/\.pdf$/i, ''),
+        groups.map(g => `${g.product || 'Gruppe'} | ${g.grade || '-'} | ${g.names.join(', ')}`),
+        `${groups.length} Gruppen mit insgesamt ${groups.reduce((a, g) => a + g.names.length, 0)} Namen erkannt. ` +
+        'Falls etwas fehlt (z. B. handschriftliche Noten): „Mit KI auslesen“.');
+    } catch (err) {
+      // Kein Text auslesbar → gescannt oder handschriftlich
+      if (AiImport.getKey()) {
+        if (confirm('In der PDF ist kein auslesbarer Text (vermutlich gescannt oder handschriftlich).\n\n' +
+          'Mit KI auslesen? Das PDF wird dazu an die Claude-API gesendet.')) this.runAiImport();
+      } else {
+        alert('In der PDF ist kein auslesbarer Text (vermutlich gescannt oder handschriftlich).\n\n' +
+          'Solche Dokumente kann der KI-Import auswerten – dafür unten unter „KI-Import einrichten“ ' +
+          'einen API-Schlüssel hinterlegen.');
+      }
+    }
+  },
+
+  async handleSeatplanFile(file) {
+    if (!this.currentClassId) return;
+    await Store.putSeatplan(this.currentClassId, file);
+    this.renderSeatplan();
+  },
+
+  /* ---------- Dateien per Ziehen ablegen ---------- */
+  setupDropZones() {
+    // Verhindert, dass der Browser eine daneben abgelegte Datei einfach öffnet
+    ['dragover', 'drop'].forEach(ev =>
+      document.addEventListener(ev, e => e.preventDefault()));
+
+    const isPdf = f => /\.pdf$/i.test(f.name) || f.type === 'application/pdf';
+    this.makeDropZone(document.getElementById('subtab-schueler'),
+      f => isPdf(f) || /\.(txt|csv)$/i.test(f.name),
+      'PDF, TXT oder CSV mit der Klassenliste',
+      f => this.handleStudentFile(f));
+    this.makeDropZone(document.getElementById('subtab-gruppen'),
+      isPdf, 'PDF mit der Gruppeneinteilung',
+      f => this.handleGroupsFile(f));
+    this.makeDropZone(document.getElementById('subtab-sitzplan'),
+      f => isPdf(f) || /^image\//.test(f.type),
+      'PDF oder Bild des Sitzplans',
+      f => this.handleSeatplanFile(f));
+  },
+
+  makeDropZone(el, accepts, hint, onFile) {
+    if (!el) return;
+    let depth = 0; // zählt Ein-/Austritte, damit Kindelemente das Markieren nicht abbrechen
+    el.addEventListener('dragenter', e => {
+      if (!this._hasFiles(e)) return;
+      e.preventDefault();
+      if (++depth === 1) el.classList.add('drop-active');
+    });
+    el.addEventListener('dragover', e => {
+      if (!this._hasFiles(e)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+    el.addEventListener('dragleave', () => {
+      if (--depth <= 0) { depth = 0; el.classList.remove('drop-active'); }
+    });
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      depth = 0;
+      el.classList.remove('drop-active');
+      const file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (!file) return;
+      if (!accepts(file)) { alert(`„${file.name}“ passt hier nicht.\nErwartet wird: ${hint}.`); return; }
+      onFile(file);
+    });
+  },
+
+  _hasFiles(e) {
+    return e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+  },
+
+  /* ---------- Schüler per Ziehen umsortieren ---------- */
+  startStudentDrag(e, li) {
+    if (e.button > 0) return;           // nur linke Maustaste / Finger
+    e.preventDefault();
+    const ol = document.getElementById('student-list');
+    li.classList.add('dragging');
+    try { li.setPointerCapture(e.pointerId); } catch (_) { /* ältere Browser */ }
+
+    const onMove = ev => {
+      // Vor das erste Element schieben, dessen Mitte unterhalb des Zeigers liegt
+      const others = [...ol.querySelectorAll('li:not(.dragging)')];
+      const after = others.find(x => {
+        const r = x.getBoundingClientRect();
+        return ev.clientY < r.top + r.height / 2;
+      });
+      if (after) ol.insertBefore(li, after);
+      else ol.appendChild(li);
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onUp);
+      li.classList.remove('dragging');
+      this.commitStudentOrder();
+    };
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onUp);
+  },
+
+  /* Reihenfolge aus dem DOM in die Daten übernehmen */
+  commitStudentOrder() {
+    const cls = this.currentClass();
+    if (!cls) return;
+    const order = new Map();
+    [...document.querySelectorAll('#student-list li')].forEach((li, i) => order.set(li.dataset.id, i));
+    cls.students.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+    this.persist();
+    this.renderStudents();
+  },
 
   /* ---------- Schuljahr ---------- */
   /* Auf „false“ bleiben Schuljahr-Auswahl, Jahresfeld und die Übernahme ins Folgejahr
@@ -410,7 +556,14 @@ const Classes = {
     ol.innerHTML = '';
     cls.students.forEach((s, idx) => {
       const li = document.createElement('li');
+      li.dataset.id = s.id;
+      const handle = document.createElement('span');
+      handle.className = 'drag-handle';
+      handle.title = 'Zum Umsortieren ziehen';
+      handle.innerHTML = Icons.raw('grip');
+      handle.addEventListener('pointerdown', ev => this.startStudentDrag(ev, li));
       const span = document.createElement('span');
+      span.className = 'sname';
       span.textContent = this.studentName(s) + ' ';
       const move = (dir) => {
         const j = idx + dir;
@@ -440,7 +593,7 @@ const Classes = {
         this.renderClassList();
         this.renderStudents();
       });
-      li.append(span, up, down, del);
+      li.append(handle, span, up, down, del);
       ol.appendChild(li);
     });
   },
@@ -770,18 +923,72 @@ const Classes = {
     return s.replace(/(^|[\s-])(\p{Ll})/gu, (_, p, c) => p + c.toUpperCase());
   },
 
-  /* Namen der Klassenliste zuordnen; Unbekannte werden unten angehängt */
+  /* Vorschau füllen und anzeigen – gemeinsam für lokalen und KI-Import */
+  showGroupPreview(title, lines, info) {
+    document.getElementById('group-import-text').value = lines.join('\n');
+    document.getElementById('group-import-name').value = title;
+    document.getElementById('group-import-date').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('group-import-info').textContent = info;
+    document.getElementById('group-import-preview').hidden = false;
+  },
+
+  /* Dokument von Claude auswerten lassen (auch Scans und Handschrift) */
+  async runAiImport() {
+    const file = this.pendingGroupFile;
+    if (!file) return;
+    const btn = document.getElementById('btn-ai-import');
+    const status = document.getElementById('ai-status');
+    btn.disabled = true;
+    try {
+      const res = await AiImport.extract(file, msg => status.textContent = msg);
+      if (!res.groups || !res.groups.length) {
+        status.textContent = '';
+        alert('Die KI hat in diesem Dokument keine Gruppen gefunden.');
+        return;
+      }
+      const lines = res.groups.map((g, i) => {
+        const names = (g.members || [])
+          .map(m => m.grade ? `${m.name}=${m.grade}` : m.name)
+          .join(', ');
+        return `${g.name || 'Gruppe ' + (i + 1)} | ${g.grade || '-'} | ${names}`;
+      });
+      const withGrades = res.groups.filter(g => g.grade ||
+        (g.members || []).some(m => m.grade)).length;
+      this.showGroupPreview(
+        res.title || file.name.replace(/\.pdf$/i, ''),
+        lines,
+        `${res.groups.length} Gruppen mit ${res.groups.reduce((a, g) => a + (g.members || []).length, 0)} Namen erkannt, ` +
+        `davon ${withGrades} mit Note. Bitte kontrollieren – besonders die Noten. ${AiImport.costText(res.usage)}`);
+      status.textContent = '';
+    } catch (err) {
+      status.textContent = '';
+      alert('KI-Auswertung fehlgeschlagen: ' + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  },
+
+  /* Namen der Klassenliste zuordnen; Unbekannte werden unten angehängt.
+     Gruppenlisten schreiben Namen mal als „Vorname Nachname“, mal als
+     „Nachname Vorname“ – deshalb beide Reihenfolgen prüfen, sonst entstehen
+     Doppel-Einträge wie „Erik, Weber“ neben „Weber, Erik“. */
   findOrCreateStudent(cls, nameStr, created) {
     const n = this.parseName(nameStr);
     if (!n || !n.last) return null;
     const norm = s => (s || '').toLowerCase().trim();
-    let s = cls.students.find(x => norm(x.last) === norm(n.last) &&
-      (norm(x.first) === norm(n.first) || norm(x.first).startsWith(norm(n.first)) || norm(n.first).startsWith(norm(x.first))));
-    if (!s) {
-      s = { id: Store.uid(), first: this._capitalize(n.first), last: this._capitalize(n.last) };
-      cls.students.push(s);
-      created.push(this.studentName(s));
+    const fits = (a, b) => norm(a) === norm(b) ||
+      (norm(a) && norm(b) && (norm(a).startsWith(norm(b)) || norm(b).startsWith(norm(a))));
+
+    for (const c of [n, { first: n.last, last: n.first }]) {
+      if (!c.last) continue;
+      const hit = cls.students.find(x => norm(x.last) === norm(c.last) &&
+        (!norm(c.first) || fits(x.first, c.first)));
+      if (hit) return hit.id;
     }
+
+    const s = { id: Store.uid(), first: this._capitalize(n.first), last: this._capitalize(n.last) };
+    cls.students.push(s);
+    created.push(this.studentName(s));
     return s.id;
   },
 
@@ -798,12 +1005,21 @@ const Classes = {
       if (parts.length < 3) { alert(`Zeile hat nicht das Format „Produkt | Note | Namen“:\n${line}`); return; }
       const product = parts[0].trim();
       const grade = parts[1].trim().replace(/^-$/, '');
-      const ids = parts.slice(2).join('|').split(',').map(s => s.trim()).filter(Boolean)
-        .map(nm => this.findOrCreateStudent(cls, nm, created)).filter(Boolean);
+      const ids = [];
+      for (const entry of parts.slice(2).join('|').split(',')) {
+        // „Name=Note“ – die Einzelnote sticht die Gruppennote
+        const [nameStr, single] = entry.split('=');
+        if (!nameStr || !nameStr.trim()) continue;
+        const id = this.findOrCreateStudent(cls, nameStr, created);
+        if (!id) continue;
+        ids.push(id);
+        const own = (single || '').trim();
+        if (own) grades[id] = own;
+        else if (grade) grades[id] = grade;
+      }
       if (!ids.length) continue;
       groups.push(ids);
       groupNames.push(product);
-      if (grade) ids.forEach(id => grades[id] = grade);
     }
     if (!groups.length) { alert('Keine Gruppen gefunden.'); return; }
     const p = { id: Store.uid(), name, date, entered: false, grades, groups, groupNames };
