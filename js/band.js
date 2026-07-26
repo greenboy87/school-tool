@@ -402,11 +402,12 @@ const Band = {
     if (!list.length) { alert('Die Liste ist leer.'); return; }
     const f = document.getElementById('member-filter').value;
     const titel = f === 'band' ? 'Schulband' : f === 'technik' ? 'Technikteam' : 'Schulband und Technikteam';
-    const rows = list.map(m => `<tr><td>${this.esc(m.klasse) || '–'}</td><td>${this.esc(m.name)}</td>` +
-      `<td>${this.AREAS[m.area] || ''}</td><td>${this.esc(m.instrument) || ''}</td></tr>`).join('');
-    this.printHtml(titel,
-      `<p>${list.length} Mitglieder · Stand ${new Date().toLocaleDateString('de-DE')}</p>
-       <table><tr><th>Klasse</th><th>Name</th><th>Bereich</th><th>Instrument / Aufgabe</th></tr>${rows}</table>`);
+    const tabelle = this.printTable(
+      [{ titel: 'Klasse', cls: 'klasse' }, { titel: 'Name' },
+       { titel: 'Bereich' }, { titel: 'Instrument / Aufgabe' }],
+      list.map(m => [this.esc(m.klasse) || '–', `<strong>${this.esc(m.name)}</strong>`,
+                     this.AREAS[m.area] || '', this.esc(m.instrument) || '']));
+    this.printHtml(titel, tabelle, `${list.length} Mitglieder`);
   },
 
   exportMembers() {
@@ -552,12 +553,17 @@ const Band = {
 
   printSongs(songs, titel, untertitel) {
     if (!songs.length) { alert('Keine Songs zum Drucken.'); return; }
-    const rows = songs.map((s, i) => `<tr><td>${i + 1}</td><td><strong>${this.esc(s.title)}</strong>` +
-      (s.artist ? `<br><span class="sub">${this.esc(s.artist)}</span>` : '') + '</td>' +
-      `<td>${this.esc(this.songLine(s)) || '–'}</td><td>${this.esc(s.notes || '')}</td></tr>`).join('');
-    this.printHtml(titel,
-      (untertitel ? `<p>${this.esc(untertitel)}</p>` : '') +
-      `<table><tr><th>Nr.</th><th>Song</th><th>Tonart / Capo / Tempo</th><th>Anmerkungen</th></tr>${rows}</table>`);
+    const tabelle = this.printTable(
+      [{ titel: 'Nr.', cls: 'num' }, { titel: 'Song' },
+       { titel: 'Tonart · Capo · Tempo' }, { titel: 'Anmerkungen' }],
+      songs.map((s, i) => [
+        i + 1,
+        `<strong>${this.esc(s.title)}</strong>` +
+          (s.artist ? `<span class="sub">${this.esc(s.artist)}</span>` : ''),
+        this.esc(this.songLine(s)) || '–',
+        this.esc(s.notes || ''),
+      ]));
+    this.printHtml(titel, tabelle, untertitel || `${songs.length} Songs`);
   },
 
   /* ---------- Termine ---------- */
@@ -766,14 +772,19 @@ const Band = {
     const r = this.currentRehearsal();
     if (!r) return;
     const done = this.d().songs.filter(s => Object.prototype.hasOwnProperty.call(r.songs, s.id));
-    const rows = done.map((s, i) => `<tr><td>${i + 1}</td><td><strong>${this.esc(s.title)}</strong>` +
-      (s.artist ? `<br><span class="sub">${this.esc(s.artist)}</span>` : '') + '</td>' +
-      `<td>${this.esc(this.songLine(s)) || '–'}</td><td>${this.esc(r.songs[s.id] || '')}</td></tr>`).join('');
-    this.printHtml('Probe am ' + this.fmt(r.date),
-      (r.notes ? `<p>${this.esc(r.notes)}</p>` : '') +
-      (done.length
-        ? `<table><tr><th>Nr.</th><th>Song</th><th>Tonart / Capo / Tempo</th><th>Anmerkung</th></tr>${rows}</table>`
-        : '<p>Für diese Probe sind noch keine Songs eingetragen.</p>'));
+    const inhalt = (r.notes ? `<p>${this.esc(r.notes)}</p>` : '') + (done.length
+      ? this.printTable(
+          [{ titel: 'Nr.', cls: 'num' }, { titel: 'Song' },
+           { titel: 'Tonart · Capo · Tempo' }, { titel: 'Anmerkung zur Probe' }],
+          done.map((s, i) => [
+            i + 1,
+            `<strong>${this.esc(s.title)}</strong>` +
+              (s.artist ? `<span class="sub">${this.esc(s.artist)}</span>` : ''),
+            this.esc(this.songLine(s)) || '–',
+            this.esc(r.songs[s.id] || ''),
+          ]))
+      : '<p>Für diese Probe sind noch keine Songs eingetragen.</p>');
+    this.printHtml('Probe', inhalt, this.fmt(r.date) + (done.length ? ` · ${done.length} Songs` : ''));
   },
 
   /* ---------- Drucken und Export ---------- */
@@ -782,14 +793,30 @@ const Band = {
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   },
 
-  printHtml(titel, inhalt) {
+  /* Einheitliches Druckbild: Titel, Eckdaten-Zeile, Inhalt, Fußzeile.
+     `links`/`rechts` sind die kleinen Angaben unter dem Titel. */
+  printHtml(titel, inhalt, links, rechts) {
     document.querySelectorAll('.print-area').forEach(el => el.remove());
+    const heute = new Date().toLocaleDateString('de-DE',
+      { day: '2-digit', month: 'long', year: 'numeric' });
     const box = document.createElement('div');
     box.className = 'print-area band-print';
-    box.innerHTML = `<h1>${this.esc(titel)}</h1>${inhalt}`;
+    box.innerHTML =
+      `<h1>${this.esc(titel)}</h1>` +
+      `<div class="meta"><span>${this.esc(links || '')}</span><span>${this.esc(rechts || heute)}</span></div>` +
+      inhalt +
+      `<div class="fuss">School-Tool · erstellt am ${heute}</div>`;
     document.body.appendChild(box);
     window.print();
     setTimeout(() => box.remove(), 500);
+  },
+
+  /* Tabelle fürs Druckbild bauen – mit thead, damit die Kopfzeile auf jeder Seite steht */
+  printTable(spalten, zeilen) {
+    const kopf = spalten.map(s => `<th${s.cls ? ` class="${s.cls}"` : ''}>${this.esc(s.titel)}</th>`).join('');
+    const koerper = zeilen.map(z => '<tr>' + z.map((zelle, i) =>
+      `<td${spalten[i].cls ? ` class="${spalten[i].cls}"` : ''}>${zelle}</td>`).join('') + '</tr>').join('');
+    return `<table><thead><tr>${kopf}</tr></thead><tbody>${koerper}</tbody></table>`;
   },
 
   download(text, filename, type) {

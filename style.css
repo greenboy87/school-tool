@@ -338,15 +338,56 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .gig-fields label, .gig-note { display: flex; flex-direction: column; font-size: .85rem; color: var(--muted); gap: .2em; }
 .gig-note { margin: .8rem 0; }
 
-/* Druckbild für Band-Listen */
+/* ---------- Druckbild ---------- */
 .band-print { display: none; }
+
+@page { margin: 16mm 14mm 18mm; }
+
 @media print {
-  .band-print { display: block; color: #000; font-size: 11pt; }
-  .band-print h1 { font-size: 15pt; margin: 0 0 .3em; }
-  .band-print table { border-collapse: collapse; width: 100%; margin-top: .5em; }
-  .band-print th, .band-print td { border: 1px solid #999; padding: 4px 6px; text-align: left; vertical-align: top; }
-  .band-print th { background: #eee; }
-  .band-print .sub { color: #555; font-size: 9pt; }
+  .band-print {
+    display: block;
+    color: #1a1a1a;
+    font: 10.5pt/1.45 -apple-system, "Helvetica Neue", Arial, sans-serif;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+
+  /* Kopfzeile: Titel mit Akzentlinie, darunter die Eckdaten */
+  .band-print h1 {
+    font-size: 20pt; font-weight: 700; letter-spacing: -.01em;
+    margin: 0; padding-bottom: 6pt; border-bottom: 2.5pt solid #c2603f;
+  }
+  .band-print .meta {
+    display: flex; justify-content: space-between; gap: 2em;
+    margin: 5pt 0 14pt; font-size: 8.5pt; color: #6b6a62;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+
+  .band-print table { border-collapse: collapse; width: 100%; }
+  .band-print thead { display: table-header-group; }   /* Kopfzeile auf jeder Seite */
+  .band-print tr { page-break-inside: avoid; }
+  .band-print th {
+    font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    color: #6b6a62; text-align: left; padding: 0 8pt 5pt 0;
+    border-bottom: 1pt solid #1a1a1a;
+  }
+  .band-print td {
+    padding: 6pt 8pt 6pt 0; vertical-align: top;
+    border-bottom: .5pt solid #d8d5cc;
+  }
+  .band-print tbody tr:nth-child(even) td { background: #faf9f5; }
+  .band-print td:last-child, .band-print th:last-child { padding-right: 0; }
+
+  /* Schmale Spalten (Nummer, Klasse) kompakt und gut lesbar */
+  .band-print .num { width: 7%; color: #6b6a62; font-variant-numeric: tabular-nums; }
+  .band-print .klasse { width: 12%; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .band-print .sub { display: block; color: #6b6a62; font-size: 8.5pt; margin-top: 1pt; }
+  .band-print .kastl { display: inline-block; width: 13pt; height: 13pt; border: .8pt solid #8a8880; }
+
+  .band-print .fuss {
+    margin-top: 12pt; padding-top: 5pt; border-top: .5pt solid #d8d5cc;
+    font-size: 8pt; color: #8a8880;
+  }
+  .notes-print { white-space: pre-wrap; font: inherit; margin: 0; }
 }
 
 /* ---------- Extras ---------- */

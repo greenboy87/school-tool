@@ -101,6 +101,8 @@ const Classes = {
       this.persist();
       this.renderStudents();
     });
+    document.getElementById('btn-print-students').addEventListener('click', () => this.printStudents());
+    document.getElementById('btn-export-students').addEventListener('click', () => this.exportStudents());
     document.getElementById('btn-clear-students').addEventListener('click', () => {
       const cls = this.currentClass();
       if (!cls) return;
@@ -138,12 +140,7 @@ const Classes = {
       this.persist();
       this.renderProjects();
     });
-    document.getElementById('btn-print-project').addEventListener('click', () => {
-      const detail = document.getElementById('project-detail');
-      detail.classList.add('print-area');
-      window.print();
-      detail.classList.remove('print-area');
-    });
+    document.getElementById('btn-print-project').addEventListener('click', () => this.printProject());
     document.getElementById('btn-export-project').addEventListener('click', () => this.exportProjectCsv());
 
     // Gruppen
@@ -809,6 +806,59 @@ const Classes = {
       tr.append(tdNum, tdName, tdGrade, tdGroup);
       table.appendChild(tr);
     });
+  },
+
+  /* Notenliste eines Projekts drucken – Gruppen werden mit ausgewiesen */
+  printProject() {
+    const cls = this.currentClass(), p = this.currentProject();
+    if (!cls || !p) return;
+    const gruppeVon = {};
+    (p.groups || []).forEach((g, i) => g.forEach(sid =>
+      gruppeVon[sid] = (p.groupNames && p.groupNames[i]) || 'Gruppe ' + (i + 1)));
+    const mitGruppen = Object.keys(gruppeVon).length > 0;
+
+    const spalten = [{ titel: 'Nr.', cls: 'num' }, { titel: 'Name' }];
+    if (mitGruppen) spalten.push({ titel: 'Gruppe' });
+    spalten.push({ titel: 'Note' });
+
+    const zeilen = cls.students.map((s, i) => {
+      const z = [i + 1, `<strong>${Band.esc(this.studentName(s))}</strong>`];
+      if (mitGruppen) z.push(Band.esc(gruppeVon[s.id] || ''));
+      z.push(p.grades[s.id] ? `<strong>${Band.esc(p.grades[s.id])}</strong>` : '<span class="kastl"></span>');
+      return z;
+    });
+
+    const schnitt = this.projectAverage(p);
+    Band.printHtml(p.name, Band.printTable(spalten, zeilen),
+      `${cls.name}${p.date ? ' · ' + new Date(p.date + 'T12:00').toLocaleDateString('de-DE') : ''}` +
+      (schnitt ? ` · Schnitt ${schnitt}` : ''));
+  },
+
+  /* Klassenliste drucken – mit leeren Spalten zum Abhaken im Unterricht */
+  printStudents() {
+    const cls = this.currentClass();
+    if (!cls) return;
+    if (!cls.students.length) { alert('Die Klassenliste ist leer.'); return; }
+    const tabelle = Band.printTable(
+      [{ titel: 'Nr.', cls: 'num' }, { titel: 'Name' },
+       { titel: '' }, { titel: '' }, { titel: '' }, { titel: '' }],
+      cls.students.map((s, i) => [
+        i + 1, `<strong>${Band.esc(this.studentName(s))}</strong>`,
+        '<span class="kastl"></span>', '<span class="kastl"></span>',
+        '<span class="kastl"></span>', '<span class="kastl"></span>',
+      ]));
+    Band.printHtml(cls.name, tabelle,
+      `${cls.students.length} Schülerinnen und Schüler` +
+      (cls.grade ? ` · Jahrgangsstufe ${cls.grade}` : ''));
+  },
+
+  exportStudents() {
+    const cls = this.currentClass();
+    if (!cls || !cls.students.length) { alert('Die Klassenliste ist leer.'); return; }
+    let csv = 'Nr;Name\n';
+    cls.students.forEach((s, i) => csv += `${i + 1};${this.studentName(s)}\n`);
+    Band.download(csv, `${cls.name}-Klassenliste.csv`.replace(/[^\wäöüÄÖÜß.-]+/g, '_'),
+      'text/csv;charset=utf-8');
   },
 
   exportProjectCsv() {

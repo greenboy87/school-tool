@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=12">
+<link rel="stylesheet" href="style.css?v=13">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=12"></script>
-<script src="js/theme.js?v=12"></script>
-<script src="js/auth.js?v=12"></script>
+<script src="js/icons.js?v=13"></script>
+<script src="js/theme.js?v=13"></script>
+<script src="js/auth.js?v=13"></script>
 </head>
 <body>
 
@@ -112,6 +112,8 @@
               <h3>Klassenliste (<span id="student-count">0</span>)</h3>
               <div class="btn-row">
                 <button id="btn-sort-students" class="small" title="Ganze Liste alphabetisch nach Nachname sortieren">A–Z sortieren</button>
+                <button id="btn-print-students" class="small" data-icon="printer" title="Klassenliste drucken oder im Druckdialog als PDF sichern">Drucken / PDF</button>
+                <button id="btn-export-students" class="small" data-icon="download" title="Klassenliste als CSV speichern">CSV</button>
                 <button id="btn-clear-students" class="small danger" data-icon="trash" title="Alle Schüler dieser Klasse aus der Liste entfernen">Liste leeren</button>
               </div>
               <p class="hint">Zum Umsortieren einen Namen am Griff links anfassen und an die neue Stelle ziehen (geht auch per Finger auf dem Tablet).</p>
@@ -482,16 +484,16 @@
 <footer class="footer hint">Alle Daten werden nur lokal in deinem Browser gespeichert (kein Server). Regelmäßig ein Backup machen – z.&thinsp;B. am Schuljahresende oder vor einem Browserwechsel.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/topics-seed.js?v=12"></script>
-<script src="js/ai-import.js?v=12"></script>
-<script src="js/store.js?v=12"></script>
-<script src="js/noise.js?v=12"></script>
-<script src="js/classes.js?v=12"></script>
-<script src="js/lessons.js?v=12"></script>
-<script src="js/band.js?v=12"></script>
-<script src="js/notes.js?v=12"></script>
-<script src="js/sync.js?v=12"></script>
-<script src="js/tools.js?v=12"></script>
-<script src="js/app.js?v=12"></script>
+<script src="js/topics-seed.js?v=13"></script>
+<script src="js/ai-import.js?v=13"></script>
+<script src="js/store.js?v=13"></script>
+<script src="js/noise.js?v=13"></script>
+<script src="js/classes.js?v=13"></script>
+<script src="js/lessons.js?v=13"></script>
+<script src="js/band.js?v=13"></script>
+<script src="js/notes.js?v=13"></script>
+<script src="js/sync.js?v=13"></script>
+<script src="js/tools.js?v=13"></script>
+<script src="js/app.js?v=13"></script>
 </body>
 </html>
