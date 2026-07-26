@@ -921,13 +921,39 @@ const Classes = {
 
   saveGroupsAsProject() {
     if (!this.pendingGroups) return;
-    const name = prompt('Name des Projekts (z. B. „Bandklassen-Projekt“):');
-    if (!name) return;
-    this.createProject(name.trim(), new Date().toISOString().slice(0, 10), this.pendingGroups);
+    const p = this.gruppenZiel('', '');
+    if (!p) return;
+    this.pendingGroups.forEach(ids => {
+      p.groups.push(ids);
+      p.groupNames.push('Gruppe ' + p.groups.length);
+    });
     this.pendingGroups = null;
+    this.persist();
     this.renderGroupResult();
-    // Zum Projekte-Tab wechseln, damit direkt benotet werden kann
-    document.querySelector('[data-subtab="projekte"]').click();
+    this.renderProjects();
+  },
+
+  /* Zielprojekt für neu gebildete Gruppen: bestehendes ergänzen oder neues anlegen.
+     So lassen sich Gruppen auch nachträglich zu einem Projekt hinzufügen. */
+  gruppenZiel(nameVorschlag, datum) {
+    const cls = this.currentClass();
+    if (!cls) return null;
+    const offen = this.currentProject();
+    if (offen && confirm(
+      `Gruppen zum geöffneten Projekt „${offen.name}“ hinzufügen?\n\n` +
+      'Abbrechen: stattdessen ein neues Projekt anlegen.')) return offen;
+
+    let name = (nameVorschlag || '').trim();
+    if (!name) name = (prompt('Name des neuen Projekts:') || '').trim();
+    if (!name) return null;
+    const p = {
+      id: Store.uid(), name,
+      date: datum || new Date().toISOString().slice(0, 10),
+      entered: false, grades: {}, groups: [], groupNames: [],
+    };
+    cls.projects.push(p);
+    this.currentProjectId = p.id;
+    return p;
   },
 
   /* ---------- Gruppen von Hand zusammenstellen ---------- */
@@ -1010,22 +1036,19 @@ const Classes = {
       .filter(g => g.members.length);
     if (!gefuellt.length) { alert('Es sind noch keine Namen eingetragen.'); return; }
 
-    const name = document.getElementById('manual-project-name').value.trim();
-    if (!name) { alert('Bitte einen Projektnamen eintragen.'); return; }
-    const date = document.getElementById('manual-project-date').value || new Date().toISOString().slice(0, 10);
+    const p = this.gruppenZiel(
+      document.getElementById('manual-project-name').value,
+      document.getElementById('manual-project-date').value);
+    if (!p) return;
 
     const created = [];
-    const groups = [], groupNames = [];
     gefuellt.forEach((g, i) => {
       const ids = g.members.map(m => this.findOrCreateStudent(cls, m, created)).filter(Boolean);
       if (!ids.length) return;
-      groups.push(ids);
-      groupNames.push(g.name || `Gruppe ${i + 1}`);
+      p.groups.push(ids);
+      p.groupNames.push(g.name || `Gruppe ${p.groups.length}`);
     });
 
-    const p = { id: Store.uid(), name, date, entered: false, grades: {}, groups, groupNames };
-    cls.projects.push(p);
-    this.currentProjectId = p.id;
     this.manualGroups = [];
     document.getElementById('manual-project-name').value = '';
     this.persist();
@@ -1185,8 +1208,10 @@ const Classes = {
   saveImportedGroups() {
     const cls = this.currentClass();
     if (!cls) return;
-    const name = document.getElementById('group-import-name').value.trim() || 'Importiertes Projekt';
-    const date = document.getElementById('group-import-date').value || new Date().toISOString().slice(0, 10);
+    const p = this.gruppenZiel(
+      document.getElementById('group-import-name').value || 'Importiertes Projekt',
+      document.getElementById('group-import-date').value);
+    if (!p) return;
     const created = [];
     const groups = [], groupNames = [], grades = {};
     for (const line of document.getElementById('group-import-text').value.split(/\r?\n/)) {
@@ -1212,9 +1237,9 @@ const Classes = {
       groupNames.push(product);
     }
     if (!groups.length) { alert('Keine Gruppen gefunden.'); return; }
-    const p = { id: Store.uid(), name, date, entered: false, grades, groups, groupNames };
-    cls.projects.push(p);
-    this.currentProjectId = p.id;
+    p.groups.push(...groups);
+    p.groupNames.push(...groupNames);
+    Object.assign(p.grades, grades);
     this.persist();
     document.getElementById('group-import-preview').hidden = true;
     this.renderClassList();
