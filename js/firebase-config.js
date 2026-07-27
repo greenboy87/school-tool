@@ -1,13 +1,13 @@
-/* Zugangsdaten der Firebase-Datenbank.
+/* Zugangsdaten der Firebase-Datenbank (Projekt school-tool, Region europe-west1).
    Diese Werte sind bei Firebase ausdrücklich öffentlich – der Schutz kommt NICHT
    von hier, sondern von den Datenbank-Regeln in der Firebase-Konsole.
-   Es ist dieselbe Datenbank wie beim Musik-Quiz, aber ein eigener Ast (schoolTool). */
+   Siehe firebase-regeln.md. */
 window.FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyA8aYVFa8XbIwviC4iJDA46gK0rMfF97Ac',
-  authDomain: 'greenboys-scoreboard.firebaseapp.com',
-  databaseURL: 'https://greenboys-scoreboard-default-rtdb.europe-west1.firebasedatabase.app',
-  projectId: 'greenboys-scoreboard',
-  storageBucket: 'greenboys-scoreboard.firebasestorage.app',
-  messagingSenderId: '1059492482424',
-  appId: '1:1059492482424:web:9b4ad8c62ba51a83f8cc8d',
+  apiKey: 'AIzaSyCcSe6xfc8Oy4MP_swuBSGEhY0K7wstjEo',
+  authDomain: 'school-tool-cbbf9.firebaseapp.com',
+  databaseURL: 'https://school-tool-cbbf9-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'school-tool-cbbf9',
+  storageBucket: 'school-tool-cbbf9.firebasestorage.app',
+  messagingSenderId: '1065429467632',
+  appId: '1:1065429467632:web:fa1c94aaff6d457add9d35',
 };
