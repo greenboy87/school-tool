@@ -1,1 +1,8 @@
 .DS_Store
+
+# Schuldokumente bleiben lokal - die Seite ist oeffentlich erreichbar!
+# Klassenlisten, Gruppeneinteilungen und Sitzplaene duerfen nie ins Repository.
+*.pdf
+*.doc
+*.docx
+*.csv

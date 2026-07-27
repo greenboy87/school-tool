@@ -1066,6 +1066,69 @@ const Classes = {
      (kommagetrennt, ggf. über mehrere Zeilen), rechts Produkt und evtl. getippte Note.
      Neue Tabellenzeile = rechts steht wieder Text, nachdem die Namensliste
      der vorigen Gruppe abgeschlossen war (letzte Zeile ohne Komma). */
+  /* Welche Rolle hat eine Spaltenüberschrift? Reihenfolge der Prüfungen ist wichtig:
+     „Gruppenname“ ist eine Bezeichnung, „Gruppe (Vor- und Nachnamen)“ dagegen die Namensspalte. */
+  spaltenRolle(text) {
+    const t = String(text).toLowerCase();
+    if (/mitglied/.test(t)) return 'namen';
+    if (/gruppenname|bandname|k(ü|ue)nstlername|produkt|thema|projekt|titel|song/.test(t)) return 'label';
+    if (/namen|name\b/.test(t)) return 'namen';
+    return null;
+  },
+
+  /* Textstücke einer Zeile zu einem String verbinden.
+     Der Abstand taugt hier nicht als Trennzeichen: dieselbe Lücke trennt einmal
+     „Sophia Aukofer“ und steckt einmal mitten in „Gjekra“. Zerrissene Wörter
+     setzt darum bruchstueckeFuegen() wieder zusammen. */
+  fuegeZusammen(items) {
+    let out = '';
+    let ende = null;
+    for (const it of items) {
+      const s = it.str.trim();
+      if (!s) continue;
+      // Nur wenn die Stücke einander berühren, gehören sie sicher zum selben Wort
+      const klebt = ende !== null && it.transform[4] - ende <= (Math.abs(it.transform[3]) || 10) * 0.05;
+      if (out && !klebt) out += ' ';
+      out += s;
+      ende = it.transform[4] + (it.width || 0);
+    }
+    return out.replace(/\s+/g, ' ').trim();
+  },
+
+  /* Zerrissene Wörter reparieren: Ein einzelner Großbuchstabe beginnt ein Wort
+     („A ukofer“ → „Aukofer“), ein einzelner Kleinbuchstabe setzt das vorige fort
+     („Gjek r a“ → „Gjekra“). */
+  bruchstueckeFuegen(name) {
+    const out = [];
+    for (const teil of name.split(/\s+/).filter(Boolean)) {
+      const letzter = out.length ? out[out.length - 1] : '';
+      if (letzter && /^\p{Ll}$/u.test(teil)) { out[out.length - 1] += teil; continue; }
+      if (letzter && /^\p{Lu}$/u.test(letzter)) { out[out.length - 1] += teil; continue; }
+      out.push(teil);
+    }
+    return out.join(' ');
+  },
+
+  /* Aus der Kopfzeile ablesen, wo die Spaltengrenze liegt und welche Seite die Namen trägt.
+     Dadurch funktionieren beide Anordnungen: „Namen | Produkt“ und „Gruppenname | Mitglieder“. */
+  erkenneSpalten(items, pageWidth) {
+    let namenX = null, labelX = null;
+    for (const it of items) {
+      const rolle = this.spaltenRolle(it.str);
+      if (rolle === 'namen' && namenX === null) namenX = it.transform[4];
+      if (rolle === 'label' && labelX === null) labelX = it.transform[4];
+    }
+    if (namenX !== null && labelX !== null && Math.abs(namenX - labelX) > 20) {
+      return { split: (namenX + labelX) / 2, namenLinks: namenX < labelX };
+    }
+    if (namenX !== null) {
+      // Nur die Namensspalte gefunden: Liegt sie rechts, steht die Bezeichnung links
+      const rechts = namenX > pageWidth * 0.4;
+      return { split: rechts ? namenX - 10 : pageWidth * 0.55, namenLinks: !rechts };
+    }
+    return { split: pageWidth * 0.55, namenLinks: true };   // Rückfallebene wie bisher
+  },
+
   async extractGroupsFromPdf(file) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/vendor/pdf.worker.min.js';
     const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
@@ -1078,11 +1141,8 @@ const Classes = {
       const page = await pdf.getPage(n);
       const content = await page.getTextContent();
       const pageWidth = page.getViewport({ scale: 1 }).width;
-      // Spaltengrenze: x-Position der Überschrift „Produkt“/„Thema“, sonst 55 % der Seitenbreite
-      let split = pageWidth * 0.55;
-      for (const item of content.items) {
-        if (/^\s*(produkt|thema|note)\b/i.test(item.str)) { split = item.transform[4] - 5; break; }
-      }
+      const { split, namenLinks } = this.erkenneSpalten(content.items, pageWidth);
+
       // Textstücke zu Zeilen gruppieren
       const rows = new Map();
       for (const item of content.items) {
@@ -1093,24 +1153,29 @@ const Classes = {
       }
       const lines = [...rows.entries()].sort((a, b) => b[0] - a[0]).map(([, items]) => {
         items.sort((a, b) => a.transform[4] - b.transform[4]);
-        const left = items.filter(i => i.transform[4] < split).map(i => i.str.trim()).join(' ').trim();
-        const right = items.filter(i => i.transform[4] >= split).map(i => i.str.trim()).join(' ').trim();
-        return { left, right };
+        const links = this.fuegeZusammen(items.filter(i => i.transform[4] < split));
+        const rechts = this.fuegeZusammen(items.filter(i => i.transform[4] >= split));
+        return namenLinks ? { namen: links, label: rechts } : { namen: rechts, label: links };
       });
 
       for (const line of lines) {
-        if (/gruppe\s*\(|vor-\s*und\s*nachnamen|^\s*(produkt|thema|note)\s*$/i.test(line.left + ' ' + line.right)) continue;
-        if (line.right && curClosed) {
-          if (cur) groups.push(cur);
-          cur = { namesRaw: [], product: line.right };
-          curClosed = false;
-        } else if (line.right && cur) {
-          cur.product += ' ' + line.right; // mehrzeiliger Produktname
+        const ganz = line.namen + ' ' + line.label;
+        // Kopfzeile überspringen
+        if (this.spaltenRolle(line.namen) || this.spaltenRolle(line.label)) {
+          if (/mitglied|vor-\s*und\s*nachnamen|nachnamen und/i.test(ganz) ||
+              /^\s*(produkt|thema|note|gruppenname)\b/i.test(ganz.trim())) continue;
         }
-        if (line.left) {
-          if (!cur) { if (!title) title = line.left; continue; } // Titelzeile vor der Tabelle
-          cur.namesRaw.push(line.left);
-          curClosed = !/,\s*$/.test(line.left); // Zeile ohne Schlusskomma beendet die Namensliste
+        if (line.label && curClosed) {
+          if (cur) groups.push(cur);
+          cur = { namesRaw: [], product: line.label };
+          curClosed = false;
+        } else if (line.label && cur) {
+          cur.product += ' ' + line.label;   // mehrzeilige Bezeichnung
+        }
+        if (line.namen) {
+          if (!cur) { if (!title) title = line.namen; continue; }   // Titelzeile vor der Tabelle
+          cur.namesRaw.push(line.namen);
+          curClosed = !/,\s*$/.test(line.namen);   // Zeile ohne Schlusskomma beendet die Namensliste
         }
       }
     }
@@ -1119,7 +1184,23 @@ const Classes = {
     return {
       title,
       groups: groups.map(g => {
-        let chunks = g.namesRaw.join(',').split(',').map(s => s.trim()).filter(Boolean);
+        // Ohne Kommas ist jede Zeile ein eigener Name. Mit Kommas trennt das Komma –
+        // dann kann ein Name aber über den Zeilenumbruch laufen („… Sarah“ / „Hammerl“).
+        // Als Fortsetzung gilt nur eine Zeile, die mit einem einzelnen Wort beginnt;
+        // ein vollständiger Name („juliana Leitner“) bleibt ein eigener Eintrag.
+        let chunks;
+        if (g.namesRaw.some(z => z.includes(','))) {
+          let text = '';
+          for (const z of g.namesRaw) {
+            const ersterTeil = z.split(',')[0].trim();
+            if (!text) text = z;
+            else if (/,\s*$/.test(text)) text += ' ' + z;
+            else if (ersterTeil.split(/\s+/).length === 1) text += ' ' + z;
+            else text += ', ' + z;
+          }
+          chunks = text.split(',');
+        } else chunks = g.namesRaw;
+        chunks = chunks.map(s => this.bruchstueckeFuegen(s.trim())).filter(Boolean);
         // Einzelwörter verwerfen, die in einem anderen Namen derselben Gruppe stecken (Tippfehler-Duplikate)
         chunks = chunks.filter((c, i) =>
           c.includes(' ') || !chunks.some((o, j) => j !== i && o.toLowerCase().includes(c.toLowerCase())));
