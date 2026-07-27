@@ -1,0 +1,187 @@
+/* Schülerseite – für Handys gebaut: große Flächen, gut lesbar, Daumen-freundlich. */
+
+.schueler-seite {
+  padding: 0;
+  background: var(--bg);
+}
+
+.schueler-huelle {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 1rem 0.9rem calc(2.5rem + env(safe-area-inset-bottom));
+}
+
+.schueler-seite .karte {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1.1rem 1rem 1.3rem;
+}
+
+.schueler-seite .karte.mitte { text-align: center; margin-top: 15vh; }
+
+.schueler-seite h1 {
+  font-size: 1.35rem;
+  margin: 0 0 0.35rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.schueler-seite .karte.mitte h1 { justify-content: center; }
+
+.schueler-seite input[type="search"],
+.schueler-seite input[type="text"] {
+  width: 100%;
+  font-size: 1.05rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+}
+
+/* ---------- Namensauswahl ---------- */
+.namensliste {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.namensknopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  text-align: left;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 0.95rem 1rem;
+  min-height: 3.2rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+.namensknopf:active { background: var(--active-soft); }
+
+.schon-drin {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  white-space: nowrap;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Kopfzeile „ich“ ---------- */
+.ich-zeile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.7rem;
+  margin-bottom: 0.9rem;
+}
+.ich-zeile strong { color: var(--text); }
+
+.schueler-seite button.mini {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+}
+
+.status-zeile {
+  margin: 0 0 0.9rem;
+  font-size: 0.98rem;
+  color: var(--accent-soft);
+}
+.status-zeile.warnung { color: var(--danger); }
+
+/* ---------- Gruppen ---------- */
+.gruppenliste {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1.3rem;
+}
+
+.gruppenkarte {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.85rem 1rem;
+  border-radius: 0.8rem;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+}
+.gruppenkarte:active { background: var(--active-soft); }
+
+.gruppenkarte.meine {
+  border-color: var(--accent);
+  background: var(--active-soft);
+  opacity: 1;
+}
+
+.gk-kopf {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+.gk-name { font-size: 1.12rem; font-weight: 700; }
+.gk-zahl {
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--border);
+}
+.gk-namen {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* ---------- Neue Gruppe ---------- */
+.neue-gruppe {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+.neue-gruppe > label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.neue-gruppe .zeile {
+  display: flex;
+  gap: 0.5rem;
+}
+.neue-gruppe .zeile input { flex: 1; }
+.neue-gruppe button[type="submit"] {
+  font-size: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.7rem;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.schueler-seite .hint { color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
+.schueler-seite .hint.fuss { margin-top: 1.1rem; margin-bottom: 0; }

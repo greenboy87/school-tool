@@ -251,6 +251,18 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .group-box ul { margin: 0; padding-left: 1.2em; line-height: 1.7; }
 .group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; background: var(--input-bg); color: var(--text); }
 .group-box input.grade.single { width: 3em; font-size: .85em; }
+/* ----- Gruppenbildung per QR-Code ----- */
+.live-oben { display: flex; gap: 1.4rem; flex-wrap: wrap; align-items: flex-start; margin: 1rem 0; }
+.live-qr { text-align: center; }
+.live-qr #live-qr-code { background: #fff; padding: .7rem; border-radius: var(--radius); display: inline-block; line-height: 0; }
+.live-qr #live-qr-code img, .live-qr #live-qr-code canvas { display: block; }
+.live-qr .hint { margin: .5rem 0 .4rem; }
+.live-qr #live-code { color: var(--accent-soft); letter-spacing: .06em; font-size: 1.05em; }
+.live-info { flex: 1; min-width: 250px; }
+.live-info > p:first-child { margin-top: 0; }
+.live-offen { margin: .6rem 0 1rem; }
+.hint.warnung, .warnung { color: var(--danger); }
+
 #group-import-text { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: .82rem; width: 100%; }
 .ai-settings { margin: .6rem 0 1rem; }
 .ai-settings summary { cursor: pointer; }

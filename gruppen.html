@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Gruppen bilden</title>
+<link rel="stylesheet" href="style.css?v=21">
+<link rel="stylesheet" href="gruppen.css?v=21">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8%22/></svg>">
+<script src="js/icons.js?v=21"></script>
+<script src="js/theme.js?v=21"></script>
+<script src="js/firebase-config.js?v=21"></script>
+<script type="module" src="js/live-firebase.js?v=21"></script>
+</head>
+<body class="schueler-seite">
+
+<main class="schueler-huelle">
+
+  <!-- Kein gültiger QR-Code -->
+  <section id="s-fehler" class="karte mitte" hidden>
+    <h1 data-icon="alert">Kein gültiger Zugang</h1>
+    <p id="s-fehler-text">Diese Seite öffnet man, indem man den QR-Code von der Leinwand scannt.
+       Bitte frag deine Lehrkraft, den Code noch einmal anzuzeigen.</p>
+  </section>
+
+  <!-- Schritt 1: Wer bist du? -->
+  <section id="s-wer" class="karte" hidden>
+    <h1 data-icon="users">Wer bist du?</h1>
+    <p class="hint" id="s-wer-info">Tippe deinen Namen an.</p>
+    <input type="search" id="s-suche" placeholder="Namen suchen …" autocomplete="off">
+    <div id="s-namen" class="namensliste"></div>
+  </section>
+
+  <!-- Schritt 2: Gruppe wählen -->
+  <section id="s-gruppe" class="karte" hidden>
+    <div class="ich-zeile">
+      <span>Angemeldet als <strong id="s-ich"></strong></span>
+      <button id="s-nicht-ich" class="mini">nicht ich</button>
+    </div>
+
+    <h1 data-icon="users" id="s-projekt-titel">Deine Gruppe</h1>
+
+    <p id="s-status" class="status-zeile"></p>
+
+    <div id="s-gruppenliste" class="gruppenliste"></div>
+
+    <form id="s-neue-gruppe" class="neue-gruppe">
+      <label for="s-gruppenname">Neue Gruppe gründen</label>
+      <div class="zeile">
+        <input type="text" id="s-gruppenname" maxlength="40" placeholder="Name der Gruppe" autocomplete="off">
+        <button type="submit" data-icon="plus">Gründen</button>
+      </div>
+      <p class="hint">Denk dir einen Namen aus – deine Mitschüler können der Gruppe dann beitreten.</p>
+    </form>
+
+    <p class="hint fuss">Du kannst jederzeit eine andere Gruppe antippen und wechselst dann dorthin.</p>
+  </section>
+
+</main>
+
+<script src="js/gruppen-schueler.js?v=21"></script>
+</body>
+</html>

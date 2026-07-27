@@ -6,3 +6,7 @@
 *.doc
 *.docx
 *.csv
+
+# Nur lokale Editor-/Testhilfen
+.claude/
+__test-*.js
