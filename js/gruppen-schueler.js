@@ -94,7 +94,13 @@ const SchuelerGruppen = {
     onValue(ref(db, `${window.FB.WURZEL}/${this.raum}/zuordnung`), snap => {
       this.zuordnung = snap.val() || {};
       this.zeichne();
-    }, err => this.zeigeFehler('Die Gruppenliste kann nicht gelesen werden: ' + err.message));
+    }, err => {
+      const code = ((err && (err.code || err.message)) || '').toString().toUpperCase();
+      // Fehlende Freigabe ist nichts, was die Klasse lösen kann – also klare Ansage
+      this.zeigeFehler(code.includes('PERMISSION_DENIED')
+        ? 'Die Gruppenbildung ist noch nicht freigeschaltet. Bitte sag deiner Lehrkraft Bescheid.'
+        : 'Die Gruppenliste kann gerade nicht geladen werden. Versuch es in einem Moment noch einmal.');
+    });
     this.zeichne();
   },
 

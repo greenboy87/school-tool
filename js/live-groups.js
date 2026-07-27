@@ -30,6 +30,17 @@ const LiveGroups = {
     el.classList.toggle('warnung', !!warnung);
   },
 
+  /* Der häufigste Fehler ist die noch fehlende Freigabe in der Firebase-Konsole –
+     dafür eine Meldung, die auch sagt, was zu tun ist. */
+  fehlertext(err, was) {
+    const code = (err && (err.code || err.message) || '').toString().toUpperCase();
+    if (code.includes('PERMISSION_DENIED')) {
+      return 'Die Firebase-Regeln geben den Pfad „schoolTool“ noch nicht frei. ' +
+        'Anleitung: firebase-regeln.md im Projektordner.';
+    }
+    return `${was}: ${err && err.message ? err.message : err}`;
+  },
+
   /* ---------- Sammlung starten ---------- */
   starte() {
     const cls = Classes.currentClass();
@@ -56,7 +67,7 @@ const LiveGroups = {
     // Im Raum steht bewusst KEIN Name – nur wie viele Plätze es gibt.
     set(ref(db, `${window.FB.WURZEL}/${this.raum}/meta`), {
       projekt, anzahl: cls.students.length, erstellt: serverTimestamp(),
-    }).catch(err => this.status('Raum konnte nicht angelegt werden: ' + err.message, true));
+    }).catch(err => this.status(this.fehlertext(err, 'Der Raum konnte nicht angelegt werden'), true));
 
     const url = this.schuelerUrl(cls, projekt);
     this.zeigeQr(url);
@@ -134,7 +145,7 @@ const LiveGroups = {
     this.abmelden = onValue(ref(db, `${window.FB.WURZEL}/${this.raum}/zuordnung`), snap => {
       this.zuordnung = snap.val() || {};
       this.zeichne();
-    }, err => this.status('Die Gruppenliste kann nicht gelesen werden: ' + err.message, true));
+    }, err => this.status(this.fehlertext(err, 'Die Gruppenliste kann nicht gelesen werden'), true));
   },
 
   gruppenBilden() {
