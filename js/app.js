@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Band.init();
   Notes.init();
   Sync.init();
+  Verbergen.init();
   LiveGroups.init();
   Tools.init();
 

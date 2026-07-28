@@ -251,6 +251,65 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .group-box ul { margin: 0; padding-left: 1.2em; line-height: 1.7; }
 .group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; background: var(--input-bg); color: var(--text); }
 .group-box input.grade.single { width: 3em; font-size: .85em; }
+/* ----- Namen/Noten verbergen (Sichtschutz im Unterricht) ----- */
+.ist-verborgen {
+  position: relative;
+  min-height: 3rem;
+  overflow: hidden;
+}
+/* Inhalt bleibt im Fluss (Höhe springt nicht), wird aber unlesbar */
+.ist-verborgen > * { visibility: hidden; }
+.ist-verborgen::after {
+  content: "Inhalt verborgen";
+  visibility: visible;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  background: repeating-linear-gradient(45deg,
+    var(--panel), var(--panel) 10px, var(--hover) 10px, var(--hover) 20px);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: .9rem;
+  letter-spacing: .04em;
+}
+button.verbergen.aktiv {
+  border-color: var(--accent);
+  color: var(--accent-soft);
+}
+/* Beim Drucken zählt der Inhalt, nicht der Sichtschutz – sonst käme die
+   Abdeckplatte aufs Papier. */
+@media print {
+  .ist-verborgen > * { visibility: visible; }
+  .ist-verborgen::after { display: none; }
+  button.verbergen { display: none; }
+}
+
+/* Kurze Rückmeldung, dass die Gruppen wirklich angekommen sind */
+.gespeichert-hinweis {
+  margin: .4rem 0 .8rem;
+  padding: .5rem .8rem;
+  border-left: 3px solid var(--accent);
+  background: var(--active-soft);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: .92rem;
+}
+.gespeichert-hinweis.unten {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+@keyframes frisch-aufblitzen {
+  from { background: var(--active-soft); }
+  to   { background: transparent; }
+}
+#project-groups-info.frisch { animation: frisch-aufblitzen 1.8s ease-out; border-radius: var(--radius); }
+
 /* ----- Gruppenbildung per QR-Code ----- */
 .live-oben { display: flex; gap: 1.4rem; flex-wrap: wrap; align-items: flex-start; margin: 1rem 0; }
 .live-qr { text-align: center; }

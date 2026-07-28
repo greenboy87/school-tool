@@ -601,6 +601,7 @@ const Classes = {
       li.append(handle, span, up, down, del);
       ol.appendChild(li);
     });
+    if (window.Verbergen) Verbergen.anwenden('schueler');
   },
 
   /* ---------- Projekte & Noten ---------- */
@@ -760,6 +761,7 @@ const Classes = {
 
     this.renderGradeTable();
     document.getElementById('grade-summary').textContent = this.summaryText(p);
+    if (window.Verbergen) Verbergen.anwenden('noten');
   },
 
   summaryText(p) {
@@ -927,10 +929,57 @@ const Classes = {
       p.groups.push(ids);
       p.groupNames.push('Gruppe ' + p.groups.length);
     });
+    const anzahl = this.pendingGroups.length;
     this.pendingGroups = null;
     this.persist();
     this.renderGroupResult();
     this.renderProjects();
+    this.zeigeProjektErgebnis(anzahl, "group-result");
+  },
+
+  /* Das Ergebnis erscheint rund 1000 px weiter oben – ohne Rückmeldung sieht es
+     unten am Knopf so aus, als sei nichts passiert. Darum beides: eine Meldung
+     dort, wo geklickt wurde, und der Sprung nach oben zur Notenliste. */
+  zeigeProjektErgebnis(anzahlGruppen, untenId) {
+    const detail = document.getElementById('project-detail');
+    if (!detail || detail.hidden) return;
+    const p = this.currentProject();
+    if (!p) return;
+    const text = anzahlGruppen === 1
+      ? `1 Gruppe zu „${p.name}“ hinzugefügt.`
+      : `${anzahlGruppen} Gruppen zu „${p.name}“ hinzugefügt.`;
+
+    // 1) Rückmeldung unten, direkt beim Knopf
+    const unten = untenId ? document.getElementById(untenId) : null;
+    if (unten) {
+      const box = document.createElement('div');
+      box.className = 'gespeichert-hinweis unten';
+      const t = document.createElement('span');
+      t.textContent = text + ' Die Notenliste steht oben im Projekt.';
+      const hoch = document.createElement('button');
+      hoch.className = 'small';
+      hoch.textContent = 'Nach oben zum Projekt';
+      hoch.addEventListener('click', () => detail.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      box.append(t, hoch);
+      unten.replaceChildren(box);
+    }
+
+    // 2) Meldung oben am Projekt und kurzes Aufblitzen der neuen Gruppen
+    const meldung = document.getElementById('project-saved-hint');
+    if (meldung) {
+      meldung.textContent = text;
+      meldung.hidden = false;
+      clearTimeout(this._meldungTimer);
+      this._meldungTimer = setTimeout(() => { meldung.hidden = true; }, 8000);
+    }
+    const info = document.getElementById('project-groups-info');
+    if (info) {
+      info.classList.remove('frisch');
+      void info.offsetWidth;             // Animation neu starten
+      info.classList.add('frisch');
+    }
+
+    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
   /* Zielprojekt für neu gebildete Gruppen: bestehendes ergänzen oder neues anlegen.
@@ -1049,6 +1098,7 @@ const Classes = {
       p.groupNames.push(g.name || `Gruppe ${p.groups.length}`);
     });
 
+    const anzahlNeu = this.manualGroups.length;
     this.manualGroups = [];
     document.getElementById('manual-project-name').value = '';
     this.persist();
@@ -1056,6 +1106,7 @@ const Classes = {
     this.renderStudents();
     this.renderManualGroups();
     this.renderProjects();
+    this.zeigeProjektErgebnis(anzahlNeu, "manual-groups");
     if (created.length) {
       alert(`Projekt angelegt.\n\nNeu in die Klassenliste aufgenommen (unten angehängt):\n${created.join('\n')}`);
     }
@@ -1328,6 +1379,7 @@ const Classes = {
     this.renderProjects();
     if (created.length) alert(`Neu in die Klassenliste aufgenommen (unten angehängt):\n${created.join('\n')}`);
     document.querySelector('[data-subtab="projekte"]').click();
+    this.zeigeProjektErgebnis(groups.length);
   },
 
   /* ---------- Sitzplan ---------- */

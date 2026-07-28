@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=23">
+<link rel="stylesheet" href="style.css?v=28">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=23"></script>
-<script src="js/theme.js?v=23"></script>
-<script src="js/auth.js?v=23"></script>
+<script src="js/icons.js?v=28"></script>
+<script src="js/theme.js?v=28"></script>
+<script src="js/auth.js?v=28"></script>
 </head>
 <body>
 
@@ -109,7 +109,10 @@
         <section id="subtab-schueler" class="subtab-page active card">
           <div class="two-col">
             <div>
-              <h3>Klassenliste (<span id="student-count">0</span>)</h3>
+              <h3>Klassenliste (<span id="student-count">0</span>)
+                <button id="btn-hide-students" class="small verbergen" data-verbergen="schueler"
+                        title="Namen ausblenden – z. B. wenn Schüler auf den Bildschirm sehen können">Verbergen</button>
+              </h3>
               <div class="btn-row">
                 <button id="btn-sort-students" class="small" title="Ganze Liste alphabetisch nach Nachname sortieren">A–Z sortieren</button>
                 <button id="btn-print-students" class="small" data-icon="printer" title="Klassenliste drucken oder im Druckdialog als PDF sichern">Drucken / PDF</button>
@@ -147,15 +150,20 @@
             <div class="projekt-header">
               <h3 id="project-title"></h3>
               <div class="btn-row">
+                <button id="btn-hide-grades" class="small verbergen" data-verbergen="noten"
+                        title="Namen und Noten ausblenden – z. B. wenn Schüler auf den Bildschirm sehen können">Verbergen</button>
                 <button id="btn-print-project" data-icon="printer" title="Notenliste drucken">Drucken</button>
                 <button id="btn-export-project" data-icon="download" title="Als CSV speichern">CSV</button>
                 <button id="btn-delete-project" class="danger small">Projekt löschen</button>
               </div>
             </div>
+            <p class="gespeichert-hinweis" id="project-saved-hint" hidden></p>
             <p class="hint">Noten der Reihe nach eingeben (1–6, auch 2+ / 2- möglich). Mit <kbd>Enter</kbd> oder <kbd>Tab</kbd> springst du zum nächsten Schüler – ideal zum Übertragen in den Notenmanager.</p>
-            <div id="project-groups-info"></div>
-            <table class="grade-table" id="grade-table"></table>
-            <p class="grade-summary" id="grade-summary"></p>
+            <div id="noten-bereich">
+              <div id="project-groups-info"></div>
+              <table class="grade-table" id="grade-table"></table>
+              <p class="grade-summary" id="grade-summary"></p>
+            </div>
           </div>
 
           <hr>
@@ -518,20 +526,21 @@
 <footer class="footer hint">Alle Daten werden nur lokal in deinem Browser gespeichert (kein Server). Regelmäßig ein Backup machen – z.&thinsp;B. am Schuljahresende oder vor einem Browserwechsel.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=23"></script>
-<script src="js/firebase-config.js?v=23"></script>
-<script type="module" src="js/live-firebase.js?v=23"></script>
-<script src="js/topics-seed.js?v=23"></script>
-<script src="js/ai-import.js?v=23"></script>
-<script src="js/store.js?v=23"></script>
-<script src="js/noise.js?v=23"></script>
-<script src="js/classes.js?v=23"></script>
-<script src="js/lessons.js?v=23"></script>
-<script src="js/band.js?v=23"></script>
-<script src="js/notes.js?v=23"></script>
-<script src="js/sync.js?v=23"></script>
-<script src="js/live-groups.js?v=23"></script>
-<script src="js/tools.js?v=23"></script>
-<script src="js/app.js?v=23"></script>
+<script src="js/vendor/qrcode.min.js?v=28"></script>
+<script src="js/firebase-config.js?v=28"></script>
+<script type="module" src="js/live-firebase.js?v=28"></script>
+<script src="js/topics-seed.js?v=28"></script>
+<script src="js/ai-import.js?v=28"></script>
+<script src="js/store.js?v=28"></script>
+<script src="js/noise.js?v=28"></script>
+<script src="js/classes.js?v=28"></script>
+<script src="js/lessons.js?v=28"></script>
+<script src="js/band.js?v=28"></script>
+<script src="js/notes.js?v=28"></script>
+<script src="js/sync.js?v=28"></script>
+<script src="js/verbergen.js?v=28"></script>
+<script src="js/live-groups.js?v=28"></script>
+<script src="js/tools.js?v=28"></script>
+<script src="js/app.js?v=28"></script>
 </body>
 </html>
