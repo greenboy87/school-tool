@@ -601,7 +601,7 @@ const Classes = {
       li.append(handle, span, up, down, del);
       ol.appendChild(li);
     });
-    if (window.Verbergen) Verbergen.anwenden('schueler');
+    if (window.Einklappen) Einklappen.anwenden('schueler');
   },
 
   /* ---------- Projekte & Noten ---------- */
@@ -761,7 +761,7 @@ const Classes = {
 
     this.renderGradeTable();
     document.getElementById('grade-summary').textContent = this.summaryText(p);
-    if (window.Verbergen) Verbergen.anwenden('noten');
+    if (window.Einklappen) Einklappen.anwenden('noten');
   },
 
   summaryText(p) {
@@ -841,14 +841,16 @@ const Classes = {
     const cls = this.currentClass();
     if (!cls) return;
     if (!cls.students.length) { alert('Die Klassenliste ist leer.'); return; }
+    // Acht leere Spalten zum Eintragen von Hand; enge Zeilen, damit auch große
+    // Klassen auf eine Seite passen.
+    const LEERE_SPALTEN = 8;
+    const leer = Array.from({ length: LEERE_SPALTEN }, () => ({ titel: '', cls: 'leer' }));
     const tabelle = Band.printTable(
-      [{ titel: 'Nr.', cls: 'num' }, { titel: 'Name' },
-       { titel: '' }, { titel: '' }, { titel: '' }, { titel: '' }],
+      [{ titel: 'Nr.', cls: 'num' }, { titel: 'Name' }, ...leer],
       cls.students.map((s, i) => [
-        i + 1, `<strong>${Band.esc(this.studentName(s))}</strong>`,
-        '<span class="kastl"></span>', '<span class="kastl"></span>',
-        '<span class="kastl"></span>', '<span class="kastl"></span>',
-      ]));
+        i + 1, Band.esc(this.studentName(s)),
+        ...Array.from({ length: LEERE_SPALTEN }, () => ''),
+      ]), 'kompakt');
     Band.printHtml(cls.name, tabelle,
       `${cls.students.length} Schülerinnen und Schüler` +
       (cls.grade ? ` · Jahrgangsstufe ${cls.grade}` : ''));

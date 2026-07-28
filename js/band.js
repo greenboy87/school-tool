@@ -812,11 +812,13 @@ const Band = {
   },
 
   /* Tabelle fürs Druckbild bauen – mit thead, damit die Kopfzeile auf jeder Seite steht */
-  printTable(spalten, zeilen) {
+  /* zusatzKlasse: z. B. „kompakt“ für enge Zeilen, damit lange Listen auf eine Seite passen */
+  printTable(spalten, zeilen, zusatzKlasse) {
     const kopf = spalten.map(s => `<th${s.cls ? ` class="${s.cls}"` : ''}>${this.esc(s.titel)}</th>`).join('');
     const koerper = zeilen.map(z => '<tr>' + z.map((zelle, i) =>
       `<td${spalten[i].cls ? ` class="${spalten[i].cls}"` : ''}>${zelle}</td>`).join('') + '</tr>').join('');
-    return `<table><thead><tr>${kopf}</tr></thead><tbody>${koerper}</tbody></table>`;
+    return `<table${zusatzKlasse ? ` class="${zusatzKlasse}"` : ''}>` +
+      `<thead><tr>${kopf}</tr></thead><tbody>${koerper}</tbody></table>`;
   },
 
   download(text, filename, type) {

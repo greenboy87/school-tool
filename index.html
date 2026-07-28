@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=28">
+<link rel="stylesheet" href="style.css?v=30">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=28"></script>
-<script src="js/theme.js?v=28"></script>
-<script src="js/auth.js?v=28"></script>
+<script src="js/icons.js?v=30"></script>
+<script src="js/theme.js?v=30"></script>
+<script src="js/auth.js?v=30"></script>
 </head>
 <body>
 
@@ -109,9 +109,13 @@
         <section id="subtab-schueler" class="subtab-page active card">
           <div class="two-col">
             <div>
-              <h3>Klassenliste (<span id="student-count">0</span>)
-                <button id="btn-hide-students" class="small verbergen" data-verbergen="schueler"
-                        title="Namen ausblenden – z. B. wenn Schüler auf den Bildschirm sehen können">Verbergen</button>
+              <h3>
+                <button id="btn-toggle-students" class="klapper" aria-expanded="true"
+                        aria-controls="klassenliste-inhalt"
+                        title="Klassenliste ein- oder ausklappen">
+                  <span class="klapp-pfeil" data-icon="chevronDown"></span>
+                  Klassenliste (<span id="student-count">0</span>)
+                </button>
               </h3>
               <div class="btn-row">
                 <button id="btn-sort-students" class="small" title="Ganze Liste alphabetisch nach Nachname sortieren">A–Z sortieren</button>
@@ -119,8 +123,10 @@
                 <button id="btn-export-students" class="small" data-icon="download" title="Klassenliste als CSV speichern">CSV</button>
                 <button id="btn-clear-students" class="small danger" data-icon="trash" title="Alle Schüler dieser Klasse aus der Liste entfernen">Liste leeren</button>
               </div>
-              <p class="hint">Zum Umsortieren einen Namen am Griff links anfassen und an die neue Stelle ziehen (geht auch per Finger auf dem Tablet).</p>
-              <ol id="student-list" class="student-list"></ol>
+              <div id="klassenliste-inhalt">
+                <p class="hint">Zum Umsortieren einen Namen am Griff links anfassen und an die neue Stelle ziehen (geht auch per Finger auf dem Tablet).</p>
+                <ol id="student-list" class="student-list"></ol>
+              </div>
             </div>
             <div>
               <h3>Schüler hinzufügen</h3>
@@ -136,41 +142,18 @@
         </section>
 
         <section id="subtab-projekte" class="subtab-page card">
-          <div class="projekt-header">
-            <h3>Projekte</h3>
-            <form id="form-new-project" class="inline-form">
-              <input type="text" id="new-project-name" placeholder="Projektname, z.&thinsp;B. Rhythmus-Referat" required>
-              <input type="date" id="new-project-date">
-              <button type="submit" class="primary">+ Projekt</button>
-            </form>
-          </div>
-          <ul id="project-list" class="project-list"></ul>
-          <div id="project-detail" hidden>
-            <hr>
-            <div class="projekt-header">
-              <h3 id="project-title"></h3>
-              <div class="btn-row">
-                <button id="btn-hide-grades" class="small verbergen" data-verbergen="noten"
-                        title="Namen und Noten ausblenden – z. B. wenn Schüler auf den Bildschirm sehen können">Verbergen</button>
-                <button id="btn-print-project" data-icon="printer" title="Notenliste drucken">Drucken</button>
-                <button id="btn-export-project" data-icon="download" title="Als CSV speichern">CSV</button>
-                <button id="btn-delete-project" class="danger small">Projekt löschen</button>
-              </div>
-            </div>
-            <p class="gespeichert-hinweis" id="project-saved-hint" hidden></p>
-            <p class="hint">Noten der Reihe nach eingeben (1–6, auch 2+ / 2- möglich). Mit <kbd>Enter</kbd> oder <kbd>Tab</kbd> springst du zum nächsten Schüler – ideal zum Übertragen in den Notenmanager.</p>
-            <div id="noten-bereich">
-              <div id="project-groups-info"></div>
-              <table class="grade-table" id="grade-table"></table>
-              <p class="grade-summary" id="grade-summary"></p>
-            </div>
+          <h3>Gruppen selbst zusammenstellen</h3>
+          <p class="hint">Beim Tippen schlägt das Feld Namen aus der Klassenliste vor – ein Klick auf den Vorschlag genügt, dann ist der Schüler sicher richtig verknüpft. Leere Felder werden beim Speichern ignoriert.</p>
+          <datalist id="student-options"></datalist>
+          <div id="manual-groups" class="group-result"></div>
+          <div class="inline-form">
+            <button id="btn-add-manual-group" data-icon="plus">Gruppe hinzufügen</button>
+            <input type="text" id="manual-project-name" placeholder="Projektname">
+            <input type="date" id="manual-project-date">
+            <button id="btn-save-manual" class="primary" data-icon="check">Als Projekt speichern</button>
           </div>
 
           <hr>
-          <h3>Gruppenarbeit</h3>
-          <p class="hint">Gruppen gehören immer zu einem Projekt: Lose sie hier aus oder
-            importiere eine fertige Einteilung – beides landet als neues Projekt in der Liste
-            oben. Für Projekte mit Einzelbewertung brauchst du diesen Teil nicht.</p>
           <h3>Zufallsgruppen bilden</h3>
           <div class="inline-form">
             <label>Modus:
@@ -184,18 +167,6 @@
             <button id="btn-save-groups" data-icon="check" hidden>Als Projekt speichern</button>
           </div>
           <div id="group-result" class="group-result"></div>
-
-          <hr>
-          <h4>Gruppen selbst zusammenstellen</h4>
-          <p class="hint">Beim Tippen schlägt das Feld Namen aus der Klassenliste vor – ein Klick auf den Vorschlag genügt, dann ist der Schüler sicher richtig verknüpft. Leere Felder werden beim Speichern ignoriert.</p>
-          <datalist id="student-options"></datalist>
-          <div id="manual-groups" class="group-result"></div>
-          <div class="inline-form">
-            <button id="btn-add-manual-group" data-icon="plus">Gruppe hinzufügen</button>
-            <input type="text" id="manual-project-name" placeholder="Projektname">
-            <input type="date" id="manual-project-date">
-            <button id="btn-save-manual" class="primary" data-icon="check">Als Projekt speichern</button>
-          </div>
 
           <hr>
           <h3>Schüler bilden Gruppen selbst (QR-Code)</h3>
@@ -258,6 +229,43 @@
               <button id="btn-group-import-cancel">Abbrechen</button>
             </div>
             <p class="hint" id="group-import-info"></p>
+          </div>
+
+          <hr>
+          <div class="projekt-header">
+            <h3>Projekte</h3>
+            <form id="form-new-project" class="inline-form">
+              <input type="text" id="new-project-name" placeholder="Projektname, z.&thinsp;B. Rhythmus-Referat" required>
+              <input type="date" id="new-project-date">
+              <button type="submit" class="primary">+ Projekt</button>
+            </form>
+          </div>
+          <ul id="project-list" class="project-list"></ul>
+
+          <div id="project-detail" hidden>
+            <div class="projekt-header">
+              <h3 id="project-title"></h3>
+              <div class="btn-row">
+                <button id="btn-print-project" data-icon="printer" title="Notenliste drucken">Drucken</button>
+                <button id="btn-export-project" data-icon="download" title="Als CSV speichern">CSV</button>
+                <button id="btn-delete-project" class="danger small">Projekt löschen</button>
+              </div>
+            </div>
+            <p class="gespeichert-hinweis" id="project-saved-hint" hidden></p>
+            <div id="project-groups-info"></div>
+
+            <h4>
+              <button id="btn-toggle-grades" class="klapper" aria-expanded="true" aria-controls="noten-bereich"
+                      title="Klassenliste ein- oder ausklappen">
+                <span class="klapp-pfeil" data-icon="chevronDown"></span>
+                Klassenliste mit Noten
+              </button>
+            </h4>
+            <div id="noten-bereich">
+              <p class="hint">Noten der Reihe nach eingeben (1–6, auch 2+ / 2- möglich). Mit <kbd>Enter</kbd> oder <kbd>Tab</kbd> springst du zum nächsten Schüler – ideal zum Übertragen in den Notenmanager.</p>
+              <table class="grade-table" id="grade-table"></table>
+              <p class="grade-summary" id="grade-summary"></p>
+            </div>
           </div>
         </section>
 
@@ -526,21 +534,21 @@
 <footer class="footer hint">Alle Daten werden nur lokal in deinem Browser gespeichert (kein Server). Regelmäßig ein Backup machen – z.&thinsp;B. am Schuljahresende oder vor einem Browserwechsel.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=28"></script>
-<script src="js/firebase-config.js?v=28"></script>
-<script type="module" src="js/live-firebase.js?v=28"></script>
-<script src="js/topics-seed.js?v=28"></script>
-<script src="js/ai-import.js?v=28"></script>
-<script src="js/store.js?v=28"></script>
-<script src="js/noise.js?v=28"></script>
-<script src="js/classes.js?v=28"></script>
-<script src="js/lessons.js?v=28"></script>
-<script src="js/band.js?v=28"></script>
-<script src="js/notes.js?v=28"></script>
-<script src="js/sync.js?v=28"></script>
-<script src="js/verbergen.js?v=28"></script>
-<script src="js/live-groups.js?v=28"></script>
-<script src="js/tools.js?v=28"></script>
-<script src="js/app.js?v=28"></script>
+<script src="js/vendor/qrcode.min.js?v=30"></script>
+<script src="js/firebase-config.js?v=30"></script>
+<script type="module" src="js/live-firebase.js?v=30"></script>
+<script src="js/topics-seed.js?v=30"></script>
+<script src="js/ai-import.js?v=30"></script>
+<script src="js/store.js?v=30"></script>
+<script src="js/noise.js?v=30"></script>
+<script src="js/classes.js?v=30"></script>
+<script src="js/lessons.js?v=30"></script>
+<script src="js/band.js?v=30"></script>
+<script src="js/notes.js?v=30"></script>
+<script src="js/sync.js?v=30"></script>
+<script src="js/einklappen.js?v=30"></script>
+<script src="js/live-groups.js?v=30"></script>
+<script src="js/tools.js?v=30"></script>
+<script src="js/app.js?v=30"></script>
 </body>
 </html>

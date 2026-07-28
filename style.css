@@ -251,41 +251,31 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .group-box ul { margin: 0; padding-left: 1.2em; line-height: 1.7; }
 .group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; background: var(--input-bg); color: var(--text); }
 .group-box input.grade.single { width: 3em; font-size: .85em; }
-/* ----- Namen/Noten verbergen (Sichtschutz im Unterricht) ----- */
-.ist-verborgen {
-  position: relative;
-  min-height: 3rem;
-  overflow: hidden;
-}
-/* Inhalt bleibt im Fluss (Höhe springt nicht), wird aber unlesbar */
-.ist-verborgen > * { visibility: hidden; }
-.ist-verborgen::after {
-  content: "Inhalt verborgen";
-  visibility: visible;
-  position: absolute;
-  inset: 0;
-  display: flex;
+/* ----- Klassenlisten ein-/ausklappen ----- */
+.ist-eingeklappt { display: none; }
+
+/* Die Überschrift ist selbst der Schalter – große Klickfläche, kein Extra-Knopf */
+button.klapper {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: .5rem;
-  background: repeating-linear-gradient(45deg,
-    var(--panel), var(--panel) 10px, var(--hover) 10px, var(--hover) 20px);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  color: var(--muted);
-  font-size: .9rem;
-  letter-spacing: .04em;
+  gap: .45rem;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
 }
-button.verbergen.aktiv {
-  border-color: var(--accent);
-  color: var(--accent-soft);
-}
-/* Beim Drucken zählt der Inhalt, nicht der Sichtschutz – sonst käme die
-   Abdeckplatte aufs Papier. */
+button.klapper:hover { color: var(--accent-soft); }
+.klapp-pfeil { display: inline-flex; color: var(--muted); }
+button.klapper:hover .klapp-pfeil { color: var(--accent-soft); }
+button.klapper.zu .klapp-pfeil { color: var(--accent); }
+
+/* Auf dem Papier zählt der Inhalt, nicht der Klappzustand */
 @media print {
-  .ist-verborgen > * { visibility: visible; }
-  .ist-verborgen::after { display: none; }
-  button.verbergen { display: none; }
+  .ist-eingeklappt { display: revert; }
+  button.klapper .klapp-pfeil { display: none; }
 }
 
 /* Kurze Rückmeldung, dass die Gruppen wirklich angekommen sind */
@@ -453,6 +443,19 @@ button.verbergen.aktiv {
   .band-print .klasse { width: 12%; font-weight: 600; font-variant-numeric: tabular-nums; }
   .band-print .sub { display: block; color: #6b6a62; font-size: 8.5pt; margin-top: 1pt; }
   .band-print .kastl { display: inline-block; width: 13pt; height: 13pt; border: .8pt solid #8a8880; }
+
+  /* Kompakte Klassenliste: enge Zeilen, damit auch 30 Namen auf eine Seite
+     passen, und rechts leere Spalten zum Eintragen von Hand. */
+  .band-print table.kompakt { font-size: 9.5pt; line-height: 1.2; }
+  .band-print table.kompakt td { padding: 2pt 6pt 2pt 0; }
+  .band-print table.kompakt th { padding: 0 6pt 3.5pt 0; }
+  .band-print table.kompakt .num { width: 5%; }
+  /* Alle Leerspalten teilen sich die rechte Hälfte und bekommen Trennlinien,
+     damit man sauber hineinschreiben kann. */
+  .band-print table.kompakt .leer {
+    width: 6.5%;
+    border-left: .5pt solid #d8d5cc;
+  }
 
   .band-print .fuss {
     margin-top: 12pt; padding-top: 5pt; border-top: .5pt solid #d8d5cc;
