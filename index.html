@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=30">
+<link rel="stylesheet" href="style.css?v=32">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=30"></script>
-<script src="js/theme.js?v=30"></script>
-<script src="js/auth.js?v=30"></script>
+<script src="js/icons.js?v=32"></script>
+<script src="js/theme.js?v=32"></script>
+<script src="js/auth.js?v=32"></script>
 </head>
 <body>
 
@@ -322,6 +322,7 @@
       <button class="bandtab-btn active" data-bandtab="mitglieder" data-icon="users">Mitglieder</button>
       <button class="bandtab-btn" data-bandtab="songs" data-icon="music">Songs</button>
       <button class="bandtab-btn" data-bandtab="ideen" data-icon="sparkles">Songvorschläge</button>
+      <button class="bandtab-btn" data-bandtab="setlisten" data-icon="list">Setlisten</button>
       <button class="bandtab-btn" data-bandtab="termine" data-icon="calendar">Termine &amp; Auftritte</button>
       <button class="bandtab-btn" data-bandtab="proben" data-icon="list">Probenplan</button>
     </nav>
@@ -418,6 +419,57 @@
       <input type="text" id="idea-artist" placeholder="Interpret">
       <button type="submit" class="primary" data-icon="plus">Vorschlag anlegen</button>
     </form>
+  </section>
+
+  <!-- Setlisten -->
+  <section id="bandtab-setlisten" class="bandtab-page card">
+    <h3>Kategorien</h3>
+    <p class="hint">Setlisten werden nach Anlass sortiert. Wähle eine Kategorie aus oder lege eine neue an.</p>
+    <div id="kat-leiste" class="kat-leiste"></div>
+    <form id="form-new-kat" class="inline-form">
+      <input type="text" id="new-kat-name" placeholder="Neue Kategorie, z.&thinsp;B. Abschlussfeier">
+      <button type="submit" data-icon="plus">Kategorie anlegen</button>
+    </form>
+
+    <hr>
+    <div class="projekt-header">
+      <h3 id="setlist-kat-titel">Setlisten</h3>
+      <form id="form-new-setlist" class="inline-form">
+        <input type="text" id="new-setlist-name" placeholder="Name, z.&thinsp;B. Adventsgottesdienst" required>
+        <input type="date" id="new-setlist-date">
+        <button type="submit" class="primary" data-icon="plus">Setlist anlegen</button>
+      </form>
+    </div>
+    <ul id="setlist-list" class="project-list"></ul>
+
+    <div id="setlist-detail" hidden>
+      <hr>
+      <div class="projekt-header">
+        <h3 id="setlist-title"></h3>
+        <div class="btn-row">
+          <button id="btn-print-setlist" data-icon="printer" title="Setlist drucken">Drucken</button>
+          <button id="btn-delete-setlist" class="danger small">Setlist löschen</button>
+        </div>
+      </div>
+      <div class="inline-form">
+        <label>Kategorie:
+          <select id="setlist-kat"></select>
+        </label>
+        <label>Datum:
+          <input type="date" id="setlist-datum">
+        </label>
+      </div>
+
+      <label class="feld-block">Anmerkung zur ganzen Setlist
+        <textarea id="setlist-notiz" rows="2" placeholder="z. B. Ablauf, Technik, Einzug …"></textarea>
+      </label>
+
+      <h4>Songs (<span id="setlist-song-count">0</span>)</h4>
+      <p class="hint">Reihenfolge am Griff links ziehen. Die Anmerkung aus dem Song-Bereich steht grau darunter –
+        mit dem <strong>×</strong> blendest du sie nur für diese Setlist aus, im Song-Bereich bleibt sie erhalten.</p>
+      <ol id="setlist-songs" class="setlist-songs"></ol>
+      <select id="setlist-add-song"></select>
+    </div>
   </section>
 
   <!-- Termine -->
@@ -534,21 +586,22 @@
 <footer class="footer hint">Alle Daten werden nur lokal in deinem Browser gespeichert (kein Server). Regelmäßig ein Backup machen – z.&thinsp;B. am Schuljahresende oder vor einem Browserwechsel.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=30"></script>
-<script src="js/firebase-config.js?v=30"></script>
-<script type="module" src="js/live-firebase.js?v=30"></script>
-<script src="js/topics-seed.js?v=30"></script>
-<script src="js/ai-import.js?v=30"></script>
-<script src="js/store.js?v=30"></script>
-<script src="js/noise.js?v=30"></script>
-<script src="js/classes.js?v=30"></script>
-<script src="js/lessons.js?v=30"></script>
-<script src="js/band.js?v=30"></script>
-<script src="js/notes.js?v=30"></script>
-<script src="js/sync.js?v=30"></script>
-<script src="js/einklappen.js?v=30"></script>
-<script src="js/live-groups.js?v=30"></script>
-<script src="js/tools.js?v=30"></script>
-<script src="js/app.js?v=30"></script>
+<script src="js/vendor/qrcode.min.js?v=32"></script>
+<script src="js/firebase-config.js?v=32"></script>
+<script type="module" src="js/live-firebase.js?v=32"></script>
+<script src="js/topics-seed.js?v=32"></script>
+<script src="js/ai-import.js?v=32"></script>
+<script src="js/store.js?v=32"></script>
+<script src="js/noise.js?v=32"></script>
+<script src="js/classes.js?v=32"></script>
+<script src="js/lessons.js?v=32"></script>
+<script src="js/band.js?v=32"></script>
+<script src="js/notes.js?v=32"></script>
+<script src="js/sync.js?v=32"></script>
+<script src="js/setlisten.js?v=32"></script>
+<script src="js/einklappen.js?v=32"></script>
+<script src="js/live-groups.js?v=32"></script>
+<script src="js/tools.js?v=32"></script>
+<script src="js/app.js?v=32"></script>
 </body>
 </html>

@@ -205,6 +205,8 @@ const Band = {
     this.renderGigs();
     this.renderRehearsals();
     this.fillClassPicker();
+    // Setlisten greifen auf die Songs zu – nach jeder Songänderung neu zeichnen
+    if (window.Setlisten) Setlisten.render();
   },
 
   /* ---------- Hilfsfunktionen ---------- */

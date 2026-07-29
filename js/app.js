@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Classes.init();
   Lessons.init();
   Band.init();
+  Setlisten.init();
   Notes.init();
   Sync.init();
   Einklappen.init();

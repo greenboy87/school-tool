@@ -251,6 +251,58 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .group-box ul { margin: 0; padding-left: 1.2em; line-height: 1.7; }
 .group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; background: var(--input-bg); color: var(--text); }
 .group-box input.grade.single { width: 3em; font-size: .85em; }
+/* ----- Setlisten ----- */
+.kat-leiste { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0 1rem; }
+.kat-chip {
+  display: inline-flex; align-items: center;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--panel); overflow: hidden;
+}
+.kat-chip.aktiv { border-color: var(--accent); background: var(--active-soft); }
+.kat-chip .kat-name {
+  background: none; border: none; color: inherit; font: inherit;
+  padding: .35rem .3rem .35rem .9rem; cursor: pointer;
+}
+.kat-chip.aktiv .kat-name { color: var(--accent-soft); font-weight: 600; }
+.kat-chip .kat-weg {
+  background: none; border: none; color: var(--muted);
+  padding: .35rem .7rem .35rem .3rem; cursor: pointer; line-height: 0;
+}
+.kat-chip .kat-weg:hover { color: var(--danger); }
+
+.feld-block { display: block; margin: 1rem 0; font-weight: 600; }
+.feld-block textarea {
+  display: block; width: 100%; margin-top: .35rem; font: inherit; font-weight: 400;
+  padding: .5rem .6rem; border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--input-bg); color: var(--text); resize: vertical;
+}
+
+.setlist-songs { list-style: none; margin: .6rem 0 1rem; padding: 0; }
+.setlist-songs > li {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: .6rem .8rem; margin-bottom: .55rem; background: var(--panel);
+}
+.setlist-songs > li.dragging { opacity: .6; border-color: var(--accent); }
+.sl-kopf { display: flex; align-items: center; gap: .6rem; }
+.sl-kopf .sname { flex: 1; }
+.sl-songnotiz {
+  display: flex; align-items: flex-start; gap: .5rem;
+  margin: .4rem 0 0 2.6rem; padding: .35rem .55rem;
+  border-left: 2px solid var(--border); background: var(--bg);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--muted); font-size: .88rem;
+}
+.sl-songnotiz span { flex: 1; }
+.sl-songnotiz .del.klein { padding: 0 .2rem; line-height: 0; }
+.sl-wieder { margin: .4rem 0 0 2.6rem; }
+.setlist-songs textarea.sl-notiz {
+  display: block; width: calc(100% - 2.6rem); margin: .45rem 0 0 2.6rem;
+  font: inherit; padding: .4rem .55rem; resize: vertical;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--input-bg); color: var(--text);
+}
+#setlist-add-song { margin-top: .3rem; }
+
 /* ----- Klassenlisten ein-/ausklappen ----- */
 .ist-eingeklappt { display: none; }
 
@@ -455,6 +507,13 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
   .band-print table.kompakt .leer {
     width: 6.5%;
     border-left: .5pt solid #d8d5cc;
+  }
+
+  /* Anmerkung zur ganzen Setlist steht über der Tabelle */
+  .band-print .setlist-notiz {
+    margin: 0 0 12pt; padding: 6pt 8pt;
+    border-left: 2.5pt solid #c2603f; background: #faf9f5;
+    font-size: 10pt; white-space: pre-wrap;
   }
 
   .band-print .fuss {
