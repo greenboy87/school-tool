@@ -809,8 +809,22 @@ const Band = {
       inhalt +
       `<div class="fuss">School-Tool · erstellt am ${heute}</div>`;
     document.body.appendChild(box);
+    // Der Seitentitel wird beim „Als PDF speichern“ zum Dateinamen – sonst hieße
+    // jede Datei „School-Tool – Lehrer-Werkzeuge“.
+    const alterTitel = document.title;
+    document.title = this.dateiname(titel);
     window.print();
+    document.title = alterTitel;
     setTimeout(() => box.remove(), 500);
+  },
+
+  /* Die Überschrift wird zum Dateinamen – Zeichen raus, die Dateisysteme nicht mögen */
+  dateiname(titel) {
+    return String(titel || '')
+      .replace(/[\\/:*?"<>|]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 90) || 'School-Tool';
   },
 
   /* Tabelle fürs Druckbild bauen – mit thead, damit die Kopfzeile auf jeder Seite steht */

@@ -143,7 +143,7 @@ const Tresor = {
         if (still || confirm(
           `Auf dem Server liegt ein neuerer Stand (${this.zeit(fernStand)}).\n\n` +
           'Diesen jetzt übernehmen? Die Daten auf diesem Gerät werden ersetzt.')) {
-          this.uebernehmen(daten, fernStand);
+          await this.uebernehmen(daten, fernStand);
           this.status('Stand vom Server übernommen (' + this.zeit(fernStand) + ').');
           this.knopfAktualisieren();
           return;
@@ -179,10 +179,13 @@ const Tresor = {
     }
   },
 
-  uebernehmen(daten, stand) {
+  async uebernehmen(daten, stand) {
     daten.standAt = stand;
     Store.save(daten);
     this.letzterStand = stand;
+    // Sitzpläne liegen in eigenen Knoten – vor dem Neuladen mitholen
+    this.status('hole Sitzpläne …');
+    try { await this.plaeneHolen(); } catch (e) { console.error('Sitzplaene:', e); }
     location.reload();
   },
 
@@ -202,13 +205,26 @@ const Tresor = {
       localStorage.setItem(Store.KEY, JSON.stringify(daten));   // ohne erneuten Sync-Anstoß
 
       const paket = await this.verschluesseln(daten);
-      const { db, ref, set } = window.FB;
-      await set(ref(db, `schoolTool/tresor/${this.id}`), {
+      const { db, ref, update } = window.FB;
+      // update statt set: ein set würde den Sitzplan-Ast „plaene“ mitlöschen
+      await update(ref(db, `schoolTool/tresor/${this.id}`), {
         ...paket, stand, geraet: this.geraetName(),
       });
       this.letzterStand = stand;
       this.status('gesichert ' + this.zeit(stand));
-      if (laut) alert('Daten wurden verschlüsselt hochgeladen.');
+
+      // Sitzpläne getrennt behandeln: Wenn hier etwas klemmt, sind die
+      // Hauptdaten trotzdem gesichert – die Meldung darf das nicht verwischen.
+      let planFehler = null;
+      try { await this.plaeneHochladen(); }
+      catch (e) { planFehler = this.fehlertext(e); }
+      if (planFehler) this.status('gesichert ' + this.zeit(stand) +
+        ' · Sitzpläne nicht: ' + planFehler, true);
+
+      if (laut) alert(planFehler
+        ? 'Daten wurden verschlüsselt hochgeladen.\n\nDie Sitzpläne konnten nicht ' +
+          'mitgenommen werden:\n' + planFehler
+        : 'Daten wurden verschlüsselt hochgeladen.');
     } catch (e) {
       this.status('Hochladen fehlgeschlagen: ' + this.fehlertext(e), true);
       if (laut) alert('Hochladen fehlgeschlagen.\n\n' + this.fehlertext(e));
@@ -229,10 +245,79 @@ const Tresor = {
         `Stand vom Server: ${this.zeit(paket.stand)}\n` +
         `${(daten.classes || []).length} Klassen\n\n` +
         'Übernehmen? Die Daten auf diesem Gerät werden dabei ersetzt.')) return;
-      this.uebernehmen(daten, paket.stand || Date.now());
+      await this.uebernehmen(daten, paket.stand || Date.now());
     } catch (e) {
       alert('Herunterladen fehlgeschlagen.\n\n' + this.fehlertext(e));
     }
+  },
+
+  /* ---------- Sitzpläne ----------
+     Die PDFs liegen nicht im normalen Speicher, sondern in IndexedDB – sie müssen
+     deshalb einzeln mitgenommen werden. Jeder Plan bekommt seinen eigenen Knoten,
+     damit ein großes PDF nicht die ganze Übertragung sprengt. Verschlüsselt wird
+     mit demselben Schlüssel wie die übrigen Daten. */
+  MAX_PLAN: 4 * 1024 * 1024,
+  PLAN_MERKER: 'tresor-plaene',
+
+  merker() {
+    try { return JSON.parse(localStorage.getItem(this.PLAN_MERKER) || '{}'); }
+    catch (e) { return {}; }
+  },
+
+  fingerabdruck(name, groesse) { return `${name}|${groesse}`; },
+
+  async plaeneHochladen() {
+    if (!this.aktiv()) return;
+    const ids = await Store.allSeatplanIds();
+    const merker = this.merker();
+    const { db, ref, set } = window.FB;
+    for (const klasseId of ids) {
+      const eintrag = await Store.getSeatplan(klasseId);
+      if (!eintrag || !eintrag.blob) continue;
+      const fp = this.fingerabdruck(eintrag.name, eintrag.blob.size);
+      if (merker[klasseId] === fp) continue;              // unverändert, nichts zu tun
+      if (eintrag.blob.size > this.MAX_PLAN) {
+        this.status(`Sitzplan „${eintrag.name}“ ist zu groß für den Sync ` +
+          `(${Math.round(eintrag.blob.size / 1024 / 1024)} MB, erlaubt sind 4 MB).`, true);
+        continue;
+      }
+      const bytes = new Uint8Array(await eintrag.blob.arrayBuffer());
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const chiffre = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, this.schluessel, bytes);
+      await set(ref(db, `schoolTool/tresor/${this.id}/plaene/${klasseId}`), {
+        chiffre: this.nachB64(new Uint8Array(chiffre)),
+        iv: this.nachB64(iv),
+        name: eintrag.name || 'Sitzplan.pdf',
+        typ: eintrag.type || 'application/pdf',
+        stand: Date.now(),
+      });
+      merker[klasseId] = fp;
+    }
+    localStorage.setItem(this.PLAN_MERKER, JSON.stringify(merker));
+  },
+
+  async plaeneHolen() {
+    if (!this.aktiv()) return 0;
+    const { db, ref, get } = window.FB;
+    const alle = (await get(ref(db, `schoolTool/tresor/${this.id}/plaene`))).val() || {};
+    const merker = {};
+    let geholt = 0;
+    for (const [klasseId, p] of Object.entries(alle)) {
+      try {
+        const iv = this.vonB64(p.iv);
+        const klar = await crypto.subtle.decrypt(
+          { name: 'AES-GCM', iv }, this.schluessel, this.vonB64(p.chiffre));
+        const datei = new File([klar], p.name || 'Sitzplan.pdf',
+          { type: p.typ || 'application/pdf' });
+        await Store.putSeatplan(klasseId, datei);
+        merker[klasseId] = this.fingerabdruck(datei.name, datei.size);
+        geholt++;
+      } catch (e) {
+        console.error('Sitzplan konnte nicht übernommen werden:', klasseId, e);
+      }
+    }
+    localStorage.setItem(this.PLAN_MERKER, JSON.stringify(merker));
+    return geholt;
   },
 
   /* ---------- Verschlüsselung ---------- */

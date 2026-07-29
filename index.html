@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=38">
+<link rel="stylesheet" href="style.css?v=41">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=38"></script>
-<script src="js/theme.js?v=38"></script>
-<script src="js/auth.js?v=38"></script>
+<script src="js/icons.js?v=41"></script>
+<script src="js/theme.js?v=41"></script>
+<script src="js/auth.js?v=41"></script>
 </head>
 <body>
 
@@ -78,16 +78,9 @@
       <ul id="class-list" class="class-list"></ul>
       <form id="form-new-class" class="new-class-form">
         <input type="text" id="new-class-name" placeholder="z.&thinsp;B. 5c Musik" required>
-        <div class="new-class-row">
-          <select id="new-class-grade" title="Jahrgangsstufe der neuen Klasse – steuert, welche Stundenthemen vorgeschlagen werden. Wirkt erst beim Anlegen.">
-            <option value="">Jahrgangsstufe …</option>
-            <option>5</option><option>6</option><option>7</option>
-            <option>8</option><option>9</option><option>10</option>
-          </select>
-          <input type="text" id="new-class-year" title="Schuljahr" placeholder="Schuljahr">
-        </div>
+        <input type="text" id="new-class-year" title="Schuljahr" placeholder="Schuljahr">
         <button type="submit" class="primary" data-icon="plus">Klasse anlegen</button>
-        <p class="hint">Name eintragen, Jahrgangsstufe wählen, dann „Klasse anlegen“. Die Stufe allein bewirkt noch nichts – sie legt fest, welche Stundenthemen später vorgeschlagen werden.</p>
+        <p class="hint">Name eintragen, „Klasse anlegen“ – fertig. Die Jahrgangsstufe liest das Tool aus dem Namen („9c“ → 9); sie steuert nur, welche Stundenthemen vorgeschlagen werden.</p>
       </form>
     </aside>
     <section class="klassen-main">
@@ -588,22 +581,22 @@
 <footer class="footer hint">Die Daten liegen in diesem Browser. Mit eingeschaltetem <strong>Sync</strong> werden sie zusätzlich verschlüsselt zwischen deinen Geräten abgeglichen – lesbar nur mit deinem Sync-Passwort. Trotzdem ab und zu ein <strong>Backup</strong> als Datei sichern: Ohne das Sync-Passwort lassen sich die Daten nicht wiederherstellen.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=38"></script>
-<script src="js/firebase-config.js?v=38"></script>
-<script type="module" src="js/live-firebase.js?v=38"></script>
-<script src="js/topics-seed.js?v=38"></script>
-<script src="js/ai-import.js?v=38"></script>
-<script src="js/store.js?v=38"></script>
-<script src="js/noise.js?v=38"></script>
-<script src="js/classes.js?v=38"></script>
-<script src="js/lessons.js?v=38"></script>
-<script src="js/band.js?v=38"></script>
-<script src="js/notes.js?v=38"></script>
-<script src="js/tresor.js?v=38"></script>
-<script src="js/setlisten.js?v=38"></script>
-<script src="js/einklappen.js?v=38"></script>
-<script src="js/live-groups.js?v=38"></script>
-<script src="js/tools.js?v=38"></script>
-<script src="js/app.js?v=38"></script>
+<script src="js/vendor/qrcode.min.js?v=41"></script>
+<script src="js/firebase-config.js?v=41"></script>
+<script type="module" src="js/live-firebase.js?v=41"></script>
+<script src="js/topics-seed.js?v=41"></script>
+<script src="js/ai-import.js?v=41"></script>
+<script src="js/store.js?v=41"></script>
+<script src="js/noise.js?v=41"></script>
+<script src="js/classes.js?v=41"></script>
+<script src="js/lessons.js?v=41"></script>
+<script src="js/band.js?v=41"></script>
+<script src="js/notes.js?v=41"></script>
+<script src="js/tresor.js?v=41"></script>
+<script src="js/setlisten.js?v=41"></script>
+<script src="js/einklappen.js?v=41"></script>
+<script src="js/live-groups.js?v=41"></script>
+<script src="js/tools.js?v=41"></script>
+<script src="js/app.js?v=41"></script>
 </body>
 </html>

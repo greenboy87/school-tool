@@ -383,9 +383,6 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 /* ---------- Stundenthemen ---------- */
 .year-filter { display: flex; align-items: center; gap: .4em; margin-bottom: .8rem; }
 .year-filter select { padding: .25rem .4rem; font-size: .85rem; }
-.new-class-row { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
-.new-class-row.single { grid-template-columns: 1fr; }
-.new-class-row select { padding: .5rem .3rem; }
 .class-sub { color: var(--muted); font-weight: 400; font-size: .8rem; margin-left: .6em; }
 
 .lesson-bar-wrap { height: 8px; border-radius: 4px; background: var(--track); overflow: hidden; margin: .2rem 0 1rem; }

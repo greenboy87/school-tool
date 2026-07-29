@@ -32,6 +32,16 @@ Regelwerk unten hinein.
           "salz":    { ".validate": "newData.isString() && newData.val().length <= 64" },
           "stand":   { ".validate": "newData.isNumber()" },
           "geraet":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+          "plaene": {
+            "$klasse": {
+              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 6000000" },
+              "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
+              "name":    { ".validate": "newData.isString() && newData.val().length <= 200" },
+              "typ":     { ".validate": "newData.isString() && newData.val().length <= 100" },
+              "stand":   { ".validate": "newData.isNumber()" },
+              "$andere": { ".validate": false }
+            }
+          },
           "$andere": { ".validate": false }
         }
       },
@@ -91,6 +101,16 @@ fügst nur einen Block hinzu:
           "salz":    { ".validate": "newData.isString() && newData.val().length <= 64" },
           "stand":   { ".validate": "newData.isNumber()" },
           "geraet":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+          "plaene": {
+            "$klasse": {
+              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 6000000" },
+              "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
+              "name":    { ".validate": "newData.isString() && newData.val().length <= 200" },
+              "typ":     { ".validate": "newData.isString() && newData.val().length <= 100" },
+              "stand":   { ".validate": "newData.isNumber()" },
+              "$andere": { ".validate": false }
+            }
+          },
           "$andere": { ".validate": false }
         }
       },

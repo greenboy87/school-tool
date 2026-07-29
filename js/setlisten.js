@@ -56,7 +56,9 @@ const Setlisten = {
         datum: document.getElementById('new-setlist-date').value || '',
         notiz: '', eintraege: [],
       };
-      this.d().setlists.push(liste);
+      // Vorne einfügen: die neueste Setlist steht oben. Die Reihenfolge in diesem
+      // Feld ist die Anzeigereihenfolge und lässt sich mit den Pfeilen ändern.
+      this.d().setlists.unshift(liste);
       this.aktuelleId = liste.id;
       this.save();
       feld.value = '';
@@ -167,14 +169,13 @@ const Setlisten = {
 
     const ul = document.getElementById('setlist-list');
     ul.innerHTML = '';
-    const liste = b.setlists
-      .filter(s => s.kategorie === this.aktuelleKategorie)
-      .sort((a, c) => (c.datum || '').localeCompare(a.datum || ''));
+    // Reihenfolge = Reihenfolge im Feld; neue stehen vorne, Pfeile verschieben
+    const liste = b.setlists.filter(s => s.kategorie === this.aktuelleKategorie);
     if (!liste.length) {
       ul.innerHTML = '<li class="hint">In dieser Kategorie gibt es noch keine Setlist.</li>';
       return;
     }
-    for (const l of liste) {
+    liste.forEach((l, i) => {
       const li = document.createElement('li');
       li.classList.toggle('active', l.id === this.aktuelleId);
       const name = document.createElement('span');
@@ -186,10 +187,53 @@ const Setlisten = {
       const zahl = document.createElement('span');
       zahl.className = 'pavg';
       zahl.textContent = l.eintraege.length === 1 ? '1 Song' : `${l.eintraege.length} Songs`;
-      li.append(name, datum, zahl);
+
+      const werkzeuge = document.createElement('span');
+      werkzeuge.className = 'sl-werkzeuge';
+      const knopf = (icon, titel, aktion, aus) => {
+        const b2 = document.createElement('button');
+        b2.className = 'small';
+        b2.innerHTML = Icons.raw(icon);
+        b2.title = titel;
+        b2.disabled = !!aus;
+        b2.addEventListener('click', ev => { ev.stopPropagation(); aktion(); });
+        return b2;
+      };
+      werkzeuge.append(
+        knopf('chevronUp', 'Nach oben', () => this.verschieben(l, -1), i === 0),
+        knopf('chevronDown', 'Nach unten', () => this.verschieben(l, 1), i === liste.length - 1),
+        knopf('plus', 'Setlist duplizieren', () => this.duplizieren(l)));
+
+      li.append(name, datum, zahl, werkzeuge);
       li.addEventListener('click', () => { this.aktuelleId = l.id; this.render(); });
       ul.appendChild(li);
-    }
+    });
+  },
+
+  /* Verschiebt innerhalb der Kategorie – der Nachbar in derselben Kategorie
+     kann im Gesamtfeld weiter entfernt liegen, deshalb wird er gesucht. */
+  verschieben(l, richtung) {
+    const alle = this.d().setlists;
+    const gleiche = alle.filter(s => s.kategorie === l.kategorie);
+    const pos = gleiche.indexOf(l);
+    const nachbar = gleiche[pos + richtung];
+    if (!nachbar) return;
+    const a = alle.indexOf(l), b = alle.indexOf(nachbar);
+    alle[a] = nachbar;
+    alle[b] = l;
+    this.save();
+    this.renderListe();
+  },
+
+  duplizieren(l) {
+    const kopie = JSON.parse(JSON.stringify(l));
+    kopie.id = Store.uid();
+    kopie.name = l.name + ' (Kopie)';
+    const alle = this.d().setlists;
+    alle.splice(alle.indexOf(l), 0, kopie);   // direkt über dem Original
+    this.aktuelleId = kopie.id;
+    this.save();
+    this.render();
   },
 
   /* ---------- Eine Setlist ---------- */

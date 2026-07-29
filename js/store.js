@@ -65,6 +65,16 @@ const Store = {
     });
   },
 
+  /* Alle Klassen-IDs, zu denen ein Sitzplan hinterlegt ist (für den Sync) */
+  async allSeatplanIds() {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction('seatplans').objectStore('seatplans').getAllKeys();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  },
+
   async getSeatplan(classId) {
     const db = await this.openDB();
     return new Promise((resolve, reject) => {

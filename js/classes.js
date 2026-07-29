@@ -28,7 +28,6 @@ const Classes = {
     if (!this.SHOW_YEARS) {
       document.querySelector('.year-filter').hidden = true;
       document.getElementById('new-class-year').hidden = true;
-      document.querySelector('.new-class-row').classList.add('single');
       document.getElementById('btn-carry-class').hidden = true;
     }
 
@@ -36,20 +35,19 @@ const Classes = {
     document.getElementById('form-new-class').addEventListener('submit', e => {
       e.preventDefault();
       const input = document.getElementById('new-class-name');
-      const gradeEl = document.getElementById('new-class-grade');
       const yearEl = document.getElementById('new-class-year');
       const name = input.value.trim();
       if (!name) return;
       const cls = {
         id: Store.uid(), name,
-        grade: parseInt(gradeEl.value, 10) || this.gradeFromName(name),
+        // Jahrgangsstufe steckt im Namen („9c“ → 9); sie steuert nur die Themenvorschläge
+        grade: this.gradeFromName(name),
         year: yearEl.value.trim() || this.currentSchoolYear(),
         students: [], projects: [], lessons: {},
       };
       this.data.classes.push(cls);
       this.persist();
       input.value = '';
-      gradeEl.value = '';
       this.yearFilter = cls.year;
       this.selectClass(cls.id);
     });
