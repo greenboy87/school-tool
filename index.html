@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=36">
+<link rel="stylesheet" href="style.css?v=38">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=36"></script>
-<script src="js/theme.js?v=36"></script>
-<script src="js/auth.js?v=36"></script>
+<script src="js/icons.js?v=38"></script>
+<script src="js/theme.js?v=38"></script>
+<script src="js/auth.js?v=38"></script>
 </head>
 <body>
 
@@ -24,8 +24,10 @@
   <div class="backup-btns">
     <button id="btn-tresor" data-icon="upload" title="Daten verschlüsselt zwischen deinen Geräten abgleichen">Sync</button>
     <span class="hint sync-status" id="tresor-status"></span>
-    <button id="btn-export" data-icon="download" title="Alle Daten als Datei sichern">Backup</button>
-    <button id="btn-import" data-icon="upload" title="Backup-Datei wiederherstellen">Wiederherstellen</button>
+    <button id="btn-export" class="nur-icon" data-icon="download" aria-label="Backup speichern"
+            title="Backup: alle Daten als Datei auf diesem Gerät sichern"></button>
+    <button id="btn-import" class="nur-icon" data-icon="upload" aria-label="Backup wiederherstellen"
+            title="Wiederherstellen: Backup-Datei einlesen und alle aktuellen Daten damit ersetzen"></button>
     <button id="btn-theme" title="Zum hellen Design wechseln">Hell</button>
     <button id="btn-lock" data-icon="lock" title="Sofort sperren. Von selbst sperrt sich die Seite nach 2 Stunden ohne Nutzung.">Sperren</button>
     <input type="file" id="import-file" accept=".json" hidden>
@@ -583,25 +585,25 @@
   </div>
 </main>
 
-<footer class="footer hint">Alle Daten werden nur lokal in deinem Browser gespeichert (kein Server). Regelmäßig ein Backup machen – z.&thinsp;B. am Schuljahresende oder vor einem Browserwechsel.</footer>
+<footer class="footer hint">Die Daten liegen in diesem Browser. Mit eingeschaltetem <strong>Sync</strong> werden sie zusätzlich verschlüsselt zwischen deinen Geräten abgeglichen – lesbar nur mit deinem Sync-Passwort. Trotzdem ab und zu ein <strong>Backup</strong> als Datei sichern: Ohne das Sync-Passwort lassen sich die Daten nicht wiederherstellen.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=36"></script>
-<script src="js/firebase-config.js?v=36"></script>
-<script type="module" src="js/live-firebase.js?v=36"></script>
-<script src="js/topics-seed.js?v=36"></script>
-<script src="js/ai-import.js?v=36"></script>
-<script src="js/store.js?v=36"></script>
-<script src="js/noise.js?v=36"></script>
-<script src="js/classes.js?v=36"></script>
-<script src="js/lessons.js?v=36"></script>
-<script src="js/band.js?v=36"></script>
-<script src="js/notes.js?v=36"></script>
-<script src="js/tresor.js?v=36"></script>
-<script src="js/setlisten.js?v=36"></script>
-<script src="js/einklappen.js?v=36"></script>
-<script src="js/live-groups.js?v=36"></script>
-<script src="js/tools.js?v=36"></script>
-<script src="js/app.js?v=36"></script>
+<script src="js/vendor/qrcode.min.js?v=38"></script>
+<script src="js/firebase-config.js?v=38"></script>
+<script type="module" src="js/live-firebase.js?v=38"></script>
+<script src="js/topics-seed.js?v=38"></script>
+<script src="js/ai-import.js?v=38"></script>
+<script src="js/store.js?v=38"></script>
+<script src="js/noise.js?v=38"></script>
+<script src="js/classes.js?v=38"></script>
+<script src="js/lessons.js?v=38"></script>
+<script src="js/band.js?v=38"></script>
+<script src="js/notes.js?v=38"></script>
+<script src="js/tresor.js?v=38"></script>
+<script src="js/setlisten.js?v=38"></script>
+<script src="js/einklappen.js?v=38"></script>
+<script src="js/live-groups.js?v=38"></script>
+<script src="js/tools.js?v=38"></script>
+<script src="js/app.js?v=38"></script>
 </body>
 </html>
