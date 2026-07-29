@@ -153,7 +153,22 @@ const Tresor = {
       this.status('verbunden');
       await this.hochladen(false);
     } else {
-      // Neuer Tresor
+      // Unter diesem Passwort liegt nichts. Das heißt entweder „erstes Gerät“ –
+      // oder es ist ein Tippfehler. Weil der Speicherort am Passwort hängt, würde
+      // ein Tippfehler sonst stillschweigend einen zweiten, leeren Tresor anlegen
+      // und die eigenen Daten unauffindbar machen. Deshalb hier nachfragen.
+      const lokal = Store.load().classes || [];
+      if (!still && !confirm(
+        'Unter diesem Sync-Passwort liegen noch keine Daten.\n\n' +
+        'Ist dies dein erstes Gerät? Dann OK – es wird ein neuer Tresor angelegt' +
+        (lokal.length ? ` und die ${lokal.length} Klassen von diesem Gerät werden hochgeladen.` : '.') +
+        '\n\nErwartest du hier deine Daten von einem anderen Gerät, hast du dich ' +
+        'vermutlich vertippt: Abbrechen und noch einmal versuchen.')) {
+        this.schluessel = null;
+        this.status('Abgebrochen – kein Tresor angelegt.');
+        this.knopfAktualisieren();
+        return;
+      }
       this.salz = crypto.getRandomValues(new Uint8Array(16));
       this.schluessel = await this.schluesselAus(pw, this.salz);
       localStorage.setItem(this.PASS_KEY, pw);

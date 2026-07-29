@@ -9,5 +9,5 @@ window.FIREBASE_CONFIG = {
   projectId: 'school-tool-cbbf9',
   storageBucket: 'school-tool-cbbf9.firebasestorage.app',
   messagingSenderId: '1065429467632',
-  appId: '1:1065429467632:web:fa1c94aaff6d457add9d35',
+  appId: '1:1065429467632:web:db719f5cd24e8631dd9d35',   // Web-App „school-tool-neu“
 };
