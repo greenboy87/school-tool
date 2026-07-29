@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Band.init();
   Setlisten.init();
   Notes.init();
-  Sync.init();
+  Tresor.init();
   Einklappen.init();
   LiveGroups.init();
   Tools.init();

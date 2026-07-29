@@ -23,6 +23,18 @@ Regelwerk unten hinein.
 {
   "rules": {
     "schoolTool": {
+      "tresor": {
+        "$id": {
+          ".read": true,
+          ".write": true,
+          "chiffre": { ".validate": "newData.isString() && newData.val().length <= 6000000" },
+          "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "salz":    { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "stand":   { ".validate": "newData.isNumber()" },
+          "geraet":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+          "$andere": { ".validate": false }
+        }
+      },
       "raeume": {
         "$raum": {
           ".read": true,
@@ -70,6 +82,18 @@ fügst nur einen Block hinzu:
 
 ```json
     "schoolTool": {
+      "tresor": {
+        "$id": {
+          ".read": true,
+          ".write": true,
+          "chiffre": { ".validate": "newData.isString() && newData.val().length <= 6000000" },
+          "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "salz":    { ".validate": "newData.isString() && newData.val().length <= 64" },
+          "stand":   { ".validate": "newData.isNumber()" },
+          "geraet":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+          "$andere": { ".validate": false }
+        }
+      },
       "raeume": {
         "$raum": {
           ".read": true,

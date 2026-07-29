@@ -251,6 +251,9 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .group-box ul { margin: 0; padding-left: 1.2em; line-height: 1.7; }
 .group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; background: var(--input-bg); color: var(--text); }
 .group-box input.grade.single { width: 3em; font-size: .85em; }
+/* ----- Geräte-Sync ----- */
+#btn-tresor.aktiv { border-color: var(--accent); color: var(--accent-soft); }
+
 /* ----- Setlisten ----- */
 .kat-leiste { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0 1rem; }
 .kat-chip {
