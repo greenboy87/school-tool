@@ -252,7 +252,16 @@ input[type="checkbox"] { accent-color: var(--accent); }
 
 .group-result { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 1rem; }
 .group-box { border: 1px solid var(--border); border-radius: var(--radius); padding: .8rem 1rem; min-width: 170px; }
-.group-box h4 { margin: 0 0 .4em; color: var(--accent-soft); }
+.group-box h4 { margin: 0 0 .4em; color: var(--accent-soft); display: flex; align-items: center; gap: .4rem; }
+.group-box .gruppen-nr { color: var(--muted); font-weight: 400; flex: 0 0 auto; }
+/* Gruppenname direkt im Kopf änderbar */
+.group-box input.gruppen-name {
+  flex: 1; min-width: 5rem; font: inherit; color: var(--accent-soft);
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  padding: .15rem .3rem;
+}
+.group-box input.gruppen-name:hover { border-color: var(--border); }
+.group-box input.gruppen-name:focus { background: var(--input-bg); border-color: var(--accent); }
 .group-box ul { margin: 0; padding-left: 1.2em; line-height: 1.7; }
 .group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; background: var(--input-bg); color: var(--text); }
 .group-box input.grade.single { width: 3em; font-size: .85em; }

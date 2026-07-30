@@ -711,8 +711,23 @@ const Classes = {
         const box = document.createElement('div');
         box.className = 'group-box';
         const h = document.createElement('h4');
-        const label = (p.groupNames && p.groupNames[i]) ? ` – ${p.groupNames[i]}` : '';
-        h.textContent = `Gruppe ${i + 1}${label} `;
+        const nr = document.createElement('span');
+        nr.className = 'gruppen-nr';
+        nr.textContent = `${i + 1}.`;
+        // Gruppenname jederzeit änderbar
+        const nameFeld = document.createElement('input');
+        nameFeld.type = 'text';
+        nameFeld.className = 'cell-input gruppen-name';
+        nameFeld.value = (p.groupNames && p.groupNames[i]) || '';
+        nameFeld.placeholder = `Gruppe ${i + 1}`;
+        nameFeld.title = 'Gruppennamen ändern';
+        nameFeld.addEventListener('change', () => {
+          if (!p.groupNames) p.groupNames = [];
+          p.groupNames[i] = nameFeld.value.trim();
+          this.persist();
+          this.renderProjects();
+        });
+        h.append(nr, nameFeld);
         const input = document.createElement('input');
         input.className = 'grade';
         input.placeholder = 'Note';
@@ -937,9 +952,10 @@ const Classes = {
     this.zeigeProjektErgebnis(anzahl, "group-result");
   },
 
-  /* Das Ergebnis erscheint rund 1000 px weiter oben – ohne Rückmeldung sieht es
-     unten am Knopf so aus, als sei nichts passiert. Darum beides: eine Meldung
-     dort, wo geklickt wurde, und der Sprung nach oben zur Notenliste. */
+  /* Gruppen entstehen im Reiter „Gruppen“, das Projekt liegt aber unter
+     „Projekte & Noten“. Ohne Rückmeldung sähe es am Knopf so aus, als sei
+     nichts passiert – deshalb eine Meldung dort, wo geklickt wurde, samt
+     Knopf zum Hinüberwechseln. */
   zeigeProjektErgebnis(anzahlGruppen, untenId) {
     const detail = document.getElementById('project-detail');
     if (!detail || detail.hidden) return;
@@ -955,11 +971,11 @@ const Classes = {
       const box = document.createElement('div');
       box.className = 'gespeichert-hinweis unten';
       const t = document.createElement('span');
-      t.textContent = text + ' Die Notenliste steht im Projektfenster unten auf der Seite.';
+      t.textContent = text + ' Zu finden im Reiter „Projekte & Noten“.';
       const hin = document.createElement('button');
       hin.className = 'small';
-      hin.textContent = 'Zur Notenliste';
-      hin.addEventListener('click', () => detail.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      hin.textContent = 'Dorthin wechseln';
+      hin.addEventListener('click', () => this.zeigeProjekteReiter());
       box.append(t, hin);
       unten.replaceChildren(box);
     }
@@ -979,7 +995,14 @@ const Classes = {
       info.classList.add('frisch');
     }
 
-    detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+
+  /* Nach dem Anlegen von Gruppen: in den Reiter wechseln, wo das Projekt liegt */
+  zeigeProjekteReiter() {
+    const knopf = document.querySelector('.subtab-btn[data-subtab="projekte"]');
+    if (knopf) knopf.click();
+    const detail = document.getElementById('project-detail');
+    if (detail && !detail.hidden) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
   /* Zielprojekt für neu gebildete Gruppen: bestehendes ergänzen oder neues anlegen.
