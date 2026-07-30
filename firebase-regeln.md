@@ -12,12 +12,17 @@ Regelwerk unten hinein.
 
 ## Weg A – eigenes Firebase-Projekt (empfohlen)
 
-1. <https://console.firebase.google.com> → **Projekt hinzufügen**, Name z. B. `school-tool`.
-   Google Analytics dabei abwählen.
-2. **Realtime Database** → Datenbank erstellen → Region **europe-west1 (Belgien)**,
-   Start im **gesperrten Modus**.
-3. Reiter **Regeln**: den vorhandenen Inhalt **komplett markieren und ersetzen** durch
-   genau diesen Text:
+> **Wenn das Projekt schon steht** (bei Tom: `school-tool-cbbf9`), sind nur die
+> Schritte **R1 und R2** nötig. Die Schritte E1–E3 gelten ausschließlich für die
+> allererste Einrichtung – insbesondere muss **keine neue Web-App angelegt werden**,
+> wenn sich nur die Regeln ändern.
+
+### Regeln aktualisieren – das ist alles, was bei Änderungen zu tun ist
+
+**R1.** Firebase-Konsole → Projekt → **Realtime Database** → Reiter **Regeln**:
+den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Text.
+
+**R2.** **Veröffentlichen**. Fertig – im School-Tool einmal Strg+Shift+R.
 
 ```json
 {
@@ -72,11 +77,19 @@ Regelwerk unten hinein.
 }
 ```
 
-4. **Veröffentlichen**.
-5. **Projekteinstellungen** → *Meine Apps* → Web-App (`</>`) anlegen → die `firebaseConfig`
-   kopieren und in [`js/firebase-config.js`](js/firebase-config.js) eintragen.
-   Sonst ist nichts am Code zu ändern: Der Ordner `schoolTool` bleibt bewusst auch hier
-   erhalten, damit beide Wege denselben Pfad benutzen.
+### Nur bei der allerersten Einrichtung eines neuen Projekts
+
+**E1.** <https://console.firebase.google.com> → **Projekt hinzufügen**, Name z. B. `school-tool`.
+Google Analytics dabei abwählen.
+
+**E2.** **Realtime Database** → Datenbank erstellen → Region **europe-west1 (Belgien)**,
+Start im **gesperrten Modus**. Danach R1 und R2 von oben.
+
+**E3.** **Projekteinstellungen** → *Meine Apps* → Web-App (`</>`) anlegen → die
+`firebaseConfig` kopieren und in [`js/firebase-config.js`](js/firebase-config.js) eintragen.
+**Das ist einmalig pro Projekt** – bei späteren Regeländerungen entfällt dieser Schritt.
+Am Code ist sonst nichts zu tun: Der Ordner `schoolTool` bleibt bewusst auch hier
+erhalten, damit beide Wege denselben Pfad benutzen.
 
 ---
 
