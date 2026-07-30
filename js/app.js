@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Einklappen.init();
   LiveGroups.init();
   Tools.init();
+  Erklaerungen.init();
 
   /* ----- Haupttabs ----- */
   document.querySelectorAll('.tab-btn').forEach(btn => {

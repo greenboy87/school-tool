@@ -259,6 +259,23 @@ input[type="checkbox"] { accent-color: var(--accent); }
 /* ----- Geräte-Sync ----- */
 #btn-tresor.aktiv { border-color: var(--accent); color: var(--accent-soft); }
 
+/* ----- Eingeklappte Erklärtexte ----- */
+.erklaerung { margin: .5rem 0; }
+.erklaerung > summary {
+  display: inline-flex; align-items: center; gap: .3rem;
+  list-style: none; cursor: pointer; width: fit-content;
+  font-size: .78rem; color: var(--muted);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: .1rem .6rem;
+}
+.erklaerung > summary::-webkit-details-marker { display: none; }
+.erklaerung > summary::before { content: "?"; font-weight: 700; }
+.erklaerung > summary:hover { color: var(--accent-soft); border-color: var(--accent); }
+.erklaerung[open] > summary { margin-bottom: .4rem; }
+.erklaerung > .hint { margin: 0; }
+/* Auf dem Papier zählt der Inhalt nicht – Erklärungen bleiben dort weg */
+@media print { .erklaerung { display: none; } }
+
 /* ----- Setlisten ----- */
 /* Übersicht und geöffnete Setlist als zwei getrennte Fenster statt einem Block */
 .bandtab-page.geteilt { display: none; padding: 0; background: none; box-shadow: none; }
