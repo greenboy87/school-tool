@@ -226,7 +226,11 @@ const Setlisten = {
         knopf('plus', 'Setlist duplizieren', () => this.duplizieren(l)));
 
       li.append(name, datum, zahl, werkzeuge);
-      li.addEventListener('click', () => { this.aktuelleId = l.id; this.render(); });
+      // Nochmal auf dieselbe Setlist: wieder zuklappen
+      li.addEventListener('click', () => {
+        this.aktuelleId = this.aktuelleId === l.id ? null : l.id;
+        this.render();
+      });
       ul.appendChild(li);
     });
   },

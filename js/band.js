@@ -597,7 +597,11 @@ const Band = {
       cnt.className = 'pavg';
       cnt.textContent = g.songIds.length ? `${g.songIds.length} Songs` : '';
       li.append(name, date, cnt);
-      li.addEventListener('click', () => { this.currentGigId = g.id; this.renderGigs(); });
+      // Nochmal auf denselben Termin: wieder zuklappen
+      li.addEventListener('click', () => {
+        this.currentGigId = this.currentGigId === g.id ? null : g.id;
+        this.renderGigs();
+      });
       ul.appendChild(li);
     }
     this.renderGigDetail();
