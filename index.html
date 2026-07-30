@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=46">
+<link rel="stylesheet" href="style.css?v=48">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=46"></script>
-<script src="js/theme.js?v=46"></script>
-<script src="js/auth.js?v=46"></script>
+<script src="js/icons.js?v=48"></script>
+<script src="js/theme.js?v=48"></script>
+<script src="js/auth.js?v=48"></script>
 </head>
 <body>
 
@@ -136,35 +136,20 @@
           </div>
         </section>
 
-        <section id="subtab-projekte" class="subtab-page card">
-          <h3>Gruppen selbst zusammenstellen</h3>
-          <p class="hint">Beim Tippen schlägt das Feld Namen aus der Klassenliste vor – ein Klick auf den Vorschlag genügt, dann ist der Schüler sicher richtig verknüpft. Leere Felder werden beim Speichern ignoriert.</p>
-          <datalist id="student-options"></datalist>
-          <div id="manual-groups" class="group-result"></div>
-          <div class="inline-form">
-            <button id="btn-add-manual-group" data-icon="plus">Gruppe hinzufügen</button>
-            <input type="text" id="manual-project-name" placeholder="Projektname">
-            <input type="date" id="manual-project-date">
-            <button id="btn-save-manual" class="primary" data-icon="check">Als Projekt speichern</button>
+        <section id="subtab-projekte" class="subtab-page geteilt">
+          <div class="card">
+          <div class="projekt-header">
+            <h3>Projekte</h3>
+            <form id="form-new-project" class="inline-form">
+              <input type="text" id="new-project-name" placeholder="Projektname, z.&thinsp;B. Rhythmus-Referat" required>
+              <input type="date" id="new-project-date">
+              <button type="submit" class="primary">+ Projekt</button>
+            </form>
           </div>
-
-          <hr>
-          <h3>Zufallsgruppen bilden</h3>
-          <div class="inline-form">
-            <label>Modus:
-              <select id="group-mode">
-                <option value="size">Gruppengröße</option>
-                <option value="count">Anzahl Gruppen</option>
-              </select>
-            </label>
-            <input type="number" id="group-n" min="2" max="15" value="4">
-            <button id="btn-make-groups" class="primary" data-icon="shuffle">Auslosen</button>
-            <button id="btn-save-groups" data-icon="check" hidden>Als Projekt speichern</button>
+          <ul id="project-list" class="project-list"></ul>
           </div>
-          <div id="group-result" class="group-result"></div>
-
-          <hr>
-          <h3>Schüler bilden Gruppen selbst (QR-Code)</h3>
+          <div class="card">
+          <h3>Schüler bilden Gruppen</h3>
           <p class="hint">Du zeigst einen QR-Code auf der Leinwand, die Schüler scannen ihn mit dem Handy,
             wählen ihren Namen aus der Klassenliste und bilden Gruppen. Auf deinem Bildschirm siehst du
             live, wie sich die Einteilung füllt. <strong>Die Namen laufen dabei nicht über das Internet:</strong>
@@ -196,9 +181,21 @@
             </div>
             <div id="live-gruppen" class="group-result"></div>
           </div>
-
-          <hr>
-          <h3>Gruppen aus Dokument importieren</h3>
+          </div>
+          <div class="card">
+          <h3>Gruppen zusammenstellen</h3>
+          <p class="hint">Beim Tippen schlägt das Feld Namen aus der Klassenliste vor – ein Klick auf den Vorschlag genügt, dann ist der Schüler sicher richtig verknüpft. Leere Felder werden beim Speichern ignoriert.</p>
+          <datalist id="student-options"></datalist>
+          <div id="manual-groups" class="group-result"></div>
+          <div class="inline-form">
+            <button id="btn-add-manual-group" data-icon="plus">Gruppe hinzufügen</button>
+            <input type="text" id="manual-project-name" placeholder="Projektname">
+            <input type="date" id="manual-project-date">
+            <button id="btn-save-manual" class="primary" data-icon="check">Als Projekt speichern</button>
+          </div>
+          </div>
+          <div class="card">
+          <h3>Gruppen importieren</h3>
           <p class="hint">PDF mit deiner Gruppeneinteilung hochladen – egal welches Layout. Digitale Tabellen liest das Tool selbst (kostenlos). Gescannte, abfotografierte oder handschriftliche Dokumente wertet auf Wunsch die KI aus – die erkennt auch handschriftliche Noten und Gruppennamen. Die Gruppen werden in der Reihenfolge des Dokuments übernommen.</p>
           <div class="btn-row">
             <label class="file-btn" data-icon="file">Gruppen-PDF wählen<input type="file" id="groups-pdf" accept=".pdf,application/pdf" hidden></label>
@@ -225,19 +222,23 @@
             </div>
             <p class="hint" id="group-import-info"></p>
           </div>
-
-          <hr>
-          <div class="projekt-header">
-            <h3>Projekte</h3>
-            <form id="form-new-project" class="inline-form">
-              <input type="text" id="new-project-name" placeholder="Projektname, z.&thinsp;B. Rhythmus-Referat" required>
-              <input type="date" id="new-project-date">
-              <button type="submit" class="primary">+ Projekt</button>
-            </form>
           </div>
-          <ul id="project-list" class="project-list"></ul>
-
-          <div id="project-detail" hidden>
+          <div class="card">
+          <h3>Zufallsgruppen bilden</h3>
+          <div class="inline-form">
+            <label>Modus:
+              <select id="group-mode">
+                <option value="size">Gruppengröße</option>
+                <option value="count">Anzahl Gruppen</option>
+              </select>
+            </label>
+            <input type="number" id="group-n" min="2" max="15" value="4">
+            <button id="btn-make-groups" class="primary" data-icon="shuffle">Auslosen</button>
+            <button id="btn-save-groups" data-icon="check" hidden>Als Projekt speichern</button>
+          </div>
+          <div id="group-result" class="group-result"></div>
+          </div>
+          <div id="project-detail" class="card" hidden>
             <div class="projekt-header">
               <h3 id="project-title"></h3>
               <div class="btn-row">
@@ -589,23 +590,23 @@
 <footer class="footer hint">Die Daten liegen in diesem Browser. Mit eingeschaltetem <strong>Sync</strong> werden sie zusätzlich verschlüsselt zwischen deinen Geräten abgeglichen – lesbar nur mit deinem Sync-Passwort. Trotzdem ab und zu ein <strong>Backup</strong> als Datei sichern: Ohne das Sync-Passwort lassen sich die Daten nicht wiederherstellen.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=46"></script>
-<script src="js/firebase-config.js?v=46"></script>
-<script type="module" src="js/live-firebase.js?v=46"></script>
-<script src="js/topics-seed.js?v=46"></script>
-<script src="js/ai-import.js?v=46"></script>
-<script src="js/store.js?v=46"></script>
-<script src="js/noise.js?v=46"></script>
-<script src="js/classes.js?v=46"></script>
-<script src="js/lessons.js?v=46"></script>
-<script src="js/band.js?v=46"></script>
-<script src="js/notes.js?v=46"></script>
-<script src="js/tresor.js?v=46"></script>
-<script src="js/erklaerungen.js?v=46"></script>
-<script src="js/setlisten.js?v=46"></script>
-<script src="js/einklappen.js?v=46"></script>
-<script src="js/live-groups.js?v=46"></script>
-<script src="js/tools.js?v=46"></script>
-<script src="js/app.js?v=46"></script>
+<script src="js/vendor/qrcode.min.js?v=48"></script>
+<script src="js/firebase-config.js?v=48"></script>
+<script type="module" src="js/live-firebase.js?v=48"></script>
+<script src="js/topics-seed.js?v=48"></script>
+<script src="js/ai-import.js?v=48"></script>
+<script src="js/store.js?v=48"></script>
+<script src="js/noise.js?v=48"></script>
+<script src="js/classes.js?v=48"></script>
+<script src="js/lessons.js?v=48"></script>
+<script src="js/band.js?v=48"></script>
+<script src="js/notes.js?v=48"></script>
+<script src="js/tresor.js?v=48"></script>
+<script src="js/erklaerungen.js?v=48"></script>
+<script src="js/setlisten.js?v=48"></script>
+<script src="js/einklappen.js?v=48"></script>
+<script src="js/live-groups.js?v=48"></script>
+<script src="js/tools.js?v=48"></script>
+<script src="js/app.js?v=48"></script>
 </body>
 </html>

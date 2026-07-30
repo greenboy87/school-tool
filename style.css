@@ -277,9 +277,13 @@ input[type="checkbox"] { accent-color: var(--accent); }
 @media print { .erklaerung { display: none; } }
 
 /* ----- Setlisten ----- */
-/* Übersicht und geöffnete Setlist als zwei getrennte Fenster statt einem Block */
-.bandtab-page.geteilt { display: none; padding: 0; background: none; box-shadow: none; }
-.bandtab-page.geteilt.active { display: grid; gap: 1.2rem; }
+/* Jeder Bereich ein eigenes Fenster statt eines durchgehenden Blocks */
+.bandtab-page.geteilt, .subtab-page.geteilt {
+  display: none; padding: 0; background: none; box-shadow: none;
+}
+.bandtab-page.geteilt.active, .subtab-page.geteilt.active { display: grid; gap: 1.2rem; }
+/* Die Trennlinien zwischen den Bereichen sind durch die Fenster überflüssig */
+.geteilt > .card > hr:first-child { display: none; }
 
 .kat-leiste { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0 1rem; }
 .kat-chip {

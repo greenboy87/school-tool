@@ -955,12 +955,12 @@ const Classes = {
       const box = document.createElement('div');
       box.className = 'gespeichert-hinweis unten';
       const t = document.createElement('span');
-      t.textContent = text + ' Die Notenliste steht oben im Projekt.';
-      const hoch = document.createElement('button');
-      hoch.className = 'small';
-      hoch.textContent = 'Nach oben zum Projekt';
-      hoch.addEventListener('click', () => detail.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-      box.append(t, hoch);
+      t.textContent = text + ' Die Notenliste steht im Projektfenster unten auf der Seite.';
+      const hin = document.createElement('button');
+      hin.className = 'small';
+      hin.textContent = 'Zur Notenliste';
+      hin.addEventListener('click', () => detail.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      box.append(t, hin);
       unten.replaceChildren(box);
     }
 
