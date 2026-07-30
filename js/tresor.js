@@ -65,12 +65,14 @@ const Tresor = {
       return;
     }
     const pw = prompt(
-      'Geräte-Sync einrichten\n\n' +
-      'Wähle ein Sync-Passwort. Damit werden deine Daten auf diesem Gerät ' +
-      'verschlüsselt, bevor sie übertragen werden.\n\n' +
-      `Mindestens ${this.MIN_LAENGE} Zeichen. Auf jedem weiteren Gerät gibst du ` +
-      'genau dieses Passwort ein – dann sind alle Daten dort.\n\n' +
-      'ACHTUNG: Ohne das Passwort sind die Daten nicht wiederherstellbar. ' +
+      'Sync-Passwort eingeben\n\n' +
+      'Hast du den Sync auf einem anderen Gerät (z. B. Safari) schon eingerichtet?\n' +
+      '→ Dann gib hier GENAU DASSELBE Passwort ein. Die Daten von dort erscheinen ' +
+      'dann auf diesem Gerät.\n\n' +
+      'Ist dies dein erstes Gerät?\n' +
+      `→ Dann wähle jetzt ein Passwort, mindestens ${this.MIN_LAENGE} Zeichen. Damit ` +
+      'werden deine Daten verschlüsselt, bevor sie übertragen werden.\n\n' +
+      'ACHTUNG: Ohne dieses Passwort sind die Daten nicht wiederherstellbar. ' +
       'Schreib es dir auf.');
     if (pw === null) return;
     if (pw.trim().length < this.MIN_LAENGE) {
@@ -137,12 +139,23 @@ const Tresor = {
         return;
       }
       localStorage.setItem(this.PASS_KEY, pw);
-      const lokalStand = Store.load().standAt || 0;
+      const lokal = Store.load();
+      const lokalStand = lokal.standAt || 0;
       const fernStand = vorhanden.stand || 0;
       if (fernStand > lokalStand) {
+        // Beide Seiten benennen: Sonst weiß man nicht, was man gerade ersetzt.
+        const zaehle = d => {
+          const k = (d.classes || []).length;
+          const s = (d.classes || []).reduce((a, c) => a + (c.students || []).length, 0);
+          return `${k} ${k === 1 ? 'Klasse' : 'Klassen'}, ${s} Schüler`;
+        };
         if (still || confirm(
-          `Auf dem Server liegt ein neuerer Stand (${this.zeit(fernStand)}).\n\n` +
-          'Diesen jetzt übernehmen? Die Daten auf diesem Gerät werden ersetzt.')) {
+          'Passwort stimmt – auf dem Server liegen Daten.\n\n' +
+          `VOM SERVER (${this.zeit(fernStand)}, ${vorhanden.geraet || 'anderes Gerät'}):\n` +
+          `   ${zaehle(daten)}\n\n` +
+          'AUF DIESEM GERÄT' + (lokalStand ? ` (${this.zeit(lokalStand)})` : ' (noch nie abgeglichen)') + ':\n' +
+          `   ${zaehle(lokal)}\n\n` +
+          'Den Stand vom Server übernehmen? Die Daten auf diesem Gerät werden dabei ersetzt.')) {
           await this.uebernehmen(daten, fernStand);
           this.status('Stand vom Server übernommen (' + this.zeit(fernStand) + ').');
           this.knopfAktualisieren();
