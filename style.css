@@ -260,6 +260,10 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #btn-tresor.aktiv { border-color: var(--accent); color: var(--accent-soft); }
 
 /* ----- Setlisten ----- */
+/* Übersicht und geöffnete Setlist als zwei getrennte Fenster statt einem Block */
+.bandtab-page.geteilt { display: none; padding: 0; background: none; box-shadow: none; }
+.bandtab-page.geteilt.active { display: grid; gap: 1.2rem; }
+
 .kat-leiste { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0 1rem; }
 .kat-chip {
   display: inline-flex; align-items: center;
@@ -474,11 +478,16 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
     font-size: 20pt; font-weight: 700; letter-spacing: -.01em;
     margin: 0; padding-bottom: 6pt; border-bottom: 2.5pt solid #c2603f;
   }
+  /* Der Termin des Ereignisses – die wichtigste Angabe nach dem Titel */
+  .band-print .termin {
+    margin: 7pt 0 0; font-size: 13pt; font-weight: 700; color: #c2603f;
+  }
   .band-print .meta {
     display: flex; justify-content: space-between; gap: 2em;
     margin: 5pt 0 14pt; font-size: 8.5pt; color: #6b6a62;
     text-transform: uppercase; letter-spacing: .06em;
   }
+  .band-print .termin + .meta { margin-top: 3pt; }
 
   .band-print table { border-collapse: collapse; width: 100%; }
   .band-print thead { display: table-header-group; }   /* Kopfzeile auf jeder Seite */

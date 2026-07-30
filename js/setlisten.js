@@ -99,16 +99,33 @@ const Setlisten = {
     });
     document.getElementById('btn-delete-setlist').addEventListener('click', () => {
       const l = this.aktuelle();
-      if (!l || !confirm(`Setlist „${l.name}“ löschen?`)) return;
-      const b = this.d();
-      b.setlists = b.setlists.filter(x => x.id !== l.id);
-      this.aktuelleId = null;
-      this.save();
-      this.render();
+      if (!l) return;
+      const termine = this.verknuepfteTermine(l.id);
+      if (!confirm(`Setlist „${l.name}“ löschen?` + (termine.length
+        ? `\n\nSie ist mit ${termine.length} Termin(en) verknüpft: ` +
+          `${termine.map(g => g.name).join(', ')}.\nDie Verknüpfung wird dort gelöst.` : ''))) return;
+      this.loesche(l);
     });
     document.getElementById('btn-print-setlist').addEventListener('click', () => this.drucken());
 
     this.render();
+  },
+
+  /* Termine, die auf diese Setlist zeigen */
+  verknuepfteTermine(setlistId) {
+    return (Band.d().gigs || []).filter(g => g.setlistId === setlistId);
+  },
+
+  /* Beim Löschen die Verknüpfung in den Terminen lösen, damit dort kein
+     Verweis ins Leere stehen bleibt. */
+  loesche(l) {
+    for (const g of this.verknuepfteTermine(l.id)) g.setlistId = null;
+    const b = this.d();
+    b.setlists = b.setlists.filter(x => x.id !== l.id);
+    if (this.aktuelleId === l.id) this.aktuelleId = null;
+    this.save();
+    this.render();
+    if (typeof Band.renderGigs === 'function') Band.renderGigs();
   },
 
   /* ---------- Kategorien ---------- */
@@ -145,12 +162,16 @@ const Setlisten = {
           `In „${kat}“ liegen noch ${anzahl} Setlisten.\n\n` +
           'Beim Entfernen der Kategorie werden auch diese Setlisten gelöscht. Fortfahren?')) return;
         if (!anzahl && !confirm(`Kategorie „${kat}“ entfernen?`)) return;
+        // Verknüpfungen in den Terminen ebenfalls lösen
+        for (const s of b.setlists.filter(s => s.kategorie === kat))
+          for (const g of this.verknuepfteTermine(s.id)) g.setlistId = null;
         b.setlistKategorien = b.setlistKategorien.filter(k => k !== kat);
         b.setlists = b.setlists.filter(s => s.kategorie !== kat);
         if (this.aktuelleKategorie === kat) this.aktuelleKategorie = null;
         this.aktuelleId = null;
         this.save();
         this.render();
+        if (typeof Band.renderGigs === 'function') Band.renderGigs();
       });
 
       chip.append(knopf, weg);
@@ -397,6 +418,22 @@ const Setlisten = {
   drucken() {
     const l = this.aktuelle();
     if (!l) return;
+    this.druckeSetlist(l, l.name, Band.fmt(l.datum), `${l.kategorie} · ${this.anzahlText(l)}`);
+  },
+
+  /* Aus einem Termin heraus: Anlass und Termindaten stehen oben, die Setlist
+     liefert nur den Inhalt. */
+  druckeFuerTermin(l, g) {
+    const termin = [Band.fmt(g.date), g.time, g.place].filter(Boolean).join(' · ');
+    this.druckeSetlist(l, g.name, termin, `Setlist „${l.name}“ · ${this.anzahlText(l)}`);
+  },
+
+  anzahlText(l) {
+    const n = l.eintraege.length;
+    return `${n} ${n === 1 ? 'Song' : 'Songs'}`;
+  },
+
+  druckeSetlist(l, titel, terminZeile, untertitel) {
     if (!l.eintraege.length) { alert('Diese Setlist enthält noch keine Songs.'); return; }
     const zeilen = l.eintraege.map((e, i) => {
       const s = Band.song(e.songId);
@@ -418,10 +455,7 @@ const Setlisten = {
        { titel: 'Tonart · Capo · Tempo' }, { titel: 'Anmerkungen' }], zeilen);
     const kopfNotiz = l.notiz && l.notiz.trim()
       ? `<p class="setlist-notiz">${Band.esc(l.notiz)}</p>` : '';
-    const anzahl = l.eintraege.length;
-    Band.printHtml(l.name, kopfNotiz + tabelle,
-      `${l.kategorie} · ${anzahl} ${anzahl === 1 ? 'Song' : 'Songs'}`,
-      Band.fmt(l.datum) || undefined);
+    Band.printHtml(titel, kopfNotiz + tabelle, untertitel, terminZeile || undefined);
   },
 
   render() {

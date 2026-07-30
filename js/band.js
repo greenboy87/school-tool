@@ -146,8 +146,17 @@ const Band = {
     document.getElementById('btn-print-gig').addEventListener('click', () => {
       const g = this.currentGig();
       if (!g) return;
+      const verknuepft = this.gigSetlist(g);
+      if (verknuepft) { Setlisten.druckeFuerTermin(verknuepft, g); return; }
       const songs = g.songIds.map(id => this.song(id)).filter(Boolean);
-      this.printSongs(songs, `Setlist: ${g.name}`, this.gigSubtitle(g));
+      this.printSongs(songs, g.name, this.gigSubtitle(g));
+    });
+    document.getElementById('gig-setlist').addEventListener('change', e => {
+      const g = this.currentGig();
+      if (!g) return;
+      g.setlistId = e.target.value || null;
+      this.save();
+      this.renderGigDetail();
     });
     [['gig-f-date', 'date'], ['gig-f-time', 'time'], ['gig-f-place', 'place'], ['gig-f-notes', 'notes']]
       .forEach(([id, field]) => document.getElementById(id).addEventListener('change', e => {
@@ -607,10 +616,54 @@ const Band = {
     document.getElementById('gig-f-time').value = g.time || '';
     document.getElementById('gig-f-place').value = g.place || '';
     document.getElementById('gig-f-notes').value = g.notes || '';
-    document.getElementById('gig-song-count').textContent = g.songIds.length;
 
+    this.fuelleSetlistWahl(g);
+    const verknuepft = this.gigSetlist(g);
+    const hinweis = document.getElementById('gig-setlist-hinweis');
     const ol = document.getElementById('gig-songs');
+    const auswahl = document.getElementById('gig-add-song');
     ol.innerHTML = '';
+
+    if (verknuepft) {
+      // Verknüpft: die Songs kommen aus der Setlist und werden auch dort gepflegt –
+      // so muss dieselbe Liste nicht zweimal angelegt werden.
+      document.getElementById('gig-song-count').textContent = verknuepft.eintraege.length;
+      auswahl.hidden = true;
+      hinweis.textContent = `Die Songs stammen aus der Setlist „${verknuepft.name}“ ` +
+        `(${verknuepft.kategorie}). Ändern lässt sie sich im Reiter „Setlisten“ – ` +
+        'Änderungen erscheinen hier automatisch.';
+      for (const eintrag of verknuepft.eintraege) {
+        const s = this.song(eintrag.songId);
+        if (!s) continue;
+        const li = document.createElement('li');
+        const label = document.createElement('span');
+        label.className = 'sname';
+        const extra = this.songLine(s);
+        label.innerHTML = `<strong>${this.esc(s.title)}</strong>` +
+          (s.artist ? ` <span class="hint">– ${this.esc(s.artist)}</span>` : '') +
+          (extra ? ` <span class="hint">(${this.esc(extra)})</span>` : '');
+        li.appendChild(label);
+        const anm = [];
+        if (s.notes && s.notes.trim() && !eintrag.eigeneAus) anm.push(s.notes.trim());
+        if (eintrag.notiz && eintrag.notiz.trim()) anm.push(eintrag.notiz.trim());
+        if (anm.length) {
+          const p = document.createElement('span');
+          p.className = 'hint gig-anmerkung';
+          p.textContent = anm.join(' · ');
+          li.appendChild(p);
+        }
+        ol.appendChild(li);
+      }
+      if (!verknuepft.eintraege.length) {
+        ol.innerHTML = '<li class="hint">Diese Setlist enthält noch keine Songs.</li>';
+      }
+      return;
+    }
+
+    auswahl.hidden = false;
+    hinweis.textContent = 'Ohne Verknüpfung stellst du die Songs hier nur für diesen ' +
+      'Termin zusammen.';
+    document.getElementById('gig-song-count').textContent = g.songIds.length;
     g.songIds.forEach(id => {
       const s = this.song(id);
       if (!s) return;
@@ -644,6 +697,25 @@ const Band = {
       ol.appendChild(li);
     });
     this.fillGigSongPicker();
+  },
+
+  /* Die mit einem Termin verknüpfte Setlist – oder null bei eigener Liste */
+  gigSetlist(g) {
+    if (!g || !g.setlistId || !window.Setlisten) return null;
+    return Setlisten.d().setlists.find(s => s.id === g.setlistId) || null;
+  },
+
+  fuelleSetlistWahl(g) {
+    const sel = document.getElementById('gig-setlist');
+    if (!sel || !window.Setlisten) return;
+    sel.innerHTML = '<option value="">— eigene Liste nur für diesen Termin —</option>';
+    for (const l of Setlisten.d().setlists) {
+      const o = document.createElement('option');
+      o.value = l.id;
+      o.textContent = `${l.kategorie}: ${l.name}` + (l.datum ? ` (${this.fmt(l.datum)})` : '');
+      o.selected = g.setlistId === l.id;
+      sel.appendChild(o);
+    }
   },
 
   fillGigSongPicker() {
@@ -803,11 +875,14 @@ const Band = {
       { day: '2-digit', month: 'long', year: 'numeric' });
     const box = document.createElement('div');
     box.className = 'print-area band-print';
+    // Der Termin des Ereignisses steht groß unter dem Titel; das Druckdatum
+    // gehört klein in die Fußzeile – nicht umgekehrt.
     box.innerHTML =
       `<h1>${this.esc(titel)}</h1>` +
-      `<div class="meta"><span>${this.esc(links || '')}</span><span>${this.esc(rechts || heute)}</span></div>` +
+      (rechts ? `<div class="termin">${this.esc(rechts)}</div>` : '') +
+      (links ? `<div class="meta"><span>${this.esc(links)}</span></div>` : '') +
       inhalt +
-      `<div class="fuss">School-Tool · erstellt am ${heute}</div>`;
+      `<div class="fuss">School-Tool · gedruckt am ${heute}</div>`;
     document.body.appendChild(box);
     // Der Seitentitel wird beim „Als PDF speichern“ zum Dateinamen – sonst hieße
     // jede Datei „School-Tool – Lehrer-Werkzeuge“.

@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=42">
+<link rel="stylesheet" href="style.css?v=43">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=42"></script>
-<script src="js/theme.js?v=42"></script>
-<script src="js/auth.js?v=42"></script>
+<script src="js/icons.js?v=43"></script>
+<script src="js/theme.js?v=43"></script>
+<script src="js/auth.js?v=43"></script>
 </head>
 <body>
 
@@ -417,7 +417,8 @@
   </section>
 
   <!-- Setlisten -->
-  <section id="bandtab-setlisten" class="bandtab-page card">
+  <section id="bandtab-setlisten" class="bandtab-page geteilt">
+   <div class="card">
     <h3>Kategorien</h3>
     <p class="hint">Setlisten werden nach Anlass sortiert. Wähle eine Kategorie aus oder lege eine neue an.</p>
     <div id="kat-leiste" class="kat-leiste"></div>
@@ -436,9 +437,9 @@
       </form>
     </div>
     <ul id="setlist-list" class="project-list"></ul>
+   </div>
 
-    <div id="setlist-detail" hidden>
-      <hr>
+    <div id="setlist-detail" class="card" hidden>
       <div class="projekt-header">
         <h3 id="setlist-title"></h3>
         <div class="btn-row">
@@ -495,6 +496,11 @@
       <label class="gig-note">Notizen zum Termin
         <textarea id="gig-f-notes" rows="2" placeholder="Soundcheck 17:00, Technik: 2 Monitore …"></textarea>
       </label>
+      <label class="feld-block">Setlist aus dem Reiter „Setlisten“ verknüpfen
+        <select id="gig-setlist"></select>
+      </label>
+      <p class="hint" id="gig-setlist-hinweis"></p>
+
       <h4>Setlist (<span id="gig-song-count">0</span>)</h4>
       <p class="hint">Reihenfolge per Griff ziehen. Die Anmerkungen aus dem Song-Bereich werden mitgedruckt.</p>
       <ol id="gig-songs" class="student-list"></ol>
@@ -581,22 +587,22 @@
 <footer class="footer hint">Die Daten liegen in diesem Browser. Mit eingeschaltetem <strong>Sync</strong> werden sie zusätzlich verschlüsselt zwischen deinen Geräten abgeglichen – lesbar nur mit deinem Sync-Passwort. Trotzdem ab und zu ein <strong>Backup</strong> als Datei sichern: Ohne das Sync-Passwort lassen sich die Daten nicht wiederherstellen.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=42"></script>
-<script src="js/firebase-config.js?v=42"></script>
-<script type="module" src="js/live-firebase.js?v=42"></script>
-<script src="js/topics-seed.js?v=42"></script>
-<script src="js/ai-import.js?v=42"></script>
-<script src="js/store.js?v=42"></script>
-<script src="js/noise.js?v=42"></script>
-<script src="js/classes.js?v=42"></script>
-<script src="js/lessons.js?v=42"></script>
-<script src="js/band.js?v=42"></script>
-<script src="js/notes.js?v=42"></script>
-<script src="js/tresor.js?v=42"></script>
-<script src="js/setlisten.js?v=42"></script>
-<script src="js/einklappen.js?v=42"></script>
-<script src="js/live-groups.js?v=42"></script>
-<script src="js/tools.js?v=42"></script>
-<script src="js/app.js?v=42"></script>
+<script src="js/vendor/qrcode.min.js?v=43"></script>
+<script src="js/firebase-config.js?v=43"></script>
+<script type="module" src="js/live-firebase.js?v=43"></script>
+<script src="js/topics-seed.js?v=43"></script>
+<script src="js/ai-import.js?v=43"></script>
+<script src="js/store.js?v=43"></script>
+<script src="js/noise.js?v=43"></script>
+<script src="js/classes.js?v=43"></script>
+<script src="js/lessons.js?v=43"></script>
+<script src="js/band.js?v=43"></script>
+<script src="js/notes.js?v=43"></script>
+<script src="js/tresor.js?v=43"></script>
+<script src="js/setlisten.js?v=43"></script>
+<script src="js/einklappen.js?v=43"></script>
+<script src="js/live-groups.js?v=43"></script>
+<script src="js/tools.js?v=43"></script>
+<script src="js/app.js?v=43"></script>
 </body>
 </html>
