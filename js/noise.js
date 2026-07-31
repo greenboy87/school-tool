@@ -73,10 +73,29 @@ class NoiseMeter {
   // rechtzeitig Feedback bekommt, bevor es Rot wird
   get warnLevel() { return this.threshold - 10; }
 
+  /* Der Browser nimmt sonst das System-Standardmikrofon – auf einem Mac ist das
+     dank Continuity gern mal das iPhone in der Nähe. Deshalb merken wir uns eine
+     bewusste Auswahl und fordern genau dieses Gerät an. */
+  static MIC_KEY = 'ampel-mikrofon';
+  static gewaehltesMikro() { return localStorage.getItem(NoiseMeter.MIC_KEY) || ''; }
+  static setzeMikro(id) {
+    if (id) localStorage.setItem(NoiseMeter.MIC_KEY, id);
+    else localStorage.removeItem(NoiseMeter.MIC_KEY);
+  }
+
   async start() {
-    this.stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
-    });
+    const grund = { echoCancellation: false, noiseSuppression: false, autoGainControl: false };
+    const id = NoiseMeter.gewaehltesMikro();
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        audio: id ? { ...grund, deviceId: { exact: id } } : grund,
+      });
+    } catch (e) {
+      // Gemerktes Mikrofon nicht mehr da (abgesteckt, iPhone weg) → Standard nehmen
+      if (!id) throw e;
+      NoiseMeter.setzeMikro('');
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio: grund });
+    }
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     const source = this.ctx.createMediaStreamSource(this.stream);
     this.analyser = this.ctx.createAnalyser();

@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=49">
+<link rel="stylesheet" href="style.css?v=50">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=49"></script>
-<script src="js/theme.js?v=49"></script>
-<script src="js/auth.js?v=49"></script>
+<script src="js/icons.js?v=50"></script>
+<script src="js/theme.js?v=50"></script>
+<script src="js/auth.js?v=50"></script>
 </head>
 <body>
 
@@ -28,11 +28,22 @@
             title="Backup: alle Daten als Datei auf diesem Gerät sichern"></button>
     <button id="btn-import" class="nur-icon" data-icon="upload" aria-label="Backup wiederherstellen"
             title="Wiederherstellen: Backup-Datei einlesen und alle aktuellen Daten damit ersetzen"></button>
+    <button id="btn-info" class="nur-icon" aria-label="Hinweise zur Datenspeicherung"
+            title="Wo liegen meine Daten?">i</button>
     <button id="btn-theme" title="Zum hellen Design wechseln">Hell</button>
-    <button id="btn-lock" data-icon="lock" title="Sofort sperren. Von selbst sperrt sich die Seite nach 2 Stunden ohne Nutzung.">Sperren</button>
     <input type="file" id="import-file" accept=".json" hidden>
   </div>
 </header>
+
+<div id="info-box" class="info-box card" hidden>
+  <h3>Wo liegen meine Daten?</h3>
+  <p>Die Daten liegen in diesem Browser. Mit eingeschaltetem <strong>Sync</strong> werden sie
+     zusätzlich verschlüsselt zwischen deinen Geräten abgeglichen – lesbar nur mit deinem
+     Sync-Passwort.</p>
+  <p>Sichere trotzdem ab und zu ein <strong>Backup</strong> als Datei (Pfeil nach unten):
+     Ohne das Sync-Passwort lassen sich die Daten nicht wiederherstellen.</p>
+  <button id="btn-info-zu" class="small">Schließen</button>
+</div>
 
 <!-- ========== LÄRMAMPEL ========== -->
 <main id="tab-ampel" class="tab-page active">
@@ -56,6 +67,9 @@
           · Rotfärbungen: <strong id="alarm-count">0</strong>
           <button id="btn-alarm-count-reset" class="small" title="Zähler auf 0 setzen (z. B. zu Stundenbeginn)">Zähler zurücksetzen</button>
         </p>
+        <label class="mikro-wahl hint">Mikrofon:
+          <select id="mic-select"><option value="">Standard des Systems</option></select>
+        </label>
         <div class="btn-row">
           <button id="btn-mic" class="primary" data-icon="mic">Mikrofon starten</button>
           <button id="btn-popup" data-icon="window" title="Kleines Fenster, das du neben eine Präsentation legen kannst">Als Popup öffnen</button>
@@ -591,26 +605,25 @@
   </div>
 </main>
 
-<footer class="footer hint">Die Daten liegen in diesem Browser. Mit eingeschaltetem <strong>Sync</strong> werden sie zusätzlich verschlüsselt zwischen deinen Geräten abgeglichen – lesbar nur mit deinem Sync-Passwort. Trotzdem ab und zu ein <strong>Backup</strong> als Datei sichern: Ohne das Sync-Passwort lassen sich die Daten nicht wiederherstellen.</footer>
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=49"></script>
-<script src="js/firebase-config.js?v=49"></script>
-<script type="module" src="js/live-firebase.js?v=49"></script>
-<script src="js/topics-seed.js?v=49"></script>
-<script src="js/ai-import.js?v=49"></script>
-<script src="js/store.js?v=49"></script>
-<script src="js/noise.js?v=49"></script>
-<script src="js/classes.js?v=49"></script>
-<script src="js/lessons.js?v=49"></script>
-<script src="js/band.js?v=49"></script>
-<script src="js/notes.js?v=49"></script>
-<script src="js/tresor.js?v=49"></script>
-<script src="js/erklaerungen.js?v=49"></script>
-<script src="js/setlisten.js?v=49"></script>
-<script src="js/einklappen.js?v=49"></script>
-<script src="js/live-groups.js?v=49"></script>
-<script src="js/tools.js?v=49"></script>
-<script src="js/app.js?v=49"></script>
+<script src="js/vendor/qrcode.min.js?v=50"></script>
+<script src="js/firebase-config.js?v=50"></script>
+<script type="module" src="js/live-firebase.js?v=50"></script>
+<script src="js/topics-seed.js?v=50"></script>
+<script src="js/ai-import.js?v=50"></script>
+<script src="js/store.js?v=50"></script>
+<script src="js/noise.js?v=50"></script>
+<script src="js/classes.js?v=50"></script>
+<script src="js/lessons.js?v=50"></script>
+<script src="js/band.js?v=50"></script>
+<script src="js/notes.js?v=50"></script>
+<script src="js/tresor.js?v=50"></script>
+<script src="js/erklaerungen.js?v=50"></script>
+<script src="js/setlisten.js?v=50"></script>
+<script src="js/einklappen.js?v=50"></script>
+<script src="js/live-groups.js?v=50"></script>
+<script src="js/tools.js?v=50"></script>
+<script src="js/app.js?v=50"></script>
 </body>
 </html>

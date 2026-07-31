@@ -265,6 +265,19 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .group-box ul { margin: 0; padding-left: 1.2em; line-height: 1.7; }
 .group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; background: var(--input-bg); color: var(--text); }
 .group-box input.grade.single { width: 3em; font-size: .85em; }
+/* ----- Infofenster (Knopf „i“ in der Kopfzeile) ----- */
+#btn-info { font-weight: 700; font-style: italic; }
+.info-box {
+  position: absolute; right: 1.2rem; top: 4.2rem; z-index: 30;
+  max-width: 26rem; border: 1px solid var(--border);
+}
+.info-box h3 { margin-top: 0; }
+.info-box p { font-size: .9rem; line-height: 1.5; color: var(--muted); margin: 0 0 .7rem; }
+
+/* ----- Mikrofonauswahl ----- */
+.mikro-wahl { display: flex; align-items: center; gap: .5rem; margin: .3rem 0 .6rem; }
+.mikro-wahl select { flex: 1; min-width: 0; max-width: 22rem; font-size: .85rem; }
+
 /* ----- Geräte-Sync ----- */
 #btn-tresor.aktiv { border-color: var(--accent); color: var(--accent-soft); }
 

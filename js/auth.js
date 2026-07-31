@@ -1,7 +1,7 @@
 /* Zugangssperre für die ganze Seite.
-   Die Freigabe läuft nach TIMEOUT_MIN Minuten ohne Nutzung ab; solange gearbeitet
-   wird, verlängert sie sich automatisch. Liegt der Rechner unberührt herum,
-   sperrt sich die Seite von selbst wieder.
+   Das Passwort wird beim Öffnen abgefragt. Danach bleibt die Seite offen –
+   TIMEOUT_MIN = 0 heißt: keine Sperre wegen Untätigkeit. Ein Wert grösser 0
+   würde die Freigabe nach so vielen Minuten ohne Nutzung ablaufen lassen.
 
    Hinweis: Das läuft komplett im Browser und hält neugierige Blicke ab
    (Smartboard, Lehrerpult) – es ist kein serverseitiger Schutz.
@@ -10,7 +10,7 @@ const Auth = {
   KEY: 'schooltool-unlock',
   // SHA-256 des Passworts, damit es nicht im Klartext im Quelltext steht
   HASH: '398991009da1d251792eb353a0b7b185bc83e71e12e489e73228b554fc6cebc5',
-  TIMEOUT_MIN: 120,
+  TIMEOUT_MIN: 0,      // 0 = läuft nicht von selbst ab
 
   async hash(str) {
     if (!(window.crypto && crypto.subtle)) return null;
@@ -36,7 +36,7 @@ const Auth = {
   isUnlocked() {
     const e = this._read();
     if (!e || e.h !== this.HASH) return false;
-    if (Date.now() - e.t > this.TIMEOUT_MIN * 60000) {
+    if (this.TIMEOUT_MIN > 0 && Date.now() - e.t > this.TIMEOUT_MIN * 60000) {
       localStorage.removeItem(this.KEY);
       return false;
     }
@@ -63,9 +63,9 @@ const Auth = {
     this._build();
   },
 
-  /* Aktivität verfolgen und regelmäßig prüfen, ob die Freigabe abgelaufen ist */
+  /* Nur nötig, wenn die Freigabe ablaufen soll */
   _watch() {
-    if (this._watching) return;
+    if (this._watching || this.TIMEOUT_MIN <= 0) return;
     this._watching = true;
     ['pointerdown', 'keydown', 'wheel'].forEach(ev =>
       document.addEventListener(ev, () => this.touch(), { passive: true }));

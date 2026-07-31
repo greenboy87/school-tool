@@ -57,6 +57,41 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('btn-alarm-count-reset').addEventListener('click', () => meter.resetAlarmCount());
 
+  /* ----- Mikrofon-Auswahl -----
+     Die Gerätenamen gibt der Browser erst preis, wenn die Erlaubnis erteilt ist –
+     vorher steht in der Liste nur „Standard des Systems“. */
+  const micSelect = document.getElementById('mic-select');
+  const mikrofoneLaden = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    let geraete = [];
+    try { geraete = await navigator.mediaDevices.enumerateDevices(); } catch (e) { return; }
+    const mikros = geraete.filter(g => g.kind === 'audioinput');
+    const gemerkt = NoiseMeter.gewaehltesMikro();
+    micSelect.innerHTML = '<option value="">Standard des Systems</option>';
+    mikros.forEach((m, i) => {
+      const o = document.createElement('option');
+      o.value = m.deviceId;
+      o.textContent = m.label || `Mikrofon ${i + 1}`;
+      o.selected = m.deviceId === gemerkt;
+      micSelect.appendChild(o);
+    });
+    // Gemerktes Gerät ist verschwunden
+    if (gemerkt && !mikros.some(m => m.deviceId === gemerkt)) NoiseMeter.setzeMikro('');
+  };
+  mikrofoneLaden();
+  if (navigator.mediaDevices) {
+    navigator.mediaDevices.addEventListener?.('devicechange', mikrofoneLaden);
+  }
+  micSelect.addEventListener('change', async () => {
+    NoiseMeter.setzeMikro(micSelect.value);
+    if (meter.running) {            // Umschalten im laufenden Betrieb
+      meter.stop();
+      try { await meter.start(); } catch (e) {
+        alert('Dieses Mikrofon ließ sich nicht öffnen: ' + e.message);
+      }
+    }
+  });
+
   const btnMic = document.getElementById('btn-mic');
   btnMic.addEventListener('click', async () => {
     if (meter.running) {
@@ -66,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         await meter.start();
         btnMic.innerHTML = Icons.raw('stop') + 'Messung stoppen';
+        mikrofoneLaden();          // jetzt sind die Gerätenamen bekannt
       } catch (e) {
         alert('Mikrofon-Zugriff nicht möglich. Bitte im Browser erlauben.\n(' + e.message + ')');
       }
@@ -125,10 +161,13 @@ document.addEventListener('DOMContentLoaded', () => {
   Theme.updateButton();
   document.getElementById('btn-theme').addEventListener('click', () => Theme.toggle());
 
-  /* ----- Sperren ----- */
-  document.getElementById('btn-lock').addEventListener('click', () => {
-    if (confirm('Seite sperren? Zum Weiterarbeiten musst du das Passwort erneut eingeben.')) Auth.lock();
+  /* ----- Infofenster ----- */
+  const infoBox = document.getElementById('info-box');
+  document.getElementById('btn-info').addEventListener('click', () => {
+    infoBox.hidden = !infoBox.hidden;
   });
+  document.getElementById('btn-info-zu').addEventListener('click', () => { infoBox.hidden = true; });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') infoBox.hidden = true; });
 
   /* ----- Backup ----- */
   document.getElementById('btn-export').addEventListener('click', () => Store.exportBackup());
