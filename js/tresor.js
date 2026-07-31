@@ -197,8 +197,8 @@ const Tresor = {
     Store.save(daten);
     this.letzterStand = stand;
     // Sitzpläne liegen in eigenen Knoten – vor dem Neuladen mitholen
-    this.status('hole Sitzpläne …');
-    try { await this.plaeneHolen(); } catch (e) { console.error('Sitzplaene:', e); }
+    this.status('hole Sitzpläne und Fotos …');
+    try { await this.dateienHolen(); } catch (e) { console.error('Dateien:', e); }
     location.reload();
   },
 
@@ -229,10 +229,10 @@ const Tresor = {
       // Sitzpläne getrennt behandeln: Wenn hier etwas klemmt, sind die
       // Hauptdaten trotzdem gesichert – die Meldung darf das nicht verwischen.
       let planFehler = null;
-      try { await this.plaeneHochladen(); }
+      try { await this.dateienHochladen(); }
       catch (e) { planFehler = this.fehlertext(e); }
       if (planFehler) this.status('gesichert ' + this.zeit(stand) +
-        ' · Sitzpläne nicht: ' + planFehler, true);
+        ' · Dateien nicht: ' + planFehler, true);
 
       if (laut) alert(planFehler
         ? 'Daten wurden verschlüsselt hochgeladen.\n\nDie Sitzpläne konnten nicht ' +
@@ -279,54 +279,65 @@ const Tresor = {
 
   fingerabdruck(name, groesse) { return `${name}|${groesse}`; },
 
-  async plaeneHochladen() {
+  /* Sitzpläne und Fotos verhalten sich gleich – ein gemeinsamer Weg für beide */
+  DATEIARTEN: [
+    { knoten: 'plaene', ids: () => Store.allSeatplanIds(), holen: (id) => Store.getSeatplan(id),
+      legen: (id, datei) => Store.putSeatplan(id, datei), standard: 'Sitzplan.pdf', typ: 'application/pdf' },
+    { knoten: 'fotos', ids: () => Store.allFotoIds(), holen: (id) => Store.getFoto(id),
+      legen: (id, datei) => Store.putFoto(id, datei), standard: 'Foto', typ: 'image/jpeg' },
+  ],
+
+  async dateienHochladen() {
     if (!this.aktiv()) return;
-    const ids = await Store.allSeatplanIds();
     const merker = this.merker();
     const { db, ref, set } = window.FB;
-    for (const klasseId of ids) {
-      const eintrag = await Store.getSeatplan(klasseId);
-      if (!eintrag || !eintrag.blob) continue;
-      const fp = this.fingerabdruck(eintrag.name, eintrag.blob.size);
-      if (merker[klasseId] === fp) continue;              // unverändert, nichts zu tun
-      if (eintrag.blob.size > this.MAX_PLAN) {
-        this.status(`Sitzplan „${eintrag.name}“ ist zu groß für den Sync ` +
-          `(${Math.round(eintrag.blob.size / 1024 / 1024)} MB, erlaubt sind 4 MB).`, true);
-        continue;
+    for (const art of this.DATEIARTEN) {
+      for (const id of await art.ids()) {
+        const eintrag = await art.holen(id);
+        if (!eintrag || !eintrag.blob) continue;
+        const schluessel = art.knoten + ':' + id;
+        const fp = this.fingerabdruck(eintrag.name, eintrag.blob.size);
+        if (merker[schluessel] === fp) continue;          // unverändert
+        if (eintrag.blob.size > this.MAX_PLAN) {
+          this.status(`„${eintrag.name}“ ist zu groß für den Sync ` +
+            `(${Math.round(eintrag.blob.size / 1024 / 1024)} MB, erlaubt sind 4 MB).`, true);
+          continue;
+        }
+        const bytes = new Uint8Array(await eintrag.blob.arrayBuffer());
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const chiffre = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, this.schluessel, bytes);
+        await set(ref(db, `schoolTool/tresor/${this.id}/${art.knoten}/${id}`), {
+          chiffre: this.nachB64(new Uint8Array(chiffre)),
+          iv: this.nachB64(iv),
+          name: eintrag.name || art.standard,
+          typ: eintrag.type || art.typ,
+          stand: Date.now(),
+        });
+        merker[schluessel] = fp;
       }
-      const bytes = new Uint8Array(await eintrag.blob.arrayBuffer());
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const chiffre = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, this.schluessel, bytes);
-      await set(ref(db, `schoolTool/tresor/${this.id}/plaene/${klasseId}`), {
-        chiffre: this.nachB64(new Uint8Array(chiffre)),
-        iv: this.nachB64(iv),
-        name: eintrag.name || 'Sitzplan.pdf',
-        typ: eintrag.type || 'application/pdf',
-        stand: Date.now(),
-      });
-      merker[klasseId] = fp;
     }
     localStorage.setItem(this.PLAN_MERKER, JSON.stringify(merker));
   },
 
-  async plaeneHolen() {
+  async dateienHolen() {
     if (!this.aktiv()) return 0;
     const { db, ref, get } = window.FB;
-    const alle = (await get(ref(db, `schoolTool/tresor/${this.id}/plaene`))).val() || {};
     const merker = {};
     let geholt = 0;
-    for (const [klasseId, p] of Object.entries(alle)) {
-      try {
-        const iv = this.vonB64(p.iv);
-        const klar = await crypto.subtle.decrypt(
-          { name: 'AES-GCM', iv }, this.schluessel, this.vonB64(p.chiffre));
-        const datei = new File([klar], p.name || 'Sitzplan.pdf',
-          { type: p.typ || 'application/pdf' });
-        await Store.putSeatplan(klasseId, datei);
-        merker[klasseId] = this.fingerabdruck(datei.name, datei.size);
-        geholt++;
-      } catch (e) {
-        console.error('Sitzplan konnte nicht übernommen werden:', klasseId, e);
+    for (const art of this.DATEIARTEN) {
+      const alle = (await get(ref(db, `schoolTool/tresor/${this.id}/${art.knoten}`))).val() || {};
+      for (const [id, p] of Object.entries(alle)) {
+        try {
+          const iv = this.vonB64(p.iv);
+          const klar = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv }, this.schluessel, this.vonB64(p.chiffre));
+          const datei = new File([klar], p.name || art.standard, { type: p.typ || art.typ });
+          await art.legen(id, datei);
+          merker[art.knoten + ':' + id] = this.fingerabdruck(datei.name, datei.size);
+          geholt++;
+        } catch (e) {
+          console.error('Datei konnte nicht übernommen werden:', art.knoten, id, e);
+        }
       }
     }
     localStorage.setItem(this.PLAN_MERKER, JSON.stringify(merker));

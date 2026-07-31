@@ -138,6 +138,8 @@ const Band = {
     document.getElementById('btn-delete-gig').addEventListener('click', () => {
       const g = this.currentGig();
       if (!g || !confirm(`Termin „${g.name}“ löschen?`)) return;
+      // Bilder mit entfernen, sonst bleiben sie unauffindbar im Speicher liegen
+      (g.fotos || []).forEach(id => Store.deleteFoto(id).catch(() => {}));
       this.d().gigs = this.d().gigs.filter(x => x.id !== g.id);
       this.currentGigId = null;
       this.save();
@@ -166,6 +168,35 @@ const Band = {
         this.save();
         if (field === 'date') this.renderGigs();
       }));
+    /* ---- Fotos am Termin ---- */
+    const ablage = document.getElementById('gig-fotos-ablage');
+    document.getElementById('btn-gig-foto').addEventListener('click', () =>
+      document.getElementById('gig-foto-datei').click());
+    document.getElementById('gig-foto-datei').addEventListener('change', e => {
+      this.fotosAufnehmen([...e.target.files]);
+      e.target.value = '';
+    });
+    // Einfügen aus der Zwischenablage – funktioniert nur, wenn ein Termin offen ist
+    document.addEventListener('paste', e => {
+      if (!this.currentGig()) return;
+      if (!document.getElementById('bandtab-termine').classList.contains('active')) return;
+      const bilder = [...(e.clipboardData ? e.clipboardData.items : [])]
+        .filter(i => i.type && i.type.startsWith('image/'))
+        .map(i => i.getAsFile()).filter(Boolean);
+      if (!bilder.length) return;
+      e.preventDefault();
+      this.fotosAufnehmen(bilder);
+    });
+    ['dragenter', 'dragover'].forEach(ev => ablage.addEventListener(ev, e => {
+      e.preventDefault(); ablage.classList.add('drop-active');
+    }));
+    ['dragleave', 'drop'].forEach(ev => ablage.addEventListener(ev, () =>
+      ablage.classList.remove('drop-active')));
+    ablage.addEventListener('drop', e => {
+      e.preventDefault();
+      this.fotosAufnehmen([...e.dataTransfer.files].filter(f => f.type.startsWith('image/')));
+    });
+
     document.getElementById('gig-add-song').addEventListener('change', e => {
       const g = this.currentGig();
       if (!g || !e.target.value) return;
@@ -620,6 +651,7 @@ const Band = {
     document.getElementById('gig-f-time').value = g.time || '';
     document.getElementById('gig-f-place').value = g.place || '';
     document.getElementById('gig-f-notes').value = g.notes || '';
+    this.renderGigFotos();
 
     this.fuelleSetlistWahl(g);
     const verknuepft = this.gigSetlist(g);
@@ -701,6 +733,69 @@ const Band = {
       ol.appendChild(li);
     });
     this.fillGigSongPicker();
+  },
+
+  /* ---------- Fotos am Termin ----------
+     Die Bilder liegen wie die Sitzpläne in IndexedDB, nicht im normalen
+     Datensatz – der Termin merkt sich nur die Kennungen. */
+  MAX_FOTO: 4 * 1024 * 1024,
+
+  async fotosAufnehmen(dateien) {
+    const g = this.currentGig();
+    if (!g || !dateien.length) return;
+    if (!Array.isArray(g.fotos)) g.fotos = [];
+    const zuGross = [];
+    for (const datei of dateien) {
+      if (datei.size > this.MAX_FOTO) { zuGross.push(datei.name || 'Bild'); continue; }
+      const id = Store.uid();
+      await Store.putFoto(id, datei);
+      g.fotos.push(id);
+    }
+    this.save();
+    await this.renderGigFotos();
+    if (zuGross.length) alert('Zu groß für den Sync (Grenze 4 MB):\n' + zuGross.join('\n'));
+  },
+
+  async renderGigFotos() {
+    const box = document.getElementById('gig-fotos');
+    if (!box) return;
+    const g = this.currentGig();
+    box.innerHTML = '';
+    // Alte Vorschau-Adressen freigeben, sonst wächst der Speicher
+    (this._fotoUrls || []).forEach(u => URL.revokeObjectURL(u));
+    this._fotoUrls = [];
+    if (!g || !Array.isArray(g.fotos) || !g.fotos.length) return;
+
+    for (const id of [...g.fotos]) {
+      const eintrag = await Store.getFoto(id);
+      if (!eintrag || !eintrag.blob) { g.fotos = g.fotos.filter(x => x !== id); continue; }
+      const url = URL.createObjectURL(eintrag.blob);
+      this._fotoUrls.push(url);
+
+      const kachel = document.createElement('div');
+      kachel.className = 'foto-kachel';
+      const a = document.createElement('a');
+      a.href = url; a.target = '_blank'; a.rel = 'noopener';
+      a.title = 'Größer ansehen';
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = eintrag.name || 'Foto';
+      a.appendChild(img);
+      const weg = document.createElement('button');
+      weg.className = 'del';
+      weg.type = 'button';
+      weg.innerHTML = Icons.raw('x');
+      weg.title = 'Bild entfernen';
+      weg.addEventListener('click', async () => {
+        if (!confirm('Dieses Bild entfernen?')) return;
+        g.fotos = g.fotos.filter(x => x !== id);
+        await Store.deleteFoto(id);
+        this.save();
+        this.renderGigFotos();
+      });
+      kachel.append(a, weg);
+      box.appendChild(kachel);
+    }
   },
 
   /* Die mit einem Termin verknüpfte Setlist – oder null bei eigener Liste */

@@ -274,6 +274,25 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .info-box h3 { margin-top: 0; }
 .info-box p { font-size: .9rem; line-height: 1.5; color: var(--muted); margin: 0 0 .7rem; }
 
+/* ----- Fotos am Termin ----- */
+.foto-ablage {
+  border: 1px dashed var(--border); border-radius: var(--radius);
+  padding: .7rem .9rem; margin-top: .35rem; font-weight: 400;
+}
+.foto-ablage .hint { margin: 0 0 .5rem; }
+.foto-liste { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .6rem; }
+.foto-kachel { position: relative; }
+.foto-kachel img {
+  display: block; width: 120px; height: 90px; object-fit: cover;
+  border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel);
+}
+.foto-kachel .del {
+  position: absolute; top: -.4rem; right: -.4rem; line-height: 0;
+  padding: .2rem; border-radius: 999px; background: var(--card);
+  border: 1px solid var(--border); color: var(--danger);
+}
+@media print { .foto-ablage { display: none; } }
+
 /* ----- Mikrofonauswahl ----- */
 .mikro-wahl { display: flex; align-items: center; gap: .5rem; margin: .3rem 0 .6rem; flex-wrap: wrap; }
 .mikro-wahl select { flex: 1; min-width: 8rem; max-width: 22rem; font-size: .85rem; }

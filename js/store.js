@@ -43,14 +43,59 @@ const Store = {
     reader.readAsText(file);
   },
 
-  /* ----- IndexedDB für Sitzpläne (zu groß für localStorage) ----- */
+  /* ----- IndexedDB für Dateien (zu groß für localStorage) -----
+     „seatplans“ enthält je Klasse einen Sitzplan, „fotos“ die Bilder, die an
+     Terminen hängen. Beide werden vom Sync einzeln verschlüsselt übertragen. */
   _db: null,
   openDB() {
     return new Promise((resolve, reject) => {
       if (this._db) return resolve(this._db);
-      const req = indexedDB.open('schooltool', 1);
-      req.onupgradeneeded = () => req.result.createObjectStore('seatplans');
+      const req = indexedDB.open('schooltool', 2);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('seatplans')) db.createObjectStore('seatplans');
+        if (!db.objectStoreNames.contains('fotos')) db.createObjectStore('fotos');
+      };
       req.onsuccess = () => { this._db = req.result; resolve(this._db); };
+      req.onerror = () => reject(req.error);
+    });
+  },
+
+  /* ----- Fotos ----- */
+  async putFoto(id, file) {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('fotos', 'readwrite');
+      tx.objectStore('fotos').put({ name: file.name || 'Foto', type: file.type, blob: file }, id);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
+  async getFoto(id) {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction('fotos').objectStore('fotos').get(id);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  },
+
+  async deleteFoto(id) {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('fotos', 'readwrite');
+      tx.objectStore('fotos').delete(id);
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
+  async allFotoIds() {
+    const db = await this.openDB();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction('fotos').objectStore('fotos').getAllKeys();
+      req.onsuccess = () => resolve(req.result || []);
       req.onerror = () => reject(req.error);
     });
   },
