@@ -61,23 +61,47 @@ document.addEventListener('DOMContentLoaded', () => {
      Die Gerätenamen gibt der Browser erst preis, wenn die Erlaubnis erteilt ist –
      vorher steht in der Liste nur „Standard des Systems“. */
   const micSelect = document.getElementById('mic-select');
+  const micScan = document.getElementById('btn-mic-scan');
+
   const mikrofoneLaden = async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return 0;
     let geraete = [];
-    try { geraete = await navigator.mediaDevices.enumerateDevices(); } catch (e) { return; }
-    const mikros = geraete.filter(g => g.kind === 'audioinput');
+    try { geraete = await navigator.mediaDevices.enumerateDevices(); } catch (e) { return 0; }
+    // Ohne erteilte Erlaubnis liefert der Browser Platzhalter ohne Kennung –
+    // die sind nicht auswählbar und gehören deshalb nicht in die Liste.
+    const mikros = geraete.filter(g => g.kind === 'audioinput' && g.deviceId && g.label);
     const gemerkt = NoiseMeter.gewaehltesMikro();
     micSelect.innerHTML = '<option value="">Standard des Systems</option>';
-    mikros.forEach((m, i) => {
+    for (const m of mikros) {
       const o = document.createElement('option');
       o.value = m.deviceId;
-      o.textContent = m.label || `Mikrofon ${i + 1}`;
+      o.textContent = m.label;
       o.selected = m.deviceId === gemerkt;
       micSelect.appendChild(o);
-    });
-    // Gemerktes Gerät ist verschwunden
+    }
     if (gemerkt && !mikros.some(m => m.deviceId === gemerkt)) NoiseMeter.setzeMikro('');
+    micScan.hidden = mikros.length > 0;
+    return mikros.length;
   };
+
+  /* Einmal die Erlaubnis abfragen, damit die Gerätenamen sichtbar werden – ohne
+     die Messung zu starten. Sonst liefe beim ersten Start immer das
+     System-Standardmikrofon, und das ist auf einem Mac gern das iPhone. */
+  micScan.addEventListener('click', async () => {
+    micScan.disabled = true;
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+      s.getTracks().forEach(t => t.stop());
+      const n = await mikrofoneLaden();
+      if (n > 1) micSelect.focus();
+      else if (n === 0) alert('Es wurde kein Mikrofon gefunden.');
+    } catch (e) {
+      alert('Mikrofon-Zugriff nicht möglich. Bitte im Browser erlauben.\n(' + e.message + ')');
+    } finally {
+      micScan.disabled = false;
+    }
+  });
+
   mikrofoneLaden();
   if (navigator.mediaDevices) {
     navigator.mediaDevices.addEventListener?.('devicechange', mikrofoneLaden);
