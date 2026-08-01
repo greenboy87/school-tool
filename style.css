@@ -280,16 +280,22 @@ input[type="checkbox"] { accent-color: var(--accent); }
   padding: .7rem .9rem; margin-top: .35rem; font-weight: 400;
 }
 .foto-ablage .hint { margin: 0 0 .5rem; }
-.foto-liste { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: .6rem; }
-.foto-kachel { position: relative; }
+/* Bilder in voller Breite: Sie enthalten oft Ablaufpläne und Uhrzeiten,
+   die man ohne Klicken lesen können muss. Kleine Bilder bleiben klein. */
+.foto-liste { display: block; margin-top: .6rem; }
+.foto-kachel { position: relative; margin-bottom: .8rem; }
 .foto-kachel img {
-  display: block; width: 120px; height: 90px; object-fit: cover;
+  display: block; max-width: 100%; height: auto;
   border: 1px solid var(--border); border-radius: var(--radius); background: var(--panel);
 }
 .foto-kachel .del {
-  position: absolute; top: -.4rem; right: -.4rem; line-height: 0;
-  padding: .2rem; border-radius: 999px; background: var(--card);
-  border: 1px solid var(--border); color: var(--danger);
+  position: absolute; top: .4rem; right: .4rem; line-height: 0;
+  padding: .3rem; border-radius: 999px; background: var(--card);
+  border: 1px solid var(--border); color: var(--danger); opacity: .85;
+}
+.foto-kachel .del:hover { opacity: 1; }
+.foto-kachel .foto-name {
+  display: block; margin-top: .2rem; font-size: .8rem; color: var(--muted);
 }
 @media print { .foto-ablage { display: none; } }
 

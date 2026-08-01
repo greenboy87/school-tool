@@ -774,12 +774,15 @@ const Band = {
 
       const kachel = document.createElement('div');
       kachel.className = 'foto-kachel';
+      // Das Bild steht in voller Breite da; der Link ist nur für die Originalgröße
       const a = document.createElement('a');
       a.href = url; a.target = '_blank'; a.rel = 'noopener';
-      a.title = 'Größer ansehen';
+      a.title = 'In Originalgröße öffnen';
       const img = document.createElement('img');
       img.src = url;
       img.alt = eintrag.name || 'Foto';
+      // Bewusst kein loading="lazy": Die Bilder stecken in einem Bereich, der erst
+      // beim Öffnen des Termins sichtbar wird – dann blieben sie leer stehen.
       a.appendChild(img);
       const weg = document.createElement('button');
       weg.className = 'del';
