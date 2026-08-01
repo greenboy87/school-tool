@@ -115,6 +115,15 @@ const SchuelerGruppen = {
     }).catch(err => this.melde('Konnte nicht gespeichert werden: ' + err.message, true));
   },
 
+  /* Gruppe verlassen: Der Eintrag verschwindet ganz, dadurch steht man wieder
+     in keiner Gruppe – und taucht auf dem Lehrerbildschirm unter „Noch offen“ auf. */
+  verlassen() {
+    if (this.sid === null) return;
+    const { db, ref, remove } = window.FB;
+    remove(ref(db, `${window.FB.WURZEL}/${this.raum}/zuordnung/${this.sid}`))
+      .catch(err => this.melde('Konnte nicht gespeichert werden: ' + err.message, true));
+  },
+
   waehleName(index) {
     this.sid = 's' + index;
     localStorage.setItem('gruppen-ich-' + this.raum, String(index));
@@ -209,18 +218,41 @@ const SchuelerGruppen = {
     }
     for (const g of gruppen) {
       const drin = g.name.trim().toLowerCase() === meinKey;
-      const karte = document.createElement('button');
-      karte.type = 'button';
+
+      // Eigene Gruppe: kein Knopf, sonst tippt man beim Lesen versehentlich darauf
+      const karte = document.createElement(drin ? 'div' : 'button');
+      if (!drin) karte.type = 'button';
       karte.className = 'gruppenkarte' + (drin ? ' meine' : '');
-      karte.innerHTML =
-        `<span class="gk-kopf"><span class="gk-name"></span>` +
-        `<span class="gk-zahl">${g.mitglieder.length}</span></span>` +
-        `<span class="gk-namen"></span>`;
-      karte.querySelector('.gk-name').textContent = g.name;
-      karte.querySelector('.gk-namen').textContent = g.mitglieder.map(m => m.name).join(' · ');
+
+      const kopf = document.createElement('span');
+      kopf.className = 'gk-kopf';
+      const name = document.createElement('span');
+      name.className = 'gk-name';
+      name.textContent = g.name;
+      const zahl = document.createElement('span');
+      zahl.className = 'gk-zahl';
+      zahl.textContent = g.mitglieder.length;
+      kopf.append(name, zahl);
+      karte.appendChild(kopf);
+
+      // Namen untereinander – bei fünf Leuten ist eine Kommazeile nicht lesbar
+      const liste = document.createElement('ul');
+      liste.className = 'gk-namen';
+      for (const m of g.mitglieder) {
+        const li = document.createElement('li');
+        li.textContent = m.name;
+        if (m.sid === this.sid) li.className = 'ich';
+        liste.appendChild(li);
+      }
+      karte.appendChild(liste);
+
       if (drin) {
-        karte.disabled = true;
-        karte.title = 'Da bist du schon drin';
+        const raus = document.createElement('button');
+        raus.type = 'button';
+        raus.className = 'small verlassen';
+        raus.textContent = 'Gruppe verlassen';
+        raus.addEventListener('click', () => this.verlassen());
+        karte.appendChild(raus);
       } else {
         karte.addEventListener('click', () => this.trittBei(g.name));
       }

@@ -149,13 +149,33 @@
   padding: 0.1rem 0.6rem;
   border: 1px solid var(--border);
 }
-.gk-namen {
-  display: block;
-  margin-top: 0.3rem;
-  font-size: 0.9rem;
-  line-height: 1.45;
+/* Namen untereinander – bei fünf Leuten ist eine Kommazeile nicht lesbar */
+ul.gk-namen {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
   color: var(--muted);
 }
+ul.gk-namen li { padding: 0.12rem 0; }
+ul.gk-namen li.ich { color: var(--text); font-weight: 600; }
+ul.gk-namen li.ich::after { content: " (du)"; font-weight: 400; color: var(--muted); }
+
+/* Die eigene Gruppe ist kein Knopf mehr, sondern eine Karte mit Austrittsknopf */
+.gruppenkarte.meine { cursor: default; }
+.gruppenkarte .verlassen {
+  display: block;
+  width: 100%;
+  margin-top: 0.7rem;
+  padding: 0.6rem;
+  font-size: 0.9rem;
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+  border-radius: 0.6rem;
+  background: transparent;
+}
+.gruppenkarte .verlassen:active { background: var(--danger-bg); }
 
 /* ---------- Neue Gruppe ---------- */
 .neue-gruppe {
