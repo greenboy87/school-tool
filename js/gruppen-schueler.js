@@ -22,6 +22,11 @@ const SchuelerGruppen = {
     const gemerkt = localStorage.getItem('gruppen-ich-' + this.raum);
     if (gemerkt !== null && this.namen[+gemerkt]) this.sid = 's' + gemerkt;
 
+    /* Ein neuer QR-Code führt auf dieselbe Seite und unterscheidet sich nur hinter
+       dem „#“. Der Browser lädt dann NICHT neu, sondern wechselt bloß den Anker –
+       ohne das hier bliebe man in der Sammlung der Vorstunde hängen. */
+    window.addEventListener('hashchange', () => location.reload());
+
     this.bindeEreignisse();
     if (window.FB && window.FB.bereit) this.starte();
     else window.addEventListener('fb-bereit', () => this.starte(), { once: true });
@@ -91,6 +96,22 @@ const SchuelerGruppen = {
   starte() {
     if (!window.FB.bereit) { this.zeigeFehler('Die Gruppen-Datenbank ist nicht erreichbar.'); return; }
     const { db, ref, onValue } = window.FB;
+
+    /* Lebt der Raum überhaupt noch? Ein alter QR-Code (etwa vom Beamerfenster der
+       Vorstunde) führte sonst still in die Sammlung von gestern – mitsamt der
+       alten Gruppenzuordnung. Verschwindet die Kennung, ist die Sammlung beendet. */
+    onValue(ref(db, `${window.FB.WURZEL}/${this.raum}/meta`), snap => {
+      const meta = snap.val();
+      this.raumLebt = !!meta;
+      if (!meta) {
+        this.zeigeFehler('Diese Sammlung ist beendet.\n\n' +
+          'Der QR-Code ist nicht mehr gültig – bitte den aktuellen von der Leinwand scannen.');
+        return;
+      }
+      document.getElementById('s-fehler').hidden = true;
+      this.zeichne();
+    }, () => { /* Fehler behandelt der Zuordnungs-Beobachter unten */ });
+
     onValue(ref(db, `${window.FB.WURZEL}/${this.raum}/zuordnung`), snap => {
       this.zuordnung = snap.val() || {};
       this.zeichne();
@@ -136,8 +157,28 @@ const SchuelerGruppen = {
     el.classList.toggle('warnung', !!warnung);
   },
 
+  /* Klasse und Raum-Code immer sichtbar – damit auf einem geteilten iPad sofort
+     auffällt, wenn man in der Sammlung der falschen Klasse gelandet ist. */
+  zeigeRaumzeile() {
+    const el = document.getElementById('s-raumzeile');
+    if (!el) return;
+    const teile = [];
+    if (this.klasse) teile.push(this.klasse);
+    if (this.projekt) teile.push(this.projekt);
+    el.innerHTML = '';
+    const links = document.createElement('span');
+    links.textContent = teile.join(' · ');
+    const rechts = document.createElement('span');
+    rechts.className = 'raum-code';
+    rechts.textContent = this.raum;
+    el.append(links, rechts);
+    el.hidden = false;
+  },
+
   /* ---------- Anzeige ---------- */
   zeichne() {
+    if (this.raumLebt === false) return;      // beendete Sammlung: Fehlerbild steht
+    this.zeigeRaumzeile();
     const werAus = this.sid !== null;
     document.getElementById('s-wer').hidden = werAus;
     document.getElementById('s-gruppe').hidden = !werAus;

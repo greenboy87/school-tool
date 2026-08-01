@@ -75,7 +75,9 @@ const LiveGroups = {
     document.getElementById('live-gesamt').textContent = String(cls.students.length);
     document.getElementById('live-panel').hidden = false;
     document.getElementById('btn-live-start').hidden = true;
-    this.status('Sammlung läuft.');
+    this.status(`Sammlung läuft – Raum ${this.raum} für ${cls.name}.`);
+    // Ein offenes Beamerfenster zeigte sonst weiter den QR-Code der Vorstunde
+    if (this.beamerFenster && !this.beamerFenster.closed) this.beamer();
     this.lausche();
     Icons.hydrate(document.getElementById('live-panel'));
   },
@@ -252,21 +254,29 @@ const LiveGroups = {
 
   /* ---------- Großansicht für die Leinwand ---------- */
   beamer() {
+    if (!this.raum) { alert('Es läuft gerade keine Sammlung.'); return; }
+    const cls = Classes.data.classes.find(c => c.id === this.klasseId);
     const w = window.open('', 'gruppen-beamer', 'width=900,height=900');
     if (!w) { alert('Das Fenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben.'); return; }
     this.beamerFenster = w;
+    const esc = s => String(s || '').replace(/[&<>"]/g,
+      c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    w.document.open();
     w.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
       <title>Gruppen bilden</title><style>
       body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;
-        justify-content:center;gap:1.5rem;background:#faf9f5;color:#1f1e1d;
+        justify-content:center;gap:1.2rem;background:#faf9f5;color:#1f1e1d;
         font-family:system-ui,-apple-system,"Segoe UI",sans-serif;}
-      h1{font-size:2.6rem;margin:0;}
-      p{font-size:1.5rem;margin:0;color:#6b6a62;}
+      h1{font-size:2.4rem;margin:0;}
+      p{font-size:1.5rem;margin:0;color:#6b6a62;text-align:center;}
       .code{font-size:2rem;font-weight:700;letter-spacing:.08em;color:#c2603f;}
+      .klein{font-size:1rem;max-width:34rem;line-height:1.5;}
       #qr{background:#fff;padding:1.5rem;border-radius:1rem;box-shadow:0 2px 20px rgba(0,0,0,.12);}
       </style></head><body>
       <h1>Scannt den Code mit dem Handy</h1><div id="qr"></div>
-      <p>Raum-Code: <span class="code">${this.raum}</span></p>
+      <p>${esc(cls ? cls.name : '')} · Raum-Code: <span class="code">${esc(this.raum)}</span></p>
+      <p class="klein">Steht auf eurem Gerät ein anderer Raum-Code, habt ihr einen alten
+        QR-Code erwischt – dann diesen hier noch einmal scannen.</p>
       </body></html>`);
     w.document.close();
     const skript = w.document.createElement('script');

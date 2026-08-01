@@ -20,6 +20,26 @@
 
 .schueler-seite .karte.mitte { text-align: center; margin-top: 15vh; }
 
+/* Kopfzeile: Klasse/Projekt links, Raum-Code rechts */
+.raumzeile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0.2rem 0.7rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.raumzeile .raum-code {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  white-space: nowrap;
+}
+.schueler-seite .karte.mitte h1 + p { white-space: pre-line; }
+
 .schueler-seite h1 {
   font-size: 1.35rem;
   margin: 0 0 0.35rem;
