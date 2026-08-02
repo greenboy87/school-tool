@@ -309,16 +309,22 @@ input[type="checkbox"] { accent-color: var(--accent); }
 
 /* ----- Eingeklappte Erklärtexte ----- */
 .erklaerung { margin: .5rem 0; }
+/* Nur ein Dreieck: nach rechts im Ruhezustand, nach unten wenn aufgeklappt */
 .erklaerung > summary {
-  display: inline-flex; align-items: center; gap: .3rem;
+  display: inline-flex; align-items: center;
   list-style: none; cursor: pointer; width: fit-content;
-  font-size: .78rem; color: var(--muted);
-  border: 1px solid var(--border); border-radius: 999px;
-  padding: .1rem .6rem;
+  padding: .25rem .35rem; line-height: 0;
 }
 .erklaerung > summary::-webkit-details-marker { display: none; }
-.erklaerung > summary::before { content: "?"; font-weight: 700; }
-.erklaerung > summary:hover { color: var(--accent-soft); border-color: var(--accent); }
+.erklaerung > summary::before {
+  content: ""; display: block;
+  border-left: 7px solid var(--muted);
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  transition: transform .15s ease;
+}
+.erklaerung[open] > summary::before { transform: rotate(90deg); }
+.erklaerung > summary:hover::before { border-left-color: var(--accent); }
 .erklaerung[open] > summary { margin-bottom: .4rem; }
 .erklaerung > .hint { margin: 0; }
 /* Auf dem Papier zählt der Inhalt nicht – Erklärungen bleiben dort weg */

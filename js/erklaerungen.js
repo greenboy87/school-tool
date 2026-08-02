@@ -2,7 +2,7 @@
 
    Die Seite erklärt an vielen Stellen, wie etwas funktioniert. Das hilft beim
    ersten Mal und stört danach. Deshalb wandern diese Absätze beim Laden hinter
-   ein kleines „Erklärung“, das sich bei Bedarf aufklappen lässt.
+   ein kleines Dreieck, das sich bei Bedarf aufklappen lässt.
 
    Bewusst NICHT eingeklappt werden Absätze, die etwas anzeigen oder bedienen
    lassen – erkennbar daran, dass sie ein Element mit id oder ein Bedienelement
@@ -28,7 +28,10 @@ const Erklaerungen = {
     const box = document.createElement('details');
     box.className = 'erklaerung';
     const kopf = document.createElement('summary');
-    kopf.textContent = this.LABEL;
+    // Das Dreieck kommt aus dem Stylesheet – sichtbarer Text würde nur stören,
+    // der Name bleibt für Vorlesehilfen und den Mauszeiger erhalten.
+    kopf.setAttribute('aria-label', this.LABEL);
+    kopf.title = this.LABEL;
     p.replaceWith(box);
     box.append(kopf, p);
   },
