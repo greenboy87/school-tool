@@ -693,3 +693,30 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   .print-area { position: absolute; left: 0; top: 0; width: 100%; }
   .grade-table input.grade { border: none; }
 }
+
+/* ---------- Handy ----------
+   Steht bewusst am Dateiende: die Regeln hier sollen alles davor überschreiben.
+   Auf dem Handy passen Titel, Sync-Knöpfe und fünf Reiter nicht in eine Zeile.
+   Statt seitwärts zu scrollen bekommen die Reiter eine eigene Zeile und teilen
+   sich die Breite gleichmäßig – die Symbole entfallen dort zugunsten der Wörter. */
+/* Breite Tabellen scrollen in sich selbst, statt die ganze Seite zu verschieben.
+   Gilt auf jeder Bildschirmbreite – auf dem Papier bleibt die Tabelle eine Tabelle. */
+@media screen {
+  .band-table, .grade-table { display: block; overflow-x: auto; }
+}
+
+@media screen and (max-width: 720px) {
+  .topbar { gap: .5rem; padding: .55rem .7rem; }
+  /* Der Name steht im Titel des Browserfensters – hier reicht das Symbol,
+     dadurch bleiben Sync-Knöpfe und Titel in derselben Zeile */
+  .titel-text { display: none; }
+  .topbar h1 { font-size: 1rem; margin: 0; }
+  .main-tabs { order: 3; flex: 1 1 100%; gap: .2rem; }
+  .tab-btn { flex: 1 1 0; min-width: 0; padding: .5rem .2rem; font-size: .8rem; text-align: center; }
+  .tab-btn .icon { display: none; }
+  .backup-btns { margin-left: auto; gap: .3rem; }
+  .backup-btns button { font-size: .8rem; padding: .4rem .55rem; }
+  .nur-icon { padding-left: .45rem; padding-right: .45rem; }
+  .tab-page { padding: .8rem .7rem; }
+  .card { padding: .9rem .8rem; }
+}
