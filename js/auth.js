@@ -9,7 +9,7 @@
 const Auth = {
   KEY: 'schooltool-unlock',
   // SHA-256 des Passworts, damit es nicht im Klartext im Quelltext steht
-  HASH: '398991009da1d251792eb353a0b7b185bc83e71e12e489e73228b554fc6cebc5',
+  HASH: 'd8ce542b6051727f8ebb7f928a17c7dfc30f1591b845c34acb810e8a2cfc516c',
   TIMEOUT_MIN: 0,      // 0 = läuft nicht von selbst ab
 
   async hash(str) {
@@ -20,7 +20,7 @@ const Auth = {
 
   async check(pw) {
     const h = await this.hash(pw.trim());
-    return h ? h === this.HASH : pw.trim() === 'menu'; // Fallback ohne crypto.subtle
+    return h === this.HASH;   // ohne crypto.subtle (nur auf http-Seiten) wird nichts freigegeben
   },
 
   _read() {
@@ -106,12 +106,29 @@ const Auth = {
     input.focus();
   },
 
+  /* Direktzugang per Lesezeichen:  .../school-tool/#auf=PASSWORT
+     Der Anker (alles ab #) bleibt im Browser - er wird nie an einen Server
+     geschickt und steht in keinem Zugriffsprotokoll. Gleich nach der Pruefung
+     fliegt er aus der Adresszeile, damit er nicht am Beamer mitgelesen wird. */
+  async _vomLink() {
+    const treffer = /(?:^|[#&])auf=([^&]*)/.exec(location.hash);
+    if (!treffer) return false;
+    let pw = treffer[1];
+    try { pw = decodeURIComponent(pw); } catch (e) { /* unsauber kodierte Adresse */ }
+    history.replaceState(null, '', location.pathname + location.search);
+    return this.check(pw);
+  },
+
   init() {
-    localStorage.removeItem('schooltool-unlocked'); // Altlast aus früherer Version
+    localStorage.removeItem('schooltool-unlocked'); // Altlast aus frueherer Version
     if (this.isUnlocked()) { this._watch(); return; }
+    // Erst sperren, dann den Link pruefen - sonst blitzt der Inhalt kurz auf.
     document.documentElement.classList.add('locked');
-    if (document.body) this._build();
-    else document.addEventListener('DOMContentLoaded', () => this._build());
+    this._vomLink().then(ok => {
+      if (ok) { this.unlock(); return; }
+      if (document.body) this._build();
+      else document.addEventListener('DOMContentLoaded', () => this._build());
+    });
   },
 };
 
