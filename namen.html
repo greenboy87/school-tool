@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Namen der Schulband</title>
+<link rel="stylesheet" href="style.css?v=62">
+<link rel="stylesheet" href="namen.css?v=62">
+<script src="js/icons.js?v=62"></script>
+<script src="js/theme.js?v=62"></script>
+<script src="js/auth.js?v=62"></script>
+</head>
+<body class="namen-body">
+
+<div class="namen-kopf">
+  <select id="n-filter" title="Welche Gruppe angezeigt wird">
+    <option value="alle">Band und Technik</option>
+    <option value="band">nur Schulband</option>
+    <option value="technik">nur Technikteam</option>
+  </select>
+  <div class="btn-row">
+    <button id="n-alle" class="small">Alle</button>
+    <button id="n-keine" class="small">Keine</button>
+  </div>
+</div>
+
+<ul id="n-liste" class="namen-liste"></ul>
+
+<div class="namen-fuss">
+  <p class="hint" id="n-status">–</p>
+  <div class="btn-row">
+    <button id="n-copy" class="primary" data-icon="clipboard">Klasse + Name</button>
+    <button id="n-copy-namen">nur Namen</button>
+  </div>
+</div>
+
+<script src="js/store.js?v=62"></script>
+<script src="js/band.js?v=62"></script>
+<script src="js/namen.js?v=62"></script>
+</body>
+</html>

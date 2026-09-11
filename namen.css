@@ -1,0 +1,45 @@
+/* Kleines Fenster mit den Namen der Schulband - zum schnellen Kopieren.
+   Erbt Farben und Schrift aus style.css, bringt nur die Aufteilung mit. */
+.namen-body {
+  margin: 0;
+  padding: .7rem .8rem .8rem;
+  height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.namen-kopf { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.namen-kopf select { flex: 1; min-width: 9rem; }
+
+.namen-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.namen-liste li { border-bottom: 1px solid var(--border); }
+.namen-liste li:last-child { border-bottom: none; }
+.namen-liste label {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .35rem .6rem;
+  cursor: pointer;
+}
+.namen-liste label:hover { background: var(--hover); }
+.namen-liste input { margin: 0; flex: none; }
+.n-klasse {
+  flex: none;
+  width: 2.6rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.namen-liste .leer { padding: .8rem; color: var(--muted); }
+
+.namen-fuss { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.namen-fuss .hint { margin: 0; }

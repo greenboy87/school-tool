@@ -75,6 +75,10 @@ const Band = {
     document.getElementById('member-filter').addEventListener('change', () => this.renderMembers());
     document.getElementById('btn-print-members').addEventListener('click', () => this.printMembers());
     document.getElementById('btn-export-members').addEventListener('click', () => this.exportMembers());
+    document.getElementById('btn-namen-fenster').addEventListener('click', () => {
+      window.open('namen.html', 'bandnamen',
+        'width=380,height=620,menubar=no,toolbar=no,location=no,status=no');
+    });
 
     /* ---- Songs ---- */
     document.getElementById('form-new-song').addEventListener('submit', e => {

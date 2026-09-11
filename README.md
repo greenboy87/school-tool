@@ -98,6 +98,13 @@ die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene T
   Technikteam / beides) und Instrument bzw. Aufgabe. Die Liste ist natürlich nach Klassen
   sortiert (5a, 5b … 10d) und lässt sich gefiltert drucken oder als CSV exportieren.
   Namen können per Auswahlliste aus bestehenden Klassen übernommen werden.
+- **Namen-Fenster** (Knopf über der Mitgliederliste): ein kleines eigenes Fenster mit nur
+  Klasse und Name, nach Klassen sortiert (niedrigste zuerst). Oben stellst du ein, ob alle,
+  nur die Schulband oder nur das Technikteam erscheinen; einzelne Namen hakst du ab oder an.
+  **Klasse + Name** legt die Auswahl in die Zwischenablage (durch einen Tabulator getrennt,
+  landet in einer Tabelle also gleich in zwei Spalten), **nur Namen** entsprechend ohne
+  Klasse. Das Fenster kann offen bleiben und zieht automatisch nach, wenn du im Hauptfenster
+  Mitglieder änderst.
 - **Songs** mit Tonart, Capo, Tempo (BPM) und freien Anmerkungen. Drucken lassen sich
   alle Songs, eine Auswahl oder die Setlist eines Auftritts – immer samt Anmerkungen.
 - **Termine & Auftritte** mit Datum, Uhrzeit, Ort, Notizen und einer Setlist, deren
@@ -123,9 +130,9 @@ Kontrollvorschau.
   Textfarbe des jeweiligen Themes.
 
 **Hinweis zum Aktualisieren:** Die eingebundenen Dateien tragen eine Versionsnummer
-(`style.css?v=60`). Nach Änderungen an CSS/JS diese Nummer in allen drei HTML-Dateien auf
-denselben Wert hochzählen – `index.html`, `ampel.html` und `gruppen.html`. Sonst zeigen
-Browser noch die zwischengespeicherte alte Fassung.
+(`style.css?v=62`). Nach Änderungen an CSS/JS diese Nummer in allen vier HTML-Dateien auf
+denselben Wert hochzählen – `index.html`, `ampel.html`, `gruppen.html` und `namen.html`.
+Sonst zeigen Browser noch die zwischengespeicherte alte Fassung.
 
 ### 🎲 Extras
 - Zufalls-Schüler-Auslosung (fair: jeder kommt einmal dran, bevor jemand doppelt drankommt)
