@@ -104,6 +104,9 @@ die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene T
   Reihenfolge sich ziehen lässt.
 - **Probenplan**: eigene Probentermine anlegen und je Song festhalten, ob er geprobt
   wurde, mit Anmerkung („Tempo schneller“). Auch druckbar.
+- **Notizen**: freies Feld nur für die Band – Technikwünsche, Absprachen, Ideen fürs nächste
+  Konzert. Speichert beim Tippen von selbst und lässt sich drucken. (Die allgemeinen Notizen
+  im Reiter *Notes* bleiben davon getrennt.)
 
 ### KI-Import für gescannte und handschriftliche Gruppenlisten
 Digitale PDFs liest das Tool selbst (kostenlos). Für Scans, Fotos und Handschrift gibt es

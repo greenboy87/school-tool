@@ -11,6 +11,7 @@ const Band = {
     if (!data.band) data.band = {};
     const b = data.band;
     ['members', 'songs', 'ideas', 'gigs', 'rehearsals'].forEach(k => { if (!Array.isArray(b[k])) b[k] = []; });
+    if (typeof b.notizen !== 'string') b.notizen = '';
     return b;
   },
   save() { Classes.persist(); },
