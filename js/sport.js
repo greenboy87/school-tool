@@ -224,8 +224,10 @@ const Sport = {
     return 6;
   },
 
-  /* Wie weit ist es bis zur naechsten Note? Bei „mehr ist besser“ die naechst-
-     bessere, bei Zeiten die Schwelle, ab der die jetzige verloren geht. */
+  /* Die naechste Note, auf die es zulaeuft – und wie weit es bis dahin ist.
+     Bei „mehr ist besser“ (Dauerlauf) ist das die naechstbessere. Bei Zeiten
+     laeuft es in die andere Richtung: Wer bei 13,8 s auf Note 3 steht, faellt
+     bei 14,4 s auf Note 4 – gemeint ist also die naechstschlechtere. */
   bisZurNaechsten(d, wert) {
     const note = this.noteFuer(d, wert);
     if (note === null) return null;
@@ -233,11 +235,13 @@ const Sport = {
       if (note === 1) return null;                       // besser geht nicht
       const ziel = d.noten[String(note === 6 ? 5 : note - 1)];
       if (!ziel) return null;
-      return { note: note === 6 ? 5 : note - 1, abstand: ziel.zahl - wert, richtung: 'besser' };
+      return { note: String(note === 6 ? 5 : note - 1), abstand: ziel.zahl - wert };
     }
-    if (note === 6) return null;                          // unter Note 5, nichts zu halten
-    const halten = d.noten[String(note)];
-    return { note, abstand: halten.zahl - wert, richtung: 'halten' };
+    if (note === 6) return null;                          // schlechter geht nicht
+    const schwelle = d.noten[String(note)];
+    if (!schwelle) return null;
+    return { note: note === 5 ? 'unter Note 5' : String(note + 1),
+             abstand: schwelle.zahl - wert };
   },
 
   zahlAus(text, einheit) {
@@ -268,20 +272,23 @@ const Sport = {
     return u.gesammelt + (u.laeuft ? Date.now() - u.start : 0);
   },
 
-  /* „07:32,4“ – die Stunde erscheint erst, wenn es sie gibt */
-  text(ms) {
+  /* „07:32“ beim Laufen, „07:32,4“ im Stillstand. Die Zehntelstelle zappelt
+     zehnmal je Sekunde und macht die Anzeige auf der Leinwand unruhig – beim
+     Anhalten ist sie dagegen genau das, was man wissen will. */
+  text(ms, mitZehntel) {
     const zz = n => String(n).padStart(2, '0');
     const zehntel = Math.floor(Math.abs(ms) / 100) % 10;
     const sek = Math.floor(Math.abs(ms) / 1000) % 60;
     const min = Math.floor(Math.abs(ms) / 60000) % 60;
     const std = Math.floor(Math.abs(ms) / 3600000);
-    return (ms < 0 ? '-' : '') + (std ? std + ':' + zz(min) : zz(min)) + ':' + zz(sek) + ',' + zehntel;
+    return (ms < 0 ? '-' : '') + (std ? std + ':' + zz(min) : zz(min)) + ':' + zz(sek) +
+           (mitZehntel ? ',' + zehntel : '');
   },
 
   /* Abstaende in Sekunden lesbar machen: „42,3 s“ bzw. „2:07“ */
   abstandText(sekunden, einheit) {
-    if (einheit === 'min') return this.text(sekunden * 1000).replace(/,\d$/, '');
-    if (einheit === 'min:s') return this.text(sekunden * 1000);
+    if (einheit === 'min') return this.text(sekunden * 1000, false);
+    if (einheit === 'min:s') return this.text(sekunden * 1000, true);
     return sekunden.toFixed(1).replace('.', ',') + ' s';
   },
 
@@ -289,7 +296,7 @@ const Sport = {
     const anzeige = document.getElementById('stoppuhr-anzeige');
     if (!anzeige) return;
     const ms = this.zeit();
-    anzeige.textContent = this.text(ms);
+    anzeige.textContent = this.text(ms, !this.uhr.laeuft);
 
     const knopf = document.getElementById('btn-stoppuhr-start');
     if (knopf) {
@@ -299,26 +306,47 @@ const Sport = {
     }
 
     const zeile = document.getElementById('stoppuhr-note');
+    const leiste = document.getElementById('stoppuhr-leiste');
     const d = this.aktuelleDisziplin();
-    if (!zeile) return;
-    if (!d || !this.istZeit(d)) { zeile.hidden = true; return; }
+    if (!zeile || !leiste) return;
+    if (!d || !this.istZeit(d)) { zeile.hidden = true; leiste.hidden = true; return; }
 
     // Ausdauer wird in Minuten bewertet, Laufzeiten in Sekunden
     const wert = d.einheit === 'min' ? ms / 60000 : ms / 1000;
     const note = this.noteFuer(d, wert);
     const naechste = this.bisZurNaechsten(d, wert);
-    let text = note === 6 ? 'unter Note 5' : 'Note ' + note;
+
+    /* Unter der Uhr steht nur die eine Zahl, die waehrend des Laufs zaehlt.
+       Welche Note zu welcher Zeit gehoert, sagt die Leiste darunter – das
+       nebeneinander in einer Zeile war auf der Leinwand nicht zu erfassen. */
     if (naechste && naechste.abstand > 0) {
-      const einh = d.einheit === 'min' ? 'min' : d.einheit;
       const abst = this.abstandText(
-        d.einheit === 'min' ? naechste.abstand * 60 : naechste.abstand, einh);
-      text += naechste.richtung === 'besser'
-        ? ` · noch ${abst} bis Note ${naechste.note}`
-        : ` · noch ${abst} für Note ${naechste.note}`;
+        d.einheit === 'min' ? naechste.abstand * 60 : naechste.abstand,
+        d.einheit === 'min' ? 'min' : d.einheit);
+      zeile.textContent = naechste.note === 'unter Note 5'
+        ? `noch ${abst} bis unter Note 5`
+        : `noch ${abst} bis Note ${naechste.note}`;
+    } else {
+      zeile.textContent = note === 1 ? 'Note 1' : note === 6 ? 'unter Note 5' : 'Note ' + note;
     }
-    zeile.textContent = `${d.name} · ${text}`;
     zeile.className = 'stoppuhr-note note-' + note;
     zeile.hidden = false;
+
+    // Notenleiste: alle fuenf Schwellen, die erreichte hervorgehoben
+    leiste.innerHTML = '';
+    for (const n of ['1', '2', '3', '4', '5']) {
+      const s = d.noten[n];
+      if (!s) continue;
+      const feld = document.createElement('span');
+      feld.className = 'leisten-feld' + (String(note) === n ? ' erreicht' : '');
+      const kopf = document.createElement('b');
+      kopf.textContent = n;
+      const zeit = document.createElement('span');
+      zeit.textContent = s.text;
+      feld.append(kopf, zeit);
+      leiste.appendChild(feld);
+    }
+    leiste.hidden = false;
   },
 
   umschalten() {

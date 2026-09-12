@@ -121,9 +121,13 @@ Eigener Reiter mit **Stoppuhr** und den **Bewertungstabellen**.
 
 - Die Stoppuhr zählt hoch und lässt sich per **Vollbild** auf Hallengröße bringen (`Esc` zurück);
   sie läuft dabei weiter.
-- Ist unten eine Zeit-Disziplin gewählt, **läuft die Note mit**: „Ausdauer (Dauerlauf) · Note 4 ·
-  noch 00:27 bis Note 3“. Bei Zeitläufen zählt es andersherum – „noch 0,5 s für Note 2“ sagt,
-  wie lange die aktuelle Note noch zu halten ist.
+- Ist unten eine Zeit-Disziplin gewählt, **läuft die Note mit**. Unter der Uhr steht nur die
+  eine Zahl, die gerade zählt – „noch 03:46 bis Note 3“ –, darunter als Leiste alle fünf
+  Schwellen mit der erreichten hervorgehoben. Beim Dauerlauf läuft es auf die bessere Note zu,
+  bei Zeitläufen auf die schlechtere: „noch 0,6 s bis Note 4“ heißt, so lange hält Note 3 noch.
+- Während die Uhr läuft, zeigt sie **volle Sekunden**; erst beim Anhalten kommt die Zehntel-
+  stelle dazu. Eine zehnmal je Sekunde wechselnde Ziffer macht die Anzeige auf der Leinwand
+  unruhig, beim Stoppen ist sie dagegen genau das, was man braucht.
 - Für Weiten und Höhen gibt es ein Eingabefeld: Messwert eintippen, Note erscheint.
 - Die Suche geht über alle Tabellen auf einmal – „kugel jungen 11“ oder „brust 8“ führen
   direkt zur passenden Zeile.

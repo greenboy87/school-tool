@@ -754,8 +754,10 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 
 /* ---------- Stoppuhr ---------- */
 .stoppuhr-anzeige {
-  font-size: 3.2rem; font-weight: 800; font-variant-numeric: tabular-nums;
-  margin: .8rem 0; line-height: 1.1;
+  font-size: 3.2rem; font-weight: 800; line-height: 1.1; margin: .8rem 0;
+  /* Ziffern gleicher Breite, sonst wandert die Anzeige bei jedem Wechsel */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
 }
 /* Im Vollbild fuellt die Ziffernfolge den Schirm – begrenzt durch beide
    Richtungen, sonst laeuft sie auf einem breiten Beamer unten heraus */
@@ -766,8 +768,25 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 }
 .stoppuhr-buehne:fullscreen .stoppuhr-anzeige { font-size: min(22vw, 42vh); margin: 0; }
 /* Die mitlaufende Note – im Vollbild gross genug, um sie aus der Halle zu lesen */
-.stoppuhr-note { font-size: 1.15rem; font-weight: 700; margin-bottom: .9rem; }
+.stoppuhr-note { font-size: 1.15rem; font-weight: 700; margin-bottom: .6rem; }
 .stoppuhr-buehne:fullscreen .stoppuhr-note { font-size: min(5vw, 9vh); margin: 0; text-align: center; }
+
+/* Welche Note ab welcher Zeit – als Leiste statt als Tabelle, damit sie auch
+   im Vollbild in eine Zeile passt */
+.stoppuhr-leiste { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .9rem; }
+.leisten-feld {
+  display: flex; align-items: baseline; gap: .35rem;
+  padding: .2rem .5rem; border: 1px solid var(--border); border-radius: 7px;
+  font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.leisten-feld b { color: var(--text); }
+.leisten-feld.erreicht { border-color: var(--accent); background: var(--active-soft); color: var(--text); }
+.stoppuhr-buehne:fullscreen .stoppuhr-leiste {
+  gap: .8rem; margin: 0; justify-content: center;
+}
+.stoppuhr-buehne:fullscreen .leisten-feld {
+  font-size: min(3.2vw, 5.5vh); padding: .3rem .9rem; border-radius: 12px; gap: .6rem;
+}
 .stoppuhr-buehne:fullscreen .btn-row button { font-size: 1.5rem; padding: .9rem 1.8rem; border-radius: 12px; }
 .stoppuhr-buehne:fullscreen .btn-row .icon { width: 1.3em; height: 1.3em; }
 
