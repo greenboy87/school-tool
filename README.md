@@ -62,10 +62,10 @@ zeigt Klasse und Klassenleitung; ein Klick springt in die Klasse und hebt den Sc
 Liste kurz hervor. Ist die Klasse durch den Schuljahr-Filter ausgeblendet, schaltet der
 Sprung den Filter auf „alle“, damit sie nicht unsichtbar bleibt.
 
-### 👥 Klassenleitung und Lehrkräfte
+### 👥 Klassenleitung und Lehrkräfte (Reiter *Lehrer*)
 Jede Klasse hat zwei Felder für **Klassenleitung** und **Co-Klassenleitung**, in die das
 Kürzel kommt (`BU`, oder auch `WW/PG` für zwei Personen). Damit dort nicht nur das Kürzel
-steht, lässt sich unter *Extras → Lehrkräfte* eine Liste `Name; KÜRZEL` einlesen – dann
+steht, liegt im Reiter *Lehrer* die Liste des Kollegiums – dann
 erscheint der volle Name daneben, in der Klassenliste links das Kürzel und im Suchergebnis
 die Klassenleitung. Ein Kürzel, das die Liste nicht kennt, wird rot als
 „nicht in der Liste“ ausgewiesen, statt still leer zu bleiben.
@@ -73,7 +73,7 @@ die Klassenleitung. Ein Kürzel, das die Liste nicht kennt, wird rot als
 Statt des Kürzels lässt sich auch der **Name** tippen: Ist er eindeutig, wird beim Verlassen
 des Feldes das Kürzel daraus.
 
-Unter *Extras → Lehrkräfte* steht die Liste des Kollegiums zum Aufklappen – Kürzel, Name und
+Im Reiter *Lehrer* steht die Liste des Kollegiums zum Aufklappen – Kürzel, Name und
 in Klammern die Klassenleitung (`BU  Baumann, Sandra (KL 5a)`), auch für Klassen, die man
 selbst nicht unterrichtet. Eingeklappt startet sie, weil sie zum Nachschlagen da ist.
 
@@ -129,11 +129,14 @@ Eigener Reiter mit **Stoppuhr** und den **Bewertungstabellen**.
   direkt zur passenden Zeile.
 
 Die Tabellen stammen aus der **ISB-Empfehlung zur Leistungsbewertung Sport (2023)** für
-Leichtathletik und Schwimmen, Jahrgangsstufen 5–11, Mädchen und Jungen. Sie liegen wie
-Klassen und Noten **nur im Browser dieses Geräts** – im öffentlichen Repository haben sie
-nichts verloren. Eingelesen werden sie einmalig über die Konsole:
+Leichtathletik und Schwimmen, Jahrgangsstufen 5–11, Mädchen und Jungen. Sie liegen als
+[`js/sport-tabellen.js`](js/sport-tabellen.js) bei und sind damit auf jedem Gerät sofort da –
+es sind amtliche Bewertungsgrundlagen, kein Schuldokument. Quelle und Link stehen in der
+Datei und unter der Tabelle im Reiter.
 
-    Sport.tabellenEinlesen(objekt)
+Veröffentlicht das ISB neuere Tabellen, lädt **Neuere Tabellen laden** eine eigene
+JSON-Datei; die liegt dann lokal und geht der mitgelieferten vor. **Mitgelieferte
+verwenden** nimmt sie wieder zurück.
 
 ### Stunden (Themen-Fortschritt)
 - Katalog mit 211 Stundenthemen, erzeugt aus den Ordnern in iCloud unter

@@ -43,6 +43,15 @@ const Sport = {
       e.target.value = '';
       if (datei) this.ausDatei(datei);
     });
+    document.getElementById('btn-sport-zurueck').addEventListener('click', () => {
+      if (!confirm('Die selbst geladenen Tabellen entfernen und wieder die mitgelieferten verwenden?')) return;
+      delete Classes.data.sport;
+      Classes.persist();
+      document.getElementById('sport-ladestatus').textContent = 'Wieder die mitgelieferten Tabellen.';
+      this.fuelleWahl();
+      this.zeichneTabelle();
+      this.zeichneTreffer();
+    });
 
     this.fuelleWahl();
     this.zeichneTabelle();
@@ -66,10 +75,18 @@ const Sport = {
     leser.readAsText(datei);
   },
 
-  /* ---------- Daten ---------- */
+  /* ---------- Daten ----------
+     Die Tabellen liegen als js/sport-tabellen.js bei. Wer im Reiter eine neuere
+     Datei laedt, legt sie lokal ab – die geht dann der mitgelieferten vor. */
   daten() {
-    const d = Classes.data.sport;
-    return (d && Array.isArray(d.tabellen)) ? d : { tabellen: [] };
+    const eigen = Classes.data.sport;
+    if (eigen && Array.isArray(eigen.tabellen) && eigen.tabellen.length) return eigen;
+    return (typeof SportTabellen !== 'undefined' && SportTabellen) || { tabellen: [] };
+  },
+
+  eigeneGeladen() {
+    const e = Classes.data.sport;
+    return !!(e && Array.isArray(e.tabellen) && e.tabellen.length);
   },
 
   tabellenEinlesen(objekt) {
@@ -131,6 +148,7 @@ const Sport = {
     }
     leer.hidden = true;
     wahlbox.hidden = false;
+    document.getElementById('btn-sport-zurueck').hidden = !this.eigeneGeladen();
 
     const g = this.gemerkteWahl();
     const eindeutig = (liste) => [...new Set(liste)];

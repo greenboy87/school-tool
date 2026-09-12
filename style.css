@@ -716,6 +716,7 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 
 /* ---------- Sport ---------- */
 .sport-layout { display: grid; gap: 1rem; }
+.lehrer-layout { display: grid; gap: 1rem; }
 .sport-wahl { display: flex; gap: .8rem 1.2rem; flex-wrap: wrap; margin: .6rem 0 1rem; }
 .sport-wahl label { display: flex; flex-direction: column; gap: .25rem; font-size: .82rem; color: var(--muted); }
 .sport-wahl select {

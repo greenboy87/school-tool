@@ -737,7 +737,7 @@ const Classes = {
       // „nicht in der Liste“ irreführend und schickt auf die falsche Fährte
       const leer = !Object.keys(this.lehrer()).length;
       anzeige.textContent = !wert ? ''
-        : leer ? 'Noch keine Lehrerliste – unter Extras › Lehrkräfte einlesen'
+        : leer ? 'Noch keine Lehrerliste – im Reiter „Lehrer“ zu sehen'
         : this.lehrerName(wert);
       anzeige.classList.toggle('unbekannt', /nicht in der Liste|Noch keine Lehrerliste/.test(anzeige.textContent));
     }

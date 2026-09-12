@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=78">
+<link rel="stylesheet" href="style.css?v=79">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=78"></script>
-<script src="js/theme.js?v=78"></script>
-<script src="js/auth.js?v=78"></script>
+<script src="js/icons.js?v=79"></script>
+<script src="js/theme.js?v=79"></script>
+<script src="js/auth.js?v=79"></script>
 </head>
 <body>
 
@@ -20,6 +20,7 @@
     <button class="tab-btn" data-tab="band" data-icon="music" title="Schulband">Band</button>
     <button class="tab-btn" data-tab="notizen" data-icon="clipboard" title="Notizen">Notes</button>
     <button class="tab-btn" data-tab="sport" data-icon="timer" title="Sport">Sport</button>
+    <button class="tab-btn" data-tab="lehrer" data-icon="users" title="Lehrkräfte und Klassenleitungen">Lehrer</button>
     <button class="tab-btn" data-tab="tools" data-icon="sparkles" title="Extras">Extras</button>
   </nav>
   <div class="backup-btns">
@@ -663,12 +664,12 @@
     <section class="card">
       <h2 data-icon="target">Bewertung</h2>
       <div id="sport-leer" hidden>
-        <p class="hint">Noch keine Bewertungstabellen auf diesem Gerät. Lade die Datei
-          <code>sport-tabellen.json</code> – sie bleibt hier und geht nie ins Repository.</p>
+        <p class="hint">Keine Bewertungstabellen vorhanden.</p>
       </div>
       <div class="btn-row sport-laden">
         <input type="file" id="sport-datei" accept="application/json,.json" hidden>
-        <button id="btn-sport-datei" class="small" data-icon="upload">Tabellen aus Datei laden</button>
+        <button id="btn-sport-datei" class="small" data-icon="upload">Neuere Tabellen laden</button>
+        <button id="btn-sport-zurueck" class="small" data-icon="reset" hidden>Mitgelieferte verwenden</button>
         <span class="hint" id="sport-ladestatus"></span>
       </div>
       <div id="sport-wahl" class="sport-wahl">
@@ -696,10 +697,10 @@
   </div>
 </main>
 
-<!-- ========== EXTRAS ========== -->
-<main id="tab-tools" class="tab-page">
-  <div class="tools-grid">
-    <section class="card">
+<!-- ========== LEHRKRÄFTE ========== -->
+<main id="tab-lehrer" class="tab-page">
+  <div class="lehrer-layout">
+  <section class="card">
       <h2>
         <button id="btn-toggle-lehrer" class="klapper" aria-expanded="false"
                 aria-controls="lehrer-inhalt" title="Lehrerliste ein- oder ausklappen">
@@ -723,7 +724,12 @@
         <div id="lehrer-liste" class="lehrer-liste"></div>
       </div>
     </section>
+  </div>
+</main>
 
+<!-- ========== EXTRAS ========== -->
+<main id="tab-tools" class="tab-page">
+  <div class="tools-grid">
     <section class="card">
       <h2 data-icon="userCheck">Zufalls-Schüler</h2>
       <p class="hint">Lost einen Schüler aus der gewählten Klasse aus – z.&thinsp;B. fürs Abfragen oder Vorspielen. Bereits gezogene Schüler kommen erst wieder dran, wenn alle dran waren.</p>
@@ -754,24 +760,25 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=78"></script>
-<script src="js/firebase-config.js?v=78"></script>
-<script type="module" src="js/live-firebase.js?v=78"></script>
-<script src="js/topics-seed.js?v=78"></script>
-<script src="js/ai-import.js?v=78"></script>
-<script src="js/store.js?v=78"></script>
-<script src="js/noise.js?v=78"></script>
-<script src="js/classes.js?v=78"></script>
-<script src="js/lessons.js?v=78"></script>
-<script src="js/band.js?v=78"></script>
-<script src="js/notes.js?v=78"></script>
-<script src="js/tresor.js?v=78"></script>
-<script src="js/erklaerungen.js?v=78"></script>
-<script src="js/setlisten.js?v=78"></script>
-<script src="js/einklappen.js?v=78"></script>
-<script src="js/live-groups.js?v=78"></script>
-<script src="js/sport.js?v=78"></script>
-<script src="js/tools.js?v=78"></script>
-<script src="js/app.js?v=78"></script>
+<script src="js/vendor/qrcode.min.js?v=79"></script>
+<script src="js/firebase-config.js?v=79"></script>
+<script type="module" src="js/live-firebase.js?v=79"></script>
+<script src="js/topics-seed.js?v=79"></script>
+<script src="js/ai-import.js?v=79"></script>
+<script src="js/store.js?v=79"></script>
+<script src="js/noise.js?v=79"></script>
+<script src="js/classes.js?v=79"></script>
+<script src="js/lessons.js?v=79"></script>
+<script src="js/band.js?v=79"></script>
+<script src="js/notes.js?v=79"></script>
+<script src="js/tresor.js?v=79"></script>
+<script src="js/erklaerungen.js?v=79"></script>
+<script src="js/setlisten.js?v=79"></script>
+<script src="js/einklappen.js?v=79"></script>
+<script src="js/live-groups.js?v=79"></script>
+<script src="js/sport-tabellen.js?v=79"></script>
+<script src="js/sport.js?v=79"></script>
+<script src="js/tools.js?v=79"></script>
+<script src="js/app.js?v=79"></script>
 </body>
 </html>
