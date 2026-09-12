@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=67">
+<link rel="stylesheet" href="style.css?v=69">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=67"></script>
-<script src="js/theme.js?v=67"></script>
-<script src="js/auth.js?v=67"></script>
+<script src="js/icons.js?v=69"></script>
+<script src="js/theme.js?v=69"></script>
+<script src="js/auth.js?v=69"></script>
 </head>
 <body>
 
@@ -94,6 +94,11 @@
       <label class="year-filter hint">Schuljahr:
         <select id="year-filter"></select>
       </label>
+      <div class="schueler-suche">
+        <input type="search" id="schueler-suche" autocomplete="off"
+               placeholder="Schüler in allen Klassen suchen …">
+        <ul id="suche-treffer" class="suche-treffer" hidden></ul>
+      </div>
       <ul id="class-list" class="class-list"></ul>
       <form id="form-new-class" class="new-class-form">
         <input type="text" id="new-class-name" placeholder="z.&thinsp;B. 5c Musik" required>
@@ -119,6 +124,19 @@
           </nav>
           <button id="btn-carry-class" class="small" title="Kopie dieser Klasse für das nächste Schuljahr anlegen (Schüler bleiben, Stunden starten neu)">Nächstes Schuljahr</button>
           <button id="btn-delete-class" class="danger small">Klasse löschen</button>
+          <div class="klassenleitung">
+            <label>Klassenleitung
+              <input type="text" id="kl-haupt" list="lehrer-kuerzel" maxlength="12"
+                     placeholder="Kürzel" autocomplete="off">
+            </label>
+            <span id="kl-haupt-name" class="kl-name"></span>
+            <label>Co
+              <input type="text" id="kl-co" list="lehrer-kuerzel" maxlength="12"
+                     placeholder="Kürzel" autocomplete="off">
+            </label>
+            <span id="kl-co-name" class="kl-name"></span>
+          </div>
+          <datalist id="lehrer-kuerzel"></datalist>
         </div>
 
         <section id="subtab-schueler" class="subtab-page active card">
@@ -625,6 +643,21 @@
 <main id="tab-tools" class="tab-page">
   <div class="tools-grid">
     <section class="card">
+      <h2 data-icon="users">Lehrkräfte</h2>
+      <p class="hint">Kürzel und Namen des Kollegiums – damit bei der Klassenleitung nicht nur
+        „BU“ steht, sondern auch, wer das ist. Die Liste bleibt wie Klassen und Noten
+        <strong>auf diesem Gerät</strong> und geht nie ins Repository.</p>
+      <textarea id="lehrer-eingabe" rows="6"
+        placeholder="Eine Lehrkraft pro Zeile, Name und Kürzel:&#10;Baumann, Sandra; BU&#10;Grünig, Thomas; GT"></textarea>
+      <div class="btn-row">
+        <button id="btn-lehrer-import" class="primary" data-icon="plus">Liste einlesen</button>
+        <button id="btn-lehrer-leeren" class="danger small">Liste leeren</button>
+      </div>
+      <p class="hint" id="lehrer-status"></p>
+      <div id="lehrer-liste" class="lehrer-liste"></div>
+    </section>
+
+    <section class="card">
       <h2 data-icon="userCheck">Zufalls-Schüler</h2>
       <p class="hint">Lost einen Schüler aus der gewählten Klasse aus – z.&thinsp;B. fürs Abfragen oder Vorspielen. Bereits gezogene Schüler kommen erst wieder dran, wenn alle dran waren.</p>
       <div class="inline-form">
@@ -653,23 +686,23 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=67"></script>
-<script src="js/firebase-config.js?v=67"></script>
-<script type="module" src="js/live-firebase.js?v=67"></script>
-<script src="js/topics-seed.js?v=67"></script>
-<script src="js/ai-import.js?v=67"></script>
-<script src="js/store.js?v=67"></script>
-<script src="js/noise.js?v=67"></script>
-<script src="js/classes.js?v=67"></script>
-<script src="js/lessons.js?v=67"></script>
-<script src="js/band.js?v=67"></script>
-<script src="js/notes.js?v=67"></script>
-<script src="js/tresor.js?v=67"></script>
-<script src="js/erklaerungen.js?v=67"></script>
-<script src="js/setlisten.js?v=67"></script>
-<script src="js/einklappen.js?v=67"></script>
-<script src="js/live-groups.js?v=67"></script>
-<script src="js/tools.js?v=67"></script>
-<script src="js/app.js?v=67"></script>
+<script src="js/vendor/qrcode.min.js?v=69"></script>
+<script src="js/firebase-config.js?v=69"></script>
+<script type="module" src="js/live-firebase.js?v=69"></script>
+<script src="js/topics-seed.js?v=69"></script>
+<script src="js/ai-import.js?v=69"></script>
+<script src="js/store.js?v=69"></script>
+<script src="js/noise.js?v=69"></script>
+<script src="js/classes.js?v=69"></script>
+<script src="js/lessons.js?v=69"></script>
+<script src="js/band.js?v=69"></script>
+<script src="js/notes.js?v=69"></script>
+<script src="js/tresor.js?v=69"></script>
+<script src="js/erklaerungen.js?v=69"></script>
+<script src="js/setlisten.js?v=69"></script>
+<script src="js/einklappen.js?v=69"></script>
+<script src="js/live-groups.js?v=69"></script>
+<script src="js/tools.js?v=69"></script>
+<script src="js/app.js?v=69"></script>
 </body>
 </html>

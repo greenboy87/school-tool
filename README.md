@@ -55,6 +55,24 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
 - Notenliste drucken oder als CSV exportieren
 - Sitzplan (PDF oder Bild) pro Klasse hochladen und anzeigen
 
+### 🔎 Schüler in allen Klassen suchen
+Das Suchfeld über der Klassenliste durchsucht **alle** Klassen auf einmal – praktisch, wenn
+ein Name im Lehrerzimmer fällt und unklar ist, aus welcher Klasse er stammt. Jeder Treffer
+zeigt Klasse und Klassenleitung; ein Klick springt in die Klasse und hebt den Schüler in der
+Liste kurz hervor. Ist die Klasse durch den Schuljahr-Filter ausgeblendet, schaltet der
+Sprung den Filter auf „alle“, damit sie nicht unsichtbar bleibt.
+
+### 👥 Klassenleitung und Lehrkräfte
+Jede Klasse hat zwei Felder für **Klassenleitung** und **Co-Klassenleitung**, in die das
+Kürzel kommt (`BU`, oder auch `WW/PG` für zwei Personen). Damit dort nicht nur das Kürzel
+steht, lässt sich unter *Extras → Lehrkräfte* eine Liste `Name; KÜRZEL` einlesen – dann
+erscheint der volle Name daneben, in der Klassenliste links das Kürzel und im Suchergebnis
+die Klassenleitung. Ein Kürzel, das die Liste nicht kennt, wird rot als
+„nicht in der Liste“ ausgewiesen, statt still leer zu bleiben.
+
+Die Lehrerliste liegt wie Klassen und Noten **nur im Browser dieses Geräts** und gehört
+nicht ins Repository – die Seite ist öffentlich.
+
 ### 📱 Gruppen per QR-Code (Handys der Klasse)
 Statt Gruppen auszulosen, kann sich die Klasse selbst einteilen:
 - **Sammlung starten** im Reiter *Projekte & Noten*, dann **Groß für die Leinwand** – es

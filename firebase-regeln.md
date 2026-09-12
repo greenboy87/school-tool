@@ -24,6 +24,13 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
 
 **R2.** **Veröffentlichen**. Fertig – im School-Tool einmal Strg+Shift+R.
 
+> **Zuletzt geändert am 12.09.2026:** Unter `meta` ist das Feld `bezeichnung`
+> dazugekommen – damit gibt die Lehrkraft vor, was die Klasse eintragen soll
+> („Gruppenname“ oder z. B. „Thema“). Ohne diese Zeile weist die Datenbank das
+> Anlegen eines Raums ab, weil `"$andere": { ".validate": false }` alles
+> Unbekannte sperrt. Wer die Regeln schon einmal eingetragen hat, muss sie also
+> **erneut** aus diesem Block kopieren.
+
 ```json
 {
   "rules": {
@@ -68,6 +75,7 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
             "projekt":  { ".validate": "newData.isString() && newData.val().length <= 60" },
             "anzahl":   { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 80" },
             "erstellt": { ".validate": "newData.isNumber()" },
+            "bezeichnung": { ".validate": "newData.isString() && newData.val().length <= 30" },
             "$andere":  { ".validate": false }
           },
           "zuordnung": {
@@ -155,6 +163,7 @@ fügst nur einen Block hinzu:
             "projekt":  { ".validate": "newData.isString() && newData.val().length <= 60" },
             "anzahl":   { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 80" },
             "erstellt": { ".validate": "newData.isNumber()" },
+            "bezeichnung": { ".validate": "newData.isString() && newData.val().length <= 30" },
             "$andere":  { ".validate": false }
           },
           "zuordnung": {

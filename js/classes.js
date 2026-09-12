@@ -115,6 +115,48 @@ const Classes = {
       this.renderProjects();
     });
 
+    // Suche ueber alle Klassen hinweg
+    const suchfeld = document.getElementById('schueler-suche');
+    if (suchfeld) {
+      suchfeld.addEventListener('input', () => this.sucheSchueler());
+      // Esc raeumt die Trefferliste weg, ohne das Feld erst leeren zu muessen
+      suchfeld.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { suchfeld.value = ''; this.sucheSchueler(); }
+      });
+    }
+
+    // Klassenleitung: zwei Felder mit Kuerzeln, „WW/PG“ ist erlaubt
+    for (const [id, feld] of [['kl-haupt', 'kl'], ['kl-co', 'co']]) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      el.addEventListener('input', () => {
+        const cls = this.currentClass();
+        if (!cls) return;
+        if (!cls.leitung) cls.leitung = {};
+        cls.leitung[feld] = el.value.trim();
+        this.persist();
+        this.zeigeLeitungsNamen();
+        this.renderClassList();
+      });
+    }
+
+    // Lehrkraefte-Liste
+    const imp = document.getElementById('btn-lehrer-import');
+    if (imp) {
+      imp.addEventListener('click', () => this.lehrerEinlesen());
+      document.getElementById('btn-lehrer-leeren').addEventListener('click', () => {
+        const anzahl = Object.keys(this.data.lehrer || {}).length;
+        if (!anzahl) { alert('Die Liste ist schon leer.'); return; }
+        if (!confirm(`Alle ${anzahl} Lehrkräfte aus der Liste entfernen?\n\n` +
+          'Die eingetragenen Klassenleitungen bleiben stehen – dort steht dann wieder ' +
+          'nur das Kürzel.')) return;
+        this.data.lehrer = {};
+        this.persist();
+        this.renderLehrer();
+        this.zeigeLeitungsNamen();
+      });
+    }
+
     document.getElementById('student-file').addEventListener('change', e => {
       const file = e.target.files[0];
       e.target.value = '';
@@ -196,6 +238,7 @@ const Classes = {
       this.renderSeatplan();
     });
 
+    this.renderLehrer();
     this.renderClassList();
     this.renderDetail();
   },
@@ -417,6 +460,197 @@ const Classes = {
     this.renderDetail();
   },
 
+  /* ---------- Lehrkräfte ----------
+     Kürzel -> Name, rein zur Anzeige. Die Liste liegt wie alles andere nur im
+     Browser dieses Geräts; im Repository hat sie nichts verloren. */
+  lehrer() {
+    if (!this.data.lehrer || typeof this.data.lehrer !== 'object') this.data.lehrer = {};
+    return this.data.lehrer;
+  },
+
+  /* Erlaubt „Name; KÜRZEL“, Tabulatoren aus einer Tabelle und „Name   KÜRZEL“.
+     Kopfzeilen wie „Lehrkraft  Kürzel“ fallen durch, weil „Kürzel“ nicht
+     durchgehend groß geschrieben ist. */
+  parseLehrer(text) {
+    const gefunden = [];
+    for (const zeile of String(text).split(/\r?\n/)) {
+      const z = zeile.trim();
+      if (!z) continue;
+      let name = null, kuerzel = null;
+      const teile = z.split(/\s*[;\t]\s*/).filter(Boolean);
+      if (teile.length >= 2) {
+        kuerzel = teile[teile.length - 1];
+        name = teile.slice(0, -1).join('; ');
+      } else {
+        const m = z.match(/^(.*\S)\s{1,}([A-ZÄÖÜ]{1,6})$/);
+        if (m) { name = m[1]; kuerzel = m[2]; }
+      }
+      if (!name || !kuerzel) continue;
+      kuerzel = kuerzel.trim().toUpperCase();
+      if (!/^[A-ZÄÖÜ]{1,6}$/.test(kuerzel)) continue;
+      gefunden.push({ kuerzel, name: name.trim() });
+    }
+    return gefunden;
+  },
+
+  lehrerEinlesen() {
+    const feld = document.getElementById('lehrer-eingabe');
+    const gefunden = this.parseLehrer(feld.value);
+    const status = document.getElementById('lehrer-status');
+    if (!gefunden.length) {
+      status.textContent = 'Keine verwertbaren Zeilen gefunden. Format: Name; KÜRZEL';
+      status.classList.add('warnung');
+      return;
+    }
+    const liste = this.lehrer();
+    let neu = 0, geaendert = 0;
+    for (const e of gefunden) {
+      if (liste[e.kuerzel] === undefined) neu++;
+      else if (liste[e.kuerzel] !== e.name) geaendert++;
+      liste[e.kuerzel] = e.name;
+    }
+    this.persist();
+    feld.value = '';
+    status.classList.remove('warnung');
+    status.textContent = `${neu} neu, ${geaendert} aktualisiert – ${Object.keys(liste).length} Lehrkräfte in der Liste.`;
+    this.renderLehrer();
+    this.zeigeLeitungsNamen();
+  },
+
+  /* „WW/PG“ steht in der Vorlage für zwei Personen – beide auflösen.
+     Ein unbekanntes Kürzel wird als solches gekennzeichnet, statt still zu fehlen. */
+  lehrerName(kuerzel) {
+    const roh = String(kuerzel || '').trim();
+    if (!roh) return '';
+    const liste = this.lehrer();
+    const teile = roh.split('/').map(t => t.trim()).filter(Boolean);
+    const namen = teile.map(t => liste[t.toUpperCase()] || null);
+    // Auch wenn KEIN Kürzel bekannt ist, muss etwas dastehen – sonst sieht es
+    // aus, als wäre das Feld leer, statt dass die Lehrerliste unvollständig ist
+    return teile.map((t, i) => namen[i] || `${t} – nicht in der Liste`).join(' · ');
+  },
+
+  renderLehrer() {
+    const box = document.getElementById('lehrer-liste');
+    if (!box) return;
+    const liste = this.lehrer();
+    const kuerzel = Object.keys(liste).sort((a, b) => liste[a].localeCompare(liste[b], 'de'));
+    box.innerHTML = '';
+    if (!kuerzel.length) {
+      box.innerHTML = '<p class="hint">Noch keine Lehrkräfte eingelesen.</p>';
+    } else {
+      const ul = document.createElement('ul');
+      ul.className = 'lehrer-spalten';
+      for (const k of kuerzel) {
+        const li = document.createElement('li');
+        const kz = document.createElement('strong');
+        kz.textContent = k;
+        li.append(kz, ' ' + liste[k]);
+        ul.appendChild(li);
+      }
+      box.appendChild(ul);
+    }
+    // Vorschlagsliste an den beiden Feldern der Klassenleitung
+    const dl = document.getElementById('lehrer-kuerzel');
+    if (dl) {
+      dl.innerHTML = '';
+      for (const k of Object.keys(liste).sort()) {
+        const o = document.createElement('option');
+        o.value = k;
+        o.label = liste[k];
+        dl.appendChild(o);
+      }
+    }
+  },
+
+  zeigeLeitungsNamen() {
+    const cls = this.currentClass();
+    for (const [id, feld] of [['kl-haupt', 'kl'], ['kl-co', 'co']]) {
+      const el = document.getElementById(id);
+      const anzeige = document.getElementById(id + '-name');
+      if (!el || !anzeige) continue;
+      const wert = (cls && cls.leitung && cls.leitung[feld]) || '';
+      if (document.activeElement !== el) el.value = wert;
+      anzeige.textContent = this.lehrerName(wert);
+      anzeige.classList.toggle('unbekannt', /nicht in der Liste/.test(anzeige.textContent));
+    }
+  },
+
+  /* ---------- Suche über alle Klassen ----------
+     Beantwortet die Frage „in welcher Klasse ist dieser Schüler?“, ohne dass man
+     die Klassen der Reihe nach durchklickt. */
+  sucheSchueler() {
+    const feld = document.getElementById('schueler-suche');
+    const box = document.getElementById('suche-treffer');
+    if (!feld || !box) return;
+    const suche = feld.value.trim().toLowerCase();
+    box.innerHTML = '';
+    // Ein einzelner Buchstabe träfe die halbe Schule – erst ab zwei lohnt es
+    if (suche.length < 2) { box.hidden = true; return; }
+
+    const treffer = [];
+    for (const cls of this.data.classes) {
+      for (const s of cls.students) {
+        const name = this.studentName(s);
+        if (name.toLowerCase().includes(suche)) treffer.push({ cls, s, name });
+      }
+    }
+    treffer.sort((a, b) => a.name.localeCompare(b.name, 'de') ||
+                           a.cls.name.localeCompare(b.cls.name, 'de'));
+
+    box.hidden = false;
+    if (!treffer.length) {
+      const li = document.createElement('li');
+      li.className = 'hint';
+      li.textContent = 'Kein Schüler gefunden.';
+      box.appendChild(li);
+      return;
+    }
+    // Bei einem Allerweltsnamen wird die Liste sonst unübersichtlich lang
+    const zuViel = treffer.length - 25;
+    for (const t of treffer.slice(0, 25)) {
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.className = 'treffer-name';
+      name.textContent = t.name;
+      const wo = document.createElement('span');
+      wo.className = 'treffer-klasse';
+      // In der Trefferzeile den Namen, solange er bekannt ist – sonst das
+      // blanke Kürzel, statt die Zeile mit „nicht in der Liste“ zu füllen
+      const kl = ((t.cls.leitung || {}).kl || '').trim();
+      const leitung = kl ? (this.lehrer()[kl.toUpperCase()] || kl) : '';
+      wo.textContent = t.cls.name + (leitung ? ` · KL ${leitung}` : '');
+      li.append(name, wo);
+      li.addEventListener('click', () => this.springeZuSchueler(t.cls.id, t.s.id));
+      box.appendChild(li);
+    }
+    if (zuViel > 0) {
+      const li = document.createElement('li');
+      li.className = 'hint';
+      li.textContent = `… und ${zuViel} weitere. Tippe mehr Buchstaben.`;
+      box.appendChild(li);
+    }
+  },
+
+  springeZuSchueler(klasseId, schuelerId) {
+    // Der Schuljahr-Filter könnte die Klasse ausblenden – dann wäre der Treffer
+    // zwar gefunden, die Klasse links aber unsichtbar
+    const cls = this.data.classes.find(c => c.id === klasseId);
+    if (cls && this.yearFilter !== 'all' && (cls.year || '') !== this.yearFilter) {
+      this.yearFilter = 'all';
+    }
+    this.selectClass(klasseId);
+    // Auf den Unterreiter „Schüler“ zurück, sonst landet man im Sitzplan
+    const knopf = document.querySelector('.subtab-btn[data-subtab="schueler"]');
+    if (knopf && !knopf.classList.contains('active')) knopf.click();
+    const zeile = document.querySelector(`#student-list li[data-id="${schuelerId}"]`);
+    if (zeile) {
+      zeile.classList.add('gefunden');
+      zeile.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      setTimeout(() => zeile.classList.remove('gefunden'), 2500);
+    }
+  },
+
   /* ---------- Rendern ---------- */
   renderClassList() {
     // Schuljahr-Auswahl
@@ -447,7 +681,10 @@ const Classes = {
       const count = document.createElement('span');
       count.className = 'count';
       const doneCount = Object.values(cls.lessons || {}).filter(e => e.s === 'done').length;
-      count.textContent = `${cls.students.length} SuS` + (doneCount ? ` · ${doneCount} Std.` : '');
+      const kl = ((cls.leitung || {}).kl || '').trim();
+      count.textContent = `${cls.students.length} SuS` + (doneCount ? ` · ${doneCount} Std.` : '') +
+        (kl ? ` · KL ${kl}` : '');
+      if (kl) count.title = 'Klassenleitung: ' + (this.lehrerName(kl) || kl);
       li.append(name, count);
       li.addEventListener('click', () => this.selectClass(cls.id));
       ul.appendChild(li);
@@ -476,6 +713,7 @@ const Classes = {
       span.textContent = sub;
       document.getElementById('class-title').appendChild(span);
     }
+    this.zeigeLeitungsNamen();
     this.renderStudents();
     this.renderProjects();
     this.renderGroupResult();
