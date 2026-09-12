@@ -730,6 +730,8 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 }
 .sport-messnote { font-size: 1.05rem; font-weight: 700; padding-bottom: .35rem; }
 .sport-tabelle { max-width: 22rem; }
+.sport-laden { margin: .3rem 0 1rem; align-items: center; }
+#sport-ladestatus.warnung { color: var(--danger); }
 /* Note 1 und 2 gruen, 3 und 4 gelb, 5 und darunter rot – auf dem Beamer
    erkennt man das Ergebnis dadurch, bevor man die Ziffer gelesen hat */
 .note-1, .note-2 { color: var(--green); }

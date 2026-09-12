@@ -35,10 +35,35 @@ const Sport = {
       if (e.key === 'Escape') { suche.value = ''; this.zeichneTreffer(); }
     });
 
+    // Einlesen aus einer Datei: einmal im Jahr, wenn das ISB neue Tabellen legt
+    document.getElementById('btn-sport-datei')
+      .addEventListener('click', () => document.getElementById('sport-datei').click());
+    document.getElementById('sport-datei').addEventListener('change', e => {
+      const datei = e.target.files[0];
+      e.target.value = '';
+      if (datei) this.ausDatei(datei);
+    });
+
     this.fuelleWahl();
     this.zeichneTabelle();
     this.zeichneUhr();
     this.zeichneTreffer();
+  },
+
+  ausDatei(datei) {
+    const status = document.getElementById('sport-ladestatus');
+    const leser = new FileReader();
+    leser.onload = () => {
+      try {
+        const bericht = this.tabellenEinlesen(JSON.parse(leser.result));
+        status.classList.remove('warnung');
+        status.textContent = `${bericht.tabellen} Tabellen, ${bericht.disziplinen} Disziplinen eingelesen.`;
+      } catch (err) {
+        status.classList.add('warnung');
+        status.textContent = 'Datei konnte nicht gelesen werden: ' + err.message;
+      }
+    };
+    leser.readAsText(datei);
   },
 
   /* ---------- Daten ---------- */
@@ -100,8 +125,8 @@ const Sport = {
     const wahlbox = document.getElementById('sport-wahl');
     if (!t.length) {
       leer.hidden = false;
-      leer.textContent = 'Noch keine Bewertungstabellen auf diesem Gerät.';
       wahlbox.hidden = true;
+      document.getElementById('sport-tabelle').innerHTML = '';
       return;
     }
     leer.hidden = true;
