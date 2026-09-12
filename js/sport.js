@@ -298,11 +298,16 @@ const Sport = {
     const ms = this.zeit();
     anzeige.textContent = this.text(ms, !this.uhr.laeuft);
 
+    /* Den Knopf nur beim echten Wechsel neu beschriften. Vorher geschah das bei
+       jedem Takt, also zwanzigmal je Sekunde – dabei wurde der Inhalt unter dem
+       Finger ausgetauscht, Mausdruck und Loslassen trafen verschiedene Elemente,
+       und der Klick auf „Pause“ kam nie an. */
     const knopf = document.getElementById('btn-stoppuhr-start');
-    if (knopf) {
-      const laeuft = this.uhr.laeuft;
-      knopf.innerHTML = Icons.raw(laeuft ? 'stop' : 'play') + (laeuft ? 'Pause' : 'Start');
-      knopf.classList.toggle('primary', !laeuft);
+    if (knopf && this._knopfLaeuft !== this.uhr.laeuft) {
+      this._knopfLaeuft = this.uhr.laeuft;
+      knopf.innerHTML = Icons.raw(this.uhr.laeuft ? 'stop' : 'play') +
+        (this.uhr.laeuft ? 'Pause' : 'Start');
+      knopf.classList.toggle('primary', !this.uhr.laeuft);
     }
 
     const zeile = document.getElementById('stoppuhr-note');
@@ -339,9 +344,12 @@ const Sport = {
       if (!s) continue;
       const feld = document.createElement('span');
       feld.className = 'leisten-feld' + (String(note) === n ? ' erreicht' : '');
+      // Note klein darueber, Wert gross darunter: nebeneinander sahen die
+      // beiden Zahlen zu aehnlich aus, um sie im Vorbeigehen zu trennen
       const kopf = document.createElement('b');
-      kopf.textContent = n;
+      kopf.textContent = 'Note ' + n;
       const zeit = document.createElement('span');
+      zeit.className = 'leisten-wert';
       zeit.textContent = s.text;
       feld.append(kopf, zeit);
       leiste.appendChild(feld);
@@ -366,6 +374,7 @@ const Sport = {
   },
 
   zuruecksetzen() {
+    this._knopfLaeuft = null;
     const u = this.uhr;
     clearInterval(u.takt);
     u.takt = null;

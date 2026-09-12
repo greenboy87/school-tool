@@ -775,18 +775,24 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
    im Vollbild in eine Zeile passt */
 .stoppuhr-leiste { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .9rem; }
 .leisten-feld {
-  display: flex; align-items: baseline; gap: .35rem;
-  padding: .2rem .5rem; border: 1px solid var(--border); border-radius: 7px;
-  font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums;
+  display: flex; flex-direction: column; align-items: center; gap: .05rem;
+  padding: .25rem .7rem; border: 1px solid var(--border); border-radius: 8px;
+  font-variant-numeric: tabular-nums; min-width: 3.6rem;
 }
-.leisten-feld b { color: var(--text); }
-.leisten-feld.erreicht { border-color: var(--accent); background: var(--active-soft); color: var(--text); }
+/* „Note 3“ klein und ruhig, der Wert darunter gross – nebeneinander waren die
+   beiden Zahlen im Vorbeigehen nicht auseinanderzuhalten */
+.leisten-feld b { font-size: .68rem; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+.leisten-wert { font-size: 1.05rem; font-weight: 700; color: var(--text); line-height: 1.15; }
+.leisten-feld.erreicht { border-color: var(--accent); background: var(--active-soft); }
+.leisten-feld.erreicht b { color: var(--accent-soft); }
 .stoppuhr-buehne:fullscreen .stoppuhr-leiste {
-  gap: .8rem; margin: 0; justify-content: center;
+  gap: min(1.6vw, 1.6rem); margin: 0; justify-content: center;
 }
 .stoppuhr-buehne:fullscreen .leisten-feld {
-  font-size: min(3.2vw, 5.5vh); padding: .3rem .9rem; border-radius: 12px; gap: .6rem;
+  padding: .4rem 1.1rem; border-radius: 14px; min-width: min(11vw, 9rem);
 }
+.stoppuhr-buehne:fullscreen .leisten-feld b { font-size: min(1.9vw, 3.2vh); }
+.stoppuhr-buehne:fullscreen .leisten-wert { font-size: min(3.6vw, 6.2vh); }
 .stoppuhr-buehne:fullscreen .btn-row button { font-size: 1.5rem; padding: .9rem 1.8rem; border-radius: 12px; }
 .stoppuhr-buehne:fullscreen .btn-row .icon { width: 1.3em; height: 1.3em; }
 
