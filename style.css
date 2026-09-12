@@ -96,6 +96,9 @@ code { background: var(--panel); border-radius: 4px; padding: 0 .3em; }
 /* Reine Symbolknöpfe – sparen Platz in der Kopfzeile. Die Erklärung steht im
    title-Attribut, die Beschriftung für Screenreader in aria-label. */
 .nur-icon { padding-left: .6rem; padding-right: .6rem; }
+/* Die Sicherungsknöpfe tragen am Rechner ihren Namen – drei fast gleiche
+   Symbole nebeneinander sagen sonst nicht, welcher wofür da ist. */
+.knopf-text { font-size: .82rem; }
 .nur-icon .icon { margin-right: 0; }
 
 .tab-btn {
@@ -736,6 +739,11 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   .backup-btns { margin-left: auto; gap: .3rem; }
   .backup-btns button { font-size: .8rem; padding: .4rem .55rem; }
   .nur-icon { padding-left: .45rem; padding-right: .45rem; }
+  /* Auf dem Handy ist die Kopfzeile zu eng für die Namen – dort bleiben
+     die Symbole allein, die Erklärung steht weiter im aria-label */
+  .knopf-text { display: none; }
+  .backup-btns button { padding-left: .45rem; padding-right: .45rem; }
+  .backup-btns button .icon { margin-right: 0; }
   .tab-page { padding: .8rem .7rem; }
   .card { padding: .9rem .8rem; }
 }
