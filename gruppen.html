@@ -4,13 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Gruppen bilden</title>
-<link rel="stylesheet" href="style.css?v=65">
-<link rel="stylesheet" href="gruppen.css?v=65">
+<link rel="stylesheet" href="style.css?v=67">
+<link rel="stylesheet" href="gruppen.css?v=67">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8%22/></svg>">
-<script src="js/icons.js?v=65"></script>
-<script src="js/theme.js?v=65"></script>
-<script src="js/firebase-config.js?v=65"></script>
-<script type="module" src="js/live-firebase.js?v=65"></script>
+<script src="js/icons.js?v=67"></script>
+<script src="js/theme.js?v=67"></script>
+<script src="js/firebase-config.js?v=67"></script>
+<script type="module" src="js/live-firebase.js?v=67"></script>
 </head>
 <body class="schueler-seite">
 
@@ -26,19 +26,25 @@
        Bitte frag deine Lehrkraft, den Code noch einmal anzuzeigen.</p>
   </section>
 
-  <!-- Schritt 1: Wer bist du? -->
+  <!-- Schritt 1: Wer bist du? (mehrere Namen moeglich – ein Geraet pro Gruppe) -->
   <section id="s-wer" class="karte" hidden>
-    <h1 data-icon="users">Wer bist du?</h1>
+    <h1 data-icon="users" id="s-wer-titel">Wer bist du?</h1>
     <p class="hint" id="s-wer-info">Tippe deinen Namen an.</p>
+    <p class="hint">Teilt ihr euch ein Gerät? Dann tippe auch die Namen der anderen aus
+       deiner Gruppe an – ihr kommt dann zusammen in dieselbe Gruppe.</p>
     <input type="search" id="s-suche" placeholder="Namen suchen …" autocomplete="off">
     <div id="s-namen" class="namensliste"></div>
+    <div id="s-weiter-leiste" class="weiter-leiste" hidden>
+      <span id="s-weiter-text"></span>
+      <button type="button" id="s-weiter" class="primary">Weiter</button>
+    </div>
   </section>
 
   <!-- Schritt 2: Gruppe wählen -->
   <section id="s-gruppe" class="karte" hidden>
     <div class="ich-zeile">
       <span>Angemeldet als <strong id="s-ich"></strong></span>
-      <button id="s-nicht-ich" class="mini">nicht ich</button>
+      <button id="s-nicht-ich" class="mini">Anderen Schüler hinzufügen</button>
     </div>
 
     <h1 data-icon="users" id="s-projekt-titel">Deine Gruppe</h1>
@@ -48,19 +54,19 @@
     <div id="s-gruppenliste" class="gruppenliste"></div>
 
     <form id="s-neue-gruppe" class="neue-gruppe">
-      <label for="s-gruppenname">Neue Gruppe gründen</label>
+      <label for="s-gruppenname" id="s-neu-label">Neue Gruppe gründen</label>
       <div class="zeile">
         <input type="text" id="s-gruppenname" maxlength="40" placeholder="Name der Gruppe" autocomplete="off">
-        <button type="submit" data-icon="plus">Gründen</button>
+        <button type="submit" data-icon="plus" id="s-neu-knopf">Eintragen</button>
       </div>
-      <p class="hint">Denk dir einen Namen aus – deine Mitschüler können der Gruppe dann beitreten.</p>
+      <p class="hint" id="s-neu-hinweis">Wer dasselbe einträgt, landet in derselben Gruppe.</p>
     </form>
 
-    <p class="hint fuss">Du kannst jederzeit eine andere Gruppe antippen und wechselst dann dorthin.</p>
+    <p class="hint fuss">Du kannst jederzeit eine andere Karte antippen und wechselst dann dorthin.</p>
   </section>
 
 </main>
 
-<script src="js/gruppen-schueler.js?v=65"></script>
+<script src="js/gruppen-schueler.js?v=67"></script>
 </body>
 </html>

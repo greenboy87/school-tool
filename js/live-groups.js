@@ -59,6 +59,11 @@ const LiveGroups = {
     if (projekt === null) return;
     this.projektVorschlag = projekt;
 
+    // Was die Klasse eintragen soll. Leer = „Gruppenname“; wer „Thema“ einträgt,
+    // erspart der Klasse das Ausdenken von Gruppennamen.
+    const feld = document.getElementById('live-bezeichnung');
+    this.bezeichnung = ((feld && feld.value) || '').trim().slice(0, 30) || 'Gruppenname';
+
     this.klasseId = cls.id;
     this.reihenfolge = cls.students.map(s => s.id);
     this.raum = this.raumCode(cls);
@@ -67,6 +72,7 @@ const LiveGroups = {
     // Im Raum steht bewusst KEIN Name – nur wie viele Plätze es gibt.
     set(ref(db, `${window.FB.WURZEL}/${this.raum}/meta`), {
       projekt, anzahl: cls.students.length, erstellt: serverTimestamp(),
+      bezeichnung: this.bezeichnung,
     }).catch(err => this.status(this.fehlertext(err, 'Der Raum konnte nicht angelegt werden'), true));
 
     const url = this.schuelerUrl(cls, projekt);
@@ -102,6 +108,7 @@ const LiveGroups = {
       r: this.raum,
       p: projekt,
       k: cls.name || '',
+      b: this.bezeichnung || 'Gruppenname',
       n: cls.students.map(s => Classes.studentName(s)),
     };
     const basis = location.href.replace(/[^/]*$/, '') + 'gruppen.html';
@@ -202,9 +209,15 @@ const LiveGroups = {
       karte.className = 'group-box';
       const h = document.createElement('h4');
       h.textContent = `${g.name} (${namen.length})`;
-      const p = document.createElement('p');
-      p.textContent = namen.join(', ');
-      karte.append(h, p);
+      // Untereinander statt Kommazeile: bei fünf Namen ist eine Zeile nicht lesbar
+      const liste = document.createElement('ul');
+      liste.className = 'gruppen-namen';
+      for (const n of namen) {
+        const li = document.createElement('li');
+        li.textContent = n;
+        liste.appendChild(li);
+      }
+      karte.append(h, liste);
       box.appendChild(karte);
     }
   },

@@ -266,6 +266,15 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .group-box input.gruppen-name:hover { border-color: var(--border); }
 .group-box input.gruppen-name:focus { background: var(--input-bg); border-color: var(--accent); }
 .group-box ul { margin: 0; padding-left: 1.2em; line-height: 1.7; }
+/* Namen der laufenden Sammlung untereinander – eine Kommazeile ist ab fuenf
+   Namen nicht mehr zu ueberfliegen, und genau das will man am Beamer tun */
+.group-box ul.gruppen-namen { list-style: none; padding-left: 0; line-height: 1.6; }
+.group-box ul.gruppen-namen li { padding: .1rem 0; }
+/* Womit die Klasse ihre Gruppe benennt – neben dem Startknopf, damit man es
+   sieht, bevor der QR-Code steht: hinterher laesst es sich nicht mehr aendern */
+.live-bezeichnung { display: flex; align-items: center; gap: .45rem; font-size: .85rem; color: var(--muted); }
+.live-bezeichnung input { width: 11rem; padding: .4rem .55rem; font: inherit; font-size: .88rem;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); }
 .group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; background: var(--input-bg); color: var(--text); }
 .group-box input.grade.single { width: 3em; font-size: .85em; }
 /* ----- Infofenster (Knopf „i“ in der Kopfzeile) ----- */

@@ -84,6 +84,50 @@
   color: var(--text);
 }
 .namensknopf:active { background: var(--active-soft); }
+/* Ausgewählt: ein Gerät meldet oft die ganze Gruppe an, da muss auf einen Blick
+   zu sehen sein, wer schon dabei ist. Haken statt nur Farbe – am Beamerlicht
+   ist ein Farbunterschied allein schnell nicht mehr zu erkennen. */
+.namensknopf.gewaehlt {
+  border-color: var(--accent);
+  background: var(--active-soft);
+}
+.namensknopf.gewaehlt::before {
+  content: "✓";
+  color: var(--accent);
+  font-weight: 700;
+  margin-right: 0.15rem;
+}
+.namensknopf > span:first-of-type { flex: 1; }
+
+/* Bleibt beim Scrollen unten stehen – sonst sucht man den Weiter-Knopf
+   in einer Klasse mit 30 Namen. */
+.weiter-leiste {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-top: 0.85rem;
+  padding: 0.7rem 0.2rem calc(0.5rem + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, var(--card) 72%, transparent);
+}
+.weiter-leiste span {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.weiter-leiste button {
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.7rem 1.2rem;
+  border-radius: 0.7rem;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  white-space: nowrap;
+}
 
 .schon-drin {
   font-size: 0.78rem;
@@ -181,19 +225,27 @@ ul.gk-namen {
 ul.gk-namen li { padding: 0.12rem 0; }
 ul.gk-namen li.ich { color: var(--text); font-weight: 600; }
 ul.gk-namen li.ich::after { content: " (du)"; font-weight: 400; color: var(--muted); }
+/* Über dieses Gerät mitangemeldet: hervorgehoben, aber ohne „(du)“ */
+ul.gk-namen li.mit { color: var(--text); font-weight: 600; }
 
-/* Die eigene Gruppe ist kein Knopf mehr, sondern eine Karte mit Austrittsknopf */
+/* Die eigene Gruppe ist kein Knopf mehr, sondern eine Karte mit eigenen Knöpfen */
 .gruppenkarte.meine { cursor: default; }
-.gruppenkarte .verlassen {
-  display: block;
-  width: 100%;
-  margin-top: 0.7rem;
+.karten-knoepfe { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
+.gruppenkarte .karten-knoepfe button {
+  flex: 1;
   padding: 0.6rem;
   font-size: 0.9rem;
-  color: var(--danger);
-  border: 1px solid var(--danger-border);
   border-radius: 0.6rem;
   background: transparent;
+}
+.gruppenkarte .umbenennen {
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.gruppenkarte .umbenennen:active { background: var(--panel); }
+.gruppenkarte .verlassen {
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
 }
 .gruppenkarte .verlassen:active { background: var(--danger-bg); }
 

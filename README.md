@@ -61,6 +61,17 @@ Statt Gruppen auszulosen, kann sich die Klasse selbst einteilen:
   erscheint ein QR-Code zum Beamen.
 - Die Schüler scannen, tippen ihren Namen an und gründen eine Gruppe oder treten einer bei.
   Auf dem Lehrerbildschirm läuft die Einteilung live mit, samt „Noch offen“.
+- **Ein Gerät reicht für eine ganze Gruppe:** Es lassen sich mehrere Namen zugleich antippen;
+  **Weiter mit allen** trägt sie gemeinsam ein. Wer später jemanden vergessen hat, kommt über
+  **Anderen Schüler hinzufügen** zurück zur Namensliste – die bisherige Auswahl bleibt stehen,
+  ein falsch getippter Name lässt sich durch nochmaliges Antippen wieder herausnehmen. Das ist
+  für Klassensätze gedacht, in denen es weniger iPads als Schüler gibt.
+- **Umbenennen** an der eigenen Karte ändert den Namen für alle Mitglieder – ein Tippfehler
+  kostet also nicht mehr die ganze Gruppe.
+- **Die Schüler tragen ein:** Neben *Sammlung starten* lässt sich vorgeben, was auf den Handys
+  verlangt wird. Leer heißt „Gruppenname“; steht dort *Thema*, fragt die Seite nach dem Thema –
+  praktisch, wenn ohnehin ein Projektthema erwartet wird und keine ausgedachten Gruppennamen.
+  Das muss **vor** dem Start feststehen, weil es im QR-Code mitreist.
 - **Gruppen übernehmen** trägt alles ins Projekt ein, **Sammlung beenden** löscht den Raum
   wieder aus der Datenbank.
 

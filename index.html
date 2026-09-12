@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=65">
+<link rel="stylesheet" href="style.css?v=67">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=65"></script>
-<script src="js/theme.js?v=65"></script>
-<script src="js/auth.js?v=65"></script>
+<script src="js/icons.js?v=67"></script>
+<script src="js/theme.js?v=67"></script>
+<script src="js/auth.js?v=67"></script>
 </head>
 <body>
 
@@ -206,8 +206,14 @@
 
           <div class="btn-row" id="live-start-row">
             <button id="btn-live-start" class="primary" data-icon="users">Sammlung starten</button>
+            <label class="live-bezeichnung">Die Schüler tragen ein:
+              <input type="text" id="live-bezeichnung" maxlength="30" placeholder="Gruppenname" autocomplete="off">
+            </label>
             <span id="live-status" class="hint"></span>
           </div>
+          <p class="hint">Leer heißt „Gruppenname“. Soll die Klasse stattdessen ihr Thema eintragen,
+            hier z.&thinsp;B. <em>Thema</em> oder <em>Werbespot-Thema</em> eintippen – dann steht das
+            auch auf den Handys, und niemand denkt sich unnötig einen Gruppennamen aus.</p>
 
           <div id="live-panel" hidden>
             <div class="live-oben">
@@ -647,23 +653,23 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=65"></script>
-<script src="js/firebase-config.js?v=65"></script>
-<script type="module" src="js/live-firebase.js?v=65"></script>
-<script src="js/topics-seed.js?v=65"></script>
-<script src="js/ai-import.js?v=65"></script>
-<script src="js/store.js?v=65"></script>
-<script src="js/noise.js?v=65"></script>
-<script src="js/classes.js?v=65"></script>
-<script src="js/lessons.js?v=65"></script>
-<script src="js/band.js?v=65"></script>
-<script src="js/notes.js?v=65"></script>
-<script src="js/tresor.js?v=65"></script>
-<script src="js/erklaerungen.js?v=65"></script>
-<script src="js/setlisten.js?v=65"></script>
-<script src="js/einklappen.js?v=65"></script>
-<script src="js/live-groups.js?v=65"></script>
-<script src="js/tools.js?v=65"></script>
-<script src="js/app.js?v=65"></script>
+<script src="js/vendor/qrcode.min.js?v=67"></script>
+<script src="js/firebase-config.js?v=67"></script>
+<script type="module" src="js/live-firebase.js?v=67"></script>
+<script src="js/topics-seed.js?v=67"></script>
+<script src="js/ai-import.js?v=67"></script>
+<script src="js/store.js?v=67"></script>
+<script src="js/noise.js?v=67"></script>
+<script src="js/classes.js?v=67"></script>
+<script src="js/lessons.js?v=67"></script>
+<script src="js/band.js?v=67"></script>
+<script src="js/notes.js?v=67"></script>
+<script src="js/tresor.js?v=67"></script>
+<script src="js/erklaerungen.js?v=67"></script>
+<script src="js/setlisten.js?v=67"></script>
+<script src="js/einklappen.js?v=67"></script>
+<script src="js/live-groups.js?v=67"></script>
+<script src="js/tools.js?v=67"></script>
+<script src="js/app.js?v=67"></script>
 </body>
 </html>

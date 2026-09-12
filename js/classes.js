@@ -787,8 +787,13 @@ const Classes = {
     const cls = this.currentClass(), p = this.currentProject();
     const table = document.getElementById('grade-table');
     table.innerHTML = '<tr><th class="num">Nr.</th><th>Name</th><th>Note</th><th class="gname">Gruppe</th></tr>';
+    // Nummer UND Name: „G1“ allein sagt beim Eintragen in den Notenmanager nicht,
+    // um welche Gruppe es geht – der Name steht sonst nur im Gruppen-Reiter
     const groupOf = {};
-    (p.groups || []).forEach((g, i) => g.forEach(sid => groupOf[sid] = i + 1));
+    (p.groups || []).forEach((g, i) => {
+      const name = (p.groupNames && p.groupNames[i] || '').trim();
+      g.forEach(sid => groupOf[sid] = name ? `G${i + 1} – ${name}` : `G${i + 1}`);
+    });
     cls.students.forEach((s, i) => {
       const tr = document.createElement('tr');
       const tdNum = document.createElement('td');
@@ -817,7 +822,7 @@ const Classes = {
       tdGrade.appendChild(input);
       const tdGroup = document.createElement('td');
       tdGroup.className = 'gname';
-      tdGroup.textContent = groupOf[s.id] ? `G${groupOf[s.id]}` : '';
+      tdGroup.textContent = groupOf[s.id] || '';
       tr.append(tdNum, tdName, tdGrade, tdGroup);
       table.appendChild(tr);
     });
