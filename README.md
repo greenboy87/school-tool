@@ -71,10 +71,20 @@ die Klassenleitung. Ein Kürzel, das die Liste nicht kennt, wird rot als
 „nicht in der Liste“ ausgewiesen, statt still leer zu bleiben.
 
 Statt des Kürzels lässt sich auch der **Name** tippen: Ist er eindeutig, wird beim Verlassen
-des Feldes das Kürzel daraus. Und weil 39 Klassen mal zwei Felder niemand zweimal eintippt,
-liest *Extras → Klassenleitungen im Block* eine ganze Tabelle `Klasse; KL; Co` auf einmal ein.
-Der Klassenname wird großzügig verglichen – `5a` findet auch `5a Musik`, `10c_II` auch
-`10c II`; Klassen, die es noch nicht gibt, werden gemeldet statt angelegt.
+des Feldes das Kürzel daraus.
+
+Unter *Extras → Lehrkräfte* steht die Liste des Kollegiums zum Aufklappen – Kürzel, Name und
+in Klammern die Klassenleitung (`BU  Baumann, Sandra (KL 5a)`), auch für Klassen, die man
+selbst nicht unterrichtet. Eingeklappt startet sie, weil sie zum Nachschlagen da ist.
+
+Die Listen ändern sich einmal im Jahr; ein Eingabefeld dafür stünde die übrigen elf Monate
+ungenutzt herum. Eingelesen wird deshalb einmalig über die Browser-Konsole:
+
+    Classes.listenEinlesen(lehrerText, leitungsText)
+
+`lehrerText` ist `Name; KÜRZEL` je Zeile, `leitungsText` ist `Klasse; KL; Co`. Die
+Klassenleitung landet zugleich in den Feldern der eigenen Klassen; der Klassenname wird
+großzügig verglichen, `5e_TEC` findet also auch `5e`.
 
 Die Lehrerliste liegt wie Klassen und Noten **nur im Browser dieses Geräts** und gehört
 nicht ins Repository – die Seite ist öffentlich.

@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=72">
+<link rel="stylesheet" href="style.css?v=74">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=72"></script>
-<script src="js/theme.js?v=72"></script>
-<script src="js/auth.js?v=72"></script>
+<script src="js/icons.js?v=74"></script>
+<script src="js/theme.js?v=74"></script>
+<script src="js/auth.js?v=74"></script>
 </head>
 <body>
 
@@ -643,30 +643,18 @@
 <main id="tab-tools" class="tab-page">
   <div class="tools-grid">
     <section class="card">
-      <h2 data-icon="users">Lehrkräfte</h2>
-      <p class="hint">Kürzel und Namen des Kollegiums – damit bei der Klassenleitung nicht nur
-        „BU“ steht, sondern auch, wer das ist. Die Liste bleibt wie Klassen und Noten
-        <strong>auf diesem Gerät</strong> und geht nie ins Repository.</p>
-      <textarea id="lehrer-eingabe" rows="6"
-        placeholder="Eine Lehrkraft pro Zeile, Name und Kürzel:&#10;Baumann, Sandra; BU&#10;Grünig, Thomas; GT"></textarea>
-      <div class="btn-row">
-        <button id="btn-lehrer-import" class="primary" data-icon="plus">Liste einlesen</button>
-        <button id="btn-lehrer-leeren" class="danger small">Liste leeren</button>
+      <h2>
+        <button id="btn-toggle-lehrer" class="klapper" aria-expanded="false"
+                aria-controls="lehrer-inhalt" title="Lehrerliste ein- oder ausklappen">
+          <span class="klapp-pfeil" data-icon="chevronDown"></span>
+          Lehrkräfte (<span id="lehrer-zahl">0</span>)
+        </button>
+      </h2>
+      <div id="lehrer-inhalt">
+        <p class="hint">Kürzel, Name und – in Klammern – die Klassenleitung. Die Liste liegt wie
+          Klassen und Noten <strong>auf diesem Gerät</strong> und geht nie ins Repository.</p>
+        <div id="lehrer-liste" class="lehrer-liste"></div>
       </div>
-      <p class="hint" id="lehrer-status"></p>
-      <div id="lehrer-liste" class="lehrer-liste"></div>
-
-      <h3>Klassenleitungen im Block</h3>
-      <p class="hint">Eine Klasse pro Zeile: <code>Klasse; Klassenleitung; Co</code> – erspart das
-        Eintippen von zwei Feldern je Klasse. Der Klassenname wird großzügig verglichen,
-        „5a“ findet also auch „5a Musik“. Klassen, die es hier noch nicht gibt, werden
-        gemeldet und nicht angelegt.</p>
-      <textarea id="leitung-eingabe" rows="5"
-        placeholder="5a; BU; GT&#10;7d_IIIa; DH; WW/PG&#10;Deutschklasse; RE; RC"></textarea>
-      <div class="btn-row">
-        <button id="btn-leitung-import" class="primary" data-icon="plus">Klassenleitungen einlesen</button>
-      </div>
-      <p class="hint" id="leitung-status"></p>
     </section>
 
     <section class="card">
@@ -698,23 +686,23 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=72"></script>
-<script src="js/firebase-config.js?v=72"></script>
-<script type="module" src="js/live-firebase.js?v=72"></script>
-<script src="js/topics-seed.js?v=72"></script>
-<script src="js/ai-import.js?v=72"></script>
-<script src="js/store.js?v=72"></script>
-<script src="js/noise.js?v=72"></script>
-<script src="js/classes.js?v=72"></script>
-<script src="js/lessons.js?v=72"></script>
-<script src="js/band.js?v=72"></script>
-<script src="js/notes.js?v=72"></script>
-<script src="js/tresor.js?v=72"></script>
-<script src="js/erklaerungen.js?v=72"></script>
-<script src="js/setlisten.js?v=72"></script>
-<script src="js/einklappen.js?v=72"></script>
-<script src="js/live-groups.js?v=72"></script>
-<script src="js/tools.js?v=72"></script>
-<script src="js/app.js?v=72"></script>
+<script src="js/vendor/qrcode.min.js?v=74"></script>
+<script src="js/firebase-config.js?v=74"></script>
+<script type="module" src="js/live-firebase.js?v=74"></script>
+<script src="js/topics-seed.js?v=74"></script>
+<script src="js/ai-import.js?v=74"></script>
+<script src="js/store.js?v=74"></script>
+<script src="js/noise.js?v=74"></script>
+<script src="js/classes.js?v=74"></script>
+<script src="js/lessons.js?v=74"></script>
+<script src="js/band.js?v=74"></script>
+<script src="js/notes.js?v=74"></script>
+<script src="js/tresor.js?v=74"></script>
+<script src="js/erklaerungen.js?v=74"></script>
+<script src="js/setlisten.js?v=74"></script>
+<script src="js/einklappen.js?v=74"></script>
+<script src="js/live-groups.js?v=74"></script>
+<script src="js/tools.js?v=74"></script>
+<script src="js/app.js?v=74"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ const Einklappen = {
   bereiche: {
     schueler: { inhalt: 'klassenliste-inhalt', knopf: 'btn-toggle-students' },
     noten:    { inhalt: 'noten-bereich',       knopf: 'btn-toggle-grades' },
+    lehrer:   { inhalt: 'lehrer-inhalt',       knopf: 'btn-toggle-lehrer' },
   },
 
   init() {
@@ -18,7 +19,15 @@ const Einklappen = {
     }
   },
 
-  istZu(name) { return localStorage.getItem('eingeklappt-' + name) === '1'; },
+  /* Standard ist „offen“ – nur die Lehrerliste startet zu, sie ist eine
+     Nachschlageliste und wuerde den Reiter sonst dauerhaft in die Laenge ziehen. */
+  ZU_AM_ANFANG: ['lehrer'],
+
+  istZu(name) {
+    const gemerkt = localStorage.getItem('eingeklappt-' + name);
+    if (gemerkt === null) return this.ZU_AM_ANFANG.includes(name);
+    return gemerkt === '1';
+  },
 
   umschalten(name) {
     localStorage.setItem('eingeklappt-' + name, this.istZu(name) ? '0' : '1');

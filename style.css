@@ -684,19 +684,19 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 /* Ein Kürzel, das die Lehrerliste nicht kennt – meist eine neue Kollegin */
 .kl-name.unbekannt { color: var(--danger); }
 
-.lehrer-liste { margin-top: .7rem; max-height: 16rem; overflow-y: auto; }
+.lehrer-liste { margin-top: .7rem; max-height: 26rem; overflow-y: auto; }
 .lehrer-spalten {
   list-style: none; margin: 0; padding: 0;
-  columns: 2; column-gap: 1.4rem; font-size: .85rem; line-height: 1.7;
+  /* Spaltenbreite statt fester Spaltenzahl: auf dem Handy eine Spalte, am
+     Rechner zwei oder drei – bei fester Zahl brachen die Namen mitten um */
+  columns: 21rem; column-gap: 1.6rem; font-size: .85rem; line-height: 1.7;
 }
-.lehrer-spalten li { break-inside: avoid; }
+.lehrer-spalten li { break-inside: avoid; color: var(--muted); }
 .lehrer-spalten strong { color: var(--accent-soft); display: inline-block; min-width: 2.6em; }
-#lehrer-eingabe, #leitung-eingabe { width: 100%; font-size: .9rem; }
-/* Zweiter Block in derselben Karte – ohne Abstand klebt die Ueberschrift
-   an der Lehrerliste darueber */
-#lehrer-liste + h3 { margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--border); }
-#leitung-status.warnung { color: var(--danger); }
-#lehrer-status.warnung { color: var(--danger); }
+/* Wer eine Klasse leitet, steht in Klammern dahinter – und faellt dadurch in
+   der langen Liste auf, ohne dass man danach suchen muss */
+.kl-rolle { color: var(--accent-soft); white-space: nowrap; }
+.lehrer-spalten li.hat-leitung { color: var(--text); }
 
 /* ---------- Extras ---------- */
 .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }

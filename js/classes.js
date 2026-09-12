@@ -149,25 +149,6 @@ const Classes = {
     }
 
     // Lehrkraefte-Liste
-    const impLeitung = document.getElementById('btn-leitung-import');
-    if (impLeitung) impLeitung.addEventListener('click', () => this.leitungenEinlesen());
-
-    const imp = document.getElementById('btn-lehrer-import');
-    if (imp) {
-      imp.addEventListener('click', () => this.lehrerEinlesen());
-      document.getElementById('btn-lehrer-leeren').addEventListener('click', () => {
-        const anzahl = Object.keys(this.data.lehrer || {}).length;
-        if (!anzahl) { alert('Die Liste ist schon leer.'); return; }
-        if (!confirm(`Alle ${anzahl} Lehrkräfte aus der Liste entfernen?\n\n` +
-          'Die eingetragenen Klassenleitungen bleiben stehen – dort steht dann wieder ' +
-          'nur das Kürzel.')) return;
-        this.data.lehrer = {};
-        this.persist();
-        this.renderLehrer();
-        this.zeigeLeitungsNamen();
-      });
-    }
-
     document.getElementById('student-file').addEventListener('change', e => {
       const file = e.target.files[0];
       e.target.value = '';
@@ -504,30 +485,6 @@ const Classes = {
     return gefunden;
   },
 
-  lehrerEinlesen() {
-    const feld = document.getElementById('lehrer-eingabe');
-    const gefunden = this.parseLehrer(feld.value);
-    const status = document.getElementById('lehrer-status');
-    if (!gefunden.length) {
-      status.textContent = 'Keine verwertbaren Zeilen gefunden. Format: Name; KÜRZEL';
-      status.classList.add('warnung');
-      return;
-    }
-    const liste = this.lehrer();
-    let neu = 0, geaendert = 0;
-    for (const e of gefunden) {
-      if (liste[e.kuerzel] === undefined) neu++;
-      else if (liste[e.kuerzel] !== e.name) geaendert++;
-      liste[e.kuerzel] = e.name;
-    }
-    this.persist();
-    feld.value = '';
-    status.classList.remove('warnung');
-    status.textContent = `${neu} neu, ${geaendert} aktualisiert – ${Object.keys(liste).length} Lehrkräfte in der Liste.`;
-    this.renderLehrer();
-    this.zeigeLeitungsNamen();
-  },
-
   /* „WW/PG“ steht in der Vorlage für zwei Personen – beide auflösen.
      Ein unbekanntes Kürzel wird als solches gekennzeichnet, statt still zu fehlen. */
   lehrerName(kuerzel) {
@@ -595,32 +552,60 @@ const Classes = {
         || null;
   },
 
-  leitungenEinlesen() {
-    const feld = document.getElementById('leitung-eingabe');
-    const status = document.getElementById('leitung-status');
-    const zeilen = this.parseLeitungen(feld.value);
-    if (!zeilen.length) {
-      status.textContent = 'Keine verwertbaren Zeilen gefunden. Format: Klasse; KÜRZEL; KÜRZEL';
-      status.classList.add('warnung');
-      return;
+  /* Die Leitungstabelle der ganzen Schule – unabhaengig davon, welche Klassen
+     hier angelegt sind. Nur so steht in der Lehrerliste auch die Leitung einer
+     Klasse, die man selbst gar nicht unterrichtet. */
+  leitungen() {
+    if (!Array.isArray(this.data.leitungen)) this.data.leitungen = [];
+    return this.data.leitungen;
+  },
+
+  /* „KL 5a“ bzw. „Co 7c“ zu einem Kuerzel – mehrere Rollen durch · getrennt.
+     „WW/PG“ in einem Feld zaehlt fuer beide. */
+  rolleVon(kuerzel) {
+    const k = String(kuerzel || '').toUpperCase();
+    if (!k) return '';
+    const teile = [];
+    for (const z of this.leitungen()) {
+      const passt = feld => String(feld || '').split('/').some(t => t.trim().toUpperCase() === k);
+      if (passt(z.kl)) teile.push('KL ' + z.klasse);
+      else if (passt(z.co)) teile.push('Co ' + z.klasse);
     }
-    let gesetzt = 0;
-    const ohneKlasse = [];
-    for (const z of zeilen) {
-      const cls = this.findeKlasse(z.klasse);
-      if (!cls) { ohneKlasse.push(z.klasse); continue; }
-      cls.leitung = { kl: z.kl, co: z.co };
-      gesetzt++;
+    return teile.join(' · ');
+  },
+
+  /* Einmal im Schuljahr von Hand aufgerufen (Konsole), nicht ueber die
+     Oberflaeche: Die Listen aendern sich einmal jaehrlich, ein Eingabefeld
+     dafuer stuende das ganze Jahr ungenutzt im Reiter herum.
+       Classes.listenEinlesen(lehrerText, leitungsText)
+     Format: „Name; KUERZEL“ bzw. „Klasse; KL; Co“, eine Zeile je Eintrag. */
+  listenEinlesen(lehrerText, leitungsText) {
+    const bericht = {};
+    if (lehrerText) {
+      const liste = this.lehrer();
+      const gefunden = this.parseLehrer(lehrerText);
+      for (const e of gefunden) liste[e.kuerzel] = e.name;
+      bericht.lehrkraefte = Object.keys(liste).length;
+    }
+    if (leitungsText) {
+      const zeilen = this.parseLeitungen(leitungsText);
+      this.data.leitungen = zeilen;
+      bericht.leitungen = zeilen.length;
+      // Die eigenen Klassen bekommen ihre Leitung zusaetzlich direkt eingetragen
+      let gesetzt = 0;
+      for (const z of zeilen) {
+        const cls = this.findeKlasse(z.klasse);
+        if (!cls) continue;
+        cls.leitung = { kl: z.kl, co: z.co };
+        gesetzt++;
+      }
+      bericht.eigeneKlassen = gesetzt;
     }
     this.persist();
+    this.renderLehrer();
     this.renderClassList();
     this.zeigeLeitungsNamen();
-    feld.value = '';
-    status.classList.toggle('warnung', gesetzt === 0);
-    status.textContent = `${gesetzt} von ${zeilen.length} Klassen zugeordnet.` +
-      (ohneKlasse.length
-        ? ` Keine passende Klasse für: ${ohneKlasse.join(', ')} – die legst du zuerst an.`
-        : '');
+    return bericht;
   },
 
   renderLehrer() {
@@ -628,9 +613,12 @@ const Classes = {
     if (!box) return;
     const liste = this.lehrer();
     const kuerzel = Object.keys(liste).sort((a, b) => liste[a].localeCompare(liste[b], 'de'));
+    const zahl = document.getElementById('lehrer-zahl');
+    if (zahl) zahl.textContent = kuerzel.length;
+
     box.innerHTML = '';
     if (!kuerzel.length) {
-      box.innerHTML = '<p class="hint">Noch keine Lehrkräfte eingelesen.</p>';
+      box.innerHTML = '<p class="hint">Noch keine Lehrkräfte hinterlegt.</p>';
     } else {
       const ul = document.createElement('ul');
       ul.className = 'lehrer-spalten';
@@ -639,6 +627,14 @@ const Classes = {
         const kz = document.createElement('strong');
         kz.textContent = k;
         li.append(kz, ' ' + liste[k]);
+        const rolle = this.rolleVon(k);
+        if (rolle) {
+          const tag = document.createElement('span');
+          tag.className = 'kl-rolle';
+          tag.textContent = ` (${rolle})`;
+          li.appendChild(tag);
+          li.classList.add('hat-leitung');
+        }
         ul.appendChild(li);
       }
       box.appendChild(ul);
@@ -654,6 +650,8 @@ const Classes = {
         dl.appendChild(o);
       }
     }
+    // Frisch gezeichnete Liste muss den gemerkten Klappzustand uebernehmen
+    if (window.Einklappen) Einklappen.anwenden('lehrer');
   },
 
   zeigeLeitungsNamen() {
