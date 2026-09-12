@@ -570,14 +570,28 @@ const Classes = {
     return zeilen;
   },
 
-  normKlasse(name) { return String(name || '').toLowerCase().replace(/[\s_.-]/g, ''); },
+  normKlasse(name) { return String(name || '').toLowerCase().replace(/[\s_.\-\/]/g, ''); },
+
+  /* Der Kern einer Klassenbezeichnung: „5e_TEC“ -> „5e“, „10f_I/IIIb“ -> „10f“,
+     „5a Musik“ -> „5a“. Zweige und Fächer hängen mal hier, mal dort dran –
+     verglichen wird deshalb nur der Teil, der die Klasse wirklich benennt.
+     Ohne Ziffern (etwa „Deutschklasse“) bleibt der ganze Name stehen. */
+  klassenKern(name) {
+    const roh = String(name || '').trim().toLowerCase();
+    const m = roh.match(/^(\d{1,2})\s*([a-zäöü]?)/);
+    return m && m[1] ? m[1] + m[2] : this.normKlasse(roh);
+  },
 
   findeKlasse(name) {
     const gesucht = this.normKlasse(name);
     if (!gesucht) return null;
     const alle = this.data.classes;
+    const kern = this.klassenKern(name);
+    const treffer = alle.filter(c => this.klassenKern(c.name) === kern);
     return alle.find(c => this.normKlasse(c.name) === gesucht)
-        || alle.find(c => this.normKlasse(c.name).startsWith(gesucht))
+        // Nur bei genau einer Klasse mit diesem Kern – sonst bliebe offen,
+        // welche gemeint ist, und die Leitung landete in der falschen
+        || (treffer.length === 1 ? treffer[0] : null)
         || null;
   },
 
