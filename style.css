@@ -684,6 +684,14 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 /* Ein Kürzel, das die Lehrerliste nicht kennt – meist eine neue Kollegin */
 .kl-name.unbekannt { color: var(--danger); }
 
+/* Suche und Sortierung ueber der Liste */
+.lehrer-werkzeuge { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin-top: .7rem; }
+.lehrer-werkzeuge input[type="search"] {
+  flex: 1 1 14rem; min-width: 10rem; padding: .45rem .6rem; font: inherit; font-size: .88rem;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+}
+.lehrer-werkzeuge label { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--muted); }
+
 .lehrer-liste { margin-top: .7rem; max-height: 26rem; overflow-y: auto; }
 .lehrer-spalten {
   list-style: none; margin: 0; padding: 0;
@@ -705,6 +713,22 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .picker-result .icon { color: var(--accent); }
 .timer-display { font-size: 3.2rem; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: .8rem; display: flex; align-items: center; }
 .timer-display.warning { color: var(--red); }
+
+/* ---------- Stoppuhr ---------- */
+.stoppuhr-anzeige {
+  font-size: 3.2rem; font-weight: 800; font-variant-numeric: tabular-nums;
+  margin: .8rem 0; line-height: 1.1;
+}
+/* Im Vollbild fuellt die Ziffernfolge den Schirm – begrenzt durch beide
+   Richtungen, sonst laeuft sie auf einem breiten Beamer unten heraus */
+.stoppuhr-buehne:fullscreen {
+  background: var(--bg); color: var(--text);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2.5rem; height: 100%;
+}
+.stoppuhr-buehne:fullscreen .stoppuhr-anzeige { font-size: min(22vw, 42vh); margin: 0; }
+.stoppuhr-buehne:fullscreen .btn-row button { font-size: 1.5rem; padding: .9rem 1.8rem; border-radius: 12px; }
+.stoppuhr-buehne:fullscreen .btn-row .icon { width: 1.3em; height: 1.3em; }
 
 .footer { text-align: center; padding: 1.5rem; }
 

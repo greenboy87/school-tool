@@ -149,6 +149,19 @@ const Classes = {
     }
 
     // Lehrkraefte-Liste
+    const lsuche = document.getElementById('lehrer-suche');
+    if (lsuche) {
+      lsuche.addEventListener('input', () => this.renderLehrer());
+      lsuche.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { lsuche.value = ''; this.renderLehrer(); }
+      });
+    }
+    const lsort = document.getElementById('lehrer-sortierung');
+    if (lsort) lsort.addEventListener('change', () => {
+      localStorage.setItem('lehrer-sortierung', lsort.value);
+      this.renderLehrer();
+    });
+
     document.getElementById('student-file').addEventListener('change', e => {
       const file = e.target.files[0];
       e.target.value = '';
@@ -560,18 +573,51 @@ const Classes = {
     return this.data.leitungen;
   },
 
-  /* „KL 5a“ bzw. „Co 7c“ zu einem Kuerzel – mehrere Rollen durch · getrennt.
-     „WW/PG“ in einem Feld zaehlt fuer beide. */
-  rolleVon(kuerzel) {
+  /* Alle Leitungen eines Kuerzels: [{klasse, rolle}]. „WW/PG“ in einem Feld
+     zaehlt fuer beide Personen. */
+  rollenVon(kuerzel) {
     const k = String(kuerzel || '').toUpperCase();
-    if (!k) return '';
-    const teile = [];
+    if (!k) return [];
+    const gefunden = [];
     for (const z of this.leitungen()) {
       const passt = feld => String(feld || '').split('/').some(t => t.trim().toUpperCase() === k);
-      if (passt(z.kl)) teile.push('KL ' + z.klasse);
-      else if (passt(z.co)) teile.push('Co ' + z.klasse);
+      if (passt(z.kl)) gefunden.push({ klasse: z.klasse, rolle: 'KL' });
+      else if (passt(z.co)) gefunden.push({ klasse: z.klasse, rolle: 'Co' });
     }
-    return teile.join(' · ');
+    return gefunden;
+  },
+
+  /* „KL 5a“ bzw. „Co 7c“ – mehrere Rollen durch · getrennt */
+  rolleVon(kuerzel) {
+    return this.rollenVon(kuerzel).map(r => r.rolle + ' ' + r.klasse).join(' · ');
+  },
+
+  /* Klassen natuerlich ordnen: 5a < 5b < 6a < 10a. Ohne fuehrende Zahl
+     („Deutschklasse“) ans Ende, dort alphabetisch. */
+  klassenOrdnung(klasse) {
+    const m = String(klasse || '').match(/^(\d{1,2})\s*([a-zäöü]?)/i);
+    if (!m) return [99, String(klasse || '').toLowerCase(), ''];
+    return [parseInt(m[1], 10), (m[2] || '').toLowerCase(), ''];
+  },
+
+  /* Sortierschluessel fuer „nach Klassenleitung“: erst die Leitenden nach
+     Klasse (KL vor Co), dann alle ohne Leitung nach Namen. */
+  leitungsSchluessel(kuerzel) {
+    const rollen = this.rollenVon(kuerzel);
+    if (!rollen.length) return [1, 99, '', 9];
+    const erste = rollen[0];
+    const o = this.klassenOrdnung(erste.klasse);
+    return [0, o[0], o[1], erste.rolle === 'KL' ? 0 : 1];
+  },
+
+  vergleicheSchluessel(a, b) {
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      const x = a[i], y = b[i];
+      if (x === y) continue;
+      if (typeof x === 'number' && typeof y === 'number') return x - y;
+      return String(x).localeCompare(String(y), 'de');
+    }
+    return 0;
   },
 
   /* Einmal im Schuljahr von Hand aufgerufen (Konsole), nicht ueber die
@@ -608,21 +654,44 @@ const Classes = {
     return bericht;
   },
 
+  /* Sortierung merkt sich das Geraet – sie jedes Mal neu zu waehlen nervt */
+  lehrerSortierung() { return localStorage.getItem('lehrer-sortierung') || 'name'; },
+
   renderLehrer() {
     const box = document.getElementById('lehrer-liste');
     if (!box) return;
     const liste = this.lehrer();
-    const kuerzel = Object.keys(liste).sort((a, b) => liste[a].localeCompare(liste[b], 'de'));
+    const alle = Object.keys(liste);
+
+    const feld = document.getElementById('lehrer-suche');
+    const suche = (feld ? feld.value : '').trim().toLowerCase();
+    const wahl = document.getElementById('lehrer-sortierung');
+    if (wahl && wahl.value !== this.lehrerSortierung()) wahl.value = this.lehrerSortierung();
+    const sortierung = this.lehrerSortierung();
+
+    // Gesucht wird ueber alles, was in der Zeile steht: Kuerzel, Name und Rolle.
+    // „5a“ findet damit die Leitung genauso wie „KL“ alle Klassenleitungen.
+    const zeile = k => `${k} ${liste[k]} ${this.rolleVon(k)}`.toLowerCase();
+    const gezeigt = suche ? alle.filter(k => zeile(k).includes(suche)) : alle.slice();
+
+    gezeigt.sort((a, b) => sortierung === 'klasse'
+      ? this.vergleicheSchluessel(
+          [...this.leitungsSchluessel(a), liste[a]],
+          [...this.leitungsSchluessel(b), liste[b]])
+      : liste[a].localeCompare(liste[b], 'de'));
+
     const zahl = document.getElementById('lehrer-zahl');
-    if (zahl) zahl.textContent = kuerzel.length;
+    if (zahl) zahl.textContent = suche ? `${gezeigt.length} von ${alle.length}` : String(alle.length);
 
     box.innerHTML = '';
-    if (!kuerzel.length) {
+    if (!alle.length) {
       box.innerHTML = '<p class="hint">Noch keine Lehrkräfte hinterlegt.</p>';
+    } else if (!gezeigt.length) {
+      box.innerHTML = '<p class="hint">Keine Lehrkraft passt zur Suche.</p>';
     } else {
       const ul = document.createElement('ul');
       ul.className = 'lehrer-spalten';
-      for (const k of kuerzel) {
+      for (const k of gezeigt) {
         const li = document.createElement('li');
         const kz = document.createElement('strong');
         kz.textContent = k;
@@ -639,11 +708,13 @@ const Classes = {
       }
       box.appendChild(ul);
     }
-    // Vorschlagsliste an den beiden Feldern der Klassenleitung
+
+    // Vorschlagsliste an den beiden Feldern der Klassenleitung – immer vollstaendig,
+    // die Suche oben filtert nur die Anzeige
     const dl = document.getElementById('lehrer-kuerzel');
     if (dl) {
       dl.innerHTML = '';
-      for (const k of Object.keys(liste).sort()) {
+      for (const k of alle.slice().sort()) {
         const o = document.createElement('option');
         o.value = k;
         o.label = liste[k];

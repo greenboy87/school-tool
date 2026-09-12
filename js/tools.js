@@ -21,6 +21,93 @@ const Tools = {
       if (min > 0) this.startTimer(min * 60);
     });
     document.getElementById('btn-timer-stop').addEventListener('click', () => this.stopTimer());
+
+    // Stoppuhr
+    const start = document.getElementById('btn-stoppuhr-start');
+    if (start) {
+      start.addEventListener('click', () => this.stoppuhrUmschalten());
+      document.getElementById('btn-stoppuhr-reset')
+        .addEventListener('click', () => this.stoppuhrZuruecksetzen());
+      document.getElementById('btn-stoppuhr-voll')
+        .addEventListener('click', () => this.stoppuhrVollbild());
+      // Der Knopf muss auch stimmen, wenn das Vollbild ueber Esc endet
+      document.addEventListener('fullscreenchange', () => this.stoppuhrZeichne());
+      this.stoppuhrZeichne();
+    }
+  },
+
+  /* ---------- Stoppuhr ----------
+     Gerechnet wird aus Date.now()-Differenzen, nicht aus gezaehlten Ticks:
+     In einem Hintergrund-Tab drosseln Browser die Intervalle, die Uhr ginge
+     sonst nach. Das Intervall zeichnet also nur, es zaehlt nicht. */
+  stoppuhr: { start: 0, gesammelt: 0, laeuft: false, takt: null },
+
+  stoppuhrZeit() {
+    const u = this.stoppuhr;
+    return u.gesammelt + (u.laeuft ? Date.now() - u.start : 0);
+  },
+
+  /* „07:32,4“ – die Stunde erscheint erst, wenn es sie gibt */
+  stoppuhrText(ms) {
+    const zz = n => String(n).padStart(2, '0');
+    const zehntel = Math.floor(ms / 100) % 10;
+    const sek = Math.floor(ms / 1000) % 60;
+    const min = Math.floor(ms / 60000) % 60;
+    const std = Math.floor(ms / 3600000);
+    return (std ? std + ':' + zz(min) : zz(min)) + ':' + zz(sek) + ',' + zehntel;
+  },
+
+  stoppuhrZeichne() {
+    const anzeige = document.getElementById('stoppuhr-anzeige');
+    if (anzeige) anzeige.textContent = this.stoppuhrText(this.stoppuhrZeit());
+    const knopf = document.getElementById('btn-stoppuhr-start');
+    if (knopf) {
+      const laeuft = this.stoppuhr.laeuft;
+      knopf.innerHTML = Icons.raw(laeuft ? 'stop' : 'play') + (laeuft ? 'Pause' : 'Start');
+      knopf.classList.toggle('primary', !laeuft);
+    }
+  },
+
+  stoppuhrUmschalten() {
+    const u = this.stoppuhr;
+    if (u.laeuft) {
+      u.gesammelt = this.stoppuhrZeit();
+      u.laeuft = false;
+      clearInterval(u.takt);
+      u.takt = null;
+    } else {
+      u.start = Date.now();
+      u.laeuft = true;
+      clearInterval(u.takt);
+      u.takt = setInterval(() => this.stoppuhrZeichne(), 50);
+    }
+    this.stoppuhrZeichne();
+  },
+
+  stoppuhrZuruecksetzen() {
+    const u = this.stoppuhr;
+    clearInterval(u.takt);
+    u.takt = null;
+    u.laeuft = false;
+    u.gesammelt = 0;
+    u.start = 0;
+    this.stoppuhrZeichne();
+  },
+
+  /* Nur die Buehne ins Vollbild, nicht die ganze Seite – so bleiben Start und
+     Zuruecksetzen erreichbar, ohne das Vollbild zu verlassen. */
+  stoppuhrVollbild() {
+    const buehne = document.getElementById('stoppuhr-buehne');
+    if (!buehne) return;
+    const drin = document.fullscreenElement || document.webkitFullscreenElement;
+    if (drin) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      return;
+    }
+    const rein = buehne.requestFullscreen || buehne.webkitRequestFullscreen;
+    if (!rein) { alert('Dieser Browser kann den Vollbildmodus hier nicht anzeigen.'); return; }
+    const p = rein.call(buehne);
+    if (p && p.catch) p.catch(err => alert('Vollbild nicht möglich: ' + err.message));
   },
 
   refreshClassSelect() {
