@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=76">
+<link rel="stylesheet" href="style.css?v=77">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=76"></script>
-<script src="js/theme.js?v=76"></script>
-<script src="js/auth.js?v=76"></script>
+<script src="js/icons.js?v=77"></script>
+<script src="js/theme.js?v=77"></script>
+<script src="js/auth.js?v=77"></script>
 </head>
 <body>
 
@@ -19,6 +19,7 @@
     <button class="tab-btn" data-tab="klassen" data-icon="book" title="Klassen &amp; Noten">Klassen</button>
     <button class="tab-btn" data-tab="band" data-icon="music" title="Schulband">Band</button>
     <button class="tab-btn" data-tab="notizen" data-icon="clipboard" title="Notizen">Notes</button>
+    <button class="tab-btn" data-tab="sport" data-icon="timer" title="Sport">Sport</button>
     <button class="tab-btn" data-tab="tools" data-icon="sparkles" title="Extras">Extras</button>
   </nav>
   <div class="backup-btns">
@@ -639,6 +640,54 @@
   </section>
 </main>
 
+<!-- ========== SPORT ========== -->
+<main id="tab-sport" class="tab-page">
+  <div class="sport-layout">
+
+    <section class="card">
+      <h2 data-icon="timer">Stoppuhr</h2>
+      <p class="hint">Zählt hoch. Ist unten eine Zeit-Disziplin gewählt, läuft die Note mit –
+        samt Abstand zur nächsten. <strong>Vollbild</strong> macht sie für die letzte Reihe
+        lesbar, <kbd>Esc</kbd> beendet es; sie läuft dabei weiter.</p>
+      <div id="stoppuhr-buehne" class="stoppuhr-buehne">
+        <div id="stoppuhr-anzeige" class="stoppuhr-anzeige">00:00,0</div>
+        <div id="stoppuhr-note" class="stoppuhr-note" hidden></div>
+        <div class="btn-row">
+          <button id="btn-stoppuhr-start" class="primary" data-icon="play">Start</button>
+          <button id="btn-stoppuhr-reset" data-icon="reset">Zurücksetzen</button>
+          <button id="btn-stoppuhr-voll" data-icon="window">Vollbild</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 data-icon="target">Bewertung</h2>
+      <div id="sport-leer" class="hint" hidden></div>
+      <div id="sport-wahl" class="sport-wahl">
+        <label>Sportart <select id="sport-sportart"></select></label>
+        <label>Geschlecht <select id="sport-geschlecht"></select></label>
+        <label>Jahrgangsstufe <select id="sport-jgst"></select></label>
+        <label>Disziplin <select id="sport-disziplin"></select></label>
+      </div>
+      <div id="sport-eingabe" class="sport-eingabe" hidden>
+        <label>Gemessen <input type="text" id="sport-messwert" size="10" autocomplete="off"></label>
+        <span id="sport-messnote" class="sport-messnote"></span>
+      </div>
+      <table id="sport-tabelle" class="grade-table sport-tabelle"></table>
+      <p class="hint" id="sport-quelle"></p>
+    </section>
+
+    <section class="card">
+      <h2 data-icon="list">In allen Tabellen suchen</h2>
+      <p class="hint">Sucht über Disziplin, Sportart, Geschlecht und Jahrgangsstufe –
+        „Kugelstoß“, „Brust 8“ oder „Jungen 10“ führen direkt zur passenden Tabelle.</p>
+      <input type="search" id="sport-suche" autocomplete="off" placeholder="Disziplin, Klasse oder Sportart …">
+      <div id="sport-treffer" class="sport-treffer"></div>
+    </section>
+
+  </div>
+</main>
+
 <!-- ========== EXTRAS ========== -->
 <main id="tab-tools" class="tab-page">
   <div class="tools-grid">
@@ -692,42 +741,29 @@
       <div id="timer-display" class="timer-display">–:–</div>
     </section>
 
-    <section class="card">
-      <h2 data-icon="timer">Stoppuhr</h2>
-      <p class="hint">Zählt hoch – für Vorträge, Stationen oder Spielrunden.
-        <strong>Vollbild</strong> macht sie so groß, dass sie aus der letzten Reihe zu lesen ist;
-        <kbd>Esc</kbd> beendet das wieder. Sie läuft dabei weiter.</p>
-      <div id="stoppuhr-buehne" class="stoppuhr-buehne">
-        <div id="stoppuhr-anzeige" class="stoppuhr-anzeige">00:00,0</div>
-        <div class="btn-row">
-          <button id="btn-stoppuhr-start" class="primary" data-icon="play">Start</button>
-          <button id="btn-stoppuhr-reset" data-icon="reset">Zurücksetzen</button>
-          <button id="btn-stoppuhr-voll" data-icon="window">Vollbild</button>
-        </div>
-      </div>
-    </section>
   </div>
 </main>
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=76"></script>
-<script src="js/firebase-config.js?v=76"></script>
-<script type="module" src="js/live-firebase.js?v=76"></script>
-<script src="js/topics-seed.js?v=76"></script>
-<script src="js/ai-import.js?v=76"></script>
-<script src="js/store.js?v=76"></script>
-<script src="js/noise.js?v=76"></script>
-<script src="js/classes.js?v=76"></script>
-<script src="js/lessons.js?v=76"></script>
-<script src="js/band.js?v=76"></script>
-<script src="js/notes.js?v=76"></script>
-<script src="js/tresor.js?v=76"></script>
-<script src="js/erklaerungen.js?v=76"></script>
-<script src="js/setlisten.js?v=76"></script>
-<script src="js/einklappen.js?v=76"></script>
-<script src="js/live-groups.js?v=76"></script>
-<script src="js/tools.js?v=76"></script>
-<script src="js/app.js?v=76"></script>
+<script src="js/vendor/qrcode.min.js?v=77"></script>
+<script src="js/firebase-config.js?v=77"></script>
+<script type="module" src="js/live-firebase.js?v=77"></script>
+<script src="js/topics-seed.js?v=77"></script>
+<script src="js/ai-import.js?v=77"></script>
+<script src="js/store.js?v=77"></script>
+<script src="js/noise.js?v=77"></script>
+<script src="js/classes.js?v=77"></script>
+<script src="js/lessons.js?v=77"></script>
+<script src="js/band.js?v=77"></script>
+<script src="js/notes.js?v=77"></script>
+<script src="js/tresor.js?v=77"></script>
+<script src="js/erklaerungen.js?v=77"></script>
+<script src="js/setlisten.js?v=77"></script>
+<script src="js/einklappen.js?v=77"></script>
+<script src="js/live-groups.js?v=77"></script>
+<script src="js/sport.js?v=77"></script>
+<script src="js/tools.js?v=77"></script>
+<script src="js/app.js?v=77"></script>
 </body>
 </html>

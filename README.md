@@ -115,6 +115,26 @@ vom Beamer direkt aufs Handy, und Anker schicken Browser grundsätzlich nicht an
 der Datenbank stehen nur Platznummern (`s0`, `s1`, …) und Gruppennamen, und der Raumcode wird
 bei jeder Sammlung neu ausgewürfelt.
 
+## 🏃 Sport
+
+Eigener Reiter mit **Stoppuhr** und den **Bewertungstabellen**.
+
+- Die Stoppuhr zählt hoch und lässt sich per **Vollbild** auf Hallengröße bringen (`Esc` zurück);
+  sie läuft dabei weiter.
+- Ist unten eine Zeit-Disziplin gewählt, **läuft die Note mit**: „Ausdauer (Dauerlauf) · Note 4 ·
+  noch 00:27 bis Note 3“. Bei Zeitläufen zählt es andersherum – „noch 0,5 s für Note 2“ sagt,
+  wie lange die aktuelle Note noch zu halten ist.
+- Für Weiten und Höhen gibt es ein Eingabefeld: Messwert eintippen, Note erscheint.
+- Die Suche geht über alle Tabellen auf einmal – „kugel jungen 11“ oder „brust 8“ führen
+  direkt zur passenden Zeile.
+
+Die Tabellen stammen aus der **ISB-Empfehlung zur Leistungsbewertung Sport (2023)** für
+Leichtathletik und Schwimmen, Jahrgangsstufen 5–11, Mädchen und Jungen. Sie liegen wie
+Klassen und Noten **nur im Browser dieses Geräts** – im öffentlichen Repository haben sie
+nichts verloren. Eingelesen werden sie einmalig über die Konsole:
+
+    Sport.tabellenEinlesen(objekt)
+
 ### Stunden (Themen-Fortschritt)
 - Katalog mit 211 Stundenthemen, erzeugt aus den Ordnern in iCloud unter
   `3_Unterrichtsstunden/Musikseminarsave` (siehe `js/topics-seed.js`)

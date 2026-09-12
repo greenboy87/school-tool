@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Einklappen.init();
   LiveGroups.init();
   Tools.init();
+  Sport.init();
   Erklaerungen.init();
 
   /* ----- Haupttabs ----- */

@@ -714,6 +714,41 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .timer-display { font-size: 3.2rem; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: .8rem; display: flex; align-items: center; }
 .timer-display.warning { color: var(--red); }
 
+/* ---------- Sport ---------- */
+.sport-layout { display: grid; gap: 1rem; }
+.sport-wahl { display: flex; gap: .8rem 1.2rem; flex-wrap: wrap; margin: .6rem 0 1rem; }
+.sport-wahl label { display: flex; flex-direction: column; gap: .25rem; font-size: .82rem; color: var(--muted); }
+.sport-wahl select {
+  padding: .45rem .55rem; font: inherit; font-size: .9rem;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+}
+.sport-eingabe { display: flex; align-items: flex-end; gap: .8rem; margin-bottom: .9rem; }
+.sport-eingabe label { display: flex; flex-direction: column; gap: .25rem; font-size: .82rem; color: var(--muted); }
+.sport-eingabe input {
+  padding: .45rem .55rem; font: inherit; font-size: .95rem;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+}
+.sport-messnote { font-size: 1.05rem; font-weight: 700; padding-bottom: .35rem; }
+.sport-tabelle { max-width: 22rem; }
+/* Note 1 und 2 gruen, 3 und 4 gelb, 5 und darunter rot – auf dem Beamer
+   erkennt man das Ergebnis dadurch, bevor man die Ziffer gelesen hat */
+.note-1, .note-2 { color: var(--green); }
+.note-3, .note-4 { color: var(--yellow); }
+.note-5, .note-6 { color: var(--red); }
+
+#sport-suche {
+  width: 100%; max-width: 26rem; padding: .5rem .65rem; font: inherit; font-size: .9rem;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+}
+.sport-treffer { display: grid; gap: .4rem; margin-top: .7rem; max-height: 22rem; overflow-y: auto; }
+.sport-treffer-zeile {
+  display: grid; gap: .15rem; text-align: left; width: 100%;
+  padding: .5rem .65rem; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--panel); color: var(--text);
+}
+.sport-treffer-zeile:hover { background: var(--hover); border-color: var(--accent); }
+.treffer-noten { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
 /* ---------- Stoppuhr ---------- */
 .stoppuhr-anzeige {
   font-size: 3.2rem; font-weight: 800; font-variant-numeric: tabular-nums;
@@ -727,6 +762,9 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
   gap: 2.5rem; height: 100%;
 }
 .stoppuhr-buehne:fullscreen .stoppuhr-anzeige { font-size: min(22vw, 42vh); margin: 0; }
+/* Die mitlaufende Note – im Vollbild gross genug, um sie aus der Halle zu lesen */
+.stoppuhr-note { font-size: 1.15rem; font-weight: 700; margin-bottom: .9rem; }
+.stoppuhr-buehne:fullscreen .stoppuhr-note { font-size: min(5vw, 9vh); margin: 0; text-align: center; }
 .stoppuhr-buehne:fullscreen .btn-row button { font-size: 1.5rem; padding: .9rem 1.8rem; border-radius: 12px; }
 .stoppuhr-buehne:fullscreen .btn-row .icon { width: 1.3em; height: 1.3em; }
 
