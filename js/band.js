@@ -140,6 +140,12 @@ const Band = {
       document.getElementById('gig-name').value = '';
       this.renderGigs();
     });
+    document.getElementById('kal-prev').addEventListener('click', () => this.kalSchiebe(-1));
+    document.getElementById('kal-next').addEventListener('click', () => this.kalSchiebe(1));
+    document.getElementById('kal-heute').addEventListener('click', () => {
+      this.kalMonat = null;
+      this.renderGigKalender();
+    });
     document.getElementById('btn-delete-gig').addEventListener('click', () => {
       const g = this.currentGig();
       if (!g || !confirm(`Termin „${g.name}“ löschen?`)) return;
@@ -620,6 +626,7 @@ const Band = {
     ul.innerHTML = '';
     const gigs = [...this.d().gigs].sort((a, b) => (a.date || '9999').localeCompare(b.date || '9999'));
     if (!gigs.length) ul.innerHTML = '<li class="hint">Noch keine Termine angelegt.</li>';
+    this.renderGigKalender();
     for (const g of gigs) {
       const li = document.createElement('li');
       li.classList.toggle('active', g.id === this.currentGigId);
@@ -641,6 +648,76 @@ const Band = {
       ul.appendChild(li);
     }
     this.renderGigDetail();
+  },
+
+  /* ---------- Kleiner Monatskalender über den Terminen ----------
+     Spalten Mo–So; Tage mit Auftritt sind eingefärbt und führen per Klick
+     zum Termin. Gerechnet wird mit 'YYYY-MM-DD'-Zeichenketten, weil
+     Date.toISOString() je nach Sommerzeit einen Tag zurückrutscht. */
+  kalMonat: null,            // erster Tag des angezeigten Monats, null = laufender Monat
+
+  kalSchiebe(schritte) {
+    const m = this.kalMonat || new Date();
+    this.kalMonat = new Date(m.getFullYear(), m.getMonth() + schritte, 1);
+    this.renderGigKalender();
+  },
+
+  isoTag(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+           '-' + String(d.getDate()).padStart(2, '0');
+  },
+
+  renderGigKalender() {
+    const gitter = document.getElementById('kal-gitter');
+    if (!gitter) return;
+    const heute = new Date();
+    const monat = this.kalMonat || new Date(heute.getFullYear(), heute.getMonth(), 1);
+    document.getElementById('kal-titel').textContent =
+      monat.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+    // An einem Tag können mehrere Termine liegen – daher je Tag eine Liste
+    const proTag = {};
+    for (const g of this.d().gigs) {
+      if (!g.date) continue;
+      if (!proTag[g.date]) proTag[g.date] = [];
+      proTag[g.date].push(g);
+    }
+
+    gitter.innerHTML = '';
+    for (const wt of ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']) {
+      const kopf = document.createElement('div');
+      kopf.className = 'kal-wt';
+      kopf.textContent = wt;
+      gitter.appendChild(kopf);
+    }
+
+    // getDay() zählt ab Sonntag; der Versatz dreht die Woche auf Montag
+    const versatz = (monat.getDay() + 6) % 7;
+    const tageImMonat = new Date(monat.getFullYear(), monat.getMonth() + 1, 0).getDate();
+    const felder = Math.ceil((versatz + tageImMonat) / 7) * 7;
+    const heuteIso = this.isoTag(heute);
+
+    for (let i = 0; i < felder; i++) {
+      const tag = new Date(monat.getFullYear(), monat.getMonth(), 1 - versatz + i);
+      const iso = this.isoTag(tag);
+      const zelle = document.createElement('div');
+      zelle.className = 'kal-tag';
+      zelle.textContent = tag.getDate();
+      if (tag.getMonth() !== monat.getMonth()) zelle.classList.add('fremd');
+      if (iso === heuteIso) zelle.classList.add('heute');
+      const termine = proTag[iso];
+      if (termine) {
+        zelle.classList.add('auftritt');
+        zelle.title = termine
+          .map(g => [g.name, g.time, g.place].filter(Boolean).join(' · '))
+          .join('\n');
+        zelle.addEventListener('click', () => {
+          this.currentGigId = termine[0].id;
+          this.renderGigs();
+        });
+      }
+      gitter.appendChild(zelle);
+    }
   },
 
   gigSubtitle(g) {

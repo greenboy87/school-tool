@@ -532,6 +532,25 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .name-cell { display: flex; align-items: center; gap: .2em; }
 .link-mark { display: inline-flex; color: var(--green); flex: 0 0 auto; }
 .link-mark .icon { margin: 0; width: .95em; height: .95em; }
+/* Kleiner Monatskalender über der Terminliste: Mo–So, Auftritte eingefärbt */
+.kalender { margin-top: .9rem; max-width: 23rem; }
+.kalender-kopf { display: flex; align-items: center; gap: .4rem; margin-bottom: .45rem; }
+.kalender-kopf strong { font-size: .92rem; min-width: 8.5rem; }
+.kalender-kopf button { padding: .25rem .55rem; line-height: 1; }
+/* „Heute“ ans rechte Ende, damit Titel und Pfeile beieinander bleiben */
+#kal-heute { margin-left: auto; }
+.kalender-gitter { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.kal-wt { text-align: center; font-size: .72rem; color: var(--muted); padding: .15rem 0; }
+.kal-tag {
+  text-align: center; font-size: .82rem; padding: .35rem 0;
+  border: 1px solid transparent; border-radius: 6px;
+}
+.kal-tag.fremd { color: var(--muted); opacity: .4; }
+.kal-tag.heute { border-color: var(--border); font-weight: 600; }
+.kal-tag.auftritt { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; cursor: pointer; }
+.kal-tag.auftritt:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
+.kal-tag.auftritt.fremd { opacity: .55; }
+
 .gig-fields label, .gig-note { display: flex; flex-direction: column; font-size: .85rem; color: var(--muted); gap: .2em; }
 .gig-note { margin: .8rem 0; }
 
