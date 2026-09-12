@@ -129,7 +129,7 @@ const Classes = {
     for (const [id, feld] of [['kl-haupt', 'kl'], ['kl-co', 'co']]) {
       const el = document.getElementById(id);
       if (!el) continue;
-      el.addEventListener('input', () => {
+      const uebernehmen = () => {
         const cls = this.currentClass();
         if (!cls) return;
         if (!cls.leitung) cls.leitung = {};
@@ -137,10 +137,21 @@ const Classes = {
         this.persist();
         this.zeigeLeitungsNamen();
         this.renderClassList();
+      };
+      el.addEventListener('input', uebernehmen);
+      // Wer den Namen tippt statt des Kürzels, soll nicht ins Leere laufen:
+      // beim Verlassen des Feldes wird ein eindeutiger Name zum Kürzel
+      el.addEventListener('change', () => {
+        const kuerzel = this.kuerzelZuName(el.value);
+        if (kuerzel) el.value = kuerzel;
+        uebernehmen();
       });
     }
 
     // Lehrkraefte-Liste
+    const impLeitung = document.getElementById('btn-leitung-import');
+    if (impLeitung) impLeitung.addEventListener('click', () => this.leitungenEinlesen());
+
     const imp = document.getElementById('btn-lehrer-import');
     if (imp) {
       imp.addEventListener('click', () => this.lehrerEinlesen());
@@ -530,6 +541,74 @@ const Classes = {
     return teile.map((t, i) => namen[i] || `${t} – nicht in der Liste`).join(' · ');
   },
 
+  /* „Grünig“ oder „grünig, thomas“ -> „GT“. Nur bei genau einem Treffer, sonst
+     bliebe offen, wer gemeint ist. Ein bereits gültiges Kürzel bleibt stehen. */
+  kuerzelZuName(eingabe) {
+    const text = String(eingabe || '').trim().toLowerCase();
+    if (!text) return null;
+    const liste = this.lehrer();
+    if (liste[text.toUpperCase()]) return null;          // ist schon ein Kürzel
+    const treffer = Object.keys(liste).filter(k => liste[k].toLowerCase().includes(text));
+    return treffer.length === 1 ? treffer[0] : null;
+  },
+
+  /* ---------- Klassenleitungen im Block einlesen ----------
+     „5a; BU; GT“ – 39 Klassen von Hand einzutippen ist die Art Arbeit, die
+     niemand zweimal macht. Klassennamen werden tolerant verglichen, weil die
+     Klasse hier „5a Musik“ heißen kann und in der Tabelle nur „5a“. */
+  parseLeitungen(text) {
+    const zeilen = [];
+    for (const roh of String(text).split(/\r?\n/)) {
+      const z = roh.trim();
+      if (!z || z.startsWith('#')) continue;
+      const teile = z.split(/\s*[;\t]\s*/);
+      if (teile.length < 2) continue;
+      const klasse = teile[0].trim();
+      if (!klasse) continue;
+      zeilen.push({ klasse, kl: (teile[1] || '').trim(), co: (teile[2] || '').trim() });
+    }
+    return zeilen;
+  },
+
+  normKlasse(name) { return String(name || '').toLowerCase().replace(/[\s_.-]/g, ''); },
+
+  findeKlasse(name) {
+    const gesucht = this.normKlasse(name);
+    if (!gesucht) return null;
+    const alle = this.data.classes;
+    return alle.find(c => this.normKlasse(c.name) === gesucht)
+        || alle.find(c => this.normKlasse(c.name).startsWith(gesucht))
+        || null;
+  },
+
+  leitungenEinlesen() {
+    const feld = document.getElementById('leitung-eingabe');
+    const status = document.getElementById('leitung-status');
+    const zeilen = this.parseLeitungen(feld.value);
+    if (!zeilen.length) {
+      status.textContent = 'Keine verwertbaren Zeilen gefunden. Format: Klasse; KÜRZEL; KÜRZEL';
+      status.classList.add('warnung');
+      return;
+    }
+    let gesetzt = 0;
+    const ohneKlasse = [];
+    for (const z of zeilen) {
+      const cls = this.findeKlasse(z.klasse);
+      if (!cls) { ohneKlasse.push(z.klasse); continue; }
+      cls.leitung = { kl: z.kl, co: z.co };
+      gesetzt++;
+    }
+    this.persist();
+    this.renderClassList();
+    this.zeigeLeitungsNamen();
+    feld.value = '';
+    status.classList.toggle('warnung', gesetzt === 0);
+    status.textContent = `${gesetzt} von ${zeilen.length} Klassen zugeordnet.` +
+      (ohneKlasse.length
+        ? ` Keine passende Klasse für: ${ohneKlasse.join(', ')} – die legst du zuerst an.`
+        : '');
+  },
+
   renderLehrer() {
     const box = document.getElementById('lehrer-liste');
     if (!box) return;
@@ -571,8 +650,13 @@ const Classes = {
       if (!el || !anzeige) continue;
       const wert = (cls && cls.leitung && cls.leitung[feld]) || '';
       if (document.activeElement !== el) el.value = wert;
-      anzeige.textContent = this.lehrerName(wert);
-      anzeige.classList.toggle('unbekannt', /nicht in der Liste/.test(anzeige.textContent));
+      // Ohne eingelesene Liste kann gar kein Kürzel bekannt sein – dann ist
+      // „nicht in der Liste“ irreführend und schickt auf die falsche Fährte
+      const leer = !Object.keys(this.lehrer()).length;
+      anzeige.textContent = !wert ? ''
+        : leer ? 'Noch keine Lehrerliste – unter Extras › Lehrkräfte einlesen'
+        : this.lehrerName(wert);
+      anzeige.classList.toggle('unbekannt', /nicht in der Liste|Noch keine Lehrerliste/.test(anzeige.textContent));
     }
   },
 

@@ -70,6 +70,12 @@ erscheint der volle Name daneben, in der Klassenliste links das Kürzel und im S
 die Klassenleitung. Ein Kürzel, das die Liste nicht kennt, wird rot als
 „nicht in der Liste“ ausgewiesen, statt still leer zu bleiben.
 
+Statt des Kürzels lässt sich auch der **Name** tippen: Ist er eindeutig, wird beim Verlassen
+des Feldes das Kürzel daraus. Und weil 39 Klassen mal zwei Felder niemand zweimal eintippt,
+liest *Extras → Klassenleitungen im Block* eine ganze Tabelle `Klasse; KL; Co` auf einmal ein.
+Der Klassenname wird großzügig verglichen – `5a` findet auch `5a Musik`, `10c_II` auch
+`10c II`; Klassen, die es noch nicht gibt, werden gemeldet statt angelegt.
+
 Die Lehrerliste liegt wie Klassen und Noten **nur im Browser dieses Geräts** und gehört
 nicht ins Repository – die Seite ist öffentlich.
 

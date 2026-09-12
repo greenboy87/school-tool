@@ -691,7 +691,11 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 }
 .lehrer-spalten li { break-inside: avoid; }
 .lehrer-spalten strong { color: var(--accent-soft); display: inline-block; min-width: 2.6em; }
-#lehrer-eingabe { width: 100%; font-size: .9rem; }
+#lehrer-eingabe, #leitung-eingabe { width: 100%; font-size: .9rem; }
+/* Zweiter Block in derselben Karte – ohne Abstand klebt die Ueberschrift
+   an der Lehrerliste darueber */
+#lehrer-liste + h3 { margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+#leitung-status.warnung { color: var(--danger); }
 #lehrer-status.warnung { color: var(--danger); }
 
 /* ---------- Extras ---------- */
