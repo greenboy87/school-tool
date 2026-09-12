@@ -195,7 +195,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', e => { if (e.key === 'Escape') infoBox.hidden = true; });
 
   /* ----- Backup ----- */
-  document.getElementById('btn-export').addEventListener('click', () => Store.exportBackup());
   document.getElementById('btn-server-backup').addEventListener('click', () => Tresor.serverBackup());
   document.getElementById('btn-import').addEventListener('click', () =>
     document.getElementById('import-file').click());

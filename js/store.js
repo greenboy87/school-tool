@@ -36,10 +36,6 @@ const Store = {
     URL.revokeObjectURL(a.href);
   },
 
-  exportBackup() {
-    this.alsDateiSpeichern(this.load(), `school-tool-backup-${this.heuteStempel()}.json`);
-  },
-
   importBackup(file, onDone) {
     const reader = new FileReader();
     reader.onload = async () => {
