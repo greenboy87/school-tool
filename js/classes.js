@@ -460,6 +460,7 @@ const Classes = {
   selectClass(id) {
     this.currentClassId = id;
     this.currentProjectId = null;
+    this.gruppenBearbeiten = false;
     this.pendingGroups = null;
     this.renderClassList();
     this.renderDetail();
@@ -1110,6 +1111,7 @@ const Classes = {
     const groupsInfo = document.getElementById('project-groups-info');
     groupsInfo.innerHTML = '';
     if (p.groups && p.groups.length) {
+      const bearbeiten = !!this.gruppenBearbeiten;
       const wrap = document.createElement('div');
       wrap.className = 'group-result';
       p.groups.forEach((g, i) => {
@@ -1166,7 +1168,10 @@ const Classes = {
             document.getElementById('grade-summary').textContent = this.summaryText(p);
           });
           /* Umhaengen per Auswahlfeld statt per Ziehen: auf dem iPad ist ein
-             Select verlaesslich, Drag-and-drop nicht. */
+             Select verlaesslich, Drag-and-drop nicht. Im Normalfall steht es
+             nicht da – ein Feld hinter jedem Namen macht die Uebersicht
+             unlesbar, und umgehaengt wird selten. */
+          if (!bearbeiten) { li.append(nameSpan, single); ul.appendChild(li); return; }
           const wohin = document.createElement('select');
           wohin.className = 'small-select gruppen-wechsel';
           wohin.title = `${this.studentName(s)} in eine andere Gruppe verschieben`;
@@ -1189,6 +1194,7 @@ const Classes = {
         });
 
         // Gruppe aufloesen – die Mitglieder stehen danach unter „Ohne Gruppe“
+        if (bearbeiten) {
         const weg = document.createElement('button');
         weg.className = 'small gruppe-weg';
         weg.type = 'button';
@@ -1205,6 +1211,7 @@ const Classes = {
           this.renderProjectDetail();
         });
         h.appendChild(weg);
+        }
         box.append(h, ul);
         wrap.appendChild(box);
       });
@@ -1255,11 +1262,41 @@ const Classes = {
 
       const hint = document.createElement('p');
       hint.className = 'hint';
-      hint.textContent = 'Gruppennote eintragen → sie gilt für alle Mitglieder. Soll ein einzelner Schüler abweichen (z. B. Gruppe Note 1, ein Schüler Note 2), trägst du seine Note einfach in das Feld neben seinem Namen ein. Die Zahl hinter einem Namen hängt ihn in eine andere Gruppe um; „—“ nimmt ihn heraus. Noten bleiben dabei am Schüler.';
+      hint.textContent = 'Gruppennote eintragen → sie gilt für alle Mitglieder. Soll ein einzelner Schüler abweichen (z. B. Gruppe Note 1, ein Schüler Note 2), trägst du seine Note einfach in das Feld neben seinem Namen ein.';
+
+      const schalter = document.createElement('button');
+      schalter.type = 'button';
+      schalter.className = 'small' + (bearbeiten ? ' primary' : '');
+      schalter.textContent = bearbeiten ? 'Fertig' : 'Gruppen bearbeiten';
+      schalter.title = bearbeiten
+        ? 'Bearbeiten beenden – die Auswahlfelder verschwinden wieder'
+        : 'Schüler umhängen, Gruppen anlegen oder auflösen';
+      schalter.addEventListener('click', () => {
+        this.gruppenBearbeiten = !this.gruppenBearbeiten;
+        this.renderProjectDetail();
+      });
+
       const knopfzeile = document.createElement('div');
-      knopfzeile.className = 'btn-row';
-      knopfzeile.appendChild(neueGruppe);
-      groupsInfo.append(hint, wrap, zeile, knopfzeile);
+      knopfzeile.className = 'btn-row gruppen-werkzeuge';
+      knopfzeile.appendChild(schalter);
+      if (bearbeiten) {
+        knopfzeile.appendChild(neueGruppe);
+        const wie = document.createElement('span');
+        wie.className = 'hint';
+        wie.textContent = 'Zahl hinter dem Namen hängt um, „—“ nimmt heraus. Noten bleiben am Schüler.';
+        knopfzeile.appendChild(wie);
+      } else if (offen.length) {
+        // Im Ruhezustand keine Auswahlfelder, aber der Hinweis muss bleiben –
+        // sonst merkt niemand, dass jemand in keiner Gruppe steht
+        const warnung = document.createElement('span');
+        warnung.className = 'hint ohne-gruppe-hinweis';
+        warnung.textContent = `${offen.length} ohne Gruppe: ` +
+          offen.map(x => this.studentName(x)).join(', ');
+        knopfzeile.appendChild(warnung);
+      }
+
+      groupsInfo.append(hint, wrap, knopfzeile);
+      if (bearbeiten) groupsInfo.appendChild(zeile);
     }
 
     this.renderGradeTable();

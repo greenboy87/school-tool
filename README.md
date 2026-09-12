@@ -52,10 +52,11 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
 - Noten der Reihe nach eingeben (Enter springt zum nächsten Schüler) – ideal zum Übertragen in den Notenmanager
 - Abhak-Kästchen „im Notenmanager eingetragen“ pro Projekt
 - Zufallsgruppen bilden (nach Gruppengröße oder Anzahl) und als Projekt speichern; Gruppennote wird automatisch allen Mitgliedern zugewiesen
-- Gruppen im Projekt später ändern: Die Zahl hinter einem Namen hängt den Schüler in eine
-  andere Gruppe, „—“ nimmt ihn heraus; **+ Gruppe** legt eine leere an, **×** löst eine auf.
-  Wer in keiner Gruppe steht, erscheint unter *Ohne Gruppe* und geht dort nicht verloren.
-  Noten hängen am Schüler und wandern beim Umhängen mit.
+- Gruppen im Projekt später ändern: **Gruppen bearbeiten** blendet die Werkzeuge ein – die
+  Zahl hinter einem Namen hängt den Schüler in eine andere Gruppe, „—“ nimmt ihn heraus,
+  **+ Gruppe** legt eine leere an, **×** löst eine auf. **Fertig** räumt alles wieder weg.
+  Steht jemand in keiner Gruppe, sagt das auch im Ruhezustand eine gelbe Zeile neben dem
+  Knopf. Noten hängen am Schüler und wandern beim Umhängen mit.
 - Notenliste drucken oder als CSV exportieren
 - Sitzplan (PDF oder Bild) pro Klasse hochladen und anzeigen
 
