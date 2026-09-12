@@ -277,6 +277,14 @@ input[type="checkbox"] { accent-color: var(--accent); }
   border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); }
 .group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; background: var(--input-bg); color: var(--text); }
 .group-box input.grade.single { width: 3em; font-size: .85em; }
+/* Umhaengen: kleines Feld hinter dem Namen, damit die Zeile nicht auseinanderfaellt */
+.gruppen-wechsel { margin-left: .3em; padding: .1rem .2rem; font-size: .75rem; }
+.group-box h4 .gruppe-weg {
+  margin-left: auto; padding: .1rem .45rem; line-height: 1;
+  color: var(--danger); border-color: var(--danger-border);
+}
+.group-box h4 .gruppe-weg:hover { background: var(--danger-bg); }
+.ohne-gruppe { margin-top: .8rem; display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
 /* ----- Infofenster (Knopf „i“ in der Kopfzeile) ----- */
 #btn-info { font-weight: 700; font-style: italic; }
 .info-box {

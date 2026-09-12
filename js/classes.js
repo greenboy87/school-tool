@@ -1165,16 +1165,101 @@ const Classes = {
             this.renderGradeTable();
             document.getElementById('grade-summary').textContent = this.summaryText(p);
           });
-          li.append(nameSpan, single);
+          /* Umhaengen per Auswahlfeld statt per Ziehen: auf dem iPad ist ein
+             Select verlaesslich, Drag-and-drop nicht. */
+          const wohin = document.createElement('select');
+          wohin.className = 'small-select gruppen-wechsel';
+          wohin.title = `${this.studentName(s)} in eine andere Gruppe verschieben`;
+          p.groups.forEach((_, j) => {
+            const o = document.createElement('option');
+            o.value = String(j);
+            o.textContent = String(j + 1);
+            wohin.appendChild(o);
+          });
+          const raus = document.createElement('option');
+          raus.value = '';
+          raus.textContent = '—';
+          wohin.appendChild(raus);
+          wohin.value = String(i);
+          wohin.addEventListener('change', () => {
+            this.verschiebeInGruppe(p, s.id, wohin.value === '' ? null : parseInt(wohin.value, 10));
+          });
+          li.append(nameSpan, single, wohin);
           ul.appendChild(li);
         });
+
+        // Gruppe aufloesen – die Mitglieder stehen danach unter „Ohne Gruppe“
+        const weg = document.createElement('button');
+        weg.className = 'small gruppe-weg';
+        weg.type = 'button';
+        weg.textContent = '×';
+        weg.title = 'Diese Gruppe auflösen – die Schüler bleiben in der Klasse';
+        weg.addEventListener('click', () => {
+          const wieViele = g.length;
+          if (wieViele && !confirm(
+            `Gruppe ${i + 1} auflösen?\n\n${wieViele} Schüler stehen danach unter „Ohne Gruppe“. ` +
+            'Ihre Noten bleiben erhalten.')) return;
+          p.groups.splice(i, 1);
+          if (p.groupNames) p.groupNames.splice(i, 1);
+          this.persist();
+          this.renderProjectDetail();
+        });
+        h.appendChild(weg);
         box.append(h, ul);
         wrap.appendChild(box);
       });
+      // Wer in keiner Gruppe steht, muss sichtbar bleiben – sonst geht er
+      // beim Umhaengen still verloren
+      const drin = new Set(p.groups.flat());
+      const offen = cls.students.filter(x => !drin.has(x.id));
+      const zeile = document.createElement('p');
+      zeile.className = 'hint ohne-gruppe';
+      if (offen.length) {
+        zeile.append(`Ohne Gruppe (${offen.length}): `);
+        offen.forEach((s2, k) => {
+          const wahl = document.createElement('select');
+          wahl.className = 'small-select';
+          wahl.title = `${this.studentName(s2)} einer Gruppe zuordnen`;
+          const kopf = document.createElement('option');
+          kopf.value = '';
+          kopf.textContent = this.studentName(s2);
+          wahl.appendChild(kopf);
+          p.groups.forEach((_, j) => {
+            const o = document.createElement('option');
+            o.value = String(j);
+            o.textContent = 'in Gruppe ' + (j + 1);
+            wahl.appendChild(o);
+          });
+          wahl.addEventListener('change', () => {
+            if (wahl.value !== '') this.verschiebeInGruppe(p, s2.id, parseInt(wahl.value, 10));
+          });
+          zeile.appendChild(wahl);
+          if (k < offen.length - 1) zeile.append(' ');
+        });
+      } else {
+        zeile.textContent = 'Alle Schüler sind einer Gruppe zugeordnet.';
+      }
+
+      const neueGruppe = document.createElement('button');
+      neueGruppe.type = 'button';
+      neueGruppe.className = 'small';
+      neueGruppe.textContent = '+ Gruppe';
+      neueGruppe.title = 'Leere Gruppe anlegen – Schüler hängst du danach über die Auswahlfelder um';
+      neueGruppe.addEventListener('click', () => {
+        p.groups.push([]);
+        if (!p.groupNames) p.groupNames = [];
+        p.groupNames.push('');
+        this.persist();
+        this.renderProjectDetail();
+      });
+
       const hint = document.createElement('p');
       hint.className = 'hint';
-      hint.textContent = 'Gruppennote eintragen → sie gilt für alle Mitglieder. Soll ein einzelner Schüler abweichen (z. B. Gruppe Note 1, ein Schüler Note 2), trägst du seine Note einfach in das Feld neben seinem Namen ein.';
-      groupsInfo.append(hint, wrap);
+      hint.textContent = 'Gruppennote eintragen → sie gilt für alle Mitglieder. Soll ein einzelner Schüler abweichen (z. B. Gruppe Note 1, ein Schüler Note 2), trägst du seine Note einfach in das Feld neben seinem Namen ein. Die Zahl hinter einem Namen hängt ihn in eine andere Gruppe um; „—“ nimmt ihn heraus. Noten bleiben dabei am Schüler.';
+      const knopfzeile = document.createElement('div');
+      knopfzeile.className = 'btn-row';
+      knopfzeile.appendChild(neueGruppe);
+      groupsInfo.append(hint, wrap, zeile, knopfzeile);
     }
 
     this.renderGradeTable();
@@ -1186,6 +1271,17 @@ const Classes = {
     const graded = Object.values(p.grades).filter(g => g && String(g).trim()).length;
     const avg = this.projectAverage(p);
     return `${graded} von ${this.currentClass().students.length} benotet${avg ? ` · Schnitt: ${avg}` : ''}`;
+  },
+
+  /* Schueler in eine andere Gruppe haengen – oder mit null ganz heraus.
+     Erst ueberall entfernen, dann einfuegen: sonst stuende er nach einem
+     Fehlgriff in zwei Gruppen zugleich. Die Note haengt am Schueler und
+     wandert deshalb von selbst mit. */
+  verschiebeInGruppe(p, schuelerId, zielIndex) {
+    p.groups = p.groups.map(g => g.filter(x => x !== schuelerId));
+    if (zielIndex !== null && p.groups[zielIndex]) p.groups[zielIndex].push(schuelerId);
+    this.persist();
+    this.renderProjectDetail();
   },
 
   renderGradeTable() {
