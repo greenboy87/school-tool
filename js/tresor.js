@@ -344,6 +344,101 @@ const Tresor = {
     return geholt;
   },
 
+  /* ---------- Server-Backup ----------
+     Der Rettungsanker: holt den Stand vom Server, entschlüsselt ihn und legt ihn
+     als Datei ab. Anders als „Vom Server holen“ wird dabei nichts in diesem
+     Browser verändert und nichts hochgeladen – das ist der Sinn der Sache. Es
+     funktioniert deshalb auch dann noch, wenn der lokale Stand leer oder kaputt
+     ist, und sogar ohne eingerichteten Sync: Das Passwort genügt.
+     Sitzpläne und Fotos kommen mit; das Backup dieses Geräts lässt sie weg,
+     weil sie nicht im normalen Speicher liegen, sondern in IndexedDB. */
+  async serverBackup() {
+    try {
+      if (!window.FB || !window.FB.bereit) throw new Error('Datenbank nicht erreichbar');
+      let pw = this.passwort || localStorage.getItem(this.PASS_KEY);
+      if (!pw) {
+        pw = (prompt(
+          'Sync-Passwort eingeben.\n\n' +
+          'Damit wird der Stand vom Server geholt und als Datei gespeichert. ' +
+          'An den Daten in diesem Browser ändert sich dabei nichts.') || '').trim();
+        if (!pw) return;
+      }
+
+      this.status('hole Serverstand …');
+      const id = await this.tresorId(pw);
+      const { db, ref, get } = window.FB;
+      const paket = (await get(ref(db, `schoolTool/tresor/${id}`))).val();
+      if (!paket || !paket.salz) {
+        this.status('Unter diesem Passwort liegt nichts.', true);
+        alert('Unter diesem Sync-Passwort liegt auf dem Server nichts.\n\n' +
+          'Entweder ist es ein Tippfehler, oder der Tresor gehört zu einem anderen Passwort.');
+        return;
+      }
+
+      const schluessel = await this.schluesselAus(pw, this.vonB64(paket.salz));
+      let daten;
+      try {
+        daten = await this.entschluesseln(paket, schluessel);
+      } catch (e) {
+        this.status('Falsches Sync-Passwort.', true);
+        alert('Mit diesem Passwort lassen sich die Daten nicht entschlüsseln.\n\n' +
+          'Entweder ist es ein Tippfehler – oder unter diesem Passwort liegt ein fremder Tresor.');
+        return;
+      }
+
+      // Sitzpläne und Fotos liegen in eigenen Knoten und werden einzeln geholt.
+      // Eine Datei, die sich nicht entschlüsseln lässt, darf den Rest nicht aufhalten.
+      const dateien = {};
+      let dabei = 0, uebersprungen = 0;
+      for (const art of this.DATEIARTEN) {
+        this.status(`hole ${art.knoten} …`);
+        const alle = (await get(ref(db, `schoolTool/tresor/${id}/${art.knoten}`))).val() || {};
+        const ziel = dateien[art.knoten] = {};
+        for (const [dateiId, p] of Object.entries(alle)) {
+          try {
+            const klar = await crypto.subtle.decrypt(
+              { name: 'AES-GCM', iv: this.vonB64(p.iv) }, schluessel, this.vonB64(p.chiffre));
+            ziel[dateiId] = {
+              name: p.name || art.standard,
+              typ: p.typ || art.typ,
+              b64: this.nachB64(new Uint8Array(klar)),
+            };
+            dabei++;
+          } catch (e) {
+            uebersprungen++;
+            console.error('Datei nicht lesbar:', art.knoten, dateiId, e);
+          }
+        }
+      }
+
+      Store.alsDateiSpeichern({
+        schoolTool: 'server-backup',
+        version: 1,
+        stand: paket.stand || 0,
+        geraet: paket.geraet || '',
+        geholtAm: Date.now(),
+        daten,
+        dateien,
+      }, `school-tool-server-backup-${Store.heuteStempel()}.json`);
+
+      const klassen = (daten.classes || []).length;
+      const schueler = (daten.classes || []).reduce((a, c) => a + (c.students || []).length, 0);
+      this.status('Server-Backup gespeichert (' + this.zeit(paket.stand) + ')');
+      alert(
+        'Server-Backup gespeichert.\n\n' +
+        `Stand vom Server: ${this.zeit(paket.stand)}` +
+        (paket.geraet ? ` (${paket.geraet})` : '') + '\n' +
+        `${klassen} ${klassen === 1 ? 'Klasse' : 'Klassen'}, ${schueler} Schüler\n` +
+        `${dabei} Sitzpläne/Fotos` +
+        (uebersprungen ? `, ${uebersprungen} nicht lesbar` : '') + '\n\n' +
+        'Die Datei liegt bei den Downloads. In diesem Browser wurde nichts verändert – ' +
+        'zum Zurückspielen den Knopf „Wiederherstellen“ nehmen.');
+    } catch (e) {
+      this.status('Server-Backup fehlgeschlagen: ' + this.fehlertext(e), true);
+      alert('Server-Backup fehlgeschlagen.\n\n' + this.fehlertext(e));
+    }
+  },
+
   /* ---------- Verschlüsselung ---------- */
   async schluesselAus(pw, salz) {
     const basis = await crypto.subtle.importKey(
@@ -369,10 +464,10 @@ const Tresor = {
              iv: this.nachB64(iv), salz: this.nachB64(this.salz) };
   },
 
-  async entschluesseln(paket) {
+  async entschluesseln(paket, schluessel = this.schluessel) {
     const iv = this.vonB64(paket.iv);
     const chiffre = this.vonB64(paket.chiffre);
-    const klar = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, this.schluessel, chiffre);
+    const klar = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, schluessel, chiffre);
     return JSON.parse(new TextDecoder().decode(klar));
   },
 

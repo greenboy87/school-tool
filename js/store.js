@@ -19,28 +19,68 @@ const Store = {
   },
 
   /* ----- Backup ----- */
-  exportBackup() {
-    const blob = new Blob([JSON.stringify(this.load(), null, 2)], { type: 'application/json' });
+  /* Heutiges Datum als 2026-09-12 – ohne toISOString(), das in der Sommerzeit
+     bei spaeter Uhrzeit schon den naechsten Tag anzeigt */
+  heuteStempel() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+           '-' + String(d.getDate()).padStart(2, '0');
+  },
+
+  alsDateiSpeichern(objekt, name) {
+    const blob = new Blob([JSON.stringify(objekt, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `school-tool-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = name;
     a.click();
     URL.revokeObjectURL(a.href);
   },
 
+  exportBackup() {
+    this.alsDateiSpeichern(this.load(), `school-tool-backup-${this.heuteStempel()}.json`);
+  },
+
   importBackup(file, onDone) {
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
-        const data = JSON.parse(reader.result);
-        if (!Array.isArray(data.classes)) throw new Error('Ungültiges Format');
+        const roh = JSON.parse(reader.result);
+        // Zwei Formate: das schlichte Backup dieses Geraets – und das
+        // Server-Backup, bei dem die Daten eine Ebene tiefer liegen und
+        // Sitzplaene und Fotos beiliegen.
+        const istServer = roh && roh.schoolTool === 'server-backup';
+        const data = istServer ? roh.daten : roh;
+        if (!data || !Array.isArray(data.classes)) throw new Error('Ungültiges Format');
         this.save(data);
+        if (istServer && roh.dateien) await this.dateienZurueckschreiben(roh.dateien);
         onDone(null);
       } catch (e) {
         onDone(e);
       }
     };
     reader.readAsText(file);
+  },
+
+  /* Sitzplaene und Fotos aus einem Server-Backup zurueck in IndexedDB legen.
+     Eine kaputte Datei darf die uebrigen nicht aufhalten. */
+  async dateienZurueckschreiben(dateien) {
+    const ziele = {
+      plaene: (id, datei) => this.putSeatplan(id, datei),
+      fotos: (id, datei) => this.putFoto(id, datei),
+    };
+    for (const [knoten, eintraege] of Object.entries(dateien)) {
+      const legen = ziele[knoten];
+      if (!legen) continue;
+      for (const [id, p] of Object.entries(eintraege || {})) {
+        try {
+          const bytes = Uint8Array.from(atob(p.b64), c => c.charCodeAt(0));
+          await legen(id, new File([bytes], p.name || 'Datei',
+            { type: p.typ || 'application/octet-stream' }));
+        } catch (e) {
+          console.error('Datei aus dem Backup uebersprungen:', knoten, id, e);
+        }
+      }
+    }
   },
 
   /* ----- IndexedDB für Dateien (zu groß für localStorage) -----

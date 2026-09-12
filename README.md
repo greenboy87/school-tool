@@ -144,6 +144,25 @@ Die Daten liegen im Browser-Speicher (localStorage/IndexedDB). Über **💾 Back
 alles als JSON-Datei sichern und über **📂 Wiederherstellen** wieder einspielen – z. B. beim
 Wechsel auf einen anderen Rechner oder Browser.
 
+> Der Browser-Speicher hängt an **Browser + Profil + Adresse** zugleich. `http://localhost:8080`
+> und `https://greenboy87.github.io/school-tool/` sind zwei getrennte Speicher, ein zweites
+> Chrome-Profil ein drittes. Eine plötzlich leere Seite heißt darum fast immer: Du schaust an
+> einer Stelle, an der die Daten nie lagen – nicht, dass etwas gelöscht wurde.
+
+### ☁️ Server-Backup (der Rettungsanker)
+
+Der Wolken-Knopf in der Kopfzeile holt den Stand **vom Sync-Server** und legt ihn als Datei ab.
+Der Unterschied zu allem anderen: Er **ändert auf diesem Gerät nichts** und lädt auch nichts
+hoch. Damit kommst du an deine Daten, wenn der lokale Stand leer, kaputt oder auf einem anderen
+Rechner unerreichbar ist.
+
+- Es genügt das **Sync-Passwort** – der Sync muss auf diesem Gerät nicht eingerichtet sein. Das
+  Passwort wird dabei auch nicht gespeichert.
+- **Sitzpläne und Fotos kommen mit.** Das normale 💾 Backup lässt sie weg, weil sie nicht im
+  gewöhnlichen Speicher liegen, sondern in IndexedDB.
+- Zurückspielen mit **📂 Wiederherstellen** – dieselbe Datei, derselbe Knopf. Das alte
+  Backup-Format wird weiterhin gelesen.
+
 ### Geräte-Sync (mehrere Rechner)
 Über **Sync** in der Kopfzeile gleichen sich Klassen, Noten, Sitzpläne und Fotos zwischen
 deinen Geräten ab – Schul-PC, Laptop, iPad.

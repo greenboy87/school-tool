@@ -195,6 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ----- Backup ----- */
   document.getElementById('btn-export').addEventListener('click', () => Store.exportBackup());
+  document.getElementById('btn-server-backup').addEventListener('click', () => Tresor.serverBackup());
   document.getElementById('btn-import').addEventListener('click', () =>
     document.getElementById('import-file').click());
   document.getElementById('import-file').addEventListener('change', e => {
