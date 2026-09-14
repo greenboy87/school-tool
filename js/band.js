@@ -414,8 +414,8 @@ const Band = {
     document.getElementById('member-count').textContent = list.length;
     table.innerHTML = '<tr><th class="pick-spalte">' +
       '<input type="checkbox" id="member-pick-all" title="Alle anzeigten an- oder abwählen">' +
-      '</th><th>Klasse</th><th>Klassenleitung</th><th>Name</th><th>Bereich</th>' +
-      '<th>Instrument / Aufgabe</th><th></th></tr>';
+      '</th><th>Klasse</th><th>Name</th><th>Bereich</th>' +
+      '<th>Instrument / Aufgabe</th><th>Klassenleitung</th><th></th></tr>';
     if (!list.length) {
       table.innerHTML += '<tr><td colspan="7" class="hint">Noch keine Mitglieder aufgenommen.</td></tr>';
       this.auswahlAnzeigen();
@@ -523,7 +523,7 @@ const Band = {
       });
       tdX.appendChild(del);
 
-      tr.append(tdK, tdL, tdN, tdA, tdI, tdX);
+      tr.append(tdK, tdN, tdA, tdI, tdL, tdX);
       table.appendChild(tr);
     }
     this.auswahlAnzeigen();
@@ -567,11 +567,11 @@ const Band = {
 
   druckeMitglieder(list, titel) {
     const tabelle = this.printTable(
-      [{ titel: 'Klasse', cls: 'klasse' }, { titel: 'Klassenleitung' }, { titel: 'Name' },
-       { titel: 'Bereich' }, { titel: 'Instrument / Aufgabe' }],
-      list.map(m => [this.esc(m.klasse) || '–', this.esc(this.leitungText(m.klasse)) || '–',
-                     `<strong>${this.esc(m.name)}</strong>`,
-                     this.AREAS[m.area] || '', this.esc(m.instrument) || '']));
+      [{ titel: 'Klasse', cls: 'klasse' }, { titel: 'Name' },
+       { titel: 'Bereich' }, { titel: 'Instrument / Aufgabe' }, { titel: 'Klassenleitung' }],
+      list.map(m => [this.esc(m.klasse) || '–', `<strong>${this.esc(m.name)}</strong>`,
+                     this.AREAS[m.area] || '', this.esc(m.instrument) || '',
+                     this.esc(this.leitungText(m.klasse)) || '–']));
     const feld = document.getElementById('member-anlass');
     const anlass = feld ? feld.value.trim() : '';
     // Der Anlass steht gross unter dem Titel, die Zahl klein darunter – auf
@@ -582,10 +582,21 @@ const Band = {
   exportMembers() {
     const list = this.filteredMembers();
     if (!list.length) { alert('Die Liste ist leer.'); return; }
-    let csv = 'Klasse;Klassenleitung;Name;Bereich;Instrument\n';
-    list.forEach(m => csv += `${m.klasse};${this.leitungText(m.klasse)};${m.name};` +
-                             `${this.AREAS[m.area] || ''};${m.instrument || ''}\n`);
+    let csv = 'Klasse;Name;Bereich;Instrument;Klassenleitung\n';
+    list.forEach(m => csv += `${m.klasse};${m.name};${this.AREAS[m.area] || ''};` +
+                             `${m.instrument || ''};${this.leitungText(m.klasse)}\n`);
     this.download(csv, 'Schulband-Mitglieder.csv', 'text/csv;charset=utf-8');
+  },
+
+  /* Die Klassen, aus denen Band- oder Technikmitglieder kommen. Der Reiter
+     „Lehrer“ filtert damit auf die Klassenleitungen, die einen betreffen. */
+  klassenMitMitgliedern() {
+    const raus = new Set();
+    for (const m of this.d().members) {
+      const k = String(m.klasse || '').trim();
+      if (k) raus.add(Classes.klassenKern(k));
+    }
+    return raus;
   },
 
   /* ---------- Songs und Songvorschläge ---------- */

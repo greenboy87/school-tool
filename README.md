@@ -82,7 +82,10 @@ Im Reiter *Lehrer* steht die Liste des Kollegiums zum Aufklappen – Kürzel, Na
 Klassenleitung, auch für Klassen, die man selbst nicht unterrichtet. Ein Abzeichen sagt, ob
 jemand **1.** (gefüllte Ziffer) oder **2. Klassenleitung** (umrandete Ziffer) ist:
 `BU  Baumann, Sandra ① 5a`. Über *Zeigen* lässt sich auf **nur 1.** oder **nur 2.
-Klassenleitung** einschränken; die Kopfzeile nennt dann „4 von 102“. Eingeklappt startet die
+Klassenleitung** einschränken, mit **nur Schulband & Technik** zusätzlich auf die
+Klassenleitungen der Klassen, aus denen Band- oder Technikmitglieder kommen – also genau die
+Kollegen, mit denen man wegen Proben und Auftritten zu tun hat. Beides lässt sich verbinden;
+die Kopfzeile nennt dann „4 von 102“. Eingeklappt startet die
 Liste, weil sie zum Nachschlagen da ist.
 
 Die Listen ändern sich einmal im Jahr; ein Eingabefeld dafür stünde die übrigen elf Monate
@@ -178,9 +181,9 @@ die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene T
   Technikteam / beides) und Instrument bzw. Aufgabe. Die Liste ist natürlich nach Klassen
   sortiert (5a, 5b … 10d) und lässt sich gefiltert drucken oder als CSV exportieren.
   Namen können per Auswahlliste aus bestehenden Klassen übernommen werden.
-- **Klassenleitung je Mitglied:** Neben der Klasse steht, wer sie leitet – in der Tabelle als
-  Kürzel mit der Ziffer für 1. bzw. 2. Klassenleitung (Namen im Tooltip), auf dem Ausdruck und
-  im CSV ausgeschrieben. Die Angabe kommt aus der Leitungstabelle im Reiter *Lehrer*; `7a`
+- **Klassenleitung je Mitglied:** In der letzten Spalte steht, wer die Klasse leitet – in der
+  Tabelle als Kürzel mit der Ziffer für 1. bzw. 2. Klassenleitung (Namen im Tooltip), auf dem
+  Ausdruck und im CSV ausgeschrieben. Die Angabe kommt aus der Leitungstabelle im Reiter *Lehrer*; `7a`
   findet dort auch `7a_I`. Steht die Klasse nicht in der Tabelle, erscheint „–“ mit dem Grund
   als Tooltip.
 - **Einzelne Mitglieder drucken:** Vor jedem Namen steht ein Kästchen; **Ausgewählte drucken**

@@ -166,6 +166,11 @@ const Classes = {
       localStorage.setItem('lehrer-rolle', lrolle.value);
       this.renderLehrer();
     });
+    const lband = document.getElementById('lehrer-nur-band');
+    if (lband) lband.addEventListener('change', () => {
+      localStorage.setItem('lehrer-nur-band', lband.checked ? '1' : '0');
+      this.renderLehrer();
+    });
 
     document.getElementById('student-file').addEventListener('change', e => {
       const file = e.target.files[0];
@@ -701,6 +706,8 @@ const Classes = {
   /* „alle“, „1“ (1. Klassenleitung) oder „2“ (Co) – merkt sich das Geraet */
   lehrerRolle() { return localStorage.getItem('lehrer-rolle') || 'alle'; },
 
+  lehrerNurBand() { return localStorage.getItem('lehrer-nur-band') === '1'; },
+
   renderLehrer() {
     const box = document.getElementById('lehrer-liste');
     if (!box) return;
@@ -717,6 +724,10 @@ const Classes = {
     if (rollenWahl && rollenWahl.value !== this.lehrerRolle()) rollenWahl.value = this.lehrerRolle();
     const rollenFilter = this.lehrerRolle();
 
+    const bandHaken = document.getElementById('lehrer-nur-band');
+    if (bandHaken) bandHaken.checked = this.lehrerNurBand();
+    const nurBand = this.lehrerNurBand();
+
     // Gesucht wird ueber alles, was in der Zeile steht: Kuerzel, Name und Rolle.
     // „5a“ findet damit die Leitung genauso wie „KL“ alle Klassenleitungen.
     const zeile = k => `${k} ${liste[k]} ${this.rolleVon(k)} ${this.rolleLang(k)}`.toLowerCase();
@@ -724,6 +735,13 @@ const Classes = {
     if (rollenFilter !== 'alle') {
       const gesucht = rollenFilter === '1' ? 'KL' : 'Co';
       gezeigt = gezeigt.filter(k => this.rollenVon(k).some(r => r.rolle === gesucht));
+    }
+    if (nurBand && typeof Band !== 'undefined') {
+      // Nur wer eine Klasse leitet, aus der jemand in Band oder Technik ist –
+      // genau die Kollegen, mit denen man wegen Proben und Auftritten zu tun hat
+      const klassen = Band.klassenMitMitgliedern();
+      gezeigt = gezeigt.filter(k =>
+        this.rollenVon(k).some(r => klassen.has(this.klassenKern(r.klasse))));
     }
 
     gezeigt.sort((a, b) => sortierung === 'klasse'
@@ -733,7 +751,7 @@ const Classes = {
       : liste[a].localeCompare(liste[b], 'de'));
 
     const zahl = document.getElementById('lehrer-zahl');
-    const eingegrenzt = suche || rollenFilter !== 'alle';
+    const eingegrenzt = suche || rollenFilter !== 'alle' || nurBand;
     if (zahl) zahl.textContent = eingegrenzt ? `${gezeigt.length} von ${alle.length}` : String(alle.length);
 
     box.innerHTML = '';
