@@ -531,6 +531,10 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 /* Auswahl fuer den Ausdruck: schmale Spalte, angekreuzte Zeile hervorgehoben */
 .band-table th.pick-spalte, .band-table td.pick-spalte { width: 1.8rem; text-align: center; padding: .35rem .2rem; }
 .band-table tr.gewaehlt { background: var(--active-soft); }
+/* Klassenleitung am Bandmitglied: Ziffer und Kuerzel, Namen stehen im Tooltip */
+.leitungs-zelle { white-space: nowrap; color: var(--accent-soft); font-size: .88rem; }
+.leitungs-zelle .rolle-ziffer { margin-right: .15em; }
+.leitungs-zelle span + b { margin-left: .45em; }
 #member-anlass {
   padding: .35rem .5rem; font: inherit; font-size: .85rem;
   border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);

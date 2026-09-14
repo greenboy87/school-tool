@@ -178,6 +178,11 @@ die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene T
   Technikteam / beides) und Instrument bzw. Aufgabe. Die Liste ist natürlich nach Klassen
   sortiert (5a, 5b … 10d) und lässt sich gefiltert drucken oder als CSV exportieren.
   Namen können per Auswahlliste aus bestehenden Klassen übernommen werden.
+- **Klassenleitung je Mitglied:** Neben der Klasse steht, wer sie leitet – in der Tabelle als
+  Kürzel mit der Ziffer für 1. bzw. 2. Klassenleitung (Namen im Tooltip), auf dem Ausdruck und
+  im CSV ausgeschrieben. Die Angabe kommt aus der Leitungstabelle im Reiter *Lehrer*; `7a`
+  findet dort auch `7a_I`. Steht die Klasse nicht in der Tabelle, erscheint „–“ mit dem Grund
+  als Tooltip.
 - **Einzelne Mitglieder drucken:** Vor jedem Namen steht ein Kästchen; **Ausgewählte drucken**
   nimmt nur die Angekreuzten – gedacht für Befreiungen, bei denen nicht die ganze Band
   gemeldet wird, sondern drei Namen. Das Kästchen in der Kopfzeile wählt alle Angezeigten an

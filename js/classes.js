@@ -558,6 +558,30 @@ const Classes = {
     return m && m[1] ? m[1] + m[2] : this.normKlasse(roh);
   },
 
+  /* Die Leitungszeile zu einer Klassenbezeichnung – „7a“ findet auch „7a_I“.
+     Nur bei genau einem Treffer, sonst bliebe offen, welche Klasse gemeint ist. */
+  leitungFuerKlasse(name) {
+    const kern = this.klassenKern(name);
+    if (!kern) return null;
+    const treffer = this.leitungen().filter(z => this.klassenKern(z.klasse) === kern);
+    return treffer.length === 1 ? treffer[0] : null;
+  },
+
+  /* [{kuerzel, name, rolle}] – fuer die Anzeige an einem Bandmitglied */
+  leitungsPersonen(klassenname) {
+    const z = this.leitungFuerKlasse(klassenname);
+    if (!z) return [];
+    const liste = this.lehrer();
+    const raus = [];
+    for (const [feld, rolle] of [['kl', 'KL'], ['co', 'Co']]) {
+      for (const teil of String(z[feld] || '').split('/')) {
+        const k = teil.trim().toUpperCase();
+        if (k) raus.push({ kuerzel: k, name: liste[k] || '', rolle });
+      }
+    }
+    return raus;
+  },
+
   findeKlasse(name) {
     const gesucht = this.normKlasse(name);
     if (!gesucht) return null;

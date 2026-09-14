@@ -414,9 +414,10 @@ const Band = {
     document.getElementById('member-count').textContent = list.length;
     table.innerHTML = '<tr><th class="pick-spalte">' +
       '<input type="checkbox" id="member-pick-all" title="Alle anzeigten an- oder abwählen">' +
-      '</th><th>Klasse</th><th>Name</th><th>Bereich</th><th>Instrument / Aufgabe</th><th></th></tr>';
+      '</th><th>Klasse</th><th>Klassenleitung</th><th>Name</th><th>Bereich</th>' +
+      '<th>Instrument / Aufgabe</th><th></th></tr>';
     if (!list.length) {
-      table.innerHTML += '<tr><td colspan="6" class="hint">Noch keine Mitglieder aufgenommen.</td></tr>';
+      table.innerHTML += '<tr><td colspan="7" class="hint">Noch keine Mitglieder aufgenommen.</td></tr>';
       this.auswahlAnzeigen();
       return;
     }
@@ -454,6 +455,32 @@ const Band = {
 
       const tdK = document.createElement('td');
       tdK.appendChild(this.editable(m.klasse, '–', v => { m.klasse = v; this.save(); this.renderMembers(); }, 5));
+      /* Wer die Klasse leitet – bei einer Befreiung ist das die Person, der man
+         Bescheid geben muss. Kuerzel in der Tabelle, Namen im Ausdruck. */
+      const tdL = document.createElement('td');
+      tdL.className = 'leitungs-zelle';
+      const personen = Classes.leitungsPersonen(m.klasse);
+      if (!personen.length) {
+        tdL.textContent = '–';
+        tdL.title = m.klasse
+          ? `Für „${m.klasse}“ steht keine Klassenleitung in der Tabelle (Reiter „Lehrer“).`
+          : 'Ohne Klassenangabe lässt sich keine Klassenleitung zuordnen.';
+      } else {
+        personen.forEach((pn, idx) => {
+          if (idx) tdL.append(' ');
+          const ziffer = document.createElement('b');
+          ziffer.className = 'rolle-ziffer rolle-' + Classes.rolleZiffer(pn.rolle);
+          ziffer.textContent = Classes.rolleZiffer(pn.rolle);
+          const kz = document.createElement('span');
+          kz.textContent = pn.kuerzel;
+          tdL.append(ziffer, kz);
+        });
+        tdL.title = personen
+          .map(pn => (pn.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung') +
+                     ': ' + (pn.name || pn.kuerzel + ' (nicht in der Lehrerliste)'))
+          .join('\n');
+      }
+
       const tdN = document.createElement('td');
       const namensZelle = document.createElement('div');
       namensZelle.className = 'name-cell';
@@ -496,7 +523,7 @@ const Band = {
       });
       tdX.appendChild(del);
 
-      tr.append(tdK, tdN, tdA, tdI, tdX);
+      tr.append(tdK, tdL, tdN, tdA, tdI, tdX);
       table.appendChild(tr);
     }
     this.auswahlAnzeigen();
@@ -530,11 +557,20 @@ const Band = {
     this.druckeMitglieder(list, 'Schulband – Auswahl');
   },
 
+  /* Im Ausdruck die Namen, nicht die Kuerzel: Das Blatt geht ins Sekretariat
+     oder an Kollegen, die die Kuerzel nicht alle im Kopf haben. */
+  leitungText(klasse) {
+    const p = Classes.leitungsPersonen(klasse);
+    if (!p.length) return '';
+    return p.map(x => `${Classes.rolleZiffer(x.rolle)}. ${x.name || x.kuerzel}`).join(', ');
+  },
+
   druckeMitglieder(list, titel) {
     const tabelle = this.printTable(
-      [{ titel: 'Klasse', cls: 'klasse' }, { titel: 'Name' },
+      [{ titel: 'Klasse', cls: 'klasse' }, { titel: 'Klassenleitung' }, { titel: 'Name' },
        { titel: 'Bereich' }, { titel: 'Instrument / Aufgabe' }],
-      list.map(m => [this.esc(m.klasse) || '–', `<strong>${this.esc(m.name)}</strong>`,
+      list.map(m => [this.esc(m.klasse) || '–', this.esc(this.leitungText(m.klasse)) || '–',
+                     `<strong>${this.esc(m.name)}</strong>`,
                      this.AREAS[m.area] || '', this.esc(m.instrument) || '']));
     const feld = document.getElementById('member-anlass');
     const anlass = feld ? feld.value.trim() : '';
@@ -546,8 +582,9 @@ const Band = {
   exportMembers() {
     const list = this.filteredMembers();
     if (!list.length) { alert('Die Liste ist leer.'); return; }
-    let csv = 'Klasse;Name;Bereich;Instrument\n';
-    list.forEach(m => csv += `${m.klasse};${m.name};${this.AREAS[m.area] || ''};${m.instrument || ''}\n`);
+    let csv = 'Klasse;Klassenleitung;Name;Bereich;Instrument\n';
+    list.forEach(m => csv += `${m.klasse};${this.leitungText(m.klasse)};${m.name};` +
+                             `${this.AREAS[m.area] || ''};${m.instrument || ''}\n`);
     this.download(csv, 'Schulband-Mitglieder.csv', 'text/csv;charset=utf-8');
   },
 
