@@ -608,6 +608,15 @@ const Classes = {
     return this.data.leitungen;
   },
 
+  /* Zum Anzeigen reicht die Klasse selbst: „7d_IIIa“ -> „7d“, „5e_TEC“ -> „5e“,
+     „10f_I/IIIb“ -> „10f“. Der Zweig dahinter steht in jeder zweiten Zeile und
+     macht die Liste unruhig, ohne etwas zu sagen, was man hier braucht.
+     Ohne fuehrende Zahl („Deutschklasse“) bleibt der Name, wie er ist. */
+  klasseKurz(name) {
+    const m = String(name || '').trim().match(/^(\d{1,2})\s*([a-zA-ZäöüÄÖÜ]?)/);
+    return m && m[1] ? m[1] + (m[2] || '') : String(name || '').trim();
+  },
+
   /* Alle Leitungen eines Kuerzels: [{klasse, rolle}]. „WW/PG“ in einem Feld
      zaehlt fuer beide Personen. */
   rollenVon(kuerzel) {
@@ -628,13 +637,14 @@ const Classes = {
 
   rolleVon(kuerzel) {
     return this.rollenVon(kuerzel)
-      .map(r => `${this.rolleZiffer(r.rolle)}. ${r.klasse}`).join(' · ');
+      .map(r => `${this.rolleZiffer(r.rolle)}. ${this.klasseKurz(r.klasse)}`).join(' · ');
   },
 
   /* Fuer Tooltips und die Suche ausgeschrieben – „1.“ allein findet man nicht */
   rolleLang(kuerzel) {
     return this.rollenVon(kuerzel)
-      .map(r => (r.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung') + ' ' + r.klasse)
+      .map(r => (r.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung') + ' ' +
+                this.klasseKurz(r.klasse))
       .join(' · ');
   },
 
@@ -730,8 +740,11 @@ const Classes = {
 
     // Gesucht wird ueber alles, was in der Zeile steht: Kuerzel, Name und Rolle.
     // „5a“ findet damit die Leitung genauso wie „KL“ alle Klassenleitungen.
-    const zeile = k => `${k} ${liste[k]} ${this.rolleVon(k)} ${this.rolleLang(k)}`.toLowerCase();
-    let gezeigt = suche ? alle.filter(k => zeile(k).includes(suche)) : alle.slice();
+    // Gesucht wird auch ueber die volle Klassenbezeichnung, obwohl nur die
+    // kurze dasteht – „7d_IIIa“ aus einem Aushang soll trotzdem treffen
+    const zeile = k => `${k} ${liste[k]} ${this.rolleVon(k)} ${this.rolleLang(k)} ` +
+      this.rollenVon(k).map(r => r.klasse).join(' ');
+    let gezeigt = suche ? alle.filter(k => zeile(k).toLowerCase().includes(suche)) : alle.slice();
     if (rollenFilter !== 'alle') {
       const gesucht = rollenFilter === '1' ? 'KL' : 'Co';
       gezeigt = gezeigt.filter(k => this.rollenVon(k).some(r => r.rolle === gesucht));
@@ -784,7 +797,7 @@ const Classes = {
             ziffer.className = 'rolle-ziffer rolle-' + this.rolleZiffer(r.rolle);
             ziffer.textContent = this.rolleZiffer(r.rolle);
             ziffer.title = r.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung';
-            tag.append(ziffer, ' ' + r.klasse);
+            tag.append(ziffer, ' ' + this.klasseKurz(r.klasse));
           });
           li.appendChild(tag);
           li.classList.add('hat-leitung');
@@ -809,7 +822,7 @@ const Classes = {
             if (gruppen.length > 1) {
               const kopf = document.createElement('div');
               kopf.className = 'band-klasse';
-              kopf.textContent = g.klasse;
+              kopf.textContent = this.klasseKurz(g.klasse);
               li.appendChild(kopf);
             }
             for (const n of g.namen) {

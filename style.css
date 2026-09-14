@@ -717,7 +717,9 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 }
 .lehrer-werkzeuge label { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--muted); }
 
-.lehrer-liste { margin-top: .7rem; max-height: 26rem; overflow-y: auto; }
+/* Keine eigene Scrollflaeche: Der Reiter gehoert der Liste allein, und in
+   einem hohen Fenster soll sie ihn auch ausfuellen duerfen. */
+.lehrer-liste { margin-top: .7rem; }
 .lehrer-spalten {
   list-style: none; margin: 0; padding: 0;
   /* Spaltenbreite statt fester Spaltenzahl: auf dem Handy eine Spalte, am

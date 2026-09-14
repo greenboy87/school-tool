@@ -81,7 +81,9 @@ des Feldes das Kürzel daraus.
 Im Reiter *Lehrer* steht die Liste des Kollegiums zum Aufklappen – Kürzel, Name und die
 Klassenleitung, auch für Klassen, die man selbst nicht unterrichtet. Ein Abzeichen sagt, ob
 jemand **1.** (gefüllte Ziffer) oder **2. Klassenleitung** (umrandete Ziffer) ist:
-`BU  Baumann, Sandra ① 5a`. Über *Zeigen* lässt sich auf **nur 1.** oder **nur 2.
+`BU  Baumann, Sandra ① 5a`. Angezeigt wird nur die Klasse selbst – aus `7d_IIIa` wird `7d`,
+aus `10f_I/IIIb` wird `10f`; der Zweig dahinter steht in jeder zweiten Zeile und macht die
+Liste unruhig. Gesucht werden kann trotzdem nach beiden Schreibweisen. Über *Zeigen* lässt sich auf **nur 1.** oder **nur 2.
 Klassenleitung** einschränken, mit **nur Schulband & Technik** zusätzlich auf die
 Klassenleitungen der Klassen, aus denen Band- oder Technikmitglieder kommen – also genau die
 Kollegen, mit denen man wegen Proben und Auftritten zu tun hat. In dieser Ansicht steht unter
