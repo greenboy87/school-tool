@@ -473,8 +473,12 @@ const Band = {
              Klassenleitung auf einmal lesen. */
           const person = document.createElement('span');
           person.className = 'leitungs-person';
-          person.title = (pn.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung') +
+          const text = (pn.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung') +
             ': ' + (pn.name || pn.kuerzel + ' (nicht in der Lehrerliste)');
+          // data-tip statt title: der eingebaute Tooltip kaeme erst nach
+          // etwa einer Sekunde. aria-label bleibt fuer Screenreader.
+          person.dataset.tip = text;
+          person.setAttribute('aria-label', text);
           const ziffer = document.createElement('b');
           ziffer.className = 'rolle-ziffer rolle-' + Classes.rolleZiffer(pn.rolle);
           ziffer.textContent = Classes.rolleZiffer(pn.rolle);

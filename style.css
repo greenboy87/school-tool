@@ -754,6 +754,16 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .rolle-ziffer.rolle-2 { border: 1px solid var(--accent-soft); color: var(--accent-soft); }
 .lehrer-spalten li.hat-leitung { color: var(--text); }
 
+/* ---------- Kurzinfos (data-tip) ---------- */
+.tipp-blase {
+  position: fixed; z-index: 9999; pointer-events: none;
+  max-width: 22rem; padding: .35rem .6rem;
+  background: var(--housing); color: #f5f4ee;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: .82rem; line-height: 1.35;
+  box-shadow: var(--shadow);
+}
+
 /* ---------- Extras ---------- */
 .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
 @media (max-width: 800px) { .tools-grid { grid-template-columns: 1fr; } }

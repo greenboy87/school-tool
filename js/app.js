@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   LiveGroups.init();
   Tools.init();
   Sport.init();
+  Tipps.init();
   Erklaerungen.init();
 
   /* ----- Haupttabs ----- */
