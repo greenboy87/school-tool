@@ -724,9 +724,12 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .lehrer-spalten li {
   break-inside: avoid; color: var(--muted);
   /* Feste Breite fuer den Namen, sonst begaenne die Ziffernspalte bei jeder
-     Zeile woanders – genau das soll die unsichtbare Tabelle verhindern. */
-  display: grid; grid-template-columns: 2.8em 15em minmax(0, 1fr);
-  column-gap: .5rem; align-items: baseline;
+     Zeile woanders – genau das soll die unsichtbare Tabelle verhindern.
+     Den Wert misst renderLehrer am laengsten angezeigten Namen; 15em ist nur
+     der Notnagel, falls das Messen ausfaellt. */
+  display: grid;
+  grid-template-columns: 2.8em var(--namensspalte, 15em) minmax(0, 1fr);
+  column-gap: .6rem; align-items: baseline;
 }
 .lehrer-spalten strong { color: var(--accent-soft); }
 /* Lange Namen kuerzen statt die Spalte sprengen – der volle Name steht im Tooltip */

@@ -751,6 +751,7 @@ const Classes = {
         ul.appendChild(li);
       }
       box.appendChild(ul);
+      this.namensspalteMessen(ul);
     }
 
     // Vorschlagsliste an den beiden Feldern der Klassenleitung – immer vollstaendig,
@@ -767,6 +768,24 @@ const Classes = {
     }
     // Frisch gezeichnete Liste muss den gemerkten Klappzustand uebernehmen
     if (window.Einklappen) Einklappen.anwenden('lehrer');
+  },
+
+  /* Die Namensspalte so breit machen wie der laengste angezeigte Name – keinen
+     Millimeter mehr. Eine feste Breite muesste auf den laengsten denkbaren
+     Namen ausgelegt sein und liesse bei allen anderen eine Luecke stehen.
+     Gemessen wird auf einem Canvas mit derselben Schrift wie die Liste. */
+  namensspalteMessen(ul) {
+    const namen = [...ul.querySelectorAll('.lehrer-name')];
+    if (!namen.length) return;
+    const stil = getComputedStyle(namen[0]);
+    const schrift = `${stil.fontWeight} ${stil.fontSize} ${stil.fontFamily}`;
+    const mess = this._messCanvas || (this._messCanvas = document.createElement('canvas'));
+    const ctx = mess.getContext('2d');
+    ctx.font = schrift;
+    let breit = 0;
+    for (const n of namen) breit = Math.max(breit, ctx.measureText(n.textContent).width);
+    // Ein Hauch Zuschlag gegen Rundungsfehler, sonst kuerzt der laengste Name
+    ul.style.setProperty('--namensspalte', Math.ceil(breit + 2) + 'px');
   },
 
   zeigeLeitungsNamen() {
