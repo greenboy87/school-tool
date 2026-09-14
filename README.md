@@ -206,6 +206,12 @@ die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene T
   Mitglieder änderst.
 - **Songs** mit Tonart, Capo, Tempo (BPM) und freien Anmerkungen. Drucken lassen sich
   alle Songs, eine Auswahl oder die Setlist eines Auftritts – immer samt Anmerkungen.
+- **Setlisten** nach Kategorien (Gottesdienste, Schulfest, Bunter Abend …). Die Kategorien
+  sind Schalter: antippen zeigt sie zusätzlich an, nochmal antippen nimmt sie wieder heraus –
+  so lassen sich etwa Gottesdienste und Bunter Abend nebeneinander betrachten. **Alle** hebt
+  die Auswahl auf. Sind mehrere Kategorien sichtbar, steht sie an jeder Zeile dabei, und ein
+  Auswahlfeld im Anlegen-Formular bestimmt, wo eine neue Setlist landet. Die Auswahl merkt
+  sich das Gerät.
 - **Termine & Auftritte** mit Datum, Uhrzeit, Ort, Notizen und einer Setlist, deren
   Reihenfolge sich ziehen lässt.
 - **Probenplan**: eigene Probentermine anlegen und je Song festhalten, ob er geprobt

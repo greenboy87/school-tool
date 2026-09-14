@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=100">
+<link rel="stylesheet" href="style.css?v=101">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=100"></script>
-<script src="js/theme.js?v=100"></script>
-<script src="js/auth.js?v=100"></script>
+<script src="js/icons.js?v=101"></script>
+<script src="js/theme.js?v=101"></script>
+<script src="js/auth.js?v=101"></script>
 </head>
 <body>
 
@@ -476,7 +476,9 @@
   <section id="bandtab-setlisten" class="bandtab-page geteilt">
    <div class="card">
     <h3>Kategorien</h3>
-    <p class="hint">Setlisten werden nach Anlass sortiert. Wähle eine Kategorie aus oder lege eine neue an.</p>
+    <p class="hint">Setlisten werden nach Anlass sortiert. Tippe Kategorien an, um sie anzuzeigen –
+      mehrere gehen gleichzeitig, nochmal antippen nimmt eine wieder heraus. <strong>Alle</strong>
+      zeigt sämtliche.</p>
     <div id="kat-leiste" class="kat-leiste"></div>
     <form id="form-new-kat" class="inline-form">
       <input type="text" id="new-kat-name" placeholder="Neue Kategorie, z.&thinsp;B. Abschlussfeier">
@@ -489,6 +491,7 @@
       <form id="form-new-setlist" class="inline-form">
         <input type="text" id="new-setlist-name" placeholder="Name, z.&thinsp;B. Adventsgottesdienst" required>
         <input type="date" id="new-setlist-date">
+        <select id="new-setlist-kat" title="In welcher Kategorie die neue Setlist landet"></select>
         <button type="submit" class="primary" data-icon="plus">Setlist anlegen</button>
       </form>
     </div>
@@ -776,26 +779,26 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=100"></script>
-<script src="js/firebase-config.js?v=100"></script>
-<script type="module" src="js/live-firebase.js?v=100"></script>
-<script src="js/topics-seed.js?v=100"></script>
-<script src="js/ai-import.js?v=100"></script>
-<script src="js/store.js?v=100"></script>
-<script src="js/noise.js?v=100"></script>
-<script src="js/classes.js?v=100"></script>
-<script src="js/lessons.js?v=100"></script>
-<script src="js/band.js?v=100"></script>
-<script src="js/notes.js?v=100"></script>
-<script src="js/tresor.js?v=100"></script>
-<script src="js/erklaerungen.js?v=100"></script>
-<script src="js/setlisten.js?v=100"></script>
-<script src="js/einklappen.js?v=100"></script>
-<script src="js/live-groups.js?v=100"></script>
-<script src="js/tipps.js?v=100"></script>
-<script src="js/sport-tabellen.js?v=100"></script>
-<script src="js/sport.js?v=100"></script>
-<script src="js/tools.js?v=100"></script>
-<script src="js/app.js?v=100"></script>
+<script src="js/vendor/qrcode.min.js?v=101"></script>
+<script src="js/firebase-config.js?v=101"></script>
+<script type="module" src="js/live-firebase.js?v=101"></script>
+<script src="js/topics-seed.js?v=101"></script>
+<script src="js/ai-import.js?v=101"></script>
+<script src="js/store.js?v=101"></script>
+<script src="js/noise.js?v=101"></script>
+<script src="js/classes.js?v=101"></script>
+<script src="js/lessons.js?v=101"></script>
+<script src="js/band.js?v=101"></script>
+<script src="js/notes.js?v=101"></script>
+<script src="js/tresor.js?v=101"></script>
+<script src="js/erklaerungen.js?v=101"></script>
+<script src="js/setlisten.js?v=101"></script>
+<script src="js/einklappen.js?v=101"></script>
+<script src="js/live-groups.js?v=101"></script>
+<script src="js/tipps.js?v=101"></script>
+<script src="js/sport-tabellen.js?v=101"></script>
+<script src="js/sport.js?v=101"></script>
+<script src="js/tools.js?v=101"></script>
+<script src="js/app.js?v=101"></script>
 </body>
 </html>

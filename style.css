@@ -369,6 +369,10 @@ input[type="checkbox"] { accent-color: var(--accent); }
   background: var(--panel); overflow: hidden;
 }
 .kat-chip.aktiv { border-color: var(--accent); background: var(--active-soft); }
+/* „Alle“ steht vorn und ein Stück abgesetzt – es ist kein Anlass, sondern der
+   Schalter, der die Auswahl aufhebt */
+.kat-alle { margin-right: .5rem; }
+.kat-alle .kat-name { font-weight: 600; }
 .kat-chip .kat-name {
   background: none; border: none; color: inherit; font: inherit;
   padding: .35rem .3rem .35rem .9rem; cursor: pointer;

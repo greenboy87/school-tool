@@ -10,7 +10,10 @@
    Die Song-eigene Anmerkung lässt sich je Setlist ausblenden, ohne sie zu löschen. */
 const Setlisten = {
   STANDARD_KATEGORIEN: ['Gottesdienste', 'Schulfest', 'Bunter Abend'],
-  aktuelleKategorie: null,
+  /* Mehrere Kategorien gleichzeitig: Wer die Gottesdienste und den Bunten
+     Abend nebeneinander sehen will, musste bisher hin und her klicken.
+     Leere Auswahl heisst „alle“ – das ist der Zustand, in dem man anfaengt. */
+  gewaehlt: null,               // Set von Kategorienamen, leer = alle
   aktuelleId: null,
 
   d() {
@@ -41,7 +44,9 @@ const Setlisten = {
       b.setlistKategorien.push(name);
       this.save();
       feld.value = '';
-      this.aktuelleKategorie = name;
+      // Frisch angelegte Kategorie gleich zeigen – aber nur sie zusaetzlich,
+      // eine bestehende Auswahl soll nicht verlorengehen
+      if (this.auswahl().size) { this.auswahl().add(name); this.merkeAuswahl(); }
       this.render();
     });
 
@@ -50,7 +55,7 @@ const Setlisten = {
       const feld = document.getElementById('new-setlist-name');
       const name = feld.value.trim();
       if (!name) return;
-      const kat = this.aktuelleKategorie || this.d().setlistKategorien[0];
+      const kat = this.zielKategorie();
       const liste = {
         id: Store.uid(), kategorie: kat, name,
         datum: document.getElementById('new-setlist-date').value || '',
@@ -83,7 +88,9 @@ const Setlisten = {
       const l = this.aktuelle();
       if (!l) return;
       l.kategorie = e.target.value;
-      this.aktuelleKategorie = e.target.value;
+      // Sonst verschwaende die Setlist aus der Anzeige, sobald man sie
+      // in eine gerade nicht gewaehlte Kategorie schiebt
+      if (this.auswahl().size) { this.auswahl().add(e.target.value); this.merkeAuswahl(); }
       this.save();
       this.render();
     });
@@ -129,24 +136,74 @@ const Setlisten = {
   },
 
   /* ---------- Kategorien ---------- */
+  auswahl() {
+    if (!this.gewaehlt) {
+      let gemerkt = [];
+      try { gemerkt = JSON.parse(localStorage.getItem('setlist-kategorien')) || []; }
+      catch (e) { gemerkt = []; }
+      this.gewaehlt = new Set(Array.isArray(gemerkt) ? gemerkt : []);
+    }
+    // Kategorien, die es nicht mehr gibt, fallen heraus
+    const da = this.d().setlistKategorien;
+    for (const k of [...this.gewaehlt]) if (!da.includes(k)) this.gewaehlt.delete(k);
+    return this.gewaehlt;
+  },
+
+  merkeAuswahl() {
+    try { localStorage.setItem('setlist-kategorien', JSON.stringify([...this.auswahl()])); }
+    catch (e) {}
+  },
+
+  /* Was gerade angezeigt wird – leere Auswahl bedeutet alle */
+  sichtbareKategorien() {
+    const gew = this.auswahl();
+    return gew.size ? this.d().setlistKategorien.filter(k => gew.has(k))
+                    : [...this.d().setlistKategorien];
+  },
+
+  /* Wohin eine neue Setlist kommt: in die erste angezeigte Kategorie */
+  zielKategorie() {
+    const feld = document.getElementById('new-setlist-kat');
+    if (feld && feld.value) return feld.value;
+    return this.sichtbareKategorien()[0] || this.d().setlistKategorien[0] || null;
+  },
+
   renderKategorien() {
     const b = this.d();
-    if (!this.aktuelleKategorie || !b.setlistKategorien.includes(this.aktuelleKategorie)) {
-      this.aktuelleKategorie = b.setlistKategorien[0] || null;
-    }
+    const gew = this.auswahl();
     const leiste = document.getElementById('kat-leiste');
     leiste.innerHTML = '';
+
+    // „Alle“ leert die Auswahl – das ist derselbe Zustand wie am Anfang
+    const alle = document.createElement('span');
+    alle.className = 'kat-chip kat-alle' + (gew.size ? '' : ' aktiv');
+    const alleKnopf = document.createElement('button');
+    alleKnopf.type = 'button';
+    alleKnopf.className = 'kat-name';
+    alleKnopf.textContent = `Alle (${b.setlists.length})`;
+    alleKnopf.title = 'Alle Kategorien anzeigen';
+    alleKnopf.addEventListener('click', () => {
+      this.gewaehlt = new Set();
+      this.merkeAuswahl();
+      this.aktuelleId = null;
+      this.render();
+    });
+    alle.appendChild(alleKnopf);
+    if (b.setlistKategorien.length) leiste.appendChild(alle);
+
     for (const kat of b.setlistKategorien) {
       const anzahl = b.setlists.filter(s => s.kategorie === kat).length;
       const chip = document.createElement('span');
-      chip.className = 'kat-chip' + (kat === this.aktuelleKategorie ? ' aktiv' : '');
+      chip.className = 'kat-chip' + (gew.has(kat) ? ' aktiv' : '');
 
       const knopf = document.createElement('button');
       knopf.type = 'button';
       knopf.className = 'kat-name';
       knopf.textContent = `${kat} (${anzahl})`;
+      knopf.title = gew.has(kat) ? 'Nicht mehr anzeigen' : 'Zusätzlich anzeigen';
       knopf.addEventListener('click', () => {
-        this.aktuelleKategorie = kat;
+        if (gew.has(kat)) gew.delete(kat); else gew.add(kat);
+        this.merkeAuswahl();
         this.aktuelleId = null;
         this.render();
       });
@@ -167,7 +224,8 @@ const Setlisten = {
           for (const g of this.verknuepfteTermine(s.id)) g.setlistId = null;
         b.setlistKategorien = b.setlistKategorien.filter(k => k !== kat);
         b.setlists = b.setlists.filter(s => s.kategorie !== kat);
-        if (this.aktuelleKategorie === kat) this.aktuelleKategorie = null;
+        this.auswahl().delete(kat);
+        this.merkeAuswahl();
         this.aktuelleId = null;
         this.save();
         this.render();
@@ -185,17 +243,39 @@ const Setlisten = {
   /* ---------- Setlisten der Kategorie ---------- */
   renderListe() {
     const b = this.d();
+    const sichtbar = this.sichtbareKategorien();
+    const gew = this.auswahl();
     document.getElementById('setlist-kat-titel').textContent =
-      this.aktuelleKategorie ? `Setlisten – ${this.aktuelleKategorie}` : 'Setlisten';
+      !gew.size ? 'Setlisten – alle Kategorien'
+      : sichtbar.length === 1 ? `Setlisten – ${sichtbar[0]}`
+      : `Setlisten – ${sichtbar.length} Kategorien`;
+
+    // Zielkategorie fuer neue Setlisten waehlbar machen
+    const ziel = document.getElementById('new-setlist-kat');
+    if (ziel) {
+      const vorher = ziel.value;
+      ziel.innerHTML = '';
+      for (const kat of b.setlistKategorien) {
+        const o = document.createElement('option');
+        o.value = kat; o.textContent = kat;
+        ziel.appendChild(o);
+      }
+      ziel.value = b.setlistKategorien.includes(vorher) ? vorher : (sichtbar[0] || '');
+      ziel.hidden = b.setlistKategorien.length < 2;
+    }
 
     const ul = document.getElementById('setlist-list');
     ul.innerHTML = '';
     // Reihenfolge = Reihenfolge im Feld; neue stehen vorne, Pfeile verschieben
-    const liste = b.setlists.filter(s => s.kategorie === this.aktuelleKategorie);
+    const liste = b.setlists.filter(s => sichtbar.includes(s.kategorie));
     if (!liste.length) {
-      ul.innerHTML = '<li class="hint">In dieser Kategorie gibt es noch keine Setlist.</li>';
+      ul.innerHTML = sichtbar.length
+        ? '<li class="hint">Hier gibt es noch keine Setlist.</li>'
+        : '<li class="hint">Keine Kategorie ausgewählt.</li>';
       return;
     }
+    // Bei mehreren Kategorien steht an jeder Zeile, wohin sie gehoert
+    const mitKategorie = sichtbar.length > 1;
     liste.forEach((l, i) => {
       const li = document.createElement('li');
       li.classList.toggle('active', l.id === this.aktuelleId);
@@ -207,7 +287,8 @@ const Setlisten = {
       datum.textContent = Band.fmt(l.datum);
       const zahl = document.createElement('span');
       zahl.className = 'pavg';
-      zahl.textContent = l.eintraege.length === 1 ? '1 Song' : `${l.eintraege.length} Songs`;
+      zahl.textContent = (mitKategorie ? l.kategorie + ' · ' : '') +
+        (l.eintraege.length === 1 ? '1 Song' : `${l.eintraege.length} Songs`);
 
       const werkzeuge = document.createElement('span');
       werkzeuge.className = 'sl-werkzeuge';
@@ -220,9 +301,13 @@ const Setlisten = {
         b2.addEventListener('click', ev => { ev.stopPropagation(); aktion(); });
         return b2;
       };
+      /* Verschoben wird innerhalb der eigenen Kategorie – die Pfeile muessen
+         also auch danach ausgrauen, nicht nach der gemischten Anzeige */
+      const gleiche = b.setlists.filter(s => s.kategorie === l.kategorie);
+      const posInKat = gleiche.indexOf(l);
       werkzeuge.append(
-        knopf('chevronUp', 'Nach oben', () => this.verschieben(l, -1), i === 0),
-        knopf('chevronDown', 'Nach unten', () => this.verschieben(l, 1), i === liste.length - 1),
+        knopf('chevronUp', 'Nach oben', () => this.verschieben(l, -1), posInKat === 0),
+        knopf('chevronDown', 'Nach unten', () => this.verschieben(l, 1), posInKat === gleiche.length - 1),
         knopf('plus', 'Setlist duplizieren', () => this.duplizieren(l)));
 
       li.append(name, datum, zahl, werkzeuge);
