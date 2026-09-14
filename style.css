@@ -722,7 +722,16 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .lehrer-spalten strong { color: var(--accent-soft); display: inline-block; min-width: 2.6em; }
 /* Wer eine Klasse leitet, steht in Klammern dahinter – und faellt dadurch in
    der langen Liste auf, ohne dass man danach suchen muss */
-.kl-rolle { color: var(--accent-soft); white-space: nowrap; }
+.kl-rolle { color: var(--accent-soft); white-space: nowrap; margin-left: .5em; }
+/* Die Ziffer als Abzeichen: 1 gefuellt, 2 nur umrandet – der Unterschied muss
+   im Ueberfliegen auffallen, ohne dass man die Klasse mitliest */
+.rolle-ziffer {
+  display: inline-block; min-width: 1.25em; text-align: center;
+  font-size: .78em; font-weight: 700; line-height: 1.35;
+  border-radius: 999px; margin-right: .2em;
+}
+.rolle-ziffer.rolle-1 { background: var(--accent); color: #fff; }
+.rolle-ziffer.rolle-2 { border: 1px solid var(--accent-soft); color: var(--accent-soft); }
 .lehrer-spalten li.hat-leitung { color: var(--text); }
 
 /* ---------- Extras ---------- */

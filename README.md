@@ -78,9 +78,12 @@ die Klassenleitung. Ein Kürzel, das die Liste nicht kennt, wird rot als
 Statt des Kürzels lässt sich auch der **Name** tippen: Ist er eindeutig, wird beim Verlassen
 des Feldes das Kürzel daraus.
 
-Im Reiter *Lehrer* steht die Liste des Kollegiums zum Aufklappen – Kürzel, Name und
-in Klammern die Klassenleitung (`BU  Baumann, Sandra (KL 5a)`), auch für Klassen, die man
-selbst nicht unterrichtet. Eingeklappt startet sie, weil sie zum Nachschlagen da ist.
+Im Reiter *Lehrer* steht die Liste des Kollegiums zum Aufklappen – Kürzel, Name und die
+Klassenleitung, auch für Klassen, die man selbst nicht unterrichtet. Ein Abzeichen sagt, ob
+jemand **1.** (gefüllte Ziffer) oder **2. Klassenleitung** (umrandete Ziffer) ist:
+`BU  Baumann, Sandra ① 5a`. Über *Zeigen* lässt sich auf **nur 1.** oder **nur 2.
+Klassenleitung** einschränken; die Kopfzeile nennt dann „4 von 102“. Eingeklappt startet die
+Liste, weil sie zum Nachschlagen da ist.
 
 Die Listen ändern sich einmal im Jahr; ein Eingabefeld dafür stünde die übrigen elf Monate
 ungenutzt herum. Eingelesen wird deshalb einmalig über die Browser-Konsole:

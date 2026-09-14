@@ -161,6 +161,11 @@ const Classes = {
       localStorage.setItem('lehrer-sortierung', lsort.value);
       this.renderLehrer();
     });
+    const lrolle = document.getElementById('lehrer-rolle');
+    if (lrolle) lrolle.addEventListener('change', () => {
+      localStorage.setItem('lehrer-rolle', lrolle.value);
+      this.renderLehrer();
+    });
 
     document.getElementById('student-file').addEventListener('change', e => {
       const file = e.target.files[0];
@@ -588,9 +593,20 @@ const Classes = {
     return gefunden;
   },
 
-  /* „KL 5a“ bzw. „Co 7c“ – mehrere Rollen durch · getrennt */
+  /* „1. 5a“ bzw. „2. 7c“ – die Ziffer sagt 1. oder 2. Klassenleitung.
+     Mehrere Rollen durch · getrennt. */
+  rolleZiffer(rolle) { return rolle === 'KL' ? '1' : '2'; },
+
   rolleVon(kuerzel) {
-    return this.rollenVon(kuerzel).map(r => r.rolle + ' ' + r.klasse).join(' · ');
+    return this.rollenVon(kuerzel)
+      .map(r => `${this.rolleZiffer(r.rolle)}. ${r.klasse}`).join(' · ');
+  },
+
+  /* Fuer Tooltips und die Suche ausgeschrieben – „1.“ allein findet man nicht */
+  rolleLang(kuerzel) {
+    return this.rollenVon(kuerzel)
+      .map(r => (r.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung') + ' ' + r.klasse)
+      .join(' · ');
   },
 
   /* Klassen natuerlich ordnen: 5a < 5b < 6a < 10a. Ohne fuehrende Zahl
@@ -658,6 +674,9 @@ const Classes = {
   /* Sortierung merkt sich das Geraet – sie jedes Mal neu zu waehlen nervt */
   lehrerSortierung() { return localStorage.getItem('lehrer-sortierung') || 'name'; },
 
+  /* „alle“, „1“ (1. Klassenleitung) oder „2“ (Co) – merkt sich das Geraet */
+  lehrerRolle() { return localStorage.getItem('lehrer-rolle') || 'alle'; },
+
   renderLehrer() {
     const box = document.getElementById('lehrer-liste');
     if (!box) return;
@@ -670,10 +689,18 @@ const Classes = {
     if (wahl && wahl.value !== this.lehrerSortierung()) wahl.value = this.lehrerSortierung();
     const sortierung = this.lehrerSortierung();
 
+    const rollenWahl = document.getElementById('lehrer-rolle');
+    if (rollenWahl && rollenWahl.value !== this.lehrerRolle()) rollenWahl.value = this.lehrerRolle();
+    const rollenFilter = this.lehrerRolle();
+
     // Gesucht wird ueber alles, was in der Zeile steht: Kuerzel, Name und Rolle.
     // „5a“ findet damit die Leitung genauso wie „KL“ alle Klassenleitungen.
-    const zeile = k => `${k} ${liste[k]} ${this.rolleVon(k)}`.toLowerCase();
-    const gezeigt = suche ? alle.filter(k => zeile(k).includes(suche)) : alle.slice();
+    const zeile = k => `${k} ${liste[k]} ${this.rolleVon(k)} ${this.rolleLang(k)}`.toLowerCase();
+    let gezeigt = suche ? alle.filter(k => zeile(k).includes(suche)) : alle.slice();
+    if (rollenFilter !== 'alle') {
+      const gesucht = rollenFilter === '1' ? 'KL' : 'Co';
+      gezeigt = gezeigt.filter(k => this.rollenVon(k).some(r => r.rolle === gesucht));
+    }
 
     gezeigt.sort((a, b) => sortierung === 'klasse'
       ? this.vergleicheSchluessel(
@@ -682,13 +709,14 @@ const Classes = {
       : liste[a].localeCompare(liste[b], 'de'));
 
     const zahl = document.getElementById('lehrer-zahl');
-    if (zahl) zahl.textContent = suche ? `${gezeigt.length} von ${alle.length}` : String(alle.length);
+    const eingegrenzt = suche || rollenFilter !== 'alle';
+    if (zahl) zahl.textContent = eingegrenzt ? `${gezeigt.length} von ${alle.length}` : String(alle.length);
 
     box.innerHTML = '';
     if (!alle.length) {
       box.innerHTML = '<p class="hint">Noch keine Lehrkräfte hinterlegt.</p>';
     } else if (!gezeigt.length) {
-      box.innerHTML = '<p class="hint">Keine Lehrkraft passt zur Suche.</p>';
+      box.innerHTML = '<p class="hint">Keine Lehrkraft passt zur Auswahl.</p>';
     } else {
       const ul = document.createElement('ul');
       ul.className = 'lehrer-spalten';
@@ -697,13 +725,23 @@ const Classes = {
         const kz = document.createElement('strong');
         kz.textContent = k;
         li.append(kz, ' ' + liste[k]);
-        const rolle = this.rolleVon(k);
-        if (rolle) {
+        const rollen = this.rollenVon(k);
+        if (rollen.length) {
+          // Die Ziffer als eigenes Abzeichen, nicht als Text: „1" und „2" muss
+          // man im Ueberfliegen erkennen, ohne die Klasse mitzulesen
           const tag = document.createElement('span');
           tag.className = 'kl-rolle';
-          tag.textContent = ` (${rolle})`;
+          rollen.forEach((r, i) => {
+            if (i) tag.append(' · ');
+            const ziffer = document.createElement('b');
+            ziffer.className = 'rolle-ziffer rolle-' + this.rolleZiffer(r.rolle);
+            ziffer.textContent = this.rolleZiffer(r.rolle);
+            ziffer.title = r.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung';
+            tag.append(ziffer, ' ' + r.klasse);
+          });
           li.appendChild(tag);
           li.classList.add('hat-leitung');
+          li.title = this.rolleLang(k);
         }
         ul.appendChild(li);
       }
