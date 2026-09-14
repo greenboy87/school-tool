@@ -468,17 +468,21 @@ const Band = {
       } else {
         personen.forEach((pn, idx) => {
           if (idx) tdL.append(' ');
+          /* Der Tooltip haengt an jeder Person einzeln, nicht an der Zelle:
+             Wer auf „PT“ zeigt, will wissen, wer PT ist – nicht die ganze
+             Klassenleitung auf einmal lesen. */
+          const person = document.createElement('span');
+          person.className = 'leitungs-person';
+          person.title = (pn.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung') +
+            ': ' + (pn.name || pn.kuerzel + ' (nicht in der Lehrerliste)');
           const ziffer = document.createElement('b');
           ziffer.className = 'rolle-ziffer rolle-' + Classes.rolleZiffer(pn.rolle);
           ziffer.textContent = Classes.rolleZiffer(pn.rolle);
           const kz = document.createElement('span');
           kz.textContent = pn.kuerzel;
-          tdL.append(ziffer, kz);
+          person.append(ziffer, kz);
+          tdL.appendChild(person);
         });
-        tdL.title = personen
-          .map(pn => (pn.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung') +
-                     ': ' + (pn.name || pn.kuerzel + ' (nicht in der Lehrerliste)'))
-          .join('\n');
       }
 
       const tdN = document.createElement('td');

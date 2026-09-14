@@ -534,7 +534,9 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 /* Klassenleitung am Bandmitglied: Ziffer und Kuerzel, Namen stehen im Tooltip */
 .leitungs-zelle { white-space: nowrap; color: var(--accent-soft); font-size: .88rem; }
 .leitungs-zelle .rolle-ziffer { margin-right: .15em; }
-.leitungs-zelle span + b { margin-left: .45em; }
+.leitungs-person + .leitungs-person { margin-left: .5em; }
+/* Der Mauszeiger zeigt, dass hier etwas zu erfahren ist */
+.leitungs-person { cursor: help; }
 #member-anlass {
   padding: .35rem .5rem; font: inherit; font-size: .85rem;
   border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
