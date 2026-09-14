@@ -74,6 +74,8 @@ const Band = {
     });
     document.getElementById('member-filter').addEventListener('change', () => this.renderMembers());
     document.getElementById('btn-print-members').addEventListener('click', () => this.printMembers());
+    document.getElementById('btn-print-members-sel')
+      .addEventListener('click', () => this.printMembersAuswahl());
     document.getElementById('btn-export-members').addEventListener('click', () => this.exportMembers());
     document.getElementById('btn-namen-fenster').addEventListener('click', () => {
       window.open('namen.html', 'bandnamen',
@@ -376,18 +378,79 @@ const Band = {
   },
 
   /* ---------- Mitglieder ---------- */
+  /* Angekreuzte Mitglieder – als Menge, damit die Auswahl das Neuzeichnen
+     ueberlebt: Die Liste wird bei jeder Kleinigkeit neu aufgebaut, und wer
+     gerade fuenf Namen zusammengesucht hat, will sie nicht wieder verlieren. */
+  gewaehlteMitglieder: new Set(),
+
+  gewaehlte() {
+    const ids = new Set(this.d().members.map(m => m.id));
+    // Geloeschte Mitglieder aus der Auswahl entfernen
+    for (const id of [...this.gewaehlteMitglieder]) if (!ids.has(id)) this.gewaehlteMitglieder.delete(id);
+    return this.d().members.filter(m => this.gewaehlteMitglieder.has(m.id));
+  },
+
+  /* Zaehler am Knopf und Zustand des Kopf-Kaestchens nachziehen */
+  auswahlAnzeigen() {
+    const knopf = document.getElementById('btn-print-members-sel');
+    const anzahl = this.gewaehlte().length;
+    if (knopf) {
+      knopf.innerHTML = Icons.raw('printer') + 'Ausgewählte drucken' + (anzahl ? ` (${anzahl})` : '');
+      knopf.disabled = !anzahl;
+    }
+    const alle = document.getElementById('member-pick-all');
+    if (alle) {
+      const sichtbar = this.filteredMembers();
+      const gewaehltSichtbar = sichtbar.filter(m => this.gewaehlteMitglieder.has(m.id)).length;
+      alle.checked = sichtbar.length > 0 && gewaehltSichtbar === sichtbar.length;
+      alle.indeterminate = gewaehltSichtbar > 0 && gewaehltSichtbar < sichtbar.length;
+    }
+  },
+
   renderMembers() {
     const table = document.getElementById('member-table');
     if (!table) return;
     const list = this.filteredMembers();
     document.getElementById('member-count').textContent = list.length;
-    table.innerHTML = '<tr><th>Klasse</th><th>Name</th><th>Bereich</th><th>Instrument / Aufgabe</th><th></th></tr>';
+    table.innerHTML = '<tr><th class="pick-spalte">' +
+      '<input type="checkbox" id="member-pick-all" title="Alle anzeigten an- oder abwählen">' +
+      '</th><th>Klasse</th><th>Name</th><th>Bereich</th><th>Instrument / Aufgabe</th><th></th></tr>';
     if (!list.length) {
-      table.innerHTML += '<tr><td colspan="5" class="hint">Noch keine Mitglieder aufgenommen.</td></tr>';
+      table.innerHTML += '<tr><td colspan="6" class="hint">Noch keine Mitglieder aufgenommen.</td></tr>';
+      this.auswahlAnzeigen();
       return;
     }
+    table.querySelector('#member-pick-all').addEventListener('change', e => {
+      for (const m of list) {
+        if (e.target.checked) this.gewaehlteMitglieder.add(m.id);
+        else this.gewaehlteMitglieder.delete(m.id);
+      }
+      table.querySelectorAll('input.member-pick').forEach(c => { c.checked = e.target.checked; });
+      this.auswahlAnzeigen();
+    });
+
     for (const m of list) {
       const tr = document.createElement('tr');
+
+      const tdP = document.createElement('td');
+      tdP.className = 'pick-spalte';
+      const pick = document.createElement('input');
+      pick.type = 'checkbox';
+      pick.className = 'member-pick';
+      pick.dataset.id = m.id;
+      pick.checked = this.gewaehlteMitglieder.has(m.id);
+      pick.title = `${m.name} für den Ausdruck auswählen`;
+      // Nur die Menge pflegen, nicht neu zeichnen – sonst springt die Liste
+      // unter dem Finger weg, waehrend man mehrere ankreuzt
+      pick.addEventListener('change', () => {
+        if (pick.checked) this.gewaehlteMitglieder.add(m.id);
+        else this.gewaehlteMitglieder.delete(m.id);
+        tr.classList.toggle('gewaehlt', pick.checked);
+        this.auswahlAnzeigen();
+      });
+      tdP.appendChild(pick);
+      tr.classList.toggle('gewaehlt', pick.checked);
+      tr.appendChild(tdP);
 
       const tdK = document.createElement('td');
       tdK.appendChild(this.editable(m.klasse, '–', v => { m.klasse = v; this.save(); this.renderMembers(); }, 5));
@@ -436,6 +499,7 @@ const Band = {
       tr.append(tdK, tdN, tdA, tdI, tdX);
       table.appendChild(tr);
     }
+    this.auswahlAnzeigen();
   },
 
   /* Textzelle, die beim Klick zum Eingabefeld wird */
@@ -455,12 +519,28 @@ const Band = {
     if (!list.length) { alert('Die Liste ist leer.'); return; }
     const f = document.getElementById('member-filter').value;
     const titel = f === 'band' ? 'Schulband' : f === 'technik' ? 'Technikteam' : 'Schulband und Technikteam';
+    this.druckeMitglieder(list, titel);
+  },
+
+  /* Nur die Angekreuzten – fuer Befreiungen, bei denen nicht die ganze Band
+     gemeldet wird, sondern drei Namen. */
+  printMembersAuswahl() {
+    const list = this.gewaehlte();
+    if (!list.length) { alert('Es ist niemand ausgewählt.'); return; }
+    this.druckeMitglieder(list, 'Schulband – Auswahl');
+  },
+
+  druckeMitglieder(list, titel) {
     const tabelle = this.printTable(
       [{ titel: 'Klasse', cls: 'klasse' }, { titel: 'Name' },
        { titel: 'Bereich' }, { titel: 'Instrument / Aufgabe' }],
       list.map(m => [this.esc(m.klasse) || '–', `<strong>${this.esc(m.name)}</strong>`,
                      this.AREAS[m.area] || '', this.esc(m.instrument) || '']));
-    this.printHtml(titel, tabelle, `${list.length} Mitglieder`);
+    const feld = document.getElementById('member-anlass');
+    const anlass = feld ? feld.value.trim() : '';
+    // Der Anlass steht gross unter dem Titel, die Zahl klein darunter – auf
+    // einer Befreiung ist der Anlass das, was das Sekretariat sucht.
+    this.printHtml(titel, tabelle, `${list.length} Schüler`, anlass);
   },
 
   exportMembers() {

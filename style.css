@@ -528,6 +528,14 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .band-table th, .band-table td { border: 1px solid var(--border); padding: .35rem .5rem; text-align: left; vertical-align: middle; }
 .band-table th { background: var(--panel); font-size: .82rem; white-space: nowrap; }
 .band-table tr.rehearsed { background: color-mix(in srgb, var(--green) 10%, transparent); }
+/* Auswahl fuer den Ausdruck: schmale Spalte, angekreuzte Zeile hervorgehoben */
+.band-table th.pick-spalte, .band-table td.pick-spalte { width: 1.8rem; text-align: center; padding: .35rem .2rem; }
+.band-table tr.gewaehlt { background: var(--active-soft); }
+#member-anlass {
+  padding: .35rem .5rem; font: inherit; font-size: .85rem;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+}
+#btn-print-members-sel:disabled { opacity: .5; cursor: default; }
 .cell-input {
   width: 100%; min-width: 3em; padding: .25rem .4rem; font: inherit; font-size: .88rem;
   border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text);

@@ -175,6 +175,12 @@ die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene T
   Technikteam / beides) und Instrument bzw. Aufgabe. Die Liste ist natürlich nach Klassen
   sortiert (5a, 5b … 10d) und lässt sich gefiltert drucken oder als CSV exportieren.
   Namen können per Auswahlliste aus bestehenden Klassen übernommen werden.
+- **Einzelne Mitglieder drucken:** Vor jedem Namen steht ein Kästchen; **Ausgewählte drucken**
+  nimmt nur die Angekreuzten – gedacht für Befreiungen, bei denen nicht die ganze Band
+  gemeldet wird, sondern drei Namen. Das Kästchen in der Kopfzeile wählt alle Angezeigten an
+  oder ab, der Knopf zeigt die Anzahl. Ins Feld **Anlass** kommt, was auf dem Ausdruck groß
+  unter der Überschrift stehen soll (`Probe 14.09., 3.–6. Stunde`). Die Auswahl übersteht das
+  Umschalten des Filters und das Bearbeiten der Liste.
 - **Namen-Fenster** (Knopf über der Mitgliederliste): ein kleines eigenes Fenster mit nur
   Klasse und Name, nach Klassen sortiert (niedrigste zuerst). Oben stellst du ein, ob alle,
   nur die Schulband oder nur das Technikteam erscheinen; einzelne Namen hakst du ab oder an.
