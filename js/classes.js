@@ -801,15 +801,23 @@ const Classes = {
             const namen = Band.mitgliederAusKlasse(r.klasse).map(m => m.name);
             if (namen.length) gruppen.push({ klasse: r.klasse, namen });
           }
-          // Getrennt wird mit ·, nicht mit Komma: Die Namen tragen selbst eins
-          // („Bauer, Anna“), eine Kommaliste waere nicht zu entwirren.
-          // Je Klasse eine eigene Zeile, wer zwei Klassen leitet.
+          /* Ein Name je Zeile: Die Namen tragen selbst ein Komma
+             („Bauer, Anna“), nebeneinander waere die Aufzaehlung nicht zu
+             entwirren – und untereinander zaehlt man sie mit einem Blick.
+             Wer zwei Klassen leitet, bekommt je Klasse eine Ueberschrift. */
           for (const g of gruppen) {
-            const zeile = document.createElement('div');
-            zeile.className = 'band-schueler';
-            zeile.textContent = (gruppen.length > 1 ? g.klasse + ': ' : '') +
-              g.namen.join(' · ');
-            li.appendChild(zeile);
+            if (gruppen.length > 1) {
+              const kopf = document.createElement('div');
+              kopf.className = 'band-klasse';
+              kopf.textContent = g.klasse;
+              li.appendChild(kopf);
+            }
+            for (const n of g.namen) {
+              const zeile = document.createElement('div');
+              zeile.className = 'band-schueler';
+              zeile.textContent = n;
+              li.appendChild(zeile);
+            }
           }
         }
         ul.appendChild(li);

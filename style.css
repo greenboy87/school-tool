@@ -740,13 +740,17 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .lehrer-spalten strong { color: var(--accent-soft); }
 /* Lange Namen kuerzen statt die Spalte sprengen – der volle Name steht im Tooltip */
 .lehrer-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Die Bandmitglieder der Klasse als zweite Zeile unter der Lehrkraft – sie
-   beginnt bei der Namensspalte, damit die Ziffernspalte frei bleibt */
-.band-schueler {
-  grid-column: 2 / -1; color: var(--text); font-size: .95em;
-  line-height: 1.4; padding: .1rem 0 .35rem;
+/* Die Bandmitglieder der Klasse unter der Lehrkraft, ein Name je Zeile. Der
+   Block beginnt bei der Namensspalte, damit die Ziffernspalte frei bleibt;
+   die durchgehende Linie links haelt zusammen, was zu einer Lehrkraft gehoert. */
+.band-schueler, .band-klasse {
+  grid-column: 2 / -1; line-height: 1.45;
+  padding: .02rem 0 .02rem .7rem; border-left: 2px solid var(--border);
 }
-.band-schueler::before { content: "↳ "; color: var(--muted); }
+.band-schueler { color: var(--text); font-size: .95em; }
+.band-klasse { color: var(--muted); font-size: .82em; padding-top: .2rem; }
+/* Etwas Luft unter dem letzten Namen, sonst klebt die naechste Lehrkraft daran */
+.lehrer-spalten li > .band-schueler:last-child { padding-bottom: .4rem; }
 /* Wer eine Klasse leitet, steht in Klammern dahinter – und faellt dadurch in
    der langen Liste auf, ohne dass man danach suchen muss */
 .kl-rolle { color: var(--accent-soft); white-space: nowrap; }

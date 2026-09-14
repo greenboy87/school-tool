@@ -85,8 +85,9 @@ jemand **1.** (gefüllte Ziffer) oder **2. Klassenleitung** (umrandete Ziffer) i
 Klassenleitung** einschränken, mit **nur Schulband & Technik** zusätzlich auf die
 Klassenleitungen der Klassen, aus denen Band- oder Technikmitglieder kommen – also genau die
 Kollegen, mit denen man wegen Proben und Auftritten zu tun hat. In dieser Ansicht steht unter
-jeder Lehrkraft auch, **um wen es geht**: die Namen ihrer Band- und Technikmitglieder, bei zwei
-geleiteten Klassen je Klasse eine Zeile. Beides lässt sich verbinden;
+jeder Lehrkraft auch, **um wen es geht**: die Namen ihrer Band- und Technikmitglieder,
+untereinander und mit einer Linie zusammengehalten; wer zwei Klassen leitet, bekommt je Klasse
+eine Überschrift. Beides lässt sich verbinden;
 die Kopfzeile nennt dann „4 von 102“. Eingeklappt startet die
 Liste, weil sie zum Nachschlagen da ist.
 
