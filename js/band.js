@@ -607,6 +607,17 @@ const Band = {
     return raus;
   },
 
+  /* Die Band- und Technikmitglieder einer Klasse – „7a“ trifft auch „7a_I“.
+     Der Reiter „Lehrer“ zeigt damit, um welche Kinder es bei einer
+     Klassenleitung ueberhaupt geht. */
+  mitgliederAusKlasse(klassenname) {
+    const kern = Classes.klassenKern(klassenname);
+    if (!kern) return [];
+    return this.d().members
+      .filter(m => m.klasse && Classes.klassenKern(m.klasse) === kern)
+      .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  },
+
   /* ---------- Songs und Songvorschläge ---------- */
   renderSongs() {
     this.renderSongTable(this.d().songs, 'song-table', 'song-count', false);

@@ -740,6 +740,13 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .lehrer-spalten strong { color: var(--accent-soft); }
 /* Lange Namen kuerzen statt die Spalte sprengen – der volle Name steht im Tooltip */
 .lehrer-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Die Bandmitglieder der Klasse als zweite Zeile unter der Lehrkraft – sie
+   beginnt bei der Namensspalte, damit die Ziffernspalte frei bleibt */
+.band-schueler {
+  grid-column: 2 / -1; color: var(--text); font-size: .95em;
+  line-height: 1.4; padding: .1rem 0 .35rem;
+}
+.band-schueler::before { content: "↳ "; color: var(--muted); }
 /* Wer eine Klasse leitet, steht in Klammern dahinter – und faellt dadurch in
    der langen Liste auf, ohne dass man danach suchen muss */
 .kl-rolle { color: var(--accent-soft); white-space: nowrap; }

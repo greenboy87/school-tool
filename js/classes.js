@@ -790,6 +790,28 @@ const Classes = {
           li.classList.add('hat-leitung');
           li.title = liste[k] + ' – ' + this.rolleLang(k);
         }
+
+        /* Beim Filtern auf Band und Technik auch, um wen es geht: Die Frage
+           lautet ja nicht „wer leitet die 7a“, sondern „wen muss ich bei
+           Martin Kainz abmelden“. Nur in dieser Ansicht, sonst waere die
+           Liste des ganzen Kollegiums doppelt so hoch. */
+        if (nurBand && typeof Band !== 'undefined') {
+          const gruppen = [];
+          for (const r of this.rollenVon(k)) {
+            const namen = Band.mitgliederAusKlasse(r.klasse).map(m => m.name);
+            if (namen.length) gruppen.push({ klasse: r.klasse, namen });
+          }
+          // Getrennt wird mit ·, nicht mit Komma: Die Namen tragen selbst eins
+          // („Bauer, Anna“), eine Kommaliste waere nicht zu entwirren.
+          // Je Klasse eine eigene Zeile, wer zwei Klassen leitet.
+          for (const g of gruppen) {
+            const zeile = document.createElement('div');
+            zeile.className = 'band-schueler';
+            zeile.textContent = (gruppen.length > 1 ? g.klasse + ': ' : '') +
+              g.namen.join(' · ');
+            li.appendChild(zeile);
+          }
+        }
         ul.appendChild(li);
       }
       box.appendChild(ul);
