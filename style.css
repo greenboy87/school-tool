@@ -716,13 +716,24 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
   list-style: none; margin: 0; padding: 0;
   /* Spaltenbreite statt fester Spaltenzahl: auf dem Handy eine Spalte, am
      Rechner zwei oder drei – bei fester Zahl brachen die Namen mitten um */
-  columns: 21rem; column-gap: 1.6rem; font-size: .85rem; line-height: 1.7;
+  columns: 25rem; column-gap: 1.8rem; font-size: .85rem; line-height: 1.7;
 }
-.lehrer-spalten li { break-inside: avoid; color: var(--muted); }
-.lehrer-spalten strong { color: var(--accent-soft); display: inline-block; min-width: 2.6em; }
+/* Jede Zeile ein kleines Raster: Kuerzel, Name, Klassenleitung. Dadurch
+   fluchten die Ziffern untereinander, statt hinter unterschiedlich langen
+   Namen zu zappeln – eine unsichtbare Tabelle. */
+.lehrer-spalten li {
+  break-inside: avoid; color: var(--muted);
+  /* Feste Breite fuer den Namen, sonst begaenne die Ziffernspalte bei jeder
+     Zeile woanders – genau das soll die unsichtbare Tabelle verhindern. */
+  display: grid; grid-template-columns: 2.8em 15em minmax(0, 1fr);
+  column-gap: .5rem; align-items: baseline;
+}
+.lehrer-spalten strong { color: var(--accent-soft); }
+/* Lange Namen kuerzen statt die Spalte sprengen – der volle Name steht im Tooltip */
+.lehrer-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Wer eine Klasse leitet, steht in Klammern dahinter – und faellt dadurch in
    der langen Liste auf, ohne dass man danach suchen muss */
-.kl-rolle { color: var(--accent-soft); white-space: nowrap; margin-left: .5em; }
+.kl-rolle { color: var(--accent-soft); white-space: nowrap; }
 /* Die Ziffer als Abzeichen: 1 gefuellt, 2 nur umrandet – der Unterschied muss
    im Ueberfliegen auffallen, ohne dass man die Klasse mitliest */
 .rolle-ziffer {

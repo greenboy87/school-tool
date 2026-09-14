@@ -724,7 +724,12 @@ const Classes = {
         const li = document.createElement('li');
         const kz = document.createElement('strong');
         kz.textContent = k;
-        li.append(kz, ' ' + liste[k]);
+        // Der Name als eigene Zelle, sonst kann das Raster ihn nicht ausrichten
+        const nm = document.createElement('span');
+        nm.className = 'lehrer-name';
+        nm.textContent = liste[k];
+        li.append(kz, nm);
+        li.title = liste[k];
         const rollen = this.rollenVon(k);
         if (rollen.length) {
           // Die Ziffer als eigenes Abzeichen, nicht als Text: „1" und „2" muss
@@ -741,7 +746,7 @@ const Classes = {
           });
           li.appendChild(tag);
           li.classList.add('hat-leitung');
-          li.title = this.rolleLang(k);
+          li.title = liste[k] + ' – ' + this.rolleLang(k);
         }
         ul.appendChild(li);
       }
