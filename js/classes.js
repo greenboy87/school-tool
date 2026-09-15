@@ -870,7 +870,48 @@ const Classes = {
     let breit = 0;
     for (const n of namen) breit = Math.max(breit, ctx.measureText(n.textContent).width);
     // Ein Hauch Zuschlag gegen Rundungsfehler, sonst kuerzt der laengste Name
-    ul.style.setProperty('--namensspalte', Math.ceil(breit + 2) + 'px');
+    const namensbreite = Math.ceil(breit + 2);
+    ul.style.setProperty('--namensspalte', namensbreite + 'px');
+
+    /* Und daraus die Spaltenbreite: Eine feste Breite von 25rem war auf den
+       breitesten denkbaren Eintrag ausgelegt – damit passten nur zwei Spalten
+       nebeneinander und die Liste wurde ueber 1100px hoch, obwohl das Fenster
+       Platz gehabt haette. Gerechnet wird aus dem, was wirklich dasteht. */
+    const zeile = ul.querySelector('li');
+    const stilZ = zeile ? getComputedStyle(zeile) : null;
+    const kuerzelBreite = stilZ ? parseFloat(stilZ.gridTemplateColumns) || 40 : 40;
+    const luecke = stilZ ? parseFloat(stilZ.columnGap) || 8 : 8;
+    /* Die Rollenspalte ist im Raster „1fr“ und dehnt sich auf die Restbreite –
+       gemessen kaeme die Breite der Spalte heraus, nicht die des Inhalts.
+       Deshalb auch hier den Text messen, plus Zuschlag je Ziffern-Abzeichen. */
+    let rolle = 0;
+    const erstes = ul.querySelector('.kl-rolle');
+    if (erstes) {
+      const sr = getComputedStyle(erstes);
+      ctx.font = `${sr.fontWeight} ${sr.fontSize} ${sr.fontFamily}`;
+      for (const r of ul.querySelectorAll('.kl-rolle')) {
+        const abzeichen = r.querySelectorAll('.rolle-ziffer').length;
+        rolle = Math.max(rolle, ctx.measureText(r.textContent).width + abzeichen * 10);
+      }
+    }
+    /* Stehen die Bandmitglieder mit darunter, muessen auch deren Namen in die
+       Spalte passen – sie beginnen erst bei der Namensspalte, brauchen also
+       weniger Platz als eine ganze Zeile. */
+    let schueler = 0;
+    const ersterS = ul.querySelector('.band-schueler');
+    if (ersterS) {
+      const ss = getComputedStyle(ersterS);
+      ctx.font = `${ss.fontWeight} ${ss.fontSize} ${ss.fontFamily}`;
+      const einzug = parseFloat(ss.paddingLeft) + parseFloat(ss.borderLeftWidth) || 10;
+      for (const z of ul.querySelectorAll('.band-schueler, .band-klasse')) {
+        schueler = Math.max(schueler,
+          kuerzelBreite + luecke + einzug + ctx.measureText(z.textContent).width);
+      }
+    }
+    const noetig = Math.max(
+      kuerzelBreite + luecke * 2 + namensbreite + Math.ceil(rolle) + 6,
+      Math.ceil(schueler) + 6);
+    ul.style.columnWidth = Math.max(13 * 16, noetig) + 'px';
   },
 
   zeigeLeitungsNamen() {
