@@ -173,6 +173,25 @@ const Band = {
       this.save();
       this.renderGigDetail();
     });
+    /* Bisher liess sich die Verknuepfung nur ueber den ersten Eintrag der
+       Auswahlliste loesen – dass „eigene Liste nur fuer diesen Termin“ das
+       Loesen bedeutet, sieht man ihr nicht an. Und zum Bearbeiten musste man
+       den Reiter wechseln und die Setlist dort wiederfinden. */
+    document.getElementById('btn-gig-setlist-los').addEventListener('click', () => {
+      const g = this.currentGig();
+      if (!g || !g.setlistId) return;
+      const l = this.gigSetlist(g);
+      if (!confirm(`Verknüpfung zu „${l ? l.name : 'der Setlist'}“ lösen?\n\n` +
+        'Die Setlist selbst bleibt erhalten; dieser Termin bekommt wieder eine ' +
+        'eigene Songliste.')) return;
+      g.setlistId = null;
+      this.save();
+      this.renderGigDetail();
+    });
+    document.getElementById('btn-gig-setlist-auf').addEventListener('click', () => {
+      const g = this.currentGig();
+      if (g && g.setlistId) this.zurSetlist(g.setlistId);
+    });
     [['gig-f-date', 'date'], ['gig-f-time', 'time'], ['gig-f-place', 'place'], ['gig-f-notes', 'notes']]
       .forEach(([id, field]) => document.getElementById(id).addEventListener('change', e => {
         const g = this.currentGig();
@@ -884,6 +903,9 @@ const Band = {
 
     this.fuelleSetlistWahl(g);
     const verknuepft = this.gigSetlist(g);
+    // Die beiden Knoepfe ergeben nur Sinn, solange eine Setlist verknuepft ist
+    document.getElementById('btn-gig-setlist-auf').hidden = !verknuepft;
+    document.getElementById('btn-gig-setlist-los').hidden = !verknuepft;
     const hinweis = document.getElementById('gig-setlist-hinweis');
     const ol = document.getElementById('gig-songs');
     const auswahl = document.getElementById('gig-add-song');
@@ -895,8 +917,8 @@ const Band = {
       document.getElementById('gig-song-count').textContent = verknuepft.eintraege.length;
       auswahl.hidden = true;
       hinweis.textContent = `Die Songs stammen aus der Setlist „${verknuepft.name}“ ` +
-        `(${verknuepft.kategorie}). Ändern lässt sie sich im Reiter „Setlisten“ – ` +
-        'Änderungen erscheinen hier automatisch.';
+        `(${verknuepft.kategorie}). „Bearbeiten“ öffnet sie; Änderungen erscheinen ` +
+        'hier automatisch. „Verknüpfung lösen“ gibt diesem Termin wieder eine eigene Liste.';
       for (const eintrag of verknuepft.eintraege) {
         const s = this.song(eintrag.songId);
         if (!s) continue;
@@ -1034,6 +1056,25 @@ const Band = {
   gigSetlist(g) {
     if (!g || !g.setlistId || !window.Setlisten) return null;
     return Setlisten.d().setlists.find(s => s.id === g.setlistId) || null;
+  },
+
+  /* Zur verknuepften Setlist springen: Reiter wechseln, Kategorie einblenden,
+     Setlist oeffnen. Ohne das Einblenden staende sie hinter einem Filter und
+     man suchte sie vergeblich. */
+  zurSetlist(id) {
+    if (!window.Setlisten) return;
+    const l = Setlisten.d().setlists.find(s => s.id === id);
+    if (!l) { alert('Diese Setlist gibt es nicht mehr.'); return; }
+    if (Setlisten.auswahl().size) {
+      Setlisten.auswahl().add(l.kategorie);
+      Setlisten.merkeAuswahl();
+    }
+    Setlisten.aktuelleId = id;
+    const knopf = document.querySelector('.bandtab-btn[data-bandtab="setlisten"]');
+    if (knopf) knopf.click();
+    Setlisten.render();
+    const box = document.getElementById('setlist-detail');
+    if (box && !box.hidden) box.scrollIntoView({ block: 'center', behavior: 'smooth' });
   },
 
   fuelleSetlistWahl(g) {

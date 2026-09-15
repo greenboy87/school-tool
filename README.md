@@ -213,7 +213,9 @@ die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene T
   Auswahlfeld im Anlegen-Formular bestimmt, wo eine neue Setlist landet. Die Auswahl merkt
   sich das Gerät.
 - **Termine & Auftritte** mit Datum, Uhrzeit, Ort, Notizen und einer Setlist, deren
-  Reihenfolge sich ziehen lässt.
+  Reihenfolge sich ziehen lässt. Eine verknüpfte Setlist lässt sich mit **Bearbeiten** direkt
+  öffnen – auch wenn ihre Kategorie gerade ausgeblendet ist – und mit **Verknüpfung lösen**
+  wieder abhängen; die Setlist selbst bleibt dabei erhalten.
 - **Probenplan**: eigene Probentermine anlegen und je Song festhalten, ob er geprobt
   wurde, mit Anmerkung („Tempo schneller“). Auch druckbar.
 - **Notizen**: freies Feld nur für die Band – Technikwünsche, Absprachen, Ideen fürs nächste

@@ -595,6 +595,8 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .kal-tag.auftritt:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
 .kal-tag.auftritt.fremd { opacity: .55; }
 
+.setlist-zeile { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; margin-top: .2rem; }
+.setlist-zeile select { flex: 1 1 16rem; min-width: 12rem; }
 .gig-fields label, .gig-note { display: flex; flex-direction: column; font-size: .85rem; color: var(--muted); gap: .2em; }
 .gig-note { margin: .8rem 0; }
 
