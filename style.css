@@ -99,6 +99,9 @@ code { background: var(--panel); border-radius: 4px; padding: 0 .3em; }
 /* Die Sicherungsknöpfe tragen am Rechner ihren Namen – drei fast gleiche
    Symbole nebeneinander sagen sonst nicht, welcher wofür da ist. */
 .knopf-text { font-size: .82rem; }
+/* „Hell“ und „Dunkel“ sind verschieden breit – ohne feste Breite haette das
+   Umschalten die ganze Leiste verschoben */
+#btn-theme { min-width: 6.2rem; justify-content: flex-start; }
 .nur-icon .icon { margin-right: 0; }
 
 .tab-btn {
@@ -954,6 +957,36 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
    Gilt auf jeder Bildschirmbreite – auf dem Papier bleibt die Tabelle eine Tabelle. */
 @media screen {
   .band-table, .grade-table { display: block; overflow-x: auto; }
+}
+
+/* Die Kopfzeile braucht bei sieben Reitern und beschrifteten Knoepfen knapp
+   1500 px. Darunter ruecken erst die Abstaende zusammen, dann fallen die
+   Beschriftungen weg – sonst rutscht die rechte Gruppe in eine zweite Zeile.
+   Das passierte zuerst im hellen Design, weil „Dunkel“ 21 px breiter ist als
+   „Hell“ und das Fenster genau dazwischen lag. */
+@media screen and (min-width: 721px) and (max-width: 1500px) {
+  .topbar { gap: .75rem; padding: .7rem .8rem; }
+  .main-tabs { gap: .15rem; }
+  .tab-btn { padding: .55rem .55rem; }
+  .backup-btns { gap: .3rem; }
+  .backup-btns button { padding-left: .6rem; padding-right: .6rem; }
+}
+
+/* Noch enger: Der Name steht im Fenstertitel, die Knoepfe erklaeren sich
+   ueber ihre Symbole und das title-Attribut. */
+@media screen and (min-width: 721px) and (max-width: 1340px) {
+  .titel-text { display: none; }
+  .knopf-text { display: none; }
+  .backup-btns button .icon { margin-right: 0; }
+  .sync-status { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* Zuletzt die Symbole der Reiter: Ihre Namen stehen daneben, das Symbol ist
+   Zierde. Sieben Reiter mal Symbol sind rund 180 px. */
+@media screen and (min-width: 721px) and (max-width: 1100px) {
+  .tab-btn .icon { display: none; }
+  .tab-btn { padding: .55rem .45rem; font-size: .9rem; }
+  .sync-status { max-width: 5.5rem; }
 }
 
 @media screen and (max-width: 720px) {
