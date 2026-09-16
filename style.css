@@ -191,6 +191,15 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .class-list .count { font-size: .75rem; color: var(--muted); font-weight: 400; }
 .class-list li.active .count { color: var(--on-accent-muted); }
 
+/* Klassen ordnen: Kopfzeile mit Schalter, Pfeile erst im Ordnen-Zustand */
+.klassen-kopf { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.klassen-kopf h2 { margin: 0; }
+.klassen-ordnen-zeile { align-items: center; margin: .5rem 0 .2rem; flex-wrap: wrap; }
+.klassen-pfeile { display: flex; gap: .15rem; flex: 0 0 auto; }
+.klassen-pfeile button { padding: .15rem .3rem; line-height: 1; }
+.klassen-pfeile .icon { margin: 0; width: 1em; height: 1em; }
+.class-list li.active .klassen-pfeile button { color: #fff; border-color: rgba(255,255,255,.4); }
+
 .new-class-form { display: flex; flex-direction: column; gap: .4rem; }
 .new-class-form input, .new-class-form select { width: 100%; min-width: 0; }
 

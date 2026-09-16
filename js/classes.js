@@ -131,6 +131,22 @@ const Classes = {
       });
     }
 
+    const ordnenKnopf = document.getElementById('btn-klassen-ordnen');
+    if (ordnenKnopf) {
+      ordnenKnopf.addEventListener('click', () => {
+        this.klassenOrdnen = !this.klassenOrdnen;
+        this.renderClassList();
+      });
+      document.getElementById('btn-klassen-az').addEventListener('click', () => {
+        if (!confirm('Klassen natürlich sortieren?\n\n5a vor 5b vor 6a vor 10a. ' +
+          'Eine von Hand gesetzte Reihenfolge geht dabei verloren.')) return;
+        this.data.classes.sort((a, b) =>
+          this.vergleicheSchluessel(this.klassenOrdnung(a.name), this.klassenOrdnung(b.name)));
+        this.persist();
+        this.renderClassList();
+      });
+    }
+
     // Suche ueber alle Klassen hinweg
     const suchfeld = document.getElementById('schueler-suche');
     if (suchfeld) {
@@ -950,6 +966,22 @@ const Classes = {
     }
   },
 
+  /* Klasse um einen Platz verschieben. Gearbeitet wird im vollen Feld, denn
+     der Nachbar in der angezeigten (nach Schuljahr gefilterten) Liste kann
+     dort weiter entfernt liegen. */
+  verschiebeKlasse(cls, richtung) {
+    const alle = this.data.classes;
+    const sichtbar = alle.filter(c =>
+      this.yearFilter === 'all' || (c.year || '') === this.yearFilter);
+    const nachbar = sichtbar[sichtbar.indexOf(cls) + richtung];
+    if (!nachbar) return;
+    const a = alle.indexOf(cls), b = alle.indexOf(nachbar);
+    alle[a] = nachbar;
+    alle[b] = cls;
+    this.persist();
+    this.renderClassList();
+  },
+
   /* ---------- Medienmanager ----------
      Zwei Schueler je Klasse, jederzeit aenderbar. Gespeichert werden die
      Schueler-Kennungen, nicht die Namen – sonst zeigte der Eintrag ins Leere,
@@ -1079,7 +1111,15 @@ const Classes = {
     ul.innerHTML = '';
     const shown = this.data.classes.filter(c =>
       this.yearFilter === 'all' || (c.year || '') === this.yearFilter);
-    for (const cls of shown) {
+    const ordnenZeile = document.getElementById('klassen-ordnen-zeile');
+    if (ordnenZeile) ordnenZeile.hidden = !this.klassenOrdnen;
+    const knopf = document.getElementById('btn-klassen-ordnen');
+    if (knopf) {
+      knopf.textContent = this.klassenOrdnen ? 'Fertig' : 'Ordnen';
+      knopf.classList.toggle('primary', !!this.klassenOrdnen);
+    }
+
+    shown.forEach((cls, i) => {
       const li = document.createElement('li');
       li.classList.toggle('active', cls.id === this.currentClassId);
       const name = document.createElement('span');
@@ -1092,9 +1132,32 @@ const Classes = {
         (kl ? ` · KL ${kl}` : '');
       if (kl) count.title = 'Klassenleitung: ' + (this.lehrerName(kl) || kl);
       li.append(name, count);
+      if (this.klassenOrdnen) {
+        /* Verschoben wird im vollen Feld, angezeigt wird die gefilterte Liste –
+           der Nachbar im selben Schuljahr kann dort weiter entfernt liegen. */
+        const werkzeuge = document.createElement('span');
+        werkzeuge.className = 'klassen-pfeile';
+        const pfeil = (icon, titel, richtung, aus) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'small';
+          b.innerHTML = Icons.raw(icon);
+          b.title = titel;
+          b.disabled = aus;
+          b.addEventListener('click', ev => {
+            ev.stopPropagation();          // sonst waehlt der Klick die Klasse aus
+            this.verschiebeKlasse(cls, richtung);
+          });
+          return b;
+        };
+        werkzeuge.append(
+          pfeil('chevronUp', 'Nach oben', -1, i === 0),
+          pfeil('chevronDown', 'Nach unten', 1, i === shown.length - 1));
+        li.appendChild(werkzeuge);
+      }
       li.addEventListener('click', () => this.selectClass(cls.id));
       ul.appendChild(li);
-    }
+    });
     if (!shown.length) {
       const li = document.createElement('li');
       li.className = 'hint';

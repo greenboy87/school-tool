@@ -47,6 +47,9 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
 - **Als Popup** oder als **schwebendes Mini-Fenster** („Immer im Vordergrund“, Chrome/Edge) – bleibt auch über einer Vollbild-Präsentation sichtbar
 
 ### 📚 Klassen & Noten
+- **Ordnen** über der Klassenliste blendet Pfeile ein, mit denen sich einzelne Klassen
+  verschieben lassen, dazu **A–Z sortieren** für die natürliche Reihenfolge (5a vor 5b vor 6a
+  vor 10a). **Fertig** räumt die Pfeile wieder weg.
 - Klassen anlegen, Klassenlisten einfügen oder als Datei (.txt/.csv/.pdf) hochladen – wird automatisch alphabetisch sortiert
 - Aus PDFs werden zwei Formate gelesen: `Nachname, Vorname` und nummerierte Listen wie
   `12  Doğan Alper  5 B`, bei denen Nummer und Klassenspalte abgeschnitten werden. Ob dort
