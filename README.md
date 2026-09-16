@@ -47,7 +47,11 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
 - **Als Popup** oder als **schwebendes Mini-Fenster** („Immer im Vordergrund“, Chrome/Edge) – bleibt auch über einer Vollbild-Präsentation sichtbar
 
 ### 📚 Klassen & Noten
-- Klassen anlegen, Klassenlisten einfügen oder als Datei (.txt/.csv) hochladen – wird automatisch alphabetisch sortiert
+- Klassen anlegen, Klassenlisten einfügen oder als Datei (.txt/.csv/.pdf) hochladen – wird automatisch alphabetisch sortiert
+- Aus PDFs werden zwei Formate gelesen: `Nachname, Vorname` und nummerierte Listen wie
+  `12  Doğan Alper  5 B`, bei denen Nummer und Klassenspalte abgeschnitten werden. Ob dort
+  der Nachname vorn oder hinten steht, entscheidet sich daran, welche der beiden Spalten
+  alphabetisch sortiert ist – Klassenlisten sind nach dem Nachnamen geordnet.
 - Projekte mit Name + Datum anlegen und benoten (1–6, auch 2+/2−)
 - Noten der Reihe nach eingeben (Enter springt zum nächsten Schüler) – ideal zum Übertragen in den Notenmanager
 - Abhak-Kästchen „im Notenmanager eingetragen“ pro Projekt

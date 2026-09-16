@@ -1167,15 +1167,54 @@ const Classes = {
         });
     }
     const skip = /klassenliste|klassenleitung|insgesamt|männlich|weiblich|schule|stand\s*:|^\s*nr\.?\s+name/i;
+    /* Buchstaben als Unicode-Klasse statt als Handliste: „Doğan“ fiel sonst
+       durch, und jede weitere Schreibweise haette man einzeln nachtragen
+       muessen – tuerkisch, polnisch, vietnamesisch, was die Klasse so hergibt. */
+    const NAME_MIT_KOMMA = /^(\p{L}[\p{L}' -]*,\s*\p{L}[\p{L}' .-]*?)\s*(?:\d.*)?$/u;
+    const NUR_NAME = /^[\p{L}][\p{L}' -]*$/u;
     const names = [];
-    for (let line of lines) {
-      if (skip.test(line)) continue;
-      line = line.replace(/^\s*\d+\s+/, '').trim();       // laufende Nummer entfernen
-      // Nur Zeilen der Form „Nachname, Vorname“ übernehmen
-      const m = line.match(/^([A-Za-zÄÖÜäöüßéèáà' -]+,\s*[A-Za-zÄÖÜäöüßéèáà' .-]+?)\s*(?:\d.*)?$/);
-      if (m && m[1].includes(',')) names.push(m[1].trim());
+    const ohneKomma = [];          // Zeilen ohne Komma, Reihenfolge noch offen
+
+    for (let roh of lines) {
+      if (skip.test(roh)) continue;
+      const line = roh.replace(/^\s*\d{1,3}[.)]?\s+/, '').trim();   // laufende Nummer weg
+      // „Nachname, Vorname“ – daran ist die Reihenfolge eindeutig
+      const m = line.match(NAME_MIT_KOMMA);
+      if (m && m[1].includes(',')) { names.push(m[1].trim()); continue; }
+
+      /* Manche Programme drucken „12  Armstroff Jan  5 B“: Nummer vorne,
+         Klasse hinten, kein Komma. Beides abschneiden, der Rest ist der Name. */
+      if (!/^\s*\d{1,3}[.)]?\s+/.test(roh)) continue;      // ohne Nummer kein Listeneintrag
+      const rest = line.replace(/\s+\d{1,2}\s*[A-Za-zÄÖÜ]?(?:[_-][A-Za-z0-9]+)?$/, '').trim();
+      const worte = rest.split(/\s+/).filter(Boolean);
+      if (worte.length < 2 || worte.length > 4) continue;
+      if (!worte.every(w => NUR_NAME.test(w) && /^\p{Lu}/u.test(w))) continue;
+      ohneKomma.push(worte);
     }
+
+    if (ohneKomma.length) names.push(...this.nameReihenfolge(ohneKomma));
     return names;
+  },
+
+  /* Steht in „Armstroff Jan“ der Nachname vorn oder hinten? Eine Klassenliste
+     ist alphabetisch sortiert – also nach der Spalte, die den Nachnamen
+     enthaelt. Welche der beiden Aussenspalten besser sortiert ist, gewinnt.
+     Ohne klares Bild bleibt es bei „Vorname Nachname“ wie bisher. */
+  nameReihenfolge(eintraege) {
+    const sortiert = (hole) => {
+      let gut = 0, gesamt = 0;
+      for (let i = 1; i < eintraege.length; i++) {
+        gesamt++;
+        if (hole(eintraege[i - 1]).localeCompare(hole(eintraege[i]), 'de') <= 0) gut++;
+      }
+      return gesamt ? gut / gesamt : 0;
+    };
+    const vorne = sortiert(w => w[0]);
+    const hinten = sortiert(w => w[w.length - 1]);
+    const nachnameVorn = vorne >= 0.8 && vorne > hinten;
+    return eintraege.map(w => nachnameVorn
+      ? `${w[0]}, ${w.slice(1).join(' ')}`
+      : `${w[w.length - 1]}, ${w.slice(0, -1).join(' ')}`);
   },
 
   addStudents(text, append = false) {
