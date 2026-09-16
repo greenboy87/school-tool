@@ -710,6 +710,10 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
   border-top: 1px solid var(--border); margin-top: .2rem; padding-top: .6rem;
 }
 .klassenleitung label { display: flex; align-items: center; gap: .4rem; }
+/* Die beiden Medienmanager gehoeren zusammen – einzeln umgebrochen stuende
+   das zweite Feld ohne Beschriftung da */
+.medien-wahl { display: flex; align-items: center; gap: .4rem; }
+.medien-wahl select { max-width: 11rem; }
 .klassenleitung input {
   width: 6rem; padding: .3rem .45rem; font: inherit; font-size: .85rem; text-transform: uppercase;
   border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text);

@@ -115,6 +115,22 @@ const Classes = {
       this.renderProjects();
     });
 
+    for (const [id, pos] of [['medien-1', 0], ['medien-2', 1]]) {
+      const sel = document.getElementById(id);
+      if (!sel) continue;
+      sel.addEventListener('change', () => {
+        const cls = this.currentClass();
+        if (!cls) return;
+        const liste = this.medien(cls);
+        liste[pos] = sel.value || '';
+        // Derselbe Schueler zweimal waere ein Versehen – den anderen freigeben
+        const andere = pos === 0 ? 1 : 0;
+        if (sel.value && liste[andere] === sel.value) liste[andere] = '';
+        this.persist();
+        this.fuelleMedienmanager();
+      });
+    }
+
     // Suche ueber alle Klassen hinweg
     const suchfeld = document.getElementById('schueler-suche');
     if (suchfeld) {
@@ -468,6 +484,8 @@ const Classes = {
   },
 
   selectClass(id) {
+    // Erst die offene Notiz der bisherigen Klasse festschreiben
+    if (typeof Notes !== 'undefined') Notes.klassenNotizSichern();
     this.currentClassId = id;
     this.currentProjectId = null;
     this.gruppenBearbeiten = false;
@@ -932,6 +950,38 @@ const Classes = {
     }
   },
 
+  /* ---------- Medienmanager ----------
+     Zwei Schueler je Klasse, jederzeit aenderbar. Gespeichert werden die
+     Schueler-Kennungen, nicht die Namen – sonst zeigte der Eintrag ins Leere,
+     sobald jemand umbenannt wird. */
+  medien(cls) {
+    if (!Array.isArray(cls.medien)) cls.medien = [];
+    return cls.medien;
+  },
+
+  fuelleMedienmanager() {
+    const cls = this.currentClass();
+    for (const [id, pos] of [['medien-1', 0], ['medien-2', 1]]) {
+      const sel = document.getElementById(id);
+      if (!sel) continue;
+      sel.innerHTML = '';
+      const leer = document.createElement('option');
+      leer.value = '';
+      leer.textContent = '—';
+      sel.appendChild(leer);
+      if (!cls) { sel.value = ''; continue; }
+      for (const s of cls.students) {
+        const o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = this.studentName(s);
+        sel.appendChild(o);
+      }
+      const gewaehlt = this.medien(cls)[pos] || '';
+      // Wer die Klasse verlassen hat, faellt still heraus
+      sel.value = cls.students.some(s => s.id === gewaehlt) ? gewaehlt : '';
+    }
+  },
+
   /* ---------- Suche über alle Klassen ----------
      Beantwortet die Frage „in welcher Klasse ist dieser Schüler?“, ohne dass man
      die Klassen der Reihe nach durchklickt. */
@@ -1070,6 +1120,8 @@ const Classes = {
       document.getElementById('class-title').appendChild(span);
     }
     this.zeigeLeitungsNamen();
+    this.fuelleMedienmanager();
+    if (typeof Notes !== 'undefined') Notes.klassenNotizLaden();
     this.renderStudents();
     this.renderProjects();
     this.renderGroupResult();

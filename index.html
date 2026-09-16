@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=108">
+<link rel="stylesheet" href="style.css?v=111">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=108"></script>
-<script src="js/theme.js?v=108"></script>
-<script src="js/auth.js?v=108"></script>
+<script src="js/icons.js?v=111"></script>
+<script src="js/theme.js?v=111"></script>
+<script src="js/auth.js?v=111"></script>
 </head>
 <body>
 
@@ -121,6 +121,7 @@
             <button class="subtab-btn" data-subtab="projekte" data-icon="clipboard">Projekte &amp; Noten</button>
             <button class="subtab-btn" data-subtab="stunden" data-icon="list">Stunden</button>
             <button class="subtab-btn" data-subtab="sitzplan" data-icon="grid">Sitzplan</button>
+            <button class="subtab-btn" data-subtab="notizen" data-icon="clipboard">Notizen</button>
           </nav>
           <button id="btn-carry-class" class="small" title="Kopie dieser Klasse für das nächste Schuljahr anlegen (Schüler bleiben, Stunden starten neu)">Nächstes Schuljahr</button>
           <button id="btn-delete-class" class="danger small">Klasse löschen</button>
@@ -135,6 +136,10 @@
                      placeholder="Kürzel" autocomplete="off">
             </label>
             <span id="kl-co-name" class="kl-name"></span>
+            <span class="medien-wahl">Medienmanager
+              <select id="medien-1" class="small-select" title="Erster Medienmanager dieser Klasse"></select>
+              <select id="medien-2" class="small-select" title="Zweiter Medienmanager dieser Klasse"></select>
+            </span>
           </div>
           <datalist id="lehrer-kuerzel"></datalist>
         </div>
@@ -341,6 +346,21 @@
           <ul id="lesson-list" class="lesson-list"></ul>
         </section>
 
+
+        <section id="subtab-notizen" class="subtab-page card">
+          <div class="projekt-header">
+            <h3 id="klassen-notizen-titel">Notizen</h3>
+            <div class="btn-row">
+              <span class="hint" id="klassen-notes-status"></span>
+              <button id="btn-print-klassen-notes" data-icon="printer">Drucken</button>
+            </div>
+          </div>
+          <p class="hint">Freier Platz für alles zu dieser Klasse, was in kein Feld passt –
+            Absprachen, Elternkontakte, Sitzordnung, wer wen nicht neben sich haben sollte.
+            Wird automatisch gespeichert und gehört zur Klasse, nicht zum Gerät.</p>
+          <textarea id="klassen-notes-text" class="notes-area" rows="16" spellcheck="true"
+            placeholder="Einfach lostippen …"></textarea>
+        </section>
 
         <section id="subtab-sitzplan" class="subtab-page card">
           <div class="projekt-header">
@@ -785,26 +805,26 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=108"></script>
-<script src="js/firebase-config.js?v=108"></script>
-<script type="module" src="js/live-firebase.js?v=108"></script>
-<script src="js/topics-seed.js?v=108"></script>
-<script src="js/ai-import.js?v=108"></script>
-<script src="js/store.js?v=108"></script>
-<script src="js/noise.js?v=108"></script>
-<script src="js/classes.js?v=108"></script>
-<script src="js/lessons.js?v=108"></script>
-<script src="js/band.js?v=108"></script>
-<script src="js/notes.js?v=108"></script>
-<script src="js/tresor.js?v=108"></script>
-<script src="js/erklaerungen.js?v=108"></script>
-<script src="js/setlisten.js?v=108"></script>
-<script src="js/einklappen.js?v=108"></script>
-<script src="js/live-groups.js?v=108"></script>
-<script src="js/tipps.js?v=108"></script>
-<script src="js/sport-tabellen.js?v=108"></script>
-<script src="js/sport.js?v=108"></script>
-<script src="js/tools.js?v=108"></script>
-<script src="js/app.js?v=108"></script>
+<script src="js/vendor/qrcode.min.js?v=111"></script>
+<script src="js/firebase-config.js?v=111"></script>
+<script type="module" src="js/live-firebase.js?v=111"></script>
+<script src="js/topics-seed.js?v=111"></script>
+<script src="js/ai-import.js?v=111"></script>
+<script src="js/store.js?v=111"></script>
+<script src="js/noise.js?v=111"></script>
+<script src="js/classes.js?v=111"></script>
+<script src="js/lessons.js?v=111"></script>
+<script src="js/band.js?v=111"></script>
+<script src="js/notes.js?v=111"></script>
+<script src="js/tresor.js?v=111"></script>
+<script src="js/erklaerungen.js?v=111"></script>
+<script src="js/setlisten.js?v=111"></script>
+<script src="js/einklappen.js?v=111"></script>
+<script src="js/live-groups.js?v=111"></script>
+<script src="js/tipps.js?v=111"></script>
+<script src="js/sport-tabellen.js?v=111"></script>
+<script src="js/sport.js?v=111"></script>
+<script src="js/tools.js?v=111"></script>
+<script src="js/app.js?v=111"></script>
 </body>
 </html>

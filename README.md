@@ -67,6 +67,15 @@ zeigt Klasse und Klassenleitung; ein Klick springt in die Klasse und hebt den Sc
 Liste kurz hervor. Ist die Klasse durch den Schuljahr-Filter ausgeblendet, schaltet der
 Sprung den Filter auf „alle“, damit sie nicht unsichtbar bleibt.
 
+### 📝 Notizen und Medienmanager je Klasse
+- Eigener Unterreiter **Notizen** pro Klasse – Absprachen, Elternkontakte, wer wen nicht neben
+  sich haben sollte. Speichert beim Tippen von selbst, gehört zur Klasse (nicht zum Gerät) und
+  wandert damit über Sync und Backup mit. Druckbar mit der Klasse in der Überschrift.
+- Zwei **Medienmanager** je Klasse, im Kopf der Klasse aus der Klassenliste gewählt und
+  jederzeit änderbar. Gespeichert wird die Schülerkennung, nicht der Name – ein umbenannter
+  Schüler bleibt also zugeordnet, ein ausgetretener fällt still heraus. Denselben Schüler
+  zweimal zu wählen ist nicht möglich; das andere Feld wird dabei frei.
+
 ### 👥 Klassenleitung und Lehrkräfte (Reiter *Lehrer*)
 Jede Klasse hat zwei Felder für **Klassenleitung** und **Co-Klassenleitung**, in die das
 Kürzel kommt (`BU`, oder auch `WW/PG` für zwei Personen). Damit dort nicht nur das Kürzel
