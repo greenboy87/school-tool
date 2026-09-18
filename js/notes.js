@@ -50,6 +50,10 @@ const Notes = {
     ta.value = (cls && cls.notizen) || '';
     const hinweis = document.getElementById('klassen-notes-status');
     if (hinweis) hinweis.textContent = '';
+    /* Die Ueberschrift nennt die Klasse. Ohne sie sieht jede Klasse gleich aus –
+       und wer mit den Pfeiltasten durchblaettert, weiss nicht mehr, wo er tippt. */
+    const kopf = document.getElementById('klassen-notizen-titel');
+    if (kopf) kopf.textContent = cls ? `Notizen – ${cls.name}` : 'Notizen';
   },
 
   binden({ feld, status, druck, titel, lesen, schreiben }) {

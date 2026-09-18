@@ -92,8 +92,29 @@ const Store = {
         if (!db.objectStoreNames.contains('seatplans')) db.createObjectStore('seatplans');
         if (!db.objectStoreNames.contains('fotos')) db.createObjectStore('fotos');
       };
-      req.onsuccess = () => { this._db = req.result; resolve(this._db); };
-      req.onerror = () => reject(req.error);
+      /* Haelt ein anderes Fenster dieselbe Datenbank fest, wartet das Oeffnen
+         ewig – ohne Fehler, ohne Meldung; Sitzplaene und Fotos haengen dann
+         still, und ein Abgleich kaeme nie zum Ende. Mal meldet der Browser das
+         als „blocked“, mal gar nicht, deshalb zusaetzlich eine Frist. Lieber
+         klar scheitern und sagen, was hilft. */
+      let fertig = false;
+      const belegt = () => {
+        if (fertig) return;
+        fertig = true;
+        reject(new Error('Die Datenbank für Sitzpläne und Fotos ist belegt – ' +
+          'vermutlich hat ein anderes School-Tool-Fenster sie offen. ' +
+          'Die übrigen Fenster schließen und die Seite neu laden.'));
+      };
+      const frist = setTimeout(belegt, 10000);
+      req.onsuccess = () => {
+        clearTimeout(frist);
+        if (fertig) return;
+        fertig = true;
+        this._db = req.result;
+        resolve(this._db);
+      };
+      req.onerror = () => { clearTimeout(frist); if (!fertig) { fertig = true; reject(req.error); } };
+      req.onblocked = () => { clearTimeout(frist); belegt(); };
     });
   },
 

@@ -10,6 +10,10 @@
      richtung  „weniger" = schneller ist besser, „mehr" = weiter/hoeher/laenger
      noten     1 bis 5 mit Anzeigetext und rechenbarer Zahl (Zeiten in Sekunden)
 
+   Unter Schwimmen steht bewusst kein „Ausdauer (Dauerlauf)“: Beim Erzeugen war
+   diese Tabelle versehentlich in beide Sportarten geraten. Sie gehoert zur
+   Leichtathletik.
+
    Diese Datei ist die mitgelieferte Fassung. Wer neuere Tabellen hat, laedt sie im
    Reiter Sport als Datei – die liegt dann lokal und geht dieser hier vor. */
 const SportTabellen = {
@@ -2848,33 +2852,6 @@ const SportTabellen = {
    "jgst": 5,
    "disziplinen": [
     {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "20",
-       "zahl": 20.0
-      },
-      "2": {
-       "text": "18",
-       "zahl": 18.0
-      },
-      "3": {
-       "text": "15",
-       "zahl": 15.0
-      },
-      "4": {
-       "text": "12",
-       "zahl": 12.0
-      },
-      "5": {
-       "text": "8",
-       "zahl": 8.0
-      }
-     }
-    },
-    {
      "name": "25 m Brust",
      "einheit": "min:s",
      "richtung": "weniger",
@@ -2935,33 +2912,6 @@ const SportTabellen = {
    "geschlecht": "Jungen",
    "jgst": 6,
    "disziplinen": [
-    {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "24",
-       "zahl": 24.0
-      },
-      "2": {
-       "text": "21",
-       "zahl": 21.0
-      },
-      "3": {
-       "text": "18",
-       "zahl": 18.0
-      },
-      "4": {
-       "text": "14",
-       "zahl": 14.0
-      },
-      "5": {
-       "text": "10",
-       "zahl": 10.0
-      }
-     }
-    },
     {
      "name": "50 m Brust",
      "einheit": "min:s",
@@ -3051,33 +3001,6 @@ const SportTabellen = {
    "jgst": 7,
    "disziplinen": [
     {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "27",
-       "zahl": 27.0
-      },
-      "2": {
-       "text": "24",
-       "zahl": 24.0
-      },
-      "3": {
-       "text": "21",
-       "zahl": 21.0
-      },
-      "4": {
-       "text": "16",
-       "zahl": 16.0
-      },
-      "5": {
-       "text": "11",
-       "zahl": 11.0
-      }
-     }
-    },
-    {
      "name": "50 m Brust",
      "einheit": "min:s",
      "richtung": "weniger",
@@ -3165,33 +3088,6 @@ const SportTabellen = {
    "geschlecht": "Jungen",
    "jgst": 8,
    "disziplinen": [
-    {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "30",
-       "zahl": 30.0
-      },
-      "2": {
-       "text": "27",
-       "zahl": 27.0
-      },
-      "3": {
-       "text": "23",
-       "zahl": 23.0
-      },
-      "4": {
-       "text": "18",
-       "zahl": 18.0
-      },
-      "5": {
-       "text": "12",
-       "zahl": 12.0
-      }
-     }
-    },
     {
      "name": "50 m Brust",
      "einheit": "min:s",
@@ -3307,33 +3203,6 @@ const SportTabellen = {
    "geschlecht": "Jungen",
    "jgst": 9,
    "disziplinen": [
-    {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "33",
-       "zahl": 33.0
-      },
-      "2": {
-       "text": "30",
-       "zahl": 30.0
-      },
-      "3": {
-       "text": "25",
-       "zahl": 25.0
-      },
-      "4": {
-       "text": "20",
-       "zahl": 20.0
-      },
-      "5": {
-       "text": "13",
-       "zahl": 13.0
-      }
-     }
-    },
     {
      "name": "50 m Brust",
      "einheit": "min:s",
@@ -3476,33 +3345,6 @@ const SportTabellen = {
    "geschlecht": "Jungen",
    "jgst": 10,
    "disziplinen": [
-    {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "35",
-       "zahl": 35.0
-      },
-      "2": {
-       "text": "31",
-       "zahl": 31.0
-      },
-      "3": {
-       "text": "27",
-       "zahl": 27.0
-      },
-      "4": {
-       "text": "21",
-       "zahl": 21.0
-      },
-      "5": {
-       "text": "14",
-       "zahl": 14.0
-      }
-     }
-    },
     {
      "name": "50 m Brust",
      "einheit": "min:s",
@@ -3727,33 +3569,6 @@ const SportTabellen = {
    "jgst": 11,
    "disziplinen": [
     {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "37",
-       "zahl": 37.0
-      },
-      "2": {
-       "text": "33",
-       "zahl": 33.0
-      },
-      "3": {
-       "text": "29",
-       "zahl": 29.0
-      },
-      "4": {
-       "text": "23",
-       "zahl": 23.0
-      },
-      "5": {
-       "text": "15",
-       "zahl": 15.0
-      }
-     }
-    },
-    {
      "name": "50 m Brust",
      "einheit": "min:s",
      "richtung": "weniger",
@@ -3977,33 +3792,6 @@ const SportTabellen = {
    "jgst": 5,
    "disziplinen": [
     {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "20",
-       "zahl": 20.0
-      },
-      "2": {
-       "text": "18",
-       "zahl": 18.0
-      },
-      "3": {
-       "text": "15",
-       "zahl": 15.0
-      },
-      "4": {
-       "text": "12",
-       "zahl": 12.0
-      },
-      "5": {
-       "text": "8",
-       "zahl": 8.0
-      }
-     }
-    },
-    {
      "name": "25 m Brust",
      "einheit": "min:s",
      "richtung": "weniger",
@@ -4064,33 +3852,6 @@ const SportTabellen = {
    "geschlecht": "Mädchen",
    "jgst": 6,
    "disziplinen": [
-    {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "24",
-       "zahl": 24.0
-      },
-      "2": {
-       "text": "21",
-       "zahl": 21.0
-      },
-      "3": {
-       "text": "18",
-       "zahl": 18.0
-      },
-      "4": {
-       "text": "14",
-       "zahl": 14.0
-      },
-      "5": {
-       "text": "10",
-       "zahl": 10.0
-      }
-     }
-    },
     {
      "name": "50 m Brust",
      "einheit": "min:s",
@@ -4180,33 +3941,6 @@ const SportTabellen = {
    "jgst": 7,
    "disziplinen": [
     {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "27",
-       "zahl": 27.0
-      },
-      "2": {
-       "text": "24",
-       "zahl": 24.0
-      },
-      "3": {
-       "text": "21",
-       "zahl": 21.0
-      },
-      "4": {
-       "text": "16",
-       "zahl": 16.0
-      },
-      "5": {
-       "text": "11",
-       "zahl": 11.0
-      }
-     }
-    },
-    {
      "name": "50 m Brust",
      "einheit": "min:s",
      "richtung": "weniger",
@@ -4294,33 +4028,6 @@ const SportTabellen = {
    "geschlecht": "Mädchen",
    "jgst": 8,
    "disziplinen": [
-    {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "30",
-       "zahl": 30.0
-      },
-      "2": {
-       "text": "27",
-       "zahl": 27.0
-      },
-      "3": {
-       "text": "23",
-       "zahl": 23.0
-      },
-      "4": {
-       "text": "18",
-       "zahl": 18.0
-      },
-      "5": {
-       "text": "12",
-       "zahl": 12.0
-      }
-     }
-    },
     {
      "name": "50 m Brust",
      "einheit": "min:s",
@@ -4436,33 +4143,6 @@ const SportTabellen = {
    "geschlecht": "Mädchen",
    "jgst": 9,
    "disziplinen": [
-    {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "33",
-       "zahl": 33.0
-      },
-      "2": {
-       "text": "30",
-       "zahl": 30.0
-      },
-      "3": {
-       "text": "25",
-       "zahl": 25.0
-      },
-      "4": {
-       "text": "20",
-       "zahl": 20.0
-      },
-      "5": {
-       "text": "13",
-       "zahl": 13.0
-      }
-     }
-    },
     {
      "name": "50 m Brust",
      "einheit": "min:s",
@@ -4605,33 +4285,6 @@ const SportTabellen = {
    "geschlecht": "Mädchen",
    "jgst": 10,
    "disziplinen": [
-    {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "35",
-       "zahl": 35.0
-      },
-      "2": {
-       "text": "31",
-       "zahl": 31.0
-      },
-      "3": {
-       "text": "27",
-       "zahl": 27.0
-      },
-      "4": {
-       "text": "21",
-       "zahl": 21.0
-      },
-      "5": {
-       "text": "14",
-       "zahl": 14.0
-      }
-     }
-    },
     {
      "name": "50 m Brust",
      "einheit": "min:s",
@@ -4855,33 +4508,6 @@ const SportTabellen = {
    "geschlecht": "Mädchen",
    "jgst": 11,
    "disziplinen": [
-    {
-     "name": "Ausdauer (Dauerlauf)",
-     "einheit": "min",
-     "richtung": "mehr",
-     "noten": {
-      "1": {
-       "text": "37",
-       "zahl": 37.0
-      },
-      "2": {
-       "text": "33",
-       "zahl": 33.0
-      },
-      "3": {
-       "text": "29",
-       "zahl": 29.0
-      },
-      "4": {
-       "text": "23",
-       "zahl": 23.0
-      },
-      "5": {
-       "text": "15",
-       "zahl": 15.0
-      }
-     }
-    },
     {
      "name": "50 m Brust",
      "einheit": "min:s",

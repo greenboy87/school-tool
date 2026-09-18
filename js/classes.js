@@ -380,8 +380,13 @@ const Classes = {
   async handleSeatplanFile(file) {
     if (!this.currentClassId) return;
     const name = this.sitzplanName(file);
-    await Store.putSeatplan(this.currentClassId,
-      name === file.name ? file : new File([file], name, { type: file.type }));
+    try {
+      await Store.putSeatplan(this.currentClassId,
+        name === file.name ? file : new File([file], name, { type: file.type }));
+    } catch (e) {
+      alert('Der Sitzplan konnte nicht gespeichert werden.\n\n' + e.message);
+      return;
+    }
     await this.renderSeatplan();
   },
 
@@ -2342,7 +2347,16 @@ const Classes = {
     const nameFeld = document.getElementById('seatplan-name');
     if (this.seatplanUrl) { URL.revokeObjectURL(this.seatplanUrl); this.seatplanUrl = null; }
     view.innerHTML = '';
-    const entry = await Store.getSeatplan(this.currentClassId);
+    let entry;
+    try {
+      entry = await Store.getSeatplan(this.currentClassId);
+    } catch (e) {
+      // Kommt vor, wenn ein zweites Fenster die Datenbank festhaelt
+      view.innerHTML = `<p class="hint warnung">${e.message}</p>`;
+      delBtn.hidden = true;
+      if (nameFeld) nameFeld.hidden = true;
+      return;
+    }
     delBtn.hidden = !entry;
     if (!entry) {
       view.innerHTML = '<p class="hint">Noch kein Sitzplan hochgeladen. Der Plan wird lokal im Browser gespeichert.</p>';

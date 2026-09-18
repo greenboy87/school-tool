@@ -244,8 +244,10 @@ const LiveGroups = {
     p.groupNames.push(...gruppen.map(g => g.name));
     Classes.persist();
     Classes.renderProjects();
-    alert(`${gruppen.length} Gruppen wurden in das Projekt „${p.name}“ übernommen.\n\n` +
-      'Der Raum läuft weiter – erst „Sammlung beenden“ löscht ihn.');
+    alert((gruppen.length === 1
+        ? `1 Gruppe wurde in das Projekt „${p.name}“ übernommen.`
+        : `${gruppen.length} Gruppen wurden in das Projekt „${p.name}“ übernommen.`) +
+      '\n\nDer Raum läuft weiter – erst „Sammlung beenden“ löscht ihn.');
   },
 
   /* ---------- Beenden ---------- */

@@ -19,9 +19,10 @@ const Einklappen = {
     }
   },
 
-  /* Standard ist „offen“ – nur die Lehrerliste startet zu, sie ist eine
-     Nachschlageliste und wuerde den Reiter sonst dauerhaft in die Laenge ziehen. */
-  ZU_AM_ANFANG: ['lehrer'],
+  /* Alle Bereiche starten offen. Die Lehrerliste war frueher ausgenommen, weil
+     sie in einem fremden Reiter mitlief; seit sie einen eigenen hat, waere der
+     sonst leer. Wer sie zuklappt, findet sie beim naechsten Mal zugeklappt. */
+  ZU_AM_ANFANG: [],
 
   istZu(name) {
     const gemerkt = localStorage.getItem('eingeklappt-' + name);

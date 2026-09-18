@@ -231,8 +231,12 @@ const Tresor = {
       let planFehler = null;
       try { await this.dateienHochladen(); }
       catch (e) { planFehler = this.fehlertext(e); }
-      if (planFehler) this.status('gesichert ' + this.zeit(stand) +
-        ' · Dateien nicht: ' + planFehler, true);
+      /* Grosse Dateien melden beim Hochladen ihren Fortschritt („Teil 3 von 6“).
+         Diese Meldung muss am Ende wieder weichen, sonst steht sie da, als haenge
+         die Uebertragung noch. */
+      this.status(planFehler
+        ? 'gesichert ' + this.zeit(stand) + ' · Dateien nicht: ' + planFehler
+        : 'gesichert ' + this.zeit(stand), !!planFehler);
 
       if (laut) alert(planFehler
         ? 'Daten wurden verschlüsselt hochgeladen.\n\nDie Sitzpläne konnten nicht ' +
