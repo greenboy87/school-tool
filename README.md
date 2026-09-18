@@ -47,6 +47,8 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
 - **Als Popup** oder als **schwebendes Mini-Fenster** („Immer im Vordergrund“, Chrome/Edge) – bleibt auch über einer Vollbild-Präsentation sichtbar
 
 ### 📚 Klassen & Noten
+- Ist eine Klasse ausgewählt, schalten **Pfeil hoch/runter** zur vorigen bzw. nächsten Klasse –
+  solange nicht gerade in ein Feld getippt wird und der Reiter *Klassen* offen ist.
 - **Ordnen** über der Klassenliste blendet Pfeile ein, mit denen sich einzelne Klassen
   verschieben lassen, dazu **A–Z sortieren** für die natürliche Reihenfolge (5a vor 5b vor 6a
   vor 10a). **Fertig** räumt die Pfeile wieder weg.

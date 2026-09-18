@@ -131,6 +131,32 @@ const Classes = {
       });
     }
 
+    /* Mit Pfeil hoch/runter durch die Klassen blaettern. Gilt nur im Reiter
+       „Klassen“ und nur, wenn gerade nichts getippt wird – sonst spraenge die
+       Ansicht weg, waehrend man in einer Note, einer Notiz oder dem Suchfeld
+       mit den Pfeilen navigiert. */
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      const reiter = document.getElementById('tab-klassen');
+      if (!reiter || !reiter.classList.contains('active')) return;
+      if (!this.currentClassId) return;
+      const ziel = e.target;
+      if (ziel && (ziel.closest('input, textarea, select, [contenteditable="true"]'))) return;
+
+      const sichtbar = this.data.classes.filter(c =>
+        this.yearFilter === 'all' || (c.year || '') === this.yearFilter);
+      const pos = sichtbar.findIndex(c => c.id === this.currentClassId);
+      if (pos < 0) return;
+      const naechste = sichtbar[pos + (e.key === 'ArrowDown' ? 1 : -1)];
+      if (!naechste) return;                 // am Rand nicht umlaufen
+      e.preventDefault();                    // sonst scrollt die Seite mit
+      this.selectClass(naechste.id);
+      // Die Liste ist neu gezeichnet – die hervorgehobene Zeile ist die gesuchte
+      const zeile = document.querySelector('#class-list li.active');
+      if (zeile) zeile.scrollIntoView({ block: 'nearest' });
+    });
+
     const ordnenKnopf = document.getElementById('btn-klassen-ordnen');
     if (ordnenKnopf) {
       ordnenKnopf.addEventListener('click', () => {
