@@ -269,12 +269,14 @@ const Tresor = {
      deshalb einzeln mitgenommen werden. Jeder Plan bekommt seinen eigenen Knoten,
      damit ein großes PDF nicht die ganze Übertragung sprengt. Verschlüsselt wird
      mit demselben Schlüssel wie die übrigen Daten. */
-  /* Obergrenze je Datei. Sie ist nicht frei gewaehlt: Verschluesselt und in
-     Base64 waechst eine Datei um ein Drittel, und Firebase nimmt je Wert
-     hoechstens 10 MB. 7 MiB werden zu rund 9,8 Mio. Zeichen – das passt mit
-     etwas Luft. Wer groessere Sitzplaene hat, muss sie verkleinern; mehr gibt
-     die Datenbank in einem Stueck nicht her. */
-  MAX_PLAN: 7 * 1024 * 1024,
+  /* Firebase weist jeden Wert ueber 10.485.760 Bytes ab ("value argument
+     contains a string greater than 10485760 utf8 bytes") – gemessen, nicht
+     geschaetzt. Grosse Dateien werden deshalb in Stuecke zerlegt und einzeln
+     abgelegt; dadurch faellt diese Grenze weg. Was bleibt, ist die Vernunft:
+     Jedes Geraet laedt beim Abgleich alles herunter, und 15 MiB je Sitzplan
+     sind bei 14 Klassen schon gut 200 MB. */
+  MAX_PLAN: 15 * 1024 * 1024,
+  TEIL_GROESSE: 2 * 1000 * 1000,      // Zeichen je Stueck, mit Abstand unter der Grenze
   PLAN_MERKER: 'tresor-plaene',
 
   merker() {
@@ -306,20 +308,35 @@ const Tresor = {
         if (eintrag.blob.size > this.MAX_PLAN) {
           const mb = (n) => (n / 1024 / 1024).toFixed(1).replace('.', ',');
           this.status(`„${eintrag.name}“ ist zu groß für den Sync ` +
-            `(${mb(eintrag.blob.size)} MB, erlaubt sind ${mb(this.MAX_PLAN)} MB). ` +
-            'Mehr nimmt die Datenbank in einem Stück nicht an – die Datei müsste kleiner werden.', true);
+            `(${mb(eintrag.blob.size)} MB, erlaubt sind ${mb(this.MAX_PLAN)} MB).`, true);
           continue;
         }
         const bytes = new Uint8Array(await eintrag.blob.arrayBuffer());
         const iv = crypto.getRandomValues(new Uint8Array(12));
         const chiffre = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, this.schluessel, bytes);
-        await set(ref(db, `schoolTool/tresor/${this.id}/${art.knoten}/${id}`), {
-          chiffre: this.nachB64(new Uint8Array(chiffre)),
+        const text = this.nachB64(new Uint8Array(chiffre));
+        const ziel = `schoolTool/tresor/${this.id}/${art.knoten}/${id}`;
+        const kopf = {
           iv: this.nachB64(iv),
           name: eintrag.name || art.standard,
           typ: eintrag.type || art.typ,
           stand: Date.now(),
-        });
+        };
+
+        if (text.length <= this.TEIL_GROESSE) {
+          await set(ref(db, ziel), { ...kopf, chiffre: text });
+        } else {
+          /* In Stuecke zerlegt: Jedes einzeln geschrieben, damit weder ein
+             Wert noch ein Schreibvorgang an die Grenzen der Datenbank stoesst.
+             Erst der Kopf – ein „set“ raeumt dabei alte Stuecke mit weg. */
+          const stuecke = Math.ceil(text.length / this.TEIL_GROESSE);
+          await set(ref(db, ziel), { ...kopf, teile: stuecke });
+          for (let i = 0; i < stuecke; i++) {
+            this.status(`lade „${kopf.name}“ … Teil ${i + 1} von ${stuecke}`);
+            await set(ref(db, `${ziel}/t${i}`),
+              text.slice(i * this.TEIL_GROESSE, (i + 1) * this.TEIL_GROESSE));
+          }
+        }
         merker[schluessel] = fp;
       }
     }
@@ -336,8 +353,10 @@ const Tresor = {
       for (const [id, p] of Object.entries(alle)) {
         try {
           const iv = this.vonB64(p.iv);
+          const text = this.teileZusammensetzen(p, art.knoten, id);
+          if (text === null) continue;
           const klar = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv }, this.schluessel, this.vonB64(p.chiffre));
+            { name: 'AES-GCM', iv }, this.schluessel, this.vonB64(text));
           const datei = new File([klar], p.name || art.standard, { type: p.typ || art.typ });
           await art.legen(id, datei);
           merker[art.knoten + ':' + id] = this.fingerabdruck(datei.name, datei.size);
@@ -444,6 +463,27 @@ const Tresor = {
       this.status('Server-Backup fehlgeschlagen: ' + this.fehlertext(e), true);
       alert('Server-Backup fehlgeschlagen.\n\n' + this.fehlertext(e));
     }
+  },
+
+  /* Eine Datei liegt entweder ganz in „chiffre“ oder in Stuecken t0, t1, …
+     Fehlt ein Stueck, wird die Datei uebersprungen statt halb geschrieben –
+     ein halber Sitzplan waere schlimmer als gar keiner. */
+  teileZusammensetzen(p, knoten, id) {
+    if (typeof p.chiffre === 'string') return p.chiffre;
+    if (!p.teile) {
+      console.error('Datei ohne Inhalt:', knoten, id);
+      return null;
+    }
+    const stuecke = [];
+    for (let i = 0; i < p.teile; i++) {
+      const t = p['t' + i];
+      if (typeof t !== 'string') {
+        console.error(`Datei unvollständig: ${knoten}/${id}, Teil ${i + 1} von ${p.teile} fehlt`);
+        return null;
+      }
+      stuecke.push(t);
+    }
+    return stuecke.join('');
   },
 
   /* ---------- Verschlüsselung ---------- */

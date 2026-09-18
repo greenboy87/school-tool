@@ -24,11 +24,19 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
 
 **R2.** **Veröffentlichen**. Fertig – im School-Tool einmal Strg+Shift+R.
 
+> **Zuletzt geändert am 18.09.2026 (zweite Änderung, die erste reicht nicht):**
+> Unter `plaene` und `fotos` sind `teile` und `t0`, `t1`, … dazugekommen. Grund:
+> Firebase nimmt je Wert höchstens 10.485.760 Bytes an – das ist eine harte Grenze
+> der Datenbank, die sich mit keiner Regel anheben lässt. Große Sitzpläne werden
+> deshalb in Stücke zerlegt und einzeln abgelegt; `teile` sagt, wie viele es sind.
+> Ohne diese zwei Zeilen weist die Datenbank das Hochladen ab, weil bisher
+> `"$andere": { ".validate": false }` alles Unbekannte sperrte. Das School-Tool
+> lässt jetzt 15 MiB je Datei zu.
+>
 > **Zuletzt geändert am 18.09.2026:** Die Obergrenze für `chiffre` steht jetzt bei
 > 10.000.000 Zeichen statt 6.000.000 – ein Sitzplan mit Fotos wächst durch
 > Verschlüsselung und Base64 um ein Drittel und sprengte die alte Grenze schon bei
-> 4,5 MB Dateigröße. Mehr als 10 MB je Wert nimmt Firebase grundsätzlich nicht an;
-> das School-Tool lässt deshalb höchstens 7 MiB je Datei zu.
+> 4,5 MB Dateigröße.
 >
 > **Zuletzt geändert am 12.09.2026:** Unter `meta` ist das Feld `bezeichnung`
 > dazugekommen – damit gibt die Lehrkraft vor, was die Klasse eintragen soll
@@ -57,7 +65,8 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
               "name":    { ".validate": "newData.isString() && newData.val().length <= 200" },
               "typ":     { ".validate": "newData.isString() && newData.val().length <= 100" },
               "stand":   { ".validate": "newData.isNumber()" },
-              "$andere": { ".validate": false }
+              "teile":   { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 200" },
+              "$teil":   { ".validate": "$teil.matches(/^t[0-9]{1,3}$/) && newData.isString() && newData.val().length <= 2100000" }
             }
           },
           "fotos": {
@@ -67,7 +76,8 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
               "name":    { ".validate": "newData.isString() && newData.val().length <= 200" },
               "typ":     { ".validate": "newData.isString() && newData.val().length <= 100" },
               "stand":   { ".validate": "newData.isNumber()" },
-              "$andere": { ".validate": false }
+              "teile":   { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 200" },
+              "$teil":   { ".validate": "$teil.matches(/^t[0-9]{1,3}$/) && newData.isString() && newData.val().length <= 2100000" }
             }
           },
           "$andere": { ".validate": false }
@@ -145,7 +155,8 @@ fügst nur einen Block hinzu:
               "name":    { ".validate": "newData.isString() && newData.val().length <= 200" },
               "typ":     { ".validate": "newData.isString() && newData.val().length <= 100" },
               "stand":   { ".validate": "newData.isNumber()" },
-              "$andere": { ".validate": false }
+              "teile":   { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 200" },
+              "$teil":   { ".validate": "$teil.matches(/^t[0-9]{1,3}$/) && newData.isString() && newData.val().length <= 2100000" }
             }
           },
           "fotos": {
@@ -155,7 +166,8 @@ fügst nur einen Block hinzu:
               "name":    { ".validate": "newData.isString() && newData.val().length <= 200" },
               "typ":     { ".validate": "newData.isString() && newData.val().length <= 100" },
               "stand":   { ".validate": "newData.isNumber()" },
-              "$andere": { ".validate": false }
+              "teile":   { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 200" },
+              "$teil":   { ".validate": "$teil.matches(/^t[0-9]{1,3}$/) && newData.isString() && newData.val().length <= 2100000" }
             }
           },
           "$andere": { ".validate": false }
