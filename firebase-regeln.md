@@ -24,6 +24,12 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
 
 **R2.** **Veröffentlichen**. Fertig – im School-Tool einmal Strg+Shift+R.
 
+> **Zuletzt geändert am 18.09.2026:** Die Obergrenze für `chiffre` steht jetzt bei
+> 10.000.000 Zeichen statt 6.000.000 – ein Sitzplan mit Fotos wächst durch
+> Verschlüsselung und Base64 um ein Drittel und sprengte die alte Grenze schon bei
+> 4,5 MB Dateigröße. Mehr als 10 MB je Wert nimmt Firebase grundsätzlich nicht an;
+> das School-Tool lässt deshalb höchstens 7 MiB je Datei zu.
+>
 > **Zuletzt geändert am 12.09.2026:** Unter `meta` ist das Feld `bezeichnung`
 > dazugekommen – damit gibt die Lehrkraft vor, was die Klasse eintragen soll
 > („Gruppenname“ oder z. B. „Thema“). Ohne diese Zeile weist die Datenbank das
@@ -39,14 +45,14 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
         "$id": {
           ".read": true,
           ".write": true,
-          "chiffre": { ".validate": "newData.isString() && newData.val().length <= 6000000" },
+          "chiffre": { ".validate": "newData.isString() && newData.val().length <= 10000000" },
           "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
           "salz":    { ".validate": "newData.isString() && newData.val().length <= 64" },
           "stand":   { ".validate": "newData.isNumber()" },
           "geraet":  { ".validate": "newData.isString() && newData.val().length <= 32" },
           "plaene": {
             "$klasse": {
-              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 6000000" },
+              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 10000000" },
               "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
               "name":    { ".validate": "newData.isString() && newData.val().length <= 200" },
               "typ":     { ".validate": "newData.isString() && newData.val().length <= 100" },
@@ -56,7 +62,7 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
           },
           "fotos": {
             "$foto": {
-              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 6000000" },
+              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 10000000" },
               "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
               "name":    { ".validate": "newData.isString() && newData.val().length <= 200" },
               "typ":     { ".validate": "newData.isString() && newData.val().length <= 100" },
@@ -127,14 +133,14 @@ fügst nur einen Block hinzu:
         "$id": {
           ".read": true,
           ".write": true,
-          "chiffre": { ".validate": "newData.isString() && newData.val().length <= 6000000" },
+          "chiffre": { ".validate": "newData.isString() && newData.val().length <= 10000000" },
           "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
           "salz":    { ".validate": "newData.isString() && newData.val().length <= 64" },
           "stand":   { ".validate": "newData.isNumber()" },
           "geraet":  { ".validate": "newData.isString() && newData.val().length <= 32" },
           "plaene": {
             "$klasse": {
-              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 6000000" },
+              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 10000000" },
               "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
               "name":    { ".validate": "newData.isString() && newData.val().length <= 200" },
               "typ":     { ".validate": "newData.isString() && newData.val().length <= 100" },
@@ -144,7 +150,7 @@ fügst nur einen Block hinzu:
           },
           "fotos": {
             "$foto": {
-              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 6000000" },
+              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 10000000" },
               "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
               "name":    { ".validate": "newData.isString() && newData.val().length <= 200" },
               "typ":     { ".validate": "newData.isString() && newData.val().length <= 100" },

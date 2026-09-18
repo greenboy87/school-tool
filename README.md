@@ -282,7 +282,8 @@ deine Daten, wenn der lokale Stand leer, kaputt oder auf einem anderen Rechner u
 - Es genügt das **Sync-Passwort** – der Sync muss auf diesem Gerät nicht eingerichtet sein. Das
   Passwort wird dabei auch nicht gespeichert.
 - **Sitzpläne und Fotos kommen mit**, weil sie vom Server geholt werden statt aus dem
-  localStorage dieses Geräts.
+  localStorage dieses Geräts. Je Datei sind **7 MiB** möglich: Verschlüsselt und in
+  Base64 wächst eine Datei um ein Drittel, und Firebase nimmt je Wert höchstens 10 MB.
 - Zurückspielen mit **Zurück** – dieselbe Datei, derselbe Knopf. Das alte Backup-Format wird
   weiterhin gelesen.
 

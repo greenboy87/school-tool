@@ -269,7 +269,12 @@ const Tresor = {
      deshalb einzeln mitgenommen werden. Jeder Plan bekommt seinen eigenen Knoten,
      damit ein großes PDF nicht die ganze Übertragung sprengt. Verschlüsselt wird
      mit demselben Schlüssel wie die übrigen Daten. */
-  MAX_PLAN: 4 * 1024 * 1024,
+  /* Obergrenze je Datei. Sie ist nicht frei gewaehlt: Verschluesselt und in
+     Base64 waechst eine Datei um ein Drittel, und Firebase nimmt je Wert
+     hoechstens 10 MB. 7 MiB werden zu rund 9,8 Mio. Zeichen – das passt mit
+     etwas Luft. Wer groessere Sitzplaene hat, muss sie verkleinern; mehr gibt
+     die Datenbank in einem Stueck nicht her. */
+  MAX_PLAN: 7 * 1024 * 1024,
   PLAN_MERKER: 'tresor-plaene',
 
   merker() {
@@ -299,8 +304,10 @@ const Tresor = {
         const fp = this.fingerabdruck(eintrag.name, eintrag.blob.size);
         if (merker[schluessel] === fp) continue;          // unverändert
         if (eintrag.blob.size > this.MAX_PLAN) {
+          const mb = (n) => (n / 1024 / 1024).toFixed(1).replace('.', ',');
           this.status(`„${eintrag.name}“ ist zu groß für den Sync ` +
-            `(${Math.round(eintrag.blob.size / 1024 / 1024)} MB, erlaubt sind 4 MB).`, true);
+            `(${mb(eintrag.blob.size)} MB, erlaubt sind ${mb(this.MAX_PLAN)} MB). ` +
+            'Mehr nimmt die Datenbank in einem Stück nicht an – die Datei müsste kleiner werden.', true);
           continue;
         }
         const bytes = new Uint8Array(await eintrag.blob.arrayBuffer());
