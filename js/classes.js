@@ -360,10 +360,29 @@ const Classes = {
     }
   },
 
+  /* Aus dem Download-Ordner kommen Dateien oft namenlos herein („untitled.pdf“).
+     Gespeichert wird deshalb unter einem sprechenden Namen – der taucht spaeter
+     auf dem Server, im Backup und beim Herunterladen wieder auf. Die Endung
+     bleibt erhalten, sonst weiss das Betriebssystem nichts mit der Datei anzufangen. */
+  dateiName(roh, typ, vorschlag) {
+    const ausName = (/\.([a-z0-9]{1,5})$/i.exec(String(roh || '')) || [])[1];
+    const ausTyp = String(typ || '').split('/')[1];
+    const endung = (ausName || ausTyp || 'dat').toLowerCase().replace('jpeg', 'jpg');
+    return `${String(vorschlag).replace(/[\\/:*?"<>|]/g, '-').trim()}.${endung}`;
+  },
+
+  sitzplanName(datei) {
+    const cls = this.currentClass();
+    return this.dateiName(datei.name, datei.type,
+      'Sitzplan ' + (cls ? this.klasseKurz(cls.name) : 'Klasse'));
+  },
+
   async handleSeatplanFile(file) {
     if (!this.currentClassId) return;
-    await Store.putSeatplan(this.currentClassId, file);
-    this.renderSeatplan();
+    const name = this.sitzplanName(file);
+    await Store.putSeatplan(this.currentClassId,
+      name === file.name ? file : new File([file], name, { type: file.type }));
+    await this.renderSeatplan();
   },
 
   /* ---------- Dateien per Ziehen ablegen ---------- */
@@ -2320,13 +2339,33 @@ const Classes = {
   async renderSeatplan() {
     const view = document.getElementById('seatplan-view');
     const delBtn = document.getElementById('btn-delete-seatplan');
+    const nameFeld = document.getElementById('seatplan-name');
     if (this.seatplanUrl) { URL.revokeObjectURL(this.seatplanUrl); this.seatplanUrl = null; }
     view.innerHTML = '';
     const entry = await Store.getSeatplan(this.currentClassId);
     delBtn.hidden = !entry;
     if (!entry) {
       view.innerHTML = '<p class="hint">Noch kein Sitzplan hochgeladen. Der Plan wird lokal im Browser gespeichert.</p>';
+      if (nameFeld) nameFeld.hidden = true;
       return;
+    }
+    /* Frueher hochgeladene Plaene tragen noch den Namen aus dem Download-Ordner.
+       Beim ersten Ansehen wird er richtiggestellt – danach laedt der Sync diesen
+       einen Plan noch einmal hoch, weil sich sein Fingerabdruck geaendert hat. */
+    const gewuenscht = this.sitzplanName({ name: entry.name, type: entry.type || entry.blob.type });
+    if (entry.name !== gewuenscht) {
+      const neu = new File([entry.blob], gewuenscht, { type: entry.type || entry.blob.type });
+      await Store.putSeatplan(this.currentClassId, neu);
+      entry.name = gewuenscht;
+      entry.blob = neu;
+    }
+    if (nameFeld) {
+      const gr = entry.blob.size;
+      const groesse = gr >= 1024 * 1024
+        ? (gr / 1024 / 1024).toFixed(1).replace('.', ',') + ' MB'
+        : Math.max(1, Math.round(gr / 1024)) + ' KB';
+      nameFeld.textContent = `${entry.name} · ${groesse}`;
+      nameFeld.hidden = false;
     }
     this.seatplanUrl = URL.createObjectURL(entry.blob);
     if (entry.type === 'application/pdf') {
