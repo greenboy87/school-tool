@@ -64,6 +64,12 @@ const Classes = {
       if (!cls) return;
       if (!confirm(`Klasse „${cls.name}“ mit allen Noten wirklich löschen?`)) return;
       Store.deleteSeatplan(cls.id);
+      // Das Klassenfoto der Sitzordnung liegt bei den Bildern und muss mit weg,
+      // sonst bleibt es unauffindbar im Speicher liegen und wandert weiter mit
+      // durch jeden Abgleich.
+      if (typeof Sitzplan !== 'undefined') {
+        Store.deleteFoto(Sitzplan.fotoSchluessel(cls)).catch(() => {});
+      }
       this.data.classes = this.data.classes.filter(c => c.id !== cls.id);
       this.currentClassId = null;
       this.persist();

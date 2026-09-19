@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=122">
+<link rel="stylesheet" href="style.css?v=124">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=122"></script>
-<script src="js/theme.js?v=122"></script>
-<script src="js/auth.js?v=122"></script>
+<script src="js/icons.js?v=124"></script>
+<script src="js/theme.js?v=124"></script>
+<script src="js/auth.js?v=124"></script>
 </head>
 <body>
 
@@ -382,6 +382,22 @@
                 <button id="btn-sitz-raum" data-icon="grid" title="Reihen einstellen und einzelne Plätze herausnehmen">Raum ändern</button>
                 <button id="btn-sitz-leeren" class="danger small" title="Alle vom Platz nehmen">Leeren</button>
                 <button id="btn-sitz-drucken" data-icon="printer">Drucken</button>
+              </div>
+            </div>
+
+            <div class="btn-row sitz-pdf-zeile">
+              <label class="file-btn" data-icon="upload"
+                     title="Ein fertiges Sitzplan-PDF mit Fotos einlesen: Namen, Plätze und Bilder werden daraus übernommen">Aus Sitzplan-PDF übernehmen<input type="file" id="sitz-pdf-datei" accept="application/pdf" hidden></label>
+              <button id="btn-sitz-fotos-weg" class="danger small" hidden>Fotos entfernen</button>
+              <span id="sitz-pdf-status" class="hint" hidden></span>
+            </div>
+
+            <div id="sitz-pdf-vorschau" class="sitz-pdf-vorschau" hidden>
+              <p id="sitz-pdf-text" class="hint"></p>
+              <div id="sitz-pdf-bilder" class="sitz-vorschau-gitter"></div>
+              <div class="btn-row">
+                <button id="btn-sitz-pdf-ok" class="primary" data-icon="check">Übernehmen</button>
+                <button id="btn-sitz-pdf-abbruch">Abbrechen</button>
               </div>
             </div>
 
@@ -848,27 +864,27 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=122"></script>
-<script src="js/firebase-config.js?v=122"></script>
-<script type="module" src="js/live-firebase.js?v=122"></script>
-<script src="js/topics-seed.js?v=122"></script>
-<script src="js/ai-import.js?v=122"></script>
-<script src="js/store.js?v=122"></script>
-<script src="js/noise.js?v=122"></script>
-<script src="js/classes.js?v=122"></script>
-<script src="js/sitzplan.js?v=122"></script>
-<script src="js/lessons.js?v=122"></script>
-<script src="js/band.js?v=122"></script>
-<script src="js/notes.js?v=122"></script>
-<script src="js/tresor.js?v=122"></script>
-<script src="js/erklaerungen.js?v=122"></script>
-<script src="js/setlisten.js?v=122"></script>
-<script src="js/einklappen.js?v=122"></script>
-<script src="js/live-groups.js?v=122"></script>
-<script src="js/tipps.js?v=122"></script>
-<script src="js/sport-tabellen.js?v=122"></script>
-<script src="js/sport.js?v=122"></script>
-<script src="js/tools.js?v=122"></script>
-<script src="js/app.js?v=122"></script>
+<script src="js/vendor/qrcode.min.js?v=124"></script>
+<script src="js/firebase-config.js?v=124"></script>
+<script type="module" src="js/live-firebase.js?v=124"></script>
+<script src="js/topics-seed.js?v=124"></script>
+<script src="js/ai-import.js?v=124"></script>
+<script src="js/store.js?v=124"></script>
+<script src="js/noise.js?v=124"></script>
+<script src="js/classes.js?v=124"></script>
+<script src="js/sitzplan.js?v=124"></script>
+<script src="js/lessons.js?v=124"></script>
+<script src="js/band.js?v=124"></script>
+<script src="js/notes.js?v=124"></script>
+<script src="js/tresor.js?v=124"></script>
+<script src="js/erklaerungen.js?v=124"></script>
+<script src="js/setlisten.js?v=124"></script>
+<script src="js/einklappen.js?v=124"></script>
+<script src="js/live-groups.js?v=124"></script>
+<script src="js/tipps.js?v=124"></script>
+<script src="js/sport-tabellen.js?v=124"></script>
+<script src="js/sport.js?v=124"></script>
+<script src="js/tools.js?v=124"></script>
+<script src="js/app.js?v=124"></script>
 </body>
 </html>

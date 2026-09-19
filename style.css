@@ -982,8 +982,12 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   transition: border-color .12s ease, background .12s ease;
 }
 .sitz-platz:hover { border-color: var(--accent); }
-.sitz-vorname { font-weight: 600; font-size: .92rem; overflow-wrap: anywhere; }
-.sitz-nachname { font-size: .76rem; color: var(--muted); overflow-wrap: anywhere; }
+.sitz-vorname { font-weight: 600; font-size: .92rem; overflow-wrap: anywhere; hyphens: auto; }
+.sitz-nachname { font-size: .76rem; color: var(--muted); overflow-wrap: anywhere; hyphens: auto; }
+/* Mit Foto traegt das Gesicht die Wiedererkennung – der Name darf kleiner sein
+   und muss bei acht Spalten auch, sonst zerfaellt „Auernhammer“ in Silben. */
+.sitz-gitter.mit-fotos .sitz-vorname { font-size: .8rem; }
+.sitz-gitter.mit-fotos .sitz-nachname { font-size: .68rem; }
 .sitz-leer { font-size: .76rem; color: var(--muted); }
 .sitz-platz.frei { background: var(--panel); border-style: dashed; }
 /* Der gewaehlte Platz muss aus zwei Metern Entfernung erkennbar sein */
@@ -1000,6 +1004,37 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 }
 .sitz-gitter.bearbeiten .sitz-platz { cursor: crosshair; }
 .sitz-gitter.bearbeiten .sitz-platz.raus { cursor: crosshair; }
+
+/* Das Gesicht sitzt ueber dem Namen – derselbe Aufbau wie im gedruckten Plan.
+   Gezeigt wird ein Ausschnitt aus dem einen Klassenbild, nicht ein eigenes Bild. */
+.sitz-foto {
+  display: block; width: 2.6rem; height: 2.6rem; margin-bottom: .15rem;
+  border-radius: 50%; background: var(--panel) no-repeat center / cover;
+  border: 1px solid var(--border);
+}
+.sitz-platz.mit-foto { min-height: 6.4rem; }
+.sitz-gitter.mit-fotos .sitz-platz { min-height: 6.4rem; }
+.sitz-foto.ohne { border-style: dashed; background-image: none; }
+
+.sitz-pdf-zeile { margin: .2rem 0 .6rem; }
+.sitz-pdf-vorschau {
+  margin: .4rem 0 1rem; padding: .9rem;
+  border: 1px solid var(--accent); border-radius: 10px; background: var(--panel);
+}
+.sitz-vorschau-gitter {
+  display: flex; flex-wrap: wrap; gap: .7rem; margin: .7rem 0 1rem;
+}
+.sitz-vorschau-zelle { margin: 0; width: 5rem; text-align: center; font-size: .72rem; }
+.sitz-vorschau-zelle img {
+  width: 4.2rem; height: 4.2rem; object-fit: cover;
+  border-radius: 8px; border: 1px solid var(--border); background: var(--card);
+}
+.sitz-vorschau-ohne {
+  width: 4.2rem; height: 4.2rem; margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-size: .68rem;
+}
+.sitz-vorschau-zelle figcaption { margin-top: .25rem; overflow-wrap: anywhere; }
 
 .sitz-bank-titel { margin: 0 0 .5rem; font-size: .95rem; }
 .sitz-bank {
@@ -1025,6 +1060,10 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   text-align: center; vertical-align: middle; height: 3.2rem; width: 1%;
 }
 .sitz-druck td.ohne { border: 1px dashed #ccc; }
+.sitz-druck img {
+  display: block; width: 2.2cm; height: 2.2cm; margin: 0 auto .1rem;
+  object-fit: cover; border-radius: 50%;
+}
 .sitz-druck .vn { display: block; font-weight: 600; }
 .sitz-druck .nn { display: block; font-size: .8em; color: #444; }
 .sitz-tafel-druck {
