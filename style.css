@@ -954,6 +954,93 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   50% { background: #a83525; }
 }
 
+/* ---------- Sitzordnung ----------
+   Die Plaetze sind Knoepfe: Ein Tipper waehlt, der naechste setzt um. Deshalb
+   muessen sie gross genug fuer einen Finger sein – auf dem iPad wird damit
+   im Unterricht gearbeitet. */
+.sitz-raum-zeile {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .8rem;
+  margin: .2rem 0 .8rem; padding: .7rem .8rem;
+  background: var(--panel); border-radius: 8px;
+}
+.sitz-raum-zeile label { display: inline-flex; align-items: center; gap: .4rem; font-size: .9rem; }
+.sitz-raum-zeile input { width: 4.5rem; }
+
+.sitz-tafel {
+  text-align: center; font-weight: 600; letter-spacing: .12em; font-size: .78rem;
+  color: var(--muted); background: var(--panel);
+  border-radius: 8px; padding: .4rem; margin: .6rem 0 .9rem;
+}
+
+.sitz-gitter { display: grid; gap: .55rem; margin-bottom: 1.2rem; }
+.sitz-platz {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .1rem; min-height: 4.2rem; padding: .5rem .35rem;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--card); color: var(--text);
+  cursor: pointer; text-align: center; line-height: 1.25;
+  transition: border-color .12s ease, background .12s ease;
+}
+.sitz-platz:hover { border-color: var(--accent); }
+.sitz-vorname { font-weight: 600; font-size: .92rem; overflow-wrap: anywhere; }
+.sitz-nachname { font-size: .76rem; color: var(--muted); overflow-wrap: anywhere; }
+.sitz-leer { font-size: .76rem; color: var(--muted); }
+.sitz-platz.frei { background: var(--panel); border-style: dashed; }
+/* Der gewaehlte Platz muss aus zwei Metern Entfernung erkennbar sein */
+.sitz-platz.gewaehlt {
+  border-color: var(--accent); background: var(--active-soft);
+  box-shadow: 0 0 0 2px var(--accent) inset;
+}
+.sitz-platz.raus { background: none; border-style: dashed; opacity: .45; cursor: default; }
+/* Nach einem Mausklick bleibt sonst ein Rahmen stehen, der aussieht wie
+   „gewaehlt“. Mit der Tastatur bleibt der Rahmen – dort braucht man ihn. */
+.sitz-platz:focus, .sitz-bank-chip:focus { outline: none; }
+.sitz-platz:focus-visible, .sitz-bank-chip:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.sitz-gitter.bearbeiten .sitz-platz { cursor: crosshair; }
+.sitz-gitter.bearbeiten .sitz-platz.raus { cursor: crosshair; }
+
+.sitz-bank-titel { margin: 0 0 .5rem; font-size: .95rem; }
+.sitz-bank {
+  display: flex; flex-wrap: wrap; gap: .45rem;
+  min-height: 3rem; padding: .6rem;
+  border: 1px dashed var(--border); border-radius: 10px; background: var(--panel);
+}
+.sitz-bank-chip {
+  padding: .35rem .7rem; font-size: .85rem;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--card); color: var(--text); cursor: pointer;
+}
+.sitz-bank-chip:hover { border-color: var(--accent); }
+.sitz-bank-chip.gewaehlt {
+  border-color: var(--accent); background: var(--active-soft); color: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent) inset;
+}
+
+/* Auf Papier: dieselbe Anordnung, nur ohne Farbe und ohne Knopfoptik */
+.sitz-druck { width: 100%; border-collapse: separate; border-spacing: 4px; }
+.sitz-druck td {
+  border: 1px solid #999; border-radius: 6px; padding: .5rem .3rem;
+  text-align: center; vertical-align: middle; height: 3.2rem; width: 1%;
+}
+.sitz-druck td.ohne { border: 1px dashed #ccc; }
+.sitz-druck .vn { display: block; font-weight: 600; }
+.sitz-druck .nn { display: block; font-size: .8em; color: #444; }
+.sitz-tafel-druck {
+  text-align: center; font-weight: 600; letter-spacing: .12em; font-size: .8em;
+  border: 1px solid #999; border-radius: 6px; padding: .3rem; margin: .8rem 0;
+}
+.sitz-bank-druck { margin-top: 1rem; font-size: .9em; }
+
+/* Auf dem Handy wird aus vier Spalten schnell Kleinkram – die Namen duerfen
+   dann umbrechen, die Plaetze werden schmaler, aber bleiben tippbar. */
+@media screen and (max-width: 720px) {
+  .sitz-platz { min-height: 3.6rem; padding: .4rem .2rem; }
+  .sitz-vorname { font-size: .82rem; }
+  .sitz-nachname { font-size: .7rem; }
+}
+
 /* ---------- Druck ---------- */
 /* Immer auf Weiß drucken, unabhängig vom Theme */
 @media print {

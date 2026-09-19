@@ -1,6 +1,7 @@
 /* App-Verdrahtung: Haupttabs, Lärmampel-Steuerung, Backup */
 document.addEventListener('DOMContentLoaded', () => {
   Classes.init();
+  Sitzplan.init();
   Lessons.init();
   Band.init();
   Setlisten.init();

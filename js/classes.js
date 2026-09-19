@@ -1250,6 +1250,7 @@ const Classes = {
     this.renderGroupResult();
     this.renderManualGroups();
     this.renderSeatplan();
+    if (typeof Sitzplan !== 'undefined') Sitzplan.render();
     if (typeof Lessons !== 'undefined') Lessons.render();
   },
 
