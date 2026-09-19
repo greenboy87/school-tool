@@ -51,12 +51,15 @@ const Sitzplan = {
       .forEach(b => b.addEventListener('click', () => this.render()));
   },
 
-  /* Der Plan entsteht beim ersten Hinsehen. Fünf Viererreihen sind die
-     häufigste Aufteilung – wer es anders hat, ändert zwei Zahlen. */
+  /* Der Plan entsteht beim ersten Hinsehen: vier Reihen, je viermal Tisch,
+     Gang, viermal Tisch – so stehen die Räume hier. Wer es anders hat, ändert
+     die drei Zahlen unter „Raum ändern“. */
   plan(cls) {
     const p = (cls.sitzplan && typeof cls.sitzplan === 'object') ? cls.sitzplan : {};
-    if (!(p.reihen > 0)) p.reihen = 5;
-    if (!(p.proReihe > 0)) p.proReihe = 4;
+    if (!(p.reihen > 0)) p.reihen = 4;
+    if (!(p.proReihe > 0)) p.proReihe = 8;
+    // Ältere Pläne kannten noch keinen Gang – sie bekommen ihn in der Mitte
+    if (typeof p.gang !== 'number') p.gang = p.proReihe >= 6 ? Math.round(p.proReihe / 2) : 0;
     if (!Array.isArray(p.ohne)) p.ohne = [];
     if (!p.belegt || typeof p.belegt !== 'object') p.belegt = {};
     cls.sitzplan = p;
@@ -236,6 +239,8 @@ const Sitzplan = {
     };
     p.reihen = zahl('sitz-reihen', this.MAX_REIHEN);
     p.proReihe = zahl('sitz-proreihe', this.MAX_PRO_REIHE);
+    const gang = parseInt(document.getElementById('sitz-gang').value, 10);
+    p.gang = isNaN(gang) || gang <= 0 || gang >= p.proReihe ? 0 : gang;
     // Plätze außerhalb des neuen Rasters verschwinden samt Vermerk
     p.ohne = p.ohne.filter(k => {
       const [r, s] = k.split('-').map(Number);
@@ -260,16 +265,29 @@ const Sitzplan = {
 
     document.getElementById('sitz-reihen').value = p.reihen;
     document.getElementById('sitz-proreihe').value = p.proReihe;
+    document.getElementById('sitz-gang').value = p.gang || 0;
     document.getElementById('sitz-raum-zeile').hidden = !this.raumOffen;
     const raumKnopf = document.getElementById('btn-sitz-raum');
     if (raumKnopf) raumKnopf.classList.toggle('primary', this.raumOffen);
 
     gitter.classList.toggle('bearbeiten', this.raumOffen);
     gitter.classList.toggle('mit-fotos', this.hatFotos(cls));
-    gitter.style.gridTemplateColumns = `repeat(${p.proReihe}, minmax(0, 1fr))`;
+    // Der Gang ist eine eigene, schmale Spalte – die Platznummern zaehlen
+    // darueber hinweg weiter, er kostet also keinen Sitzplatz.
+    const spalten = [];
+    for (let s = 0; s < p.proReihe; s++) {
+      if (p.gang && s === p.gang) spalten.push('1.4rem');
+      spalten.push('minmax(0, 1fr)');
+    }
+    gitter.style.gridTemplateColumns = spalten.join(' ');
     gitter.innerHTML = '';
     for (let r = 0; r < p.reihen; r++) {
       for (let s = 0; s < p.proReihe; s++) {
+        if (p.gang && s === p.gang) {
+          const luecke = document.createElement('span');
+          luecke.className = 'sitz-gang';
+          gitter.appendChild(luecke);
+        }
         gitter.appendChild(this.platzKnopf(cls, p, this.schluessel(r, s)));
       }
     }
@@ -494,6 +512,7 @@ const Sitzplan = {
       ohneZuordnung: karten.filter(k => !k.student).map(k => k.name),
       reihen: zeilen.length,
       proReihe: spalten.length,
+      gang: this.gangErkennen(spalten),
       leinwand,
       blick,
     };
@@ -607,6 +626,20 @@ const Sitzplan = {
     return rechtecke;
   },
 
+  /* Wo im PDF der Gang liegt: Zwischen zwei Bloecken klafft eine groessere
+     Luecke als zwischen zwei Tischen. Ist keine auffaellig, wird in der Mitte
+     geteilt – das ist die uebliche Aufteilung 4 · Gang · 4. */
+  gangErkennen(spalten) {
+    if (spalten.length < 4) return 0;
+    const luecken = spalten.slice(1).map((x, i) => x - spalten[i]);
+    const sortiert = [...luecken].sort((a, b) => a - b);
+    const mitte = sortiert[Math.floor(sortiert.length / 2)];
+    let groesste = 0, wo = -1;
+    luecken.forEach((l, i) => { if (l > groesste) { groesste = l; wo = i; } });
+    if (mitte > 0 && groesste > mitte * 1.6) return wo + 1;
+    return spalten.length % 2 === 0 ? spalten.length / 2 : 0;
+  },
+
   /* Werte, die dicht beieinander liegen, zu einem gemeinsamen Wert zusammenziehen */
   buendeln(werte, spanne) {
     const sortiert = [...werte].sort((a, b) => a - b);
@@ -637,6 +670,7 @@ const Sitzplan = {
     text.innerHTML =
       `<strong>${v.treffer.length}</strong> Namen zugeordnet, davon <strong>${mitBild}</strong> mit Foto · ` +
       `Raster ${v.reihen} Reihen × ${v.proReihe} Plätze` +
+      (v.gang ? ` mit Gang nach Platz ${v.gang}` : '') +
       (v.ohneZuordnung.length
         ? `<br><span class="warnung">Nicht in der Klassenliste gefunden: ${Band.esc(v.ohneZuordnung.join(', '))}</span>`
         : '');
@@ -698,6 +732,7 @@ const Sitzplan = {
 
     p.reihen = Math.max(1, Math.min(this.MAX_REIHEN, v.reihen));
     p.proReihe = Math.max(1, Math.min(this.MAX_PRO_REIHE, v.proReihe));
+    p.gang = v.gang > 0 && v.gang < p.proReihe ? v.gang : 0;
     p.ohne = [];
     p.belegt = {};
     const bilder = {};
@@ -791,6 +826,7 @@ const Sitzplan = {
       for (let s = 0; s < p.proReihe; s++) {
         const k = this.schluessel(r, s);
         if (p.ohne.includes(k)) { felder += '<td class="ohne"></td>'; continue; }
+        if (p.gang && s === p.gang) felder += '<td class="gang"></td>';
         const stud = this.schueler(cls, p.belegt[k]);
         felder += '<td>' + (stud
           ? (ausschnitte[stud.id] ? `<img src="${ausschnitte[stud.id]}" alt="">` : '') +
@@ -805,11 +841,11 @@ const Sitzplan = {
       ? `<p class="sitz-bank-druck"><strong>Ohne Platz:</strong> ` +
         wartend.map(s => Band.esc(Classes.studentName(s))).join(' · ') + '</p>'
       : '';
-    // Die Tafel steht oben – auf dem Papier genauso wie auf dem Bildschirm,
-    // sonst steht man mit gedrehtem Blatt vor der Klasse.
+    // Die Tafel steht unten – auf dem Papier genauso wie auf dem Bildschirm,
+    // sonst haelt man das Blatt verkehrt herum vor der Klasse.
     Band.printHtml(`Sitzplan ${cls.name}`,
-      '<p class="sitz-tafel-druck">Tafel</p>' +
-      `<table class="sitz-druck">${zeilen}</table>` + bank,
+      `<table class="sitz-druck">${zeilen}</table>` +
+      '<p class="sitz-tafel-druck">Tafel</p>' + bank,
       `${Object.keys(p.belegt).length} von ${cls.students.length} Schülern gesetzt`);
   },
 };
