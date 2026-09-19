@@ -482,7 +482,7 @@ const Sitzplan = {
     leinwand.height = Math.round(blick.height);
     await seite.render({ canvasContext: leinwand.getContext('2d'), viewport: blick }).promise;
 
-    const karten = await this.kartenAusSeite(seite, cls);
+    const karten = this.zuordnen(cls, await this.kartenAusSeite(seite, cls));
     const bilder = await this.bildRechtecke(seite);
 
     // Jedem Namen das Bild zuordnen, das direkt ueber ihm steht
@@ -510,6 +510,8 @@ const Sitzplan = {
     return {
       treffer: karten.filter(k => k.student),
       ohneZuordnung: karten.filter(k => !k.student).map(k => k.name),
+      ungefaehr: karten.filter(k => k.ungefaehr)
+        .map(k => `${k.name} → ${Classes.studentName(k.student)}`),
       reihen: zeilen.length,
       proReihe: spalten.length,
       gang: this.gangErkennen(spalten),
@@ -559,12 +561,13 @@ const Sitzplan = {
         // tragen keine Ziffern und sind kurz – daran lassen sie sich trennen.
         if (!this.klingtNachName(o.text) || !this.klingtNachName(partner.text)) continue;
         benutzt.add(o); benutzt.add(partner);
-        const name = `${partner.text}, ${o.text}`;
         karten.push({
-          name,
+          name: `${partner.text}, ${o.text}`,
+          vorname: o.text,
+          nachname: partner.text,
           x: (o.x + partner.x) / 2,
           y: zeilenWerte[i],
-          student: this.findeSchueler(cls, o.text, partner.text),
+          student: null,
         });
       }
     }
@@ -576,18 +579,70 @@ const Sitzplan = {
     return w.length > 1 && w.length <= 25 && !/\d/.test(w);
   },
 
-  /* „Süßbauer, Daniel“ aus der Liste und „Daniel / Süßbauer“ aus dem PDF sind
-     dieselbe Person – verglichen wird ohne Gross- und Kleinschreibung. */
-  findeSchueler(cls, vorname, nachname) {
-    const gleich = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
-    let treffer = cls.students.find(s => gleich(s.first, vorname) && gleich(s.last, nachname));
-    if (treffer) return treffer;
-    // Vertauscht eingetragen? Dann andersherum versuchen
-    treffer = cls.students.find(s => gleich(s.first, nachname) && gleich(s.last, vorname));
-    if (treffer) return treffer;
-    // Nur der Nachname passt und kommt genau einmal vor
-    const nurNachname = cls.students.filter(s => gleich(s.last, nachname));
-    return nurNachname.length === 1 ? nurNachname[0] : null;
+  /* Schreibweisen gehen auseinander: „Gaßner“ und „Gassner“, „Bandalac“ und
+     „Bandalaz“, „Scheuerer“ und „Scheurer“ sind jeweils dieselbe Person. Zuerst
+     wird deshalb alles Eindeutige vergeben, und erst im zweiten Durchgang das
+     Ähnliche – so kann ein ungefährer Treffer keinen sicheren verdrängen. */
+  zuordnen(cls, karten) {
+    const frei = new Set(cls.students);
+    const offen = [];
+
+    // Erster Durchgang: gleiche Schreibweise, nur Gross-/Kleinschrift und
+    // Umlautformen geglaettet
+    for (const k of karten) {
+      const v = this.schluesselName(k.vorname), n = this.schluesselName(k.nachname);
+      const passend = [...frei].filter(s =>
+        (this.schluesselName(s.first) === v && this.schluesselName(s.last) === n) ||
+        (this.schluesselName(s.first) === n && this.schluesselName(s.last) === v));
+      if (passend.length === 1) { k.student = passend[0]; frei.delete(passend[0]); }
+      else offen.push(k);
+    }
+
+    // Zweiter Durchgang: ein, zwei Buchstaben Unterschied – aber nur, wenn
+    // genau ein Name uebrig bleibt, der so nah dran ist.
+    for (const k of offen) {
+      const v = this.schluesselName(k.vorname), n = this.schluesselName(k.nachname);
+      const bewertet = [...frei].map(s => ({
+        s,
+        abstand: this.abstand(this.schluesselName(s.first), v) +
+                 this.abstand(this.schluesselName(s.last), n),
+      })).filter(e => e.abstand <= 2).sort((a, b) => a.abstand - b.abstand);
+      if (!bewertet.length) continue;
+      if (bewertet.length > 1 && bewertet[0].abstand === bewertet[1].abstand) continue;
+      k.student = bewertet[0].s;
+      k.ungefaehr = true;
+      frei.delete(bewertet[0].s);
+    }
+    return karten;
+  },
+
+  /* „Gaßner“, „Gassner“ und „GASSNER“ ergeben denselben Schluessel; „Müller“
+     und „Mueller“ ebenso. Alles andere an Zeichen faellt weg. */
+  schluesselName(t) {
+    return String(t || '').toLowerCase()
+      .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+  },
+
+  /* Wie viele Zeichen muessten sich aendern (Levenshtein)? Bei mehr als zwei
+     wird abgebrochen – weiter entfernte Namen sind ohnehin nicht gemeint. */
+  abstand(a, b) {
+    if (a === b) return 0;
+    if (Math.abs(a.length - b.length) > 2) return 99;
+    let vorige = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      const zeile = [i];
+      for (let j = 1; j <= b.length; j++) {
+        zeile[j] = Math.min(
+          vorige[j] + 1,
+          zeile[j - 1] + 1,
+          vorige[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      }
+      if (Math.min(...zeile) > 2) return 99;
+      vorige = zeile;
+    }
+    return vorige[b.length];
   },
 
   /* Die Bilder liegen als eigene Objekte auf der Seite. Ihre Lage steckt in der
@@ -671,6 +726,9 @@ const Sitzplan = {
       `<strong>${v.treffer.length}</strong> Namen zugeordnet, davon <strong>${mitBild}</strong> mit Foto · ` +
       `Raster ${v.reihen} Reihen × ${v.proReihe} Plätze` +
       (v.gang ? ` mit Gang nach Platz ${v.gang}` : '') +
+      (v.ungefaehr.length
+        ? `<br>Abweichende Schreibweise, trotzdem zugeordnet: ${Band.esc(v.ungefaehr.join(' · '))}`
+        : '') +
       (v.ohneZuordnung.length
         ? `<br><span class="warnung">Nicht in der Klassenliste gefunden: ${Band.esc(v.ohneZuordnung.join(', '))}</span>`
         : '');
