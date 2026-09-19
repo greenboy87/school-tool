@@ -276,7 +276,7 @@ const Sitzplan = {
     // darueber hinweg weiter, er kostet also keinen Sitzplatz.
     const spalten = [];
     for (let s = 0; s < p.proReihe; s++) {
-      if (p.gang && s === p.gang) spalten.push('1.4rem');
+      if (p.gang && s === p.gang) spalten.push('var(--sitz-gang-breite)');
       spalten.push('minmax(0, 1fr)');
     }
     gitter.style.gridTemplateColumns = spalten.join(' ');
