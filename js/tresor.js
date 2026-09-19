@@ -161,6 +161,28 @@ const Tresor = {
           this.knopfAktualisieren();
           return;
         }
+        /* Abgelehnt – und jetzt wird es heikel: Auf dem Server liegt der neuere
+           Stand, weitermachen hiesse, ihn durch den aelteren dieses Geraets zu
+           ersetzen. Auf einem frisch eingerichteten Browser waere das der leere.
+           Dass „Abbrechen“ genau das ausloest, sieht man der ersten Frage nicht
+           an, deshalb hier noch einmal nachfragen – mit beiden Zahlen. */
+        if (!confirm(
+          'Sicher? Dann wird der Stand auf dem Server durch den Stand dieses Geräts ersetzt:\n\n' +
+          `AUF DEM SERVER (${this.zeit(fernStand)}, ${vorhanden.geraet || 'anderes Gerät'}):\n` +
+          `   ${zaehle(daten)}\n\n` +
+          'AUF DIESEM GERÄT' + (lokalStand ? ` (${this.zeit(lokalStand)})` : ' (noch nie abgeglichen)') + ':\n' +
+          `   ${zaehle(lokal)}\n\n` +
+          'OK: Server überschreiben.\n' +
+          'Abbrechen: nichts verändern – der Sync bleibt auf diesem Gerät aus.')) {
+          localStorage.removeItem(this.PASS_KEY);
+          this.passwort = this.id = this.salz = this.schluessel = null;
+          this.status('Nichts verändert – der Sync ist auf diesem Gerät aus.');
+          this.knopfAktualisieren();
+          if (!still) alert('Es wurde nichts verändert – weder hier noch auf dem Server.\n\n' +
+            'Der Sync ist auf diesem Gerät ausgeschaltet. Über „Sync“ kannst du es ' +
+            'jederzeit erneut versuchen.');
+          return;
+        }
       }
       this.knopfAktualisieren();
       this.status('verbunden');

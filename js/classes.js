@@ -853,7 +853,17 @@ const Classes = {
 
     box.innerHTML = '';
     if (!alle.length) {
-      box.innerHTML = '<p class="hint">Noch keine Lehrkräfte hinterlegt.</p>';
+      /* Ohne diesen Hinweis steht hier auf einem frisch eingerichteten Geraet
+         nur „nichts da“ – und niemand weiss, woher die Liste kaeme. */
+      box.innerHTML =
+        '<p class="hint">Noch keine Lehrkräfte hinterlegt.</p>' +
+        '<p class="hint">Die Liste wird einmal im Schuljahr aus der Aufstellung der Schule ' +
+        'eingelesen – sie ändert sich ja nur dann. Ein Eingabefeld dafür stünde den Rest ' +
+        'des Jahres ungenutzt herum, deshalb läuft das über die Entwicklerkonsole ' +
+        '(<code>Classes.listenEinlesen(lehrer, leitungen)</code>); wer das einrichtet, ' +
+        'weiß Bescheid.</p>' +
+        '<p class="hint">Auf deinen anderen Geräten kommt sie mit dem Sync von selbst an – ' +
+        'oben auf „Sync“ tippen genügt.</p>';
     } else if (!gezeigt.length) {
       box.innerHTML = '<p class="hint">Keine Lehrkraft passt zur Auswahl.</p>';
     } else {
