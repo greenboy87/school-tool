@@ -41,6 +41,8 @@ const Sitzplan = {
     an('btn-sitz-pdf-ok', () => this.uebernehmenAusPdf());
     an('btn-sitz-pdf-abbruch', () => this.abbrechenVorschau());
     an('btn-sitz-fotos-weg', () => this.fotosEntfernen());
+    an('btn-sitz-voll', () => this.vollbild('sitz-bereich'));
+    an('btn-seatplan-voll', () => this.vollbild('seatplan-view'));
     an('sitz-bank', e => {
       // Auf die Bank selbst getippt: der gewählte Schüler verlässt seinen Platz
       if (e.target.closest('.sitz-bank-chip')) return;
@@ -416,6 +418,28 @@ const Sitzplan = {
     const wartend = this.wartebank(cls, p).length;
     el.textContent = 'Zum Umsetzen erst den Schüler antippen, dann den Zielplatz.' +
       (wartend ? ' Wer noch keinen Platz hat, steht unten auf der Wartebank.' : '');
+  },
+
+  /* Vollbild fuer den Beamer – fuer die Sitzordnung wie fuer die Datei.
+     Umschalter, kein Einschalter: Derselbe Knopf bringt einen auch wieder
+     heraus, sonst sucht man im Vollbild nach dem Ausgang. */
+  vollbild(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      return;
+    }
+    const rein = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!rein) { alert('Dieser Browser kann den Vollbildmodus hier nicht anzeigen.'); return; }
+    // Manche Umgebungen sperren das Vollbild und werfen dabei sofort, andere
+    // lehnen erst das Versprechen ab – beides soll dasselbe sagen.
+    try {
+      const p = rein.call(el);
+      if (p && p.catch) p.catch(err => alert('Vollbild nicht möglich: ' + (err.message || err)));
+    } catch (e) {
+      alert('Vollbild nicht möglich: ' + (e.message || e));
+    }
   },
 
   /* ---------- Aus dem fertigen Sitzplan-PDF uebernehmen ----------

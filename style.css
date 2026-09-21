@@ -1085,6 +1085,34 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 }
 .sitz-bank-druck { margin-top: 1rem; font-size: .9em; }
 
+/* ----- Vollbild fuer den Beamer -----
+   Im Vollbild zaehlt nur der Plan: Er bekommt die ganze Hoehe, die Gesichter
+   duerfen deutlich groesser werden, und der Rand faellt weg. Bedienbar bleibt
+   alles – umsetzen laesst sich auch hier. */
+#sitz-bereich:fullscreen {
+  background: var(--bg); color: var(--text);
+  padding: 1.2rem 1.6rem; overflow: auto; border-radius: 0;
+  display: flex; flex-direction: column;
+}
+#sitz-bereich:fullscreen .sitz-gitter { flex: 1; align-content: center; }
+#sitz-bereich:fullscreen .sitz-foto { width: min(100%, 11rem); }
+#sitz-bereich:fullscreen .sitz-vorname { font-size: min(1.6vw, 1.5rem); }
+#sitz-bereich:fullscreen .sitz-nachname { font-size: min(1.2vw, 1.1rem); }
+#sitz-bereich:fullscreen .sitz-gitter.mit-fotos .sitz-vorname { font-size: min(1.5vw, 1.4rem); }
+#sitz-bereich:fullscreen .sitz-gitter.mit-fotos .sitz-nachname { font-size: min(1.1vw, 1rem); }
+#sitz-bereich:fullscreen .sitz-tafel { font-size: 1rem; padding: .6rem; }
+/* Die Wartebank steht im Vollbild nur da, wenn jemand darauf sitzt */
+#sitz-bereich:fullscreen .sitz-pdf-zeile { display: none; }
+
+#seatplan-view:fullscreen {
+  background: #fff; padding: 0; display: flex;
+}
+#seatplan-view:fullscreen iframe,
+#seatplan-view:fullscreen img {
+  width: 100%; height: 100%; border: none; border-radius: 0;
+  object-fit: contain; background: #fff;
+}
+
 /* Auf dem Handy wird aus vier Spalten schnell Kleinkram – die Namen duerfen
    dann umbrechen, die Plaetze werden schmaler, aber bleiben tippbar. */
 @media screen and (max-width: 720px) {
