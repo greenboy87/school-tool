@@ -272,6 +272,10 @@ const Sitzplan = {
     const raumKnopf = document.getElementById('btn-sitz-raum');
     if (raumKnopf) raumKnopf.classList.toggle('primary', this.raumOffen);
 
+    // Im Vollbild sieht man sonst nicht, welche Klasse da an der Wand haengt
+    const vollTitel = document.getElementById('sitz-voll-titel');
+    if (vollTitel) vollTitel.textContent = cls.name;
+
     gitter.classList.toggle('bearbeiten', this.raumOffen);
     gitter.classList.toggle('mit-fotos', this.hatFotos(cls));
     // Der Gang ist eine eigene, schmale Spalte – die Platznummern zaehlen

@@ -1119,6 +1119,13 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 #sitz-bereich:fullscreen .sitz-bank { max-height: 14vh; overflow: auto; margin-top: .5rem; }
 #sitz-bereich:fullscreen .projekt-header { flex: 0 0 auto; }
 #sitz-bereich:fullscreen .projekt-header h3 { display: none; }
+/* Der Klassenname steht nur im Vollbild da – daneben ist ohnehin Platz frei,
+   und an der Wand soll man sehen, welche Klasse man vor sich hat. */
+.sitz-voll-titel { display: none; }
+#sitz-bereich:fullscreen .sitz-voll-titel {
+  display: block; margin-left: auto;
+  font-size: min(2.4vw, 3.4vh); font-weight: 700; letter-spacing: .01em;
+}
 
 #seatplan-view:fullscreen {
   background: #fff; padding: 0; display: flex;
