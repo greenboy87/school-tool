@@ -380,6 +380,8 @@ const Sitzplan = {
     const wartend = this.wartebank(cls, p);
     document.getElementById('sitz-bank-zahl').textContent = wartend.length;
     bank.innerHTML = '';
+    // Im Vollbild soll eine leere Bank keinen Platz kosten
+    bank.classList.toggle('leer', !wartend.length);
     if (!wartend.length) {
       bank.innerHTML = cls.students.length
         ? '<span class="hint">Alle sitzen.</span>'
