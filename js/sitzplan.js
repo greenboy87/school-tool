@@ -44,18 +44,53 @@ const Sitzplan = {
     an('btn-sitz-voll', () => this.vollbild('sitz-bereich'));
 
     // Gesichter aus dem Klassenfoto
+    an('btn-gesichter-start', () => this.gesichterKnopf());
+    an('gesichter-datei-neu', e => {
+      const datei = e.target.files[0];
+      e.target.value = '';
+      if (datei) this.gesichterStarten(datei);
+    }, 'change');
     an('gesichter-datei', e => {
       const datei = e.target.files[0];
       e.target.value = '';
       if (datei) this.gesichterStarten(datei);
     }, 'change');
     an('btn-gesichter-abbruch', () => this.gesichterAbbrechen());
+    /* Rahmen mit den Pfeiltasten ruecken. Ueberlappen sich zwei Gesichter,
+       trifft man mit dem Finger nicht mehr die richtige Stelle – mit den
+       Tasten schon. Mit Umschalt geht es in Zehnerschritten, Plus und Minus
+       aendern die Groesse. */
+    document.addEventListener('keydown', e => {
+      const g = this.gesichter;
+      if (!g || !g.offen) return;
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      const schritt = e.shiftKey ? 10 : 1;
+      const r = g.offen;
+      if (e.key === 'ArrowLeft') r.x -= schritt;
+      else if (e.key === 'ArrowRight') r.x += schritt;
+      else if (e.key === 'ArrowUp') r.y -= schritt;
+      else if (e.key === 'ArrowDown') r.y += schritt;
+      else if (e.key === '+' || e.key === '-') {
+        const um = (e.key === '+' ? 1 : -1) * (e.shiftKey ? 20 : 6);
+        if (r.b + um < 20 || r.h + um < 20) return;
+        r.x -= um / 2; r.y -= um / 2; r.b += um; r.h += um;
+      } else return;
+      e.preventDefault();
+      this.gesichterZeichnen();
+    });
     an('btn-gesichter-zurueck', () => this.gesichterZurueck());
     an('btn-gesichter-fertig', () => this.gesichterUebernehmen());
     an('gesichter-suche', () => this.gesichterNamenZeichnen(), 'input');
     an('gesichter-suche', e => {
       if (e.key === 'Escape') { this.gesichterWahlSchliessen(); return; }
       if (e.key !== 'Enter') return;
+      e.preventDefault();
+      // Beim Nachbessern eines vorhandenen Rahmens bleibt es bei demselben Namen
+      const g = this.gesichter;
+      if (g && g.bearbeitet && !document.getElementById('gesichter-suche').value.trim()) {
+        this.gesichterZuweisen(g.bearbeitet);
+        return;
+      }
       const erster = document.querySelector('#gesichter-namen .gesichter-name:not(.vergeben)')
         || document.querySelector('#gesichter-namen .gesichter-name');
       if (erster) erster.click();
@@ -473,6 +508,50 @@ const Sitzplan = {
 
      Gespeichert wird wie beim PDF-Weg: ein Bild je Klasse plus vier
      Verhaeltniszahlen je Schueler. */
+  /* Der Knopf entscheidet selbst: Liegt schon ein Klassenfoto vor, wird daran
+     weitergearbeitet – mit allen Rahmen, die schon sitzen. Wer nachtraegt, soll
+     nicht von vorn anfangen muessen. Nur wenn noch keines da ist, fragt er nach
+     einer Datei. */
+  async gesichterKnopf() {
+    const cls = Classes.currentClass();
+    if (!cls) return;
+    if (this.hatFotos(cls)) { await this.gesichterFortsetzen(cls); return; }
+    document.getElementById('gesichter-datei').click();
+  },
+
+  async gesichterFortsetzen(cls) {
+    this.status('hole das Klassenfoto …');
+    try {
+      const eintrag = await Store.getFoto(this.fotoSchluessel(cls));
+      if (!eintrag || !eintrag.blob) {
+        this.status('');
+        alert('Das Klassenfoto ist nicht mehr da – bitte neu hochladen.');
+        document.getElementById('gesichter-datei').click();
+        return;
+      }
+      const bild = await this.bildAusDatei(eintrag.blob);
+      // Die gespeicherten Verhaeltniszahlen zurueck in Bildpunkte rechnen
+      const zuordnung = {};
+      for (const [id, r] of Object.entries(cls.fotos.bilder)) {
+        if (!cls.students.some(sch => sch.id === id)) continue;
+        zuordnung[id] = {
+          x: r.x * bild.breite, y: r.y * bild.hoehe,
+          b: r.b * bild.breite, h: r.h * bild.hoehe,
+        };
+      }
+      this.gesichter = {
+        url: bild.url, breite: bild.breite, hoehe: bild.hoehe,
+        zuordnung, offen: null, verlauf: [], gespeichert: true,
+      };
+      this.status('');
+      this.gesichterZeigen();
+    } catch (e) {
+      console.error(e);
+      this.status('');
+      alert('Das Klassenfoto konnte nicht geladen werden.\n\n' + (e.message || e));
+    }
+  },
+
   async gesichterStarten(datei) {
     const cls = Classes.currentClass();
     if (!cls) return;
@@ -480,12 +559,14 @@ const Sitzplan = {
       alert('Diese Klasse hat noch keine Schülerliste – ohne sie gibt es nichts zuzuordnen.');
       return;
     }
-    /* Beim Uebernehmen tritt das neue Foto an die Stelle des alten. Wer die
-       Zuordnung halb fertig hat und neu anfaengt, soll das vorher wissen. */
+    /* Ein anderes Foto bedeutet andere Bildpunkte: Die bisherigen Rahmen passen
+       darauf nicht mehr und werden beim Uebernehmen ersetzt. */
     if (this.hatFotos(cls) && !confirm(
-      `Für ${cls.name} sind schon Fotos hinterlegt.\n\n` +
-      'Ein neues Klassenfoto ersetzt sie, sobald du „Übernehmen“ drückst. ' +
-      'Bis dahin ändert sich nichts.')) return;
+      `Für ${cls.name} ist schon ein Klassenfoto hinterlegt.\n\n` +
+      'Ein anderes Foto bedeutet, dass alle bisherigen Rahmen neu gesetzt werden ' +
+      'müssen – sie passen auf das neue Bild nicht.\n\n' +
+      'Zum Nachtragen einzelner Gesichter lieber abbrechen und den Knopf ' +
+      '„Gesichter zuordnen“ nehmen: Der arbeitet am vorhandenen Foto weiter.')) return;
     this.status('lese das Bild …');
     try {
       const bild = /pdf$/i.test(datei.type) || /\.pdf$/i.test(datei.name)
@@ -720,25 +801,29 @@ const Sitzplan = {
     if (!zahl) { alert('Es ist noch kein Gesicht zugeordnet.'); return; }
     this.status('übernehme …');
 
-    const breite = Math.min(2200, g.breite);
-    const c = document.createElement('canvas');
-    c.width = breite;
-    c.height = Math.round(g.hoehe * breite / g.breite);
-    const bild = await new Promise((fertig, schief) => {
-      const i = new Image();
-      i.onload = () => fertig(i);
-      i.onerror = schief;
-      i.src = g.url;
-    });
-    c.getContext('2d').drawImage(bild, 0, 0, c.width, c.height);
-    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.78));
-    try {
-      await Store.putFoto(this.fotoSchluessel(cls),
-        new File([blob], `Klassenfoto ${cls.name}.jpg`, { type: 'image/jpeg' }));
-    } catch (e) {
-      this.status('');
-      alert('Das Bild konnte nicht gespeichert werden.\n\n' + (e.message || e));
-      return;
+    /* Wird am gespeicherten Foto weitergearbeitet, bleibt es unangetastet –
+       neu schreiben hiesse nur, es ein zweites Mal zu verkleinern. */
+    if (!g.gespeichert) {
+      const breite = Math.min(2200, g.breite);
+      const c = document.createElement('canvas');
+      c.width = breite;
+      c.height = Math.round(g.hoehe * breite / g.breite);
+      const bild = await new Promise((fertig, schief) => {
+        const i = new Image();
+        i.onload = () => fertig(i);
+        i.onerror = schief;
+        i.src = g.url;
+      });
+      c.getContext('2d').drawImage(bild, 0, 0, c.width, c.height);
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.78));
+      try {
+        await Store.putFoto(this.fotoSchluessel(cls),
+          new File([blob], `Klassenfoto ${cls.name}.jpg`, { type: 'image/jpeg' }));
+      } catch (e) {
+        this.status('');
+        alert('Das Bild konnte nicht gespeichert werden.\n\n' + (e.message || e));
+        return;
+      }
     }
     const bilder = {};
     for (const [id, r] of Object.entries(g.zuordnung)) {
@@ -1422,7 +1507,9 @@ const Sitzplan = {
         if (p.gang && s === p.gang) felder += '<td class="gang"></td>';
         const stud = this.schueler(cls, p.belegt[k]);
         felder += `<td class="${stud ? 'platz' : 'leer'}">` + (stud
-          ? (ausschnitte[stud.id] ? `<img src="${ausschnitte[stud.id]}" alt="">` : '') +
+          ? (ausschnitte[stud.id]
+              ? `<img src="${ausschnitte[stud.id]}" alt="">`
+              : (this.hatFotos(cls) ? '<span class="ohne-bild">kein Foto</span>' : '')) +
             `<span class="vn">${Band.esc(stud.first || stud.last)}</span>` +
             (stud.first ? `<span class="nn">${Band.esc(stud.last)}</span>` : '')
           : '') + '</td>';
@@ -1446,7 +1533,7 @@ const Sitzplan = {
     const titel = 'Klasse ' + Classes.klasseKurz(cls.name) + (cls.year ? ' – ' + cls.year : '');
     Band.printHtml(titel,
       `<table class="sitz-druck">${zeilen}</table>` +
-      '<p class="sitz-tafel-druck">Tafel</p>' + bank,
+      '<p class="sitz-tafel-druck">▲ Tafel / Vorne ▲</p>' + bank,
       `${Object.keys(p.belegt).length} von ${cls.students.length} Schülern gesetzt`,
       this.hatFotos(cls) ? 'Sitzplan mit Foto' : 'Sitzplan');
     setTimeout(() => quer.remove(), 1000);

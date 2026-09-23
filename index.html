@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=136">
+<link rel="stylesheet" href="style.css?v=138">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=136"></script>
-<script src="js/theme.js?v=136"></script>
-<script src="js/auth.js?v=136"></script>
+<script src="js/icons.js?v=138"></script>
+<script src="js/theme.js?v=138"></script>
+<script src="js/auth.js?v=138"></script>
 </head>
 <body>
 
@@ -406,8 +406,9 @@
             <div class="btn-row sitz-pdf-zeile">
               <label class="file-btn" data-icon="upload"
                      title="Ein fertiges Sitzplan-PDF mit Fotos einlesen: Namen, Plätze und Bilder werden daraus übernommen">Aus Sitzplan-PDF übernehmen<input type="file" id="sitz-pdf-datei" accept="application/pdf" hidden></label>
-              <label class="file-btn" data-icon="users"
-                     title="Ein Klassenfoto hochladen und die Gesichter selbst den Namen zuordnen">Gesichter aus Klassenfoto<input type="file" id="gesichter-datei" accept="application/pdf,image/*" hidden></label>
+              <button id="btn-gesichter-start" data-icon="users"
+                      title="Gesichter im Klassenfoto den Namen zuordnen. Ist schon ein Foto hinterlegt, wird daran weitergearbeitet.">Gesichter zuordnen</button>
+              <input type="file" id="gesichter-datei" accept="application/pdf,image/*" hidden>
               <button id="btn-sitz-fotos-weg" class="danger small" hidden>Fotos entfernen</button>
               <span id="sitz-pdf-status" class="hint" hidden></span>
             </div>
@@ -421,11 +422,15 @@
                 <button id="btn-gesichter-zurueck" data-icon="reset">Letzten zurück</button>
                 <button id="btn-gesichter-fertig" class="primary" data-icon="check">Übernehmen</button>
                 <button id="btn-gesichter-abbruch">Abbrechen</button>
+                <label class="file-btn" data-icon="upload"
+                       title="Ein anderes Klassenfoto verwenden – die bisherigen Rahmen passen darauf nicht mehr">Anderes Foto<input type="file" id="gesichter-datei-neu" accept="application/pdf,image/*" hidden></label>
               </div>
               <p class="hint">Auf ein Gesicht tippen setzt einen Rahmen, danach den Namen wählen –
                 tippen und Eingabetaste genügt. Ziehen zeichnet einen eigenen Rahmen; über den Regler
-                lässt sich die Größe einstellen. Sitzt ein Rahmen schief, einfach nochmal auf das
-                Gesicht tippen und denselben Namen wählen: Der neue Rahmen ersetzt den alten.</p>
+                lässt sich die Größe einstellen. Sitzt ein Rahmen schief oder überlappen sich zwei,
+                verschieben ihn die <strong>Pfeiltasten</strong> (mit Umschalt in Zehnerschritten),
+                <strong>+</strong> und <strong>−</strong> ändern die Größe. Mit der Eingabetaste
+                sitzt er wieder. Ein Tipper auf einen fertigen Rahmen nimmt ihn erneut in die Hand.</p>
               <div id="gesichter-buehne" class="gesichter-buehne">
                 <img id="gesichter-bild" alt="Klassenfoto">
                 <div id="gesichter-rahmen"></div>
@@ -895,27 +900,27 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=136"></script>
-<script src="js/firebase-config.js?v=136"></script>
-<script type="module" src="js/live-firebase.js?v=136"></script>
-<script src="js/topics-seed.js?v=136"></script>
-<script src="js/ai-import.js?v=136"></script>
-<script src="js/store.js?v=136"></script>
-<script src="js/noise.js?v=136"></script>
-<script src="js/classes.js?v=136"></script>
-<script src="js/sitzplan.js?v=136"></script>
-<script src="js/lessons.js?v=136"></script>
-<script src="js/band.js?v=136"></script>
-<script src="js/notes.js?v=136"></script>
-<script src="js/tresor.js?v=136"></script>
-<script src="js/erklaerungen.js?v=136"></script>
-<script src="js/setlisten.js?v=136"></script>
-<script src="js/einklappen.js?v=136"></script>
-<script src="js/live-groups.js?v=136"></script>
-<script src="js/tipps.js?v=136"></script>
-<script src="js/sport-tabellen.js?v=136"></script>
-<script src="js/sport.js?v=136"></script>
-<script src="js/tools.js?v=136"></script>
-<script src="js/app.js?v=136"></script>
+<script src="js/vendor/qrcode.min.js?v=138"></script>
+<script src="js/firebase-config.js?v=138"></script>
+<script type="module" src="js/live-firebase.js?v=138"></script>
+<script src="js/topics-seed.js?v=138"></script>
+<script src="js/ai-import.js?v=138"></script>
+<script src="js/store.js?v=138"></script>
+<script src="js/noise.js?v=138"></script>
+<script src="js/classes.js?v=138"></script>
+<script src="js/sitzplan.js?v=138"></script>
+<script src="js/lessons.js?v=138"></script>
+<script src="js/band.js?v=138"></script>
+<script src="js/notes.js?v=138"></script>
+<script src="js/tresor.js?v=138"></script>
+<script src="js/erklaerungen.js?v=138"></script>
+<script src="js/setlisten.js?v=138"></script>
+<script src="js/einklappen.js?v=138"></script>
+<script src="js/live-groups.js?v=138"></script>
+<script src="js/tipps.js?v=138"></script>
+<script src="js/sport-tabellen.js?v=138"></script>
+<script src="js/sport.js?v=138"></script>
+<script src="js/tools.js?v=138"></script>
+<script src="js/app.js?v=138"></script>
 </body>
 </html>

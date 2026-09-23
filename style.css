@@ -1100,26 +1100,38 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   box-shadow: 0 0 0 2px var(--accent) inset;
 }
 
-/* Auf Papier: dieselbe Anordnung wie am Schirm, nur in Ruhe – helle Karten
-   mit rundem Bild, darunter Rufname und Nachname. */
-.sitz-druck { width: 100%; border-collapse: separate; border-spacing: 5px; }
-.sitz-druck td {
-  border: 1px solid #b9c2d4; border-radius: 9px; padding: .45rem .3rem;
-  background: #f6f8fc; text-align: center; vertical-align: middle; width: 1%;
+/* Auf Papier: Karten mit rundem Bild, darunter Rufname fett und Nachname
+   grau. Leere Plaetze bleiben leer – ein gestrichelter Kasten waere nur
+   Unruhe. Unten die Tafel als dunkler Balken ueber die ganze Breite.
+   Farbflaechen muessen ausdruecklich erlaubt werden, sonst laesst der
+   Browser sie beim Drucken weg. */
+.sitz-druck {
+  width: 100%; border-collapse: separate; border-spacing: 7px;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
 }
-.sitz-druck td.leer { border-style: dashed; border-color: #d5d9e2; background: none; }
-.sitz-druck td.ohne { border: 1px dashed #e2e5ea; background: none; }
-.sitz-druck td.gang { border: none; background: none; width: 1.2cm; }
-.sitz-druck img {
-  display: block; width: 2.5cm; height: 2.5cm; margin: 0 auto .1rem;
-  object-fit: cover; border-radius: 50%;
+.sitz-druck td { width: 1%; padding: 0; border: none; background: none; vertical-align: top; }
+.sitz-druck td.platz {
+  border: 1.5px solid #b9c5e0; border-radius: 14px; background: #fff;
+  box-shadow: 0 1px 2px rgba(40, 55, 90, .12);
+  padding: .32cm .15cm .28cm; text-align: center; vertical-align: middle;
 }
-.sitz-druck .vn { display: block; font-weight: 600; }
-.sitz-druck .nn { display: block; font-size: .8em; color: #444; }
+.sitz-druck td.leer, .sitz-druck td.ohne, .sitz-druck td.gang { border: none; background: none; }
+.sitz-druck td.gang { width: 1.1cm; }
+.sitz-druck img, .sitz-druck .ohne-bild {
+  display: block; width: 2.3cm; height: 2.3cm; margin: 0 auto .14cm;
+  object-fit: cover; border-radius: 50%; border: 2px solid #eef1f8;
+}
+.sitz-druck .ohne-bild {
+  background: #eef1f8; color: #8a93a6; font-size: .62em;
+  display: flex; align-items: center; justify-content: center;
+}
+.sitz-druck .vn { display: block; font-weight: 700; font-size: 1.02em; line-height: 1.15; }
+.sitz-druck .nn { display: block; font-size: .92em; color: #555; line-height: 1.15; }
 .sitz-tafel-druck {
-  text-align: center; font-weight: 600; letter-spacing: .12em; font-size: .8em;
-  border: 1px solid #b9c2d4; border-radius: 6px; padding: .3rem; margin: .7rem 0 0;
-  background: #f6f8fc;
+  text-align: center; font-weight: 700; letter-spacing: .18em; font-size: .82em;
+  text-transform: uppercase; color: #fff; background: #2b3550;
+  border: none; border-radius: 8px; padding: .28cm; margin: .45cm 0 0;
+  -webkit-print-color-adjust: exact; print-color-adjust: exact;
 }
 .sitz-bank-druck { margin-top: 1rem; font-size: .9em; }
 
