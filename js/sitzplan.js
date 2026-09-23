@@ -1421,7 +1421,7 @@ const Sitzplan = {
         if (p.ohne.includes(k)) { felder += '<td class="ohne"></td>'; continue; }
         if (p.gang && s === p.gang) felder += '<td class="gang"></td>';
         const stud = this.schueler(cls, p.belegt[k]);
-        felder += '<td>' + (stud
+        felder += `<td class="${stud ? 'platz' : 'leer'}">` + (stud
           ? (ausschnitte[stud.id] ? `<img src="${ausschnitte[stud.id]}" alt="">` : '') +
             `<span class="vn">${Band.esc(stud.first || stud.last)}</span>` +
             (stud.first ? `<span class="nn">${Band.esc(stud.last)}</span>` : '')
@@ -1434,11 +1434,21 @@ const Sitzplan = {
       ? `<p class="sitz-bank-druck"><strong>Ohne Platz:</strong> ` +
         wartend.map(s => Band.esc(Classes.studentName(s))).join(' · ') + '</p>'
       : '';
+    /* Quer, sonst passen acht Plaetze nebeneinander nicht aufs Blatt. Die
+       Ausrichtung laesst sich nur fuer die ganze Seite setzen, deshalb gilt
+       diese Regel nur, solange gedruckt wird. */
+    const quer = document.createElement('style');
+    quer.textContent = '@page { size: A4 landscape; margin: 10mm; }';
+    document.head.appendChild(quer);
+
     // Die Tafel steht unten – auf dem Papier genauso wie auf dem Bildschirm,
     // sonst haelt man das Blatt verkehrt herum vor der Klasse.
-    Band.printHtml(`Sitzplan ${cls.name}`,
+    const titel = 'Klasse ' + Classes.klasseKurz(cls.name) + (cls.year ? ' – ' + cls.year : '');
+    Band.printHtml(titel,
       `<table class="sitz-druck">${zeilen}</table>` +
       '<p class="sitz-tafel-druck">Tafel</p>' + bank,
-      `${Object.keys(p.belegt).length} von ${cls.students.length} Schülern gesetzt`);
+      `${Object.keys(p.belegt).length} von ${cls.students.length} Schülern gesetzt`,
+      this.hatFotos(cls) ? 'Sitzplan mit Foto' : 'Sitzplan');
+    setTimeout(() => quer.remove(), 1000);
   },
 };
