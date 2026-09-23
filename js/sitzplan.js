@@ -33,6 +33,7 @@ const Sitzplan = {
       this.render();
     });
     an('btn-sitz-raum-uebernehmen', () => this.raumUebernehmen());
+    an('btn-sitz-leere-weg', () => this.leereWegnehmen(false));
     an('sitz-pdf-datei', e => {
       const datei = e.target.files[0];
       e.target.value = '';
@@ -304,6 +305,39 @@ const Sitzplan = {
     this.auswahl = null;
     Classes.persist();
     this.render();
+  },
+
+  /* Ein Durchgang ist kein Platz. Kommt der Plan aus einem PDF, steht dort
+     zwischen den Bloecken oft eine Spalte, in der nie jemand sitzt – die soll
+     leer sein und nicht als Reihe freier Stuehle dastehen. Dasselbe gilt fuer
+     Reihen. Zurueckholen laesst sich das unter „Raum aendern“. */
+  leereWegnehmen(still) {
+    const cls = Classes.currentClass();
+    if (!cls) return 0;
+    const p = this.plan(cls);
+    const dazu = [];
+    for (let sp = 0; sp < p.proReihe; sp++) {
+      let besetzt = false;
+      for (let r = 0; r < p.reihen && !besetzt; r++) if (p.belegt[this.schluessel(r, sp)]) besetzt = true;
+      if (besetzt) continue;
+      for (let r = 0; r < p.reihen; r++) dazu.push(this.schluessel(r, sp));
+    }
+    for (let r = 0; r < p.reihen; r++) {
+      let besetzt = false;
+      for (let sp = 0; sp < p.proReihe && !besetzt; sp++) if (p.belegt[this.schluessel(r, sp)]) besetzt = true;
+      if (besetzt) continue;
+      for (let sp = 0; sp < p.proReihe; sp++) dazu.push(this.schluessel(r, sp));
+    }
+    const neu = dazu.filter(k => !p.ohne.includes(k));
+    if (!neu.length) {
+      if (!still) alert('Es gibt keine Spalte und keine Reihe, in der niemand sitzt.');
+      return 0;
+    }
+    if (!still) this.merke(cls, p);
+    p.ohne.push(...neu);
+    Classes.persist();
+    this.render();
+    return neu.length;
   },
 
   raumUebernehmen() {
@@ -1486,6 +1520,8 @@ const Sitzplan = {
       this._fotoFuer = null;          // der Ausschnitt-Zwischenspeicher ist veraltet
     }
     Classes.persist();
+    // Durchgaenge im Plan sind kein Sitzplatz
+    this.leereWegnehmen(true);
     this.abbrechenVorschau();
     this.render();
   },

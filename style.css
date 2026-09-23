@@ -1003,7 +1003,17 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   border-color: var(--accent); background: var(--active-soft);
   box-shadow: 0 0 0 2px var(--accent) inset;
 }
-.sitz-platz.raus { background: none; border-style: dashed; opacity: .45; cursor: default; }
+/* Ein weggenommener Platz ist Leerraum – ein Durchgang zum Beispiel. Er soll
+   nichts zeigen. Erst unter „Raum aendern“ wird er sichtbar, sonst koennte man
+   ihn nicht zurueckholen. */
+.sitz-platz.raus {
+  background: none; border-color: transparent; cursor: default; box-shadow: none;
+}
+.sitz-platz.raus .sitz-leer { visibility: hidden; }
+.sitz-gitter.bearbeiten .sitz-platz.raus {
+  border-color: var(--border); border-style: dashed; opacity: .55; cursor: crosshair;
+}
+.sitz-gitter.bearbeiten .sitz-platz.raus .sitz-leer { visibility: visible; }
 /* Nach einem Mausklick bleibt sonst ein Rahmen stehen, der aussieht wie
    „gewaehlt“. Mit der Tastatur bleibt der Rahmen – dort braucht man ihn. */
 .sitz-platz:focus, .sitz-bank-chip:focus { outline: none; }
