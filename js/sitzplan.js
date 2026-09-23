@@ -850,9 +850,9 @@ const Sitzplan = {
        darunter; dort faende dieser Weg niemanden. Deshalb beide versuchen und
        den nehmen, der mehr Namen findet. */
     const ausKacheln = kacheln.length >= 4 ? this.kartenAusKacheln(kacheln, texte) : [];
-    const ausZeilen = this.kartenAusZeilen(texte);
-    const nachKacheln = ausKacheln.length >= ausZeilen.length && ausKacheln.length > 0;
-    const karten = this.zuordnen(cls, nachKacheln ? ausKacheln : ausZeilen);
+    const ausText = this.kartenAusText(texte);
+    const nachKacheln = ausKacheln.length >= ausText.length && ausKacheln.length > 0;
+    const karten = this.zuordnen(cls, nachKacheln ? ausKacheln : ausText);
 
     /* Jedem Platz sein Bild: Liegt ein Kaestchen vor, gilt das Bild darin.
        Sonst das, was direkt ueber dem Namen steht. */
@@ -908,7 +908,28 @@ const Sitzplan = {
         links: i.transform[4],
         y: i.transform[5],
         breite: i.width || 0,
+        hoehe: i.height || Math.abs(i.transform[3]) || 0,
       }));
+  },
+
+  /* Aus den Zeilen eines Platzes einen Namen machen. Drei Faelle kommen vor:
+       Timo / Batz                      – der Normalfall
+       Rebecca / (Becky) / Hess         – ein Rufname in Klammern dazwischen
+       Simon / Hoefelschwei / ger       – ein langer Nachname, umbrochen
+     Eine Fortsetzung erkennt man daran, dass sie klein anfaengt; sie wird ohne
+     Leerzeichen angehaengt. Geklammertes ist Beiwerk und faellt weg. */
+  namenAusZeilen(zeilen) {
+    const worte = [];
+    for (const roh of zeilen.map(z => z.trim()).filter(Boolean)) {
+      if (/^\(.*\)$/.test(roh)) continue;
+      if (worte.length && /^\p{Ll}/u.test(roh)) worte[worte.length - 1] += roh;
+      else worte.push(roh);
+    }
+    if (worte.length < 2) return null;
+    const vorname = worte[0];
+    const nachname = worte[worte.length - 1];
+    if (!this.klingtNachName(vorname) || !this.klingtNachName(nachname)) return null;
+    return { vorname, nachname, name: `${nachname}, ${vorname}` };
   },
 
   /* Ein Kaestchen ist ein Platz: Was darin steht, gehoert zusammen. Mehrzeilige
@@ -927,13 +948,10 @@ const Sitzplan = {
         if (letzte && Math.abs(letzte.y - t.y) <= 2) letzte.stuecke.push(t);
         else zeilen.push({ y: t.y, stuecke: [t] });
       }
-      const worte = zeilen.map(z => z.stuecke.map(s => s.text).join(' ').trim());
-      const vorname = worte[0];
-      const nachname = worte[worte.length - 1];
-      if (!this.klingtNachName(vorname) || !this.klingtNachName(nachname)) continue;
+      const name = this.namenAusZeilen(zeilen.map(z => z.stuecke.map(s => s.text).join(' ')));
+      if (!name) continue;
       karten.push({
-        name: `${nachname}, ${vorname}`,
-        vorname, nachname,
+        ...name,
         x: (kachel.x0 + kachel.x1) / 2,
         y: (kachel.y0 + kachel.y1) / 2,
         kachel,
@@ -943,47 +961,46 @@ const Sitzplan = {
     return karten;
   },
 
-  /* Rueckfallebene ohne Kaestchen: Namen stehen zweizeilig, Vorname ueber
-     Nachname. Beide gehoeren zusammen, wenn ihre Mitten uebereinander liegen
-     und die Zeilen dicht beieinander sind. */
-  kartenAusZeilen(stuecke) {
-    const zeilenWerte = this.buendeln(stuecke.map(s => s.y), 4).sort((a, b) => b - a);
-    const nachZeile = new Map();
-    for (const s of stuecke) {
-      const z = this.naechster(zeilenWerte, s.y);
-      if (!nachZeile.has(z)) nachZeile.set(z, []);
-      nachZeile.get(z).push(s);
+  /* Rueckfallebene ohne Kaestchen. Sie muss ohne jede Linie auskommen und
+     stuetzt sich allein darauf, wie der Text steht: Was untereinander liegt
+     und sich waagerecht ueberlappt, gehoert zu einem Platz – bis eine groessere
+     Luecke kommt, dann faengt der naechste an. Das traegt auch, wenn die
+     Vorlage die Zeilen links buendig setzt statt mittig, und wenn zwischen den
+     Reihen viel Luft steht.
+
+     Der Abstand, ab dem eine Luecke als Reihenwechsel gilt, richtet sich nach
+     der Schriftgroesse: zwei Zeilen Platz. */
+  kartenAusText(stuecke) {
+    if (!stuecke.length) return [];
+    const hoehen = stuecke.map(s => s.hoehe).filter(h => h > 0).sort((a, b) => a - b);
+    const zeilenhoehe = hoehen.length ? hoehen[Math.floor(hoehen.length / 2)] : 12;
+    const luecke = Math.max(18, zeilenhoehe * 2.2);
+
+    const gruppen = [];
+    for (const s of [...stuecke].sort((a, b) => b.y - a.y || a.links - b.links)) {
+      const links = s.links, rechts = s.links + Math.max(s.breite, 1);
+      const passend = gruppen.find(g =>
+        g.unten - s.y >= -2 && g.unten - s.y <= luecke &&
+        Math.min(g.rechts, rechts) - Math.max(g.links, links) > Math.min(rechts - links, g.rechts - g.links) * 0.25);
+      if (passend) {
+        // Stuecke derselben Grundlinie bilden eine Zeile
+        const zeile = passend.zeilen[passend.zeilen.length - 1];
+        if (Math.abs(zeile.y - s.y) <= 2) zeile.stuecke.push(s);
+        else passend.zeilen.push({ y: s.y, stuecke: [s] });
+        passend.unten = Math.min(passend.unten, s.y);
+        passend.links = Math.min(passend.links, links);
+        passend.rechts = Math.max(passend.rechts, rechts);
+      } else {
+        gruppen.push({ oben: s.y, unten: s.y, links, rechts, zeilen: [{ y: s.y, stuecke: [s] }] });
+      }
     }
 
     const karten = [];
-    const benutzt = new Set();
-    for (let i = 0; i < zeilenWerte.length - 1; i++) {
-      const oben = nachZeile.get(i) || [];
-      const unten = nachZeile.get(i + 1) || [];
-      const abstand = zeilenWerte[i] - zeilenWerte[i + 1];
-      if (abstand > 20) continue;                       // zu weit: keine zwei Zeilen einer Karte
-      for (const o of oben) {
-        if (benutzt.has(o)) continue;
-        let partner = null, beste = Infinity;
-        for (const u of unten) {
-          if (benutzt.has(u)) continue;
-          const d = Math.abs(u.x - o.x);
-          if (d < beste) { beste = d; partner = u; }
-        }
-        if (!partner || beste > 30) continue;
-        // Ueberschriften stehen auch zweizeilig da („Klasse 5B - 2026“). Namen
-        // tragen keine Ziffern und sind kurz – daran lassen sie sich trennen.
-        if (!this.klingtNachName(o.text) || !this.klingtNachName(partner.text)) continue;
-        benutzt.add(o); benutzt.add(partner);
-        karten.push({
-          name: `${partner.text}, ${o.text}`,
-          vorname: o.text,
-          nachname: partner.text,
-          x: (o.x + partner.x) / 2,
-          y: zeilenWerte[i],
-          student: null,
-        });
-      }
+    for (const g of gruppen) {
+      const name = this.namenAusZeilen(g.zeilen.map(z =>
+        z.stuecke.sort((a, b) => a.links - b.links).map(s => s.text).join(' ')));
+      if (!name) continue;
+      karten.push({ ...name, x: (g.links + g.rechts) / 2, y: g.oben, student: null });
     }
     return karten;
   },
@@ -1094,7 +1111,45 @@ const Sitzplan = {
         if (punkte.length) pfade.push(this.rechteckAus(punkte, m));
       }
     }
-    return { bilder, kacheln: this.kachelnFiltern(pfade) };
+    const linien = { senkrecht: [], waagerecht: [] };
+    for (const r of pfade) {
+      const b = r.x1 - r.x0, h = r.y1 - r.y0;
+      if (h > 15 && b <= 3) linien.senkrecht.push({ x: (r.x0 + r.x1) / 2, y0: r.y0, y1: r.y1 });
+      else if (b > 15 && h <= 3) linien.waagerecht.push({ y: (r.y0 + r.y1) / 2, x0: r.x0, x1: r.x1 });
+    }
+    // Gefuellte Kaestchen zuerst; zeichnet die Vorlage stattdessen eine Tabelle,
+    // werden die Zellen aus ihren Linien zurueckgewonnen.
+    let kacheln = this.kachelnFiltern(pfade);
+    if (kacheln.length < 4) kacheln = this.kachelnAusLinien(linien);
+    return { bilder, kacheln, linien };
+  },
+
+  /* Eine Tabelle besteht aus Strichen, nicht aus Kaestchen. Zwischen zwei
+     waagerechten Strichen liegt eine Reihe, zwischen zwei senkrechten eine
+     Spalte – zusammen ergibt das die Zellen. Was kein waagerechter Strich
+     ueberspannt, ist keine Zelle, sondern der Gang zwischen zwei Bloecken. */
+  kachelnAusLinien(linien) {
+    if (linien.waagerecht.length < 2 || linien.senkrecht.length < 2) return [];
+    const reihen = this.buendeln(linien.waagerecht.map(l => l.y), 3).sort((a, b) => b - a);
+    const kacheln = [];
+    for (let i = 0; i < reihen.length - 1; i++) {
+      const oben = reihen[i], unten = reihen[i + 1];
+      if (oben - unten < 20) continue;
+      const balken = linien.waagerecht.filter(l => Math.abs(l.y - oben) <= 3 || Math.abs(l.y - unten) <= 3);
+      const senkrecht = linien.senkrecht
+        .filter(l => l.y0 <= unten + 3 && l.y1 >= oben - 3)
+        .map(l => l.x);
+      const spalten = this.buendeln(senkrecht, 3).sort((a, b) => a - b);
+      for (let j = 0; j < spalten.length - 1; j++) {
+        const links = spalten[j], rechts = spalten[j + 1];
+        if (rechts - links < 20) continue;
+        // Nur wo oben oder unten wirklich ein Strich laeuft, steht eine Zelle
+        const gedeckt = balken.some(l => l.x0 <= links + 3 && l.x1 >= rechts - 3);
+        if (!gedeckt) continue;
+        kacheln.push({ x0: links, x1: rechts, y0: unten, y1: oben, x: (links + rechts) / 2, y: (unten + oben) / 2 });
+      }
+    }
+    return kacheln;
   },
 
   rechteckAus(punkte, m) {
