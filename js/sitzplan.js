@@ -42,6 +42,44 @@ const Sitzplan = {
     an('btn-sitz-pdf-abbruch', () => this.abbrechenVorschau());
     an('btn-sitz-fotos-weg', () => this.fotosEntfernen());
     an('btn-sitz-voll', () => this.vollbild('sitz-bereich'));
+
+    // Gesichter aus dem Klassenfoto
+    an('gesichter-datei', e => {
+      const datei = e.target.files[0];
+      e.target.value = '';
+      if (datei) this.gesichterStarten(datei);
+    }, 'change');
+    an('btn-gesichter-abbruch', () => this.gesichterAbbrechen());
+    an('btn-gesichter-zurueck', () => this.gesichterZurueck());
+    an('btn-gesichter-fertig', () => this.gesichterUebernehmen());
+    an('gesichter-suche', () => this.gesichterNamenZeichnen(), 'input');
+    an('gesichter-suche', e => {
+      if (e.key === 'Escape') { this.gesichterWahlSchliessen(); return; }
+      if (e.key !== 'Enter') return;
+      const erster = document.querySelector('#gesichter-namen .gesichter-name:not(.vergeben)')
+        || document.querySelector('#gesichter-namen .gesichter-name');
+      if (erster) erster.click();
+    }, 'keydown');
+
+    /* Tippen setzt einen Rahmen, Ziehen zeichnet einen eigenen. Zeigergesten
+       statt Maus-Ereignissen, damit es auf dem iPad genauso geht. */
+    const buehne = document.getElementById('gesichter-buehne');
+    if (buehne) {
+      let start = null;
+      buehne.addEventListener('pointerdown', e => {
+        if (!this.gesichter || e.target.closest('[data-schueler]')) return;
+        start = this.gesichterPunkt(e);
+        buehne.setPointerCapture(e.pointerId);
+      });
+      buehne.addEventListener('pointerup', e => {
+        if (!this.gesichter) return;
+        if (!start) { this.gesichterKlick(e); return; }
+        const bis = this.gesichterPunkt(e);
+        const weit = Math.abs(bis.x - start.x) > 12 || Math.abs(bis.y - start.y) > 12;
+        if (weit) this.gesichterZiehen(start, bis); else this.gesichterKlick(e);
+        start = null;
+      });
+    }
     an('btn-seatplan-voll', () => this.vollbild('seatplan-view'));
     an('sitz-bank', e => {
       // Auf die Bank selbst getippt: der gewählte Schüler verlässt seinen Platz
@@ -424,6 +462,297 @@ const Sitzplan = {
     const wartend = this.wartebank(cls, p).length;
     el.textContent = 'Zum Umsetzen erst den Schüler antippen, dann den Zielplatz.' +
       (wartend ? ' Wer noch keinen Platz hat, steht unten auf der Wartebank.' : '');
+  },
+
+  /* ---------- Gesichter aus dem Klassenfoto ----------
+     Die Vorlage ist ein Foto der Klasse im Raum. Eine Maschine muss darin
+     Gesichter finden UND den Namen zuordnen – das zweite geht regelmaessig
+     schief, weil sie die Kinder nicht kennt. Die Lehrkraft kennt sie. Also
+     macht sie das Zuordnen, und das Werkzeug nimmt ihr alles andere ab:
+     Ausschneiden, Rechnen, Speichern.
+
+     Gespeichert wird wie beim PDF-Weg: ein Bild je Klasse plus vier
+     Verhaeltniszahlen je Schueler. */
+  async gesichterStarten(datei) {
+    const cls = Classes.currentClass();
+    if (!cls) return;
+    if (!cls.students.length) {
+      alert('Diese Klasse hat noch keine Schülerliste – ohne sie gibt es nichts zuzuordnen.');
+      return;
+    }
+    /* Beim Uebernehmen tritt das neue Foto an die Stelle des alten. Wer die
+       Zuordnung halb fertig hat und neu anfaengt, soll das vorher wissen. */
+    if (this.hatFotos(cls) && !confirm(
+      `Für ${cls.name} sind schon Fotos hinterlegt.\n\n` +
+      'Ein neues Klassenfoto ersetzt sie, sobald du „Übernehmen“ drückst. ' +
+      'Bis dahin ändert sich nichts.')) return;
+    this.status('lese das Bild …');
+    try {
+      const bild = /pdf$/i.test(datei.type) || /\.pdf$/i.test(datei.name)
+        ? await this.bildAusPdf(datei)
+        : await this.bildAusDatei(datei);
+      if (!bild) { this.status(''); alert('In dieser Datei war kein Bild zu finden.'); return; }
+      this.gesichter = {
+        url: bild.url, breite: bild.breite, hoehe: bild.hoehe,
+        zuordnung: {}, offen: null, verlauf: [],
+      };
+      this.status('');
+      this.gesichterZeigen();
+    } catch (e) {
+      console.error(e);
+      this.status('');
+      alert('Die Datei konnte nicht gelesen werden.\n\n' + (e.message || e));
+    }
+  },
+
+  bildAusDatei(datei) {
+    return new Promise((fertig, schief) => {
+      const url = URL.createObjectURL(datei);
+      const i = new Image();
+      i.onload = () => fertig({ url, breite: i.naturalWidth, hoehe: i.naturalHeight });
+      i.onerror = () => schief(new Error('Bildformat wird nicht unterstützt.'));
+      i.src = url;
+    });
+  },
+
+  /* Steckt das Foto in einem PDF, nimmt die Seite mit der groessten Bildflaeche –
+     im Sitzplan aus Word liegt das Klassenfoto oft auf der zweiten Seite. */
+  async bildAusPdf(datei) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'js/vendor/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({
+      data: await datei.arrayBuffer(), disableFontFace: true,
+    }).promise;
+    let beste = null;
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const seite = await pdf.getPage(n);
+      const { bilder } = await this.formenAusSeite(seite);
+      const flaeche = bilder.reduce((a, r) => a + (r.x1 - r.x0) * (r.y1 - r.y0), 0);
+      if (!beste || flaeche > beste.flaeche) beste = { seite, flaeche };
+    }
+    if (!beste) return null;
+    const roh = beste.seite.getViewport({ scale: 1 });
+    const massstab = Math.min(3, Math.max(1.5, 2200 / roh.width));
+    const blick = beste.seite.getViewport({ scale: massstab });
+    const c = document.createElement('canvas');
+    c.width = Math.round(blick.width);
+    c.height = Math.round(blick.height);
+    await beste.seite.render({ canvasContext: c.getContext('2d'), viewport: blick }).promise;
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+    return { url: URL.createObjectURL(blob), breite: c.width, hoehe: c.height };
+  },
+
+  gesichterZeigen() {
+    const bereich = document.getElementById('gesichter-bereich');
+    const bild = document.getElementById('gesichter-bild');
+    bild.src = this.gesichter.url;
+    bereich.hidden = false;
+    // Ein Kopf fuellt auf einem Klassenfoto grob ein Zwanzigstel der Breite
+    const regler = document.getElementById('gesichter-groesse');
+    regler.value = Math.round(this.gesichter.breite / 18);
+    regler.max = Math.round(this.gesichter.breite / 4);
+    regler.min = Math.round(this.gesichter.breite / 60);
+    bereich.scrollIntoView({ block: 'start' });
+    this.gesichterZeichnen();
+  },
+
+  /* Bildpunkte des Fotos aus einem Klick auf die verkleinerte Anzeige */
+  gesichterPunkt(e) {
+    const bild = document.getElementById('gesichter-bild');
+    const r = bild.getBoundingClientRect();
+    return {
+      x: (e.clientX - r.left) / r.width * this.gesichter.breite,
+      y: (e.clientY - r.top) / r.height * this.gesichter.hoehe,
+    };
+  },
+
+  gesichterKlick(e) {
+    const g = this.gesichter;
+    if (!g) return;
+    const treffer = e.target.closest('[data-schueler]');
+    if (treffer) { this.gesichterWahlOeffnen(treffer.dataset.schueler); return; }
+    const p = this.gesichterPunkt(e);
+    const kante = +document.getElementById('gesichter-groesse').value;
+    g.offen = {
+      x: Math.max(0, p.x - kante / 2), y: Math.max(0, p.y - kante / 2),
+      b: kante, h: kante,
+    };
+    this.gesichterZeichnen();
+    this.gesichterWahlOeffnen(null);
+  },
+
+  gesichterZiehen(von, bis) {
+    const g = this.gesichter;
+    if (!g) return;
+    const x = Math.min(von.x, bis.x), y = Math.min(von.y, bis.y);
+    const b = Math.abs(bis.x - von.x), h = Math.abs(bis.y - von.y);
+    if (b < 12 || h < 12) return;                 // zu klein: war wohl ein Tipper
+    g.offen = { x, y, b, h };
+    this.gesichterZeichnen();
+    this.gesichterWahlOeffnen(null);
+  },
+
+  gesichterZeichnen() {
+    const g = this.gesichter;
+    const lage = document.getElementById('gesichter-rahmen');
+    if (!g || !lage) return;
+    const cls = Classes.currentClass();
+    lage.innerHTML = '';
+    const setze = (r, beschriftung, art, id) => {
+      const k = document.createElement('div');
+      k.className = 'gesichter-kasten ' + art;
+      k.style.left = (r.x / g.breite * 100) + '%';
+      k.style.top = (r.y / g.hoehe * 100) + '%';
+      k.style.width = (r.b / g.breite * 100) + '%';
+      k.style.height = (r.h / g.hoehe * 100) + '%';
+      if (id) k.dataset.schueler = id;
+      if (beschriftung) {
+        const b = document.createElement('span');
+        b.textContent = beschriftung;
+        k.appendChild(b);
+      }
+      lage.appendChild(k);
+    };
+    for (const [id, r] of Object.entries(g.zuordnung)) {
+      const st = cls.students.find(s => s.id === id);
+      setze(r, st ? [st.first, st.last].filter(Boolean).join(' ') : '?', 'fertig', id);
+    }
+    if (g.offen) setze(g.offen, '', 'offen');
+
+    const zahl = Object.keys(g.zuordnung).length;
+    document.getElementById('gesichter-fortschritt').textContent =
+      `${zahl} von ${cls.students.length} zugeordnet`;
+    document.getElementById('btn-gesichter-zurueck').disabled = !g.verlauf.length;
+  },
+
+  /* Die Namensauswahl: tippen filtert, Eingabetaste nimmt den ersten Treffer.
+     Wer schon einen Rahmen hat, steht hinten und grau – so sieht man sofort,
+     wer noch fehlt. */
+  gesichterWahlOeffnen(schonId) {
+    const g = this.gesichter;
+    const cls = Classes.currentClass();
+    if (!g) return;
+    g.bearbeitet = schonId || null;
+    if (schonId) g.offen = { ...g.zuordnung[schonId] };
+    const kasten = document.getElementById('gesichter-wahl');
+    kasten.hidden = false;
+    const suche = document.getElementById('gesichter-suche');
+    suche.value = '';
+    this.gesichterNamenZeichnen();
+    suche.focus();
+  },
+
+  gesichterNamenZeichnen() {
+    const g = this.gesichter;
+    const cls = Classes.currentClass();
+    const feld = document.getElementById('gesichter-suche');
+    const box = document.getElementById('gesichter-namen');
+    const suche = this.schluesselName(feld.value);
+    const vergeben = new Set(Object.keys(g.zuordnung));
+    const liste = cls.students
+      .filter(s => !suche || this.schluesselName(Classes.studentName(s)).includes(suche))
+      .sort((a, b) => (vergeben.has(a.id) ? 1 : 0) - (vergeben.has(b.id) ? 1 : 0) ||
+        Classes.studentName(a).localeCompare(Classes.studentName(b), 'de'));
+    box.innerHTML = '';
+    for (const s of liste) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'gesichter-name' + (vergeben.has(s.id) ? ' vergeben' : '') +
+        (g.bearbeitet === s.id ? ' aktuell' : '');
+      b.textContent = Classes.studentName(s);
+      b.addEventListener('click', () => this.gesichterZuweisen(s.id));
+      box.appendChild(b);
+    }
+    if (g.bearbeitet) {
+      const weg = document.createElement('button');
+      weg.type = 'button';
+      weg.className = 'gesichter-name danger';
+      weg.textContent = 'Rahmen entfernen';
+      weg.addEventListener('click', () => {
+        g.verlauf.push({ ...g.zuordnung });
+        delete g.zuordnung[g.bearbeitet];
+        this.gesichterWahlSchliessen();
+      });
+      box.appendChild(weg);
+    }
+  },
+
+  gesichterZuweisen(id) {
+    const g = this.gesichter;
+    if (!g || !g.offen) return;
+    g.verlauf.push({ ...g.zuordnung });
+    if (g.verlauf.length > 40) g.verlauf.shift();
+    if (g.bearbeitet && g.bearbeitet !== id) delete g.zuordnung[g.bearbeitet];
+    g.zuordnung[id] = g.offen;
+    this.gesichterWahlSchliessen();
+  },
+
+  gesichterWahlSchliessen() {
+    const g = this.gesichter;
+    if (!g) return;
+    g.offen = null;
+    g.bearbeitet = null;
+    document.getElementById('gesichter-wahl').hidden = true;
+    this.gesichterZeichnen();
+  },
+
+  gesichterZurueck() {
+    const g = this.gesichter;
+    if (!g || !g.verlauf.length) return;
+    g.zuordnung = g.verlauf.pop();
+    this.gesichterWahlSchliessen();
+  },
+
+  gesichterAbbrechen() {
+    if (this.gesichter && this.gesichter.url) URL.revokeObjectURL(this.gesichter.url);
+    this.gesichter = null;
+    document.getElementById('gesichter-bereich').hidden = true;
+    document.getElementById('gesichter-wahl').hidden = true;
+    this.status('');
+  },
+
+  /* Uebernehmen: Das Foto wird auf eine vernuenftige Groesse gebracht und als
+     ein Bild je Klasse abgelegt, die Rahmen als Verhaeltniszahlen. */
+  async gesichterUebernehmen() {
+    const g = this.gesichter;
+    const cls = Classes.currentClass();
+    if (!g || !cls) return;
+    const zahl = Object.keys(g.zuordnung).length;
+    if (!zahl) { alert('Es ist noch kein Gesicht zugeordnet.'); return; }
+    this.status('übernehme …');
+
+    const breite = Math.min(2200, g.breite);
+    const c = document.createElement('canvas');
+    c.width = breite;
+    c.height = Math.round(g.hoehe * breite / g.breite);
+    const bild = await new Promise((fertig, schief) => {
+      const i = new Image();
+      i.onload = () => fertig(i);
+      i.onerror = schief;
+      i.src = g.url;
+    });
+    c.getContext('2d').drawImage(bild, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.78));
+    try {
+      await Store.putFoto(this.fotoSchluessel(cls),
+        new File([blob], `Klassenfoto ${cls.name}.jpg`, { type: 'image/jpeg' }));
+    } catch (e) {
+      this.status('');
+      alert('Das Bild konnte nicht gespeichert werden.\n\n' + (e.message || e));
+      return;
+    }
+    const bilder = {};
+    for (const [id, r] of Object.entries(g.zuordnung)) {
+      bilder[id] = {
+        x: +(r.x / g.breite).toFixed(5), y: +(r.y / g.hoehe).toFixed(5),
+        b: +(r.b / g.breite).toFixed(5), h: +(r.h / g.hoehe).toFixed(5),
+      };
+    }
+    cls.fotos = { bilder };
+    this._fotoFuer = null;
+    Classes.persist();
+    this.gesichterAbbrechen();
+    this.render();
+    alert(`${zahl} ${zahl === 1 ? 'Gesicht wurde' : 'Gesichter wurden'} übernommen.`);
   },
 
   /* Vollbild fuer den Beamer – fuer die Sitzordnung wie fuer die Datei.

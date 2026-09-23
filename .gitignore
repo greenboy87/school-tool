@@ -6,6 +6,12 @@
 *.doc
 *.docx
 *.csv
+# Klassenfotos: Seit der Sitzplan Gesichter zeigt, liegen hier beim Testen
+# schnell Bilder von Kindern herum. Die gehoeren nirgendwo hin ausser lokal.
+*.jpg
+*.jpeg
+*.png
+*.heic
 
 # Nur lokale Editor-/Testhilfen
 .claude/
