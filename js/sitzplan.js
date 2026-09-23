@@ -79,6 +79,8 @@ const Sitzplan = {
       this.gesichterZeichnen();
     });
     an('btn-gesichter-zurueck', () => this.gesichterZurueck());
+    an('btn-gesichter-namen-aus', () => this.gesichterUmschalten('zeigeNamen'));
+    an('btn-gesichter-rahmen-aus', () => this.gesichterUmschalten('zeigeRahmen'));
     an('btn-gesichter-fertig', () => this.gesichterUebernehmen());
     an('gesichter-suche', () => this.gesichterNamenZeichnen(), 'input');
     an('gesichter-suche', e => {
@@ -542,6 +544,7 @@ const Sitzplan = {
       this.gesichter = {
         url: bild.url, breite: bild.breite, hoehe: bild.hoehe,
         zuordnung, offen: null, verlauf: [], gespeichert: true,
+        zeigeNamen: true, zeigeRahmen: true,
       };
       this.status('');
       this.gesichterZeigen();
@@ -576,6 +579,7 @@ const Sitzplan = {
       this.gesichter = {
         url: bild.url, breite: bild.breite, hoehe: bild.hoehe,
         zuordnung: {}, offen: null, verlauf: [],
+        zeigeNamen: true, zeigeRahmen: true,
       };
       this.status('');
       this.gesichterZeigen();
@@ -636,6 +640,29 @@ const Sitzplan = {
     this.gesichterZeichnen();
   },
 
+  /* Namensschilder und Rahmen verdecken beim Zuordnen die Gesichter daneben.
+     Beides laesst sich deshalb einzeln wegblenden – der gerade offene Rahmen
+     bleibt immer sichtbar, sonst wuesste man nicht mehr, wo man setzt. */
+  gesichterUmschalten(was) {
+    const g = this.gesichter;
+    if (!g) return;
+    g[was] = !g[was];
+    this.gesichterZeichnen();
+  },
+
+  gesichterKnoepfeStellen() {
+    const g = this.gesichter;
+    if (!g) return;
+    const setze = (id, an, wort) => {
+      const k = document.getElementById(id);
+      if (!k) return;
+      k.textContent = an ? wort + ' aus' : wort + ' an';
+      k.classList.toggle('primary', !an);
+    };
+    setze('btn-gesichter-namen-aus', g.zeigeNamen, 'Namen');
+    setze('btn-gesichter-rahmen-aus', g.zeigeRahmen, 'Rahmen');
+  },
+
   /* Bildpunkte des Fotos aus einem Klick auf die verkleinerte Anzeige */
   gesichterPunkt(e) {
     const bild = document.getElementById('gesichter-bild');
@@ -693,9 +720,12 @@ const Sitzplan = {
       }
       lage.appendChild(k);
     };
-    for (const [id, r] of Object.entries(g.zuordnung)) {
-      const st = cls.students.find(s => s.id === id);
-      setze(r, st ? [st.first, st.last].filter(Boolean).join(' ') : '?', 'fertig', id);
+    if (g.zeigeRahmen) {
+      for (const [id, r] of Object.entries(g.zuordnung)) {
+        const st = cls.students.find(s => s.id === id);
+        const name = st ? [st.first, st.last].filter(Boolean).join(' ') : '?';
+        setze(r, g.zeigeNamen ? name : '', 'fertig', id);
+      }
     }
     if (g.offen) setze(g.offen, '', 'offen');
 
@@ -703,6 +733,7 @@ const Sitzplan = {
     document.getElementById('gesichter-fortschritt').textContent =
       `${zahl} von ${cls.students.length} zugeordnet`;
     document.getElementById('btn-gesichter-zurueck').disabled = !g.verlauf.length;
+    this.gesichterKnoepfeStellen();
   },
 
   /* Die Namensauswahl: tippen filtert, Eingabetaste nimmt den ersten Treffer.
@@ -793,6 +824,10 @@ const Sitzplan = {
 
   /* Uebernehmen: Das Foto wird auf eine vernuenftige Groesse gebracht und als
      ein Bild je Klasse abgelegt, die Rahmen als Verhaeltniszahlen. */
+  /* Hier darf nichts stillschweigend scheitern: Wer eine halbe Stunde Gesichter
+     zugeordnet hat und dann auf einen Knopf drueckt, der nichts tut, verliert
+     die Arbeit und weiss nicht, warum. Deshalb liegt alles in einem Versuch,
+     und jeder Fehler sagt, was los war – die Zuordnung bleibt dabei stehen. */
   async gesichterUebernehmen() {
     const g = this.gesichter;
     const cls = Classes.currentClass();
@@ -800,44 +835,56 @@ const Sitzplan = {
     const zahl = Object.keys(g.zuordnung).length;
     if (!zahl) { alert('Es ist noch kein Gesicht zugeordnet.'); return; }
     this.status('übernehme …');
-
-    /* Wird am gespeicherten Foto weitergearbeitet, bleibt es unangetastet –
-       neu schreiben hiesse nur, es ein zweites Mal zu verkleinern. */
-    if (!g.gespeichert) {
-      const breite = Math.min(2200, g.breite);
-      const c = document.createElement('canvas');
-      c.width = breite;
-      c.height = Math.round(g.hoehe * breite / g.breite);
-      const bild = await new Promise((fertig, schief) => {
-        const i = new Image();
-        i.onload = () => fertig(i);
-        i.onerror = schief;
-        i.src = g.url;
-      });
-      c.getContext('2d').drawImage(bild, 0, 0, c.width, c.height);
-      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.78));
-      try {
+    try {
+      /* Wird am gespeicherten Foto weitergearbeitet, bleibt es unangetastet –
+         neu schreiben hiesse nur, es ein zweites Mal zu verkleinern. */
+      if (!g.gespeichert) {
+        if (!(g.breite > 0) || !(g.hoehe > 0)) throw new Error('Das Bild hat keine brauchbare Größe.');
+        const breite = Math.min(2200, g.breite);
+        const c = document.createElement('canvas');
+        c.width = breite;
+        c.height = Math.round(g.hoehe * breite / g.breite);
+        const bild = await new Promise((fertig, schief) => {
+          const i = new Image();
+          i.onload = () => fertig(i);
+          i.onerror = () => schief(new Error('Das Bild lässt sich nicht mehr lesen.'));
+          i.src = g.url;
+        });
+        c.getContext('2d').drawImage(bild, 0, 0, c.width, c.height);
+        const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.78));
+        if (!blob) throw new Error('Das Bild ließ sich nicht umwandeln.');
         await Store.putFoto(this.fotoSchluessel(cls),
           new File([blob], `Klassenfoto ${cls.name}.jpg`, { type: 'image/jpeg' }));
-      } catch (e) {
-        this.status('');
-        alert('Das Bild konnte nicht gespeichert werden.\n\n' + (e.message || e));
-        return;
       }
+      const bilder = {};
+      for (const [id, r] of Object.entries(g.zuordnung)) {
+        bilder[id] = {
+          x: +(r.x / g.breite).toFixed(5), y: +(r.y / g.hoehe).toFixed(5),
+          b: +(r.b / g.breite).toFixed(5), h: +(r.h / g.hoehe).toFixed(5),
+        };
+      }
+      cls.fotos = { bilder };
+      this._fotoFuer = null;
+      Classes.persist();
+      this.gesichterAbbrechen();
+      this.render();
+
+      /* Gesichter erscheinen nur auf besetzten Plaetzen. Wer die Sitzordnung
+         noch nicht gefuellt hat, sieht sonst nichts und denkt, es sei nichts
+         gespeichert worden. */
+      const p = this.plan(cls);
+      const sitzen = Object.keys(p.belegt).length;
+      alert(`${zahl} ${zahl === 1 ? 'Gesicht wurde' : 'Gesichter wurden'} gespeichert.` +
+        (sitzen ? '' :
+          '\n\nAuf der Sitzordnung sitzt allerdings noch niemand – deshalb ist dort ' +
+          'auch kein Gesicht zu sehen. Mit „Nach Klassenliste“ oder „Aus Sitzplan-PDF ' +
+          'übernehmen“ die Plätze belegen, dann erscheinen sie.'));
+    } catch (e) {
+      console.error('Gesichter übernehmen:', e);
+      this.status('');
+      alert('Die Gesichter konnten nicht gespeichert werden.\n\n' + (e.message || e) +
+        '\n\nDie Zuordnung steht noch – du kannst es gleich noch einmal versuchen.');
     }
-    const bilder = {};
-    for (const [id, r] of Object.entries(g.zuordnung)) {
-      bilder[id] = {
-        x: +(r.x / g.breite).toFixed(5), y: +(r.y / g.hoehe).toFixed(5),
-        b: +(r.b / g.breite).toFixed(5), h: +(r.h / g.hoehe).toFixed(5),
-      };
-    }
-    cls.fotos = { bilder };
-    this._fotoFuer = null;
-    Classes.persist();
-    this.gesichterAbbrechen();
-    this.render();
-    alert(`${zahl} ${zahl === 1 ? 'Gesicht wurde' : 'Gesichter wurden'} übernommen.`);
   },
 
   /* Vollbild fuer den Beamer – fuer die Sitzordnung wie fuer die Datei.
