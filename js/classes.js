@@ -68,7 +68,10 @@ const Classes = {
       // sonst bleibt es unauffindbar im Speicher liegen und wandert weiter mit
       // durch jeden Abgleich.
       if (typeof Sitzplan !== 'undefined') {
-        Store.deleteFoto(Sitzplan.fotoSchluessel(cls)).catch(() => {});
+        const bilder = Math.max(1, Sitzplan.fotoAnzahl(cls));
+        for (let q = 0; q < bilder; q++) {
+          Store.deleteFoto(Sitzplan.fotoSchluessel(cls, q)).catch(() => {});
+        }
       }
       this.data.classes = this.data.classes.filter(c => c.id !== cls.id);
       this.currentClassId = null;

@@ -478,11 +478,11 @@ const Sitzplan = {
   async fotosNachziehen(cls) {
     const felder = document.querySelectorAll('#sitz-gitter .sitz-foto');
     if (!felder.length) return;
-    const url = await this.fotoUrl(cls);
-    if (!url) return;
     for (const feld of felder) {
       const r = this.bildVon(cls, feld.dataset.fuer);
       if (!r) continue;
+      const url = await this.fotoUrl(cls, r.q || 0);
+      if (!url) continue;
       feld.style.backgroundImage = `url(${url})`;
       feld.style.backgroundSize = `${100 / r.b}% ${100 / r.h}%`;
       // Die Prozentangabe misst den Anteil am ueberstehenden Rest, nicht am Bild
@@ -491,18 +491,25 @@ const Sitzplan = {
     }
   },
 
-  async fotoUrl(cls) {
-    if (this._fotoFuer === cls.id) return this._fotoUrl;
-    if (this._fotoUrl) URL.revokeObjectURL(this._fotoUrl);
-    this._fotoFuer = cls.id;
-    this._fotoUrl = null;
+  async fotoUrl(cls, q = 0) {
+    if (this._fotoFuer !== cls.id) this.fotosVergessen(cls.id);
+    const schon = this._fotoUrls && this._fotoUrls[q];
+    if (schon !== undefined) return schon;
+    this._fotoUrls = this._fotoUrls || {};
+    this._fotoUrls[q] = null;
     try {
-      const eintrag = await Store.getFoto(this.fotoSchluessel(cls));
-      if (eintrag && eintrag.blob) this._fotoUrl = URL.createObjectURL(eintrag.blob);
+      const eintrag = await Store.getFoto(this.fotoSchluessel(cls, q));
+      if (eintrag && eintrag.blob) this._fotoUrls[q] = URL.createObjectURL(eintrag.blob);
     } catch (e) {
       console.error('Klassenfoto:', e);
     }
-    return this._fotoUrl;
+    return this._fotoUrls[q];
+  },
+
+  fotosVergessen(klasseId) {
+    for (const url of Object.values(this._fotoUrls || {})) if (url) URL.revokeObjectURL(url);
+    this._fotoUrls = {};
+    this._fotoFuer = klasseId || null;
   },
 
   zeichneBank(cls, p) {
@@ -572,10 +579,26 @@ const Sitzplan = {
     document.getElementById('gesichter-datei').click();
   },
 
+  /* Welches Quellbild ist gemeint? Das mit den meisten Rahmen – das ist das
+     Klassenfoto, an dem man ueblicherweise nachbessert. Ein Nachzuegler-Bild
+     mit zwei Gesichtern soll nicht dazwischenfunken. */
+  hauptBild(cls) {
+    if (!this.hatFotos(cls)) return 0;
+    const zaehler = {};
+    for (const r of Object.values(cls.fotos.bilder)) {
+      const q = r.q || 0;
+      zaehler[q] = (zaehler[q] || 0) + 1;
+    }
+    let beste = 0, wieOft = -1;
+    for (const [q, n] of Object.entries(zaehler)) if (n > wieOft) { wieOft = n; beste = +q; }
+    return beste;
+  },
+
   async gesichterFortsetzen(cls) {
     this.status('hole das Klassenfoto …');
+    const q = this.hauptBild(cls);
     try {
-      const eintrag = await Store.getFoto(this.fotoSchluessel(cls));
+      const eintrag = await Store.getFoto(this.fotoSchluessel(cls, q));
       if (!eintrag || !eintrag.blob) {
         this.status('');
         alert('Das Klassenfoto ist nicht mehr da – bitte neu hochladen.');
@@ -583,9 +606,11 @@ const Sitzplan = {
         return;
       }
       const bild = await this.bildAusDatei(eintrag.blob);
-      // Die gespeicherten Verhaeltniszahlen zurueck in Bildpunkte rechnen
+      // Die gespeicherten Verhaeltniszahlen zurueck in Bildpunkte rechnen –
+      // nur die, die zu diesem Quellbild gehoeren
       const zuordnung = {};
       for (const [id, r] of Object.entries(cls.fotos.bilder)) {
+        if ((r.q || 0) !== q) continue;
         if (!cls.students.some(sch => sch.id === id)) continue;
         zuordnung[id] = {
           x: r.x * bild.breite, y: r.y * bild.hoehe,
@@ -593,7 +618,7 @@ const Sitzplan = {
         };
       }
       this.gesichter = {
-        url: bild.url, breite: bild.breite, hoehe: bild.hoehe,
+        url: bild.url, breite: bild.breite, hoehe: bild.hoehe, q,
         zuordnung, offen: null, verlauf: [], gespeichert: true,
         zeigeNamen: true, zeigeRahmen: true,
       };
@@ -613,14 +638,10 @@ const Sitzplan = {
       alert('Diese Klasse hat noch keine Schülerliste – ohne sie gibt es nichts zuzuordnen.');
       return;
     }
-    /* Ein anderes Foto bedeutet andere Bildpunkte: Die bisherigen Rahmen passen
-       darauf nicht mehr und werden beim Uebernehmen ersetzt. */
-    if (this.hatFotos(cls) && !confirm(
-      `Für ${cls.name} ist schon ein Klassenfoto hinterlegt.\n\n` +
-      'Ein anderes Foto bedeutet, dass alle bisherigen Rahmen neu gesetzt werden ' +
-      'müssen – sie passen auf das neue Bild nicht.\n\n' +
-      'Zum Nachtragen einzelner Gesichter lieber abbrechen und den Knopf ' +
-      '„Gesichter zuordnen“ nehmen: Der arbeitet am vorhandenen Foto weiter.')) return;
+    /* Ein weiteres Foto bekommt einen eigenen Platz. Die Gesichter aus den
+       bisherigen Bildern bleiben, wo sie sind – genau dafuer ist das da: Wer
+       beim Klassenfoto gefehlt hat, kommt aus einem zweiten Bild dazu. */
+    const q = this.hatFotos(cls) ? this.fotoAnzahl(cls) : 0;
     this.status('lese das Bild …');
     try {
       const bild = /pdf$/i.test(datei.type) || /\.pdf$/i.test(datei.name)
@@ -628,7 +649,7 @@ const Sitzplan = {
         : await this.bildAusDatei(datei);
       if (!bild) { this.status(''); alert('In dieser Datei war kein Bild zu finden.'); return; }
       this.gesichter = {
-        url: bild.url, breite: bild.breite, hoehe: bild.hoehe,
+        url: bild.url, breite: bild.breite, hoehe: bild.hoehe, q,
         zuordnung: {}, offen: null, verlauf: [],
         zeigeNamen: true, zeigeRahmen: true,
       };
@@ -783,6 +804,18 @@ const Sitzplan = {
     const zahl = Object.keys(g.zuordnung).length;
     document.getElementById('gesichter-fortschritt').textContent =
       `${zahl} von ${cls.students.length} zugeordnet`;
+    const bildnr = document.getElementById('gesichter-bildnr');
+    if (bildnr) {
+      const ausAnderen = Object.entries((cls.fotos && cls.fotos.bilder) || {})
+        .filter(([id, r]) => (r.q || 0) !== (g.q || 0)).length;
+      bildnr.textContent = g.q ? `Bild ${g.q + 1}` : '';
+      if (ausAnderen) {
+        bildnr.textContent = (bildnr.textContent ? bildnr.textContent + ' · ' : '') +
+          (ausAnderen === 1
+            ? '1 Gesicht aus einem anderen Bild bleibt erhalten'
+            : `${ausAnderen} Gesichter aus anderen Bildern bleiben erhalten`);
+      }
+    }
     document.getElementById('btn-gesichter-zurueck').disabled = !g.verlauf.length;
     this.gesichterKnoepfeStellen();
   },
@@ -904,18 +937,26 @@ const Sitzplan = {
         c.getContext('2d').drawImage(bild, 0, 0, c.width, c.height);
         const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.78));
         if (!blob) throw new Error('Das Bild ließ sich nicht umwandeln.');
-        await Store.putFoto(this.fotoSchluessel(cls),
+        await Store.putFoto(this.fotoSchluessel(cls, g.q || 0),
           new File([blob], `Klassenfoto ${cls.name}.jpg`, { type: 'image/jpeg' }));
       }
+      /* Zusammenfuehren, nicht ersetzen: Was aus anderen Quellbildern stammt,
+         bleibt stehen. Nur wer in dieser Sitzung einen Rahmen bekam – oder
+         seinen verloren hat –, wird neu geschrieben. */
+      const q = g.q || 0;
       const bilder = {};
+      for (const [id, r] of Object.entries((cls.fotos && cls.fotos.bilder) || {})) {
+        if ((r.q || 0) !== q && !g.zuordnung[id]) bilder[id] = r;
+      }
       for (const [id, r] of Object.entries(g.zuordnung)) {
         bilder[id] = {
+          q,
           x: +(r.x / g.breite).toFixed(5), y: +(r.y / g.hoehe).toFixed(5),
           b: +(r.b / g.breite).toFixed(5), h: +(r.h / g.hoehe).toFixed(5),
         };
       }
       cls.fotos = { bilder };
-      this._fotoFuer = null;
+      this.fotosVergessen(null);
       Classes.persist();
       this.gesichterAbbrechen();
       this.render();
@@ -1575,33 +1616,51 @@ const Sitzplan = {
         return;
       }
       cls.fotos = { bilder };
-      this._fotoFuer = null;          // der Ausschnitt-Zwischenspeicher ist veraltet
+      this.fotosVergessen(null);      // der Ausschnitt-Zwischenspeicher ist veraltet
     }
     Classes.persist();
     this.abbrechenVorschau();
     this.render();
   },
 
-  fotoSchluessel(cls) { return 'klassenfoto-' + cls.id; },
+  /* Eine Klasse kann mehrere Quellbilder haben: das Klassenfoto und spaeter
+     eines fuer die, die an dem Tag gefehlt haben. Jeder Schueler merkt sich in
+     „q“, aus welchem Bild sein Ausschnitt stammt. Das erste Bild behaelt den
+     alten Schluessel ohne Nummer – damit bleiben vorhandene Klassen lesbar. */
+  fotoSchluessel(cls, q = 0) {
+    return 'klassenfoto-' + cls.id + (q ? '-' + q : '');
+  },
+
+  /* Wie viele Quellbilder die Klasse benutzt */
+  fotoAnzahl(cls) {
+    if (!this.hatFotos(cls)) return 0;
+    let hoechste = 0;
+    for (const r of Object.values(cls.fotos.bilder)) hoechste = Math.max(hoechste, r.q || 0);
+    return hoechste + 1;
+  },
 
   /* Je Schueler ein kleines, eigenstaendiges Bild fuer die Druckseite */
   async druckAusschnitte(cls) {
     const raus = {};
     if (!this.hatFotos(cls)) return raus;
-    const url = await this.fotoUrl(cls);
-    if (!url) return raus;
-    const bild = await new Promise((fertig, schief) => {
-      const i = new Image();
-      i.onload = () => fertig(i);
-      i.onerror = schief;
-      i.src = url;
-    }).catch(() => null);
-    if (!bild) return raus;
     const kante = 150;
     const c = document.createElement('canvas');
     c.width = c.height = kante;
     const stift = c.getContext('2d');
+    const geladen = {};
     for (const [id, r] of Object.entries(cls.fotos.bilder)) {
+      const q = r.q || 0;
+      if (geladen[q] === undefined) {
+        const url = await this.fotoUrl(cls, q);
+        geladen[q] = url ? await new Promise((fertig) => {
+          const i = new Image();
+          i.onload = () => fertig(i);
+          i.onerror = () => fertig(null);
+          i.src = url;
+        }) : null;
+      }
+      const bild = geladen[q];
+      if (!bild) continue;
       stift.clearRect(0, 0, kante, kante);
       stift.drawImage(bild,
         r.x * bild.width, r.y * bild.height, r.b * bild.width, r.h * bild.height,
@@ -1617,11 +1676,13 @@ const Sitzplan = {
     if (!confirm('Die Fotos dieser Klasse entfernen?\n\n' +
       'Die Sitzordnung bleibt, nur die Bilder verschwinden. Das Sitzplan-PDF lässt ' +
       'sich jederzeit wieder einlesen.')) return;
+    const wieViele = this.fotoAnzahl(cls);
     delete cls.fotos;
     Classes.persist();
-    if (this._fotoUrl) { URL.revokeObjectURL(this._fotoUrl); this._fotoUrl = null; }
-    this._fotoFuer = null;
-    try { await Store.deleteFoto(this.fotoSchluessel(cls)); } catch (e) { console.error(e); }
+    this.fotosVergessen(null);
+    for (let q = 0; q < Math.max(1, wieViele); q++) {
+      try { await Store.deleteFoto(this.fotoSchluessel(cls, q)); } catch (e) { console.error(e); }
+    }
     this.render();
   },
 
