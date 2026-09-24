@@ -41,6 +41,7 @@ const Sitzplan = {
       if (datei) this.ausPdf(datei);
     }, 'change');
     an('btn-sitz-pdf-ok', () => this.uebernehmenAusPdf());
+    an('btn-sitz-pdf-namen', () => this.namenNachtragen());
     an('btn-sitz-pdf-abbruch', () => this.abbrechenVorschau());
     an('btn-sitz-fotos-weg', () => this.fotosEntfernen());
     an('btn-sitz-voll', () => this.vollbild('sitz-bereich'));
@@ -1068,6 +1069,7 @@ const Sitzplan = {
     }
 
     return {
+      karten,
       treffer: karten.filter(k => k.student),
       ohneZuordnung: karten.filter(k => !k.student).map(k => k.name),
       ungefaehr: karten.filter(k => k.ungefaehr)
@@ -1424,6 +1426,39 @@ const Sitzplan = {
     return beste;
   },
 
+  /* Nach einer Änderung an der Klassenliste noch einmal zuordnen, ohne das PDF
+     erneut zu lesen – die Karten liegen ja schon da. */
+  vorschauAuswerten(v) {
+    const cls = Classes.currentClass();
+    for (const k of v.karten) { k.student = null; k.ungefaehr = false; }
+    this.zuordnen(cls, v.karten);
+    v.treffer = v.karten.filter(k => k.student);
+    v.ohneZuordnung = v.karten.filter(k => !k.student).map(k => k.name);
+    v.ungefaehr = v.karten.filter(k => k.ungefaehr)
+      .map(k => `${k.name} → ${Classes.studentName(k.student)}`);
+  },
+
+  /* Steht im Plan jemand, den die Klassenliste nicht kennt, ist das fast immer
+     ein fehlender Eintrag – kein Grund, die Liste in einem anderen Reiter von
+     Hand nachzupflegen. Ein Knopf genuegt. */
+  namenNachtragen() {
+    const v = this.vorschau;
+    const cls = Classes.currentClass();
+    if (!v || !cls || !v.ohneZuordnung.length) return;
+    const fehlend = [...v.ohneZuordnung];
+    if (!confirm((fehlend.length === 1
+        ? `Dieser Name aus dem Plan steht nicht in der Klassenliste von ${cls.name}:`
+        : `Diese ${fehlend.length} Namen aus dem Plan stehen nicht in der Klassenliste von ${cls.name}:`) +
+      '\n\n' + fehlend.join('\n') +
+      '\n\nJetzt zur Klassenliste hinzufügen?')) return;
+    Classes.addStudents(fehlend.join('\n'), true);
+    Classes.sortStudents(cls);
+    Classes.persist();
+    Classes.renderStudents();
+    this.vorschauAuswerten(v);
+    this.zeigeVorschau();
+  },
+
   /* ---------- Vorschau vor dem Übernehmen ---------- */
   zeigeVorschau() {
     const v = this.vorschau;
@@ -1443,6 +1478,13 @@ const Sitzplan = {
       (v.ohneZuordnung.length
         ? `<br><span class="warnung">Nicht in der Klassenliste gefunden: ${Band.esc(v.ohneZuordnung.join(', '))}</span>`
         : '');
+    const nachtragen = document.getElementById('btn-sitz-pdf-namen');
+    if (nachtragen) {
+      nachtragen.hidden = !v.ohneZuordnung.length;
+      nachtragen.textContent = v.ohneZuordnung.length === 1
+        ? 'Diesen Namen zur Klassenliste hinzufügen'
+        : `Diese ${v.ohneZuordnung.length} Namen zur Klassenliste hinzufügen`;
+    }
 
     liste.innerHTML = '';
     for (const k of v.treffer) {
