@@ -190,8 +190,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ----- Infofenster ----- */
   const infoBox = document.getElementById('info-box');
+  /* Die Fassung steht an den Skriptadressen (…?v=142). Sie im Info-Fenster zu
+     zeigen erspart das Raten, ob im Browser noch eine alte Fassung liegt –
+     das war schon mehrfach die Ursache fuer "geht nicht". */
+  const fassungZeigen = () => {
+    const feld = document.getElementById('info-version');
+    if (!feld) return;
+    const quelle = [...document.querySelectorAll('script[src], link[href]')]
+      .map(e => e.src || e.href).find(a => /[?&]v=\d+/.test(a));
+    feld.textContent = quelle ? quelle.match(/[?&]v=(\d+)/)[1] : 'unbekannt';
+  };
   document.getElementById('btn-info').addEventListener('click', () => {
     infoBox.hidden = !infoBox.hidden;
+    if (!infoBox.hidden) fassungZeigen();
   });
   document.getElementById('btn-info-zu').addEventListener('click', () => { infoBox.hidden = true; });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') infoBox.hidden = true; });
