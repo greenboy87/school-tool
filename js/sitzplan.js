@@ -34,6 +34,7 @@ const Sitzplan = {
     });
     an('btn-sitz-raum-uebernehmen', () => this.raumUebernehmen());
     an('btn-sitz-leere-weg', () => this.leereWegnehmen(false));
+    an('btn-sitz-alle-zurueck', () => this.allePlaetzeZurueck());
     an('sitz-pdf-datei', e => {
       const datei = e.target.files[0];
       e.target.value = '';
@@ -307,10 +308,14 @@ const Sitzplan = {
     this.render();
   },
 
-  /* Ein Durchgang ist kein Platz. Kommt der Plan aus einem PDF, steht dort
-     zwischen den Bloecken oft eine Spalte, in der nie jemand sitzt – die soll
-     leer sein und nicht als Reihe freier Stuehle dastehen. Dasselbe gilt fuer
-     Reihen. Zurueckholen laesst sich das unter „Raum aendern“. */
+  /* Ein Durchgang ist kein Platz: Zwischen zwei Bloecken steht oft eine Spalte,
+     in der nie jemand sitzt. Wer sie wegnimmt, bekommt dort Leerraum.
+
+     Das laeuft ausdruecklich NICHT von selbst. Eine Spalte ohne Schueler kann
+     genauso gut eine Reihe freier Tische sein, auf die spaeter jemand kommt –
+     einmal lief das beim Einlesen automatisch mit und hat einer halb besetzten
+     Klasse eine gueltige Spalte weggenommen. Die Entscheidung trifft die
+     Lehrkraft, nicht der Rechner. */
   leereWegnehmen(still) {
     const cls = Classes.currentClass();
     if (!cls) return 0;
@@ -338,6 +343,17 @@ const Sitzplan = {
     Classes.persist();
     this.render();
     return neu.length;
+  },
+
+  allePlaetzeZurueck() {
+    const cls = Classes.currentClass();
+    if (!cls) return;
+    const p = this.plan(cls);
+    if (!p.ohne.length) { alert('Es ist kein Platz weggenommen.'); return; }
+    this.merke(cls, p);
+    p.ohne = [];
+    Classes.persist();
+    this.render();
   },
 
   raumUebernehmen() {
@@ -1520,8 +1536,6 @@ const Sitzplan = {
       this._fotoFuer = null;          // der Ausschnitt-Zwischenspeicher ist veraltet
     }
     Classes.persist();
-    // Durchgaenge im Plan sind kein Sitzplatz
-    this.leereWegnehmen(true);
     this.abbrechenVorschau();
     this.render();
   },
