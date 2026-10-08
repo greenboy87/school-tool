@@ -29,6 +29,8 @@ const Schueler = {
     if (vor) vor.addEventListener('click', () => this.blaettern(-1));
     const weiter = document.getElementById('btn-profil-weiter');
     if (weiter) weiter.addEventListener('click', () => this.blaettern(1));
+    const weg = document.getElementById('btn-auswahl-weg');
+    if (weg) weg.addEventListener('click', () => this.auswahlAufheben());
     const zumProfil = document.getElementById('btn-zum-steckbrief');
     if (zumProfil) zumProfil.addEventListener('click', () => this.zumSteckbrief());
 
@@ -83,6 +85,27 @@ const Schueler = {
       `${cls.name} · ${pos + 1} von ${liste.length}`;
   },
 
+  /* Alles zurück auf Anfang: Suchwort und Treffer weg, kein Schüler mehr
+     gewählt, keine Markierung in der Liste. Die Klasse bleibt offen. */
+  auswahlAufheben() {
+    this.aktuell = null;
+    this.markiert = 0;
+    const feld = document.getElementById('schueler-suche');
+    if (feld) { feld.value = ''; Classes.sucheSchueler(); feld.blur(); }
+    document.querySelectorAll('#student-list li.gefunden').forEach(li => li.classList.remove('gefunden'));
+    this.zurueckKnopfStellen();
+    this.auswahlKnopfStellen();
+    this.zeigeProfil();
+  },
+
+  /* Das × gibt es nur, wenn etwas aufzuheben ist */
+  auswahlKnopfStellen() {
+    const knopf = document.getElementById('btn-auswahl-weg');
+    if (!knopf) return;
+    const feld = document.getElementById('schueler-suche');
+    knopf.hidden = !((feld && feld.value) || this.aktuell);
+  },
+
   /* Vom Steckbrief in die Klasse: Klasse gewählt, Klassenliste offen, der
      Schüler kurz hervorgehoben */
   zurKlasse() {
@@ -110,6 +133,7 @@ const Schueler = {
     if (!knopf) return;
     const t = this.zurueckMoeglich() ? this.gewaehlt() : null;
     knopf.hidden = !t;
+    this.auswahlKnopfStellen();
     if (t) document.getElementById('zum-steckbrief-name').textContent =
       'Steckbrief ' + [t.s.first, t.s.last].filter(Boolean).join(' ');
   },
@@ -221,6 +245,7 @@ const Schueler = {
   /* Wechselt in den Reiter „Schüler“ und zeigt den Steckbrief */
   oeffne(klasseId, schuelerId) {
     this.aktuell = { klasseId, schuelerId };
+    this.auswahlKnopfStellen();
     this.fokusWeg();
     document.querySelector('.tab-btn[data-tab="schueler"]').click();
     this.zeigeProfil();

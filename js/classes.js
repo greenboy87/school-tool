@@ -189,9 +189,14 @@ const Classes = {
     // Suche ueber alle Klassen hinweg
     const suchfeld = document.getElementById('schueler-suche');
     if (suchfeld) {
-      suchfeld.addEventListener('input', () => { Schueler.markiert = 0; this.sucheSchueler(); });
-      // Esc raeumt weg, Pfeile waehlen, Enter oeffnet den Steckbrief
+      suchfeld.addEventListener('input', () => {
+        Schueler.markiert = 0;
+        this.sucheSchueler();
+        Schueler.auswahlKnopfStellen();
+      });
+      // Esc hebt die ganze Auswahl auf, Pfeile waehlen, Enter oeffnet den Steckbrief
       suchfeld.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { Schueler.auswahlAufheben(); return; }
         Schueler.trefferTasten(e, suchfeld, 'suche-treffer');
       });
     }

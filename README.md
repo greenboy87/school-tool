@@ -92,13 +92,17 @@ weiteres Enter führt zurück zum Steckbrief. Dasselbe geht per Knopf: „Zur Kl
 Steckbrief und „Steckbrief …“ neben dem Klassennamen. Solange ein Eingabefeld den Fokus hat
 (etwa die Notizen), gehört das Enter dem Feld.
 
+**Auswahl aufheben:** Das **×** im Suchfeld (oder **Esc** im Suchfeld) leert die Suche,
+wählt den Schüler ab und nimmt den Steckbrief-Knopf neben dem Klassennamen weg. Die Klasse
+bleibt offen.
+
 ### ⌨️ Mit den Pfeiltasten
 | Wo | ↑ / ↓ | ← / → | Enter |
 |---|---|---|---|
 | Klassen | vorige / nächste Klasse (der Unterreiter bleibt) | voriger / nächster Unterreiter | zum Steckbrief des zuletzt gezeigten Schülers |
 | Schüler (Steckbrief) | Seite scrollen | voriger / nächster Schüler der Klasse | zur Klasse |
 | Band | Seite scrollen | voriger / nächster Band-Unterreiter | – |
-| Suchfelder | Treffer wählen | Cursor im Feld | Treffer öffnen |
+| Suchfelder | Treffer wählen | Cursor im Feld | Treffer öffnen (Esc hebt die Auswahl auf) |
 | überall | | | **V** blendet Gesichter ein/aus |
 
 Die Pfeile wirken nur, solange kein Eingabefeld den Fokus hat. Beim Gesichterzuordnen
