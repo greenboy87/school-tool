@@ -24,17 +24,69 @@ const Schueler = {
       });
     }
     const zurListe = document.getElementById('btn-profil-klasse');
-    if (zurListe) {
-      zurListe.addEventListener('click', () => {
-        if (!this.aktuell) return;
-        document.querySelector('.tab-btn[data-tab="klassen"]').click();
-        Classes.springeZuSchueler(this.aktuell.klasseId, this.aktuell.schuelerId);
-      });
-    }
+    if (zurListe) zurListe.addEventListener('click', () => this.zurKlasse());
+    const zumProfil = document.getElementById('btn-zum-steckbrief');
+    if (zumProfil) zumProfil.addEventListener('click', () => this.zumSteckbrief());
+
+    /* Hin und her mit Enter: im Steckbrief zur Klasse, in der Klasse zurück
+       zum Steckbrief. Nur wenn gerade kein Feld oder Knopf den Fokus hat –
+       sonst gehört das Enter dem Feld (Notizen, Suche, Formulare). */
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || e.repeat || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      const ziel = e.target;
+      if (ziel && ziel.closest && ziel.closest('input, textarea, select, button, a, [contenteditable]')) return;
+      const reiter = document.querySelector('.tab-btn.active');
+      if (!reiter) return;
+      if (reiter.dataset.tab === 'schueler' && this.gewaehlt()) {
+        e.preventDefault();
+        this.zurKlasse();
+      } else if (reiter.dataset.tab === 'klassen' && this.zurueckMoeglich()) {
+        e.preventDefault();
+        this.zumSteckbrief();
+      }
+    });
     // Beim Hineinwechseln frisch zeichnen – Noten oder Gesichter könnten neu sein
     const reiter = document.querySelector('.tab-btn[data-tab="schueler"]');
     if (reiter) reiter.addEventListener('click', () => this.zeigeProfil());
     this.zeigeProfil();
+  },
+
+  /* Vom Steckbrief in die Klasse: Klasse gewählt, Klassenliste offen, der
+     Schüler kurz hervorgehoben */
+  zurKlasse() {
+    if (!this.gewaehlt()) return;
+    this.fokusWeg();
+    document.querySelector('.tab-btn[data-tab="klassen"]').click();
+    Classes.springeZuSchueler(this.aktuell.klasseId, this.aktuell.schuelerId);
+    this.zurueckKnopfStellen();
+  },
+
+  zumSteckbrief() {
+    if (!this.aktuell) return;
+    this.oeffne(this.aktuell.klasseId, this.aktuell.schuelerId);
+  },
+
+  /* Zurück geht es nur, solange die Klasse des zuletzt gezeigten Schülers offen ist */
+  zurueckMoeglich() {
+    const t = this.gewaehlt();
+    const cls = Classes.currentClass();
+    return !!(t && cls && cls.id === t.cls.id);
+  },
+
+  zurueckKnopfStellen() {
+    const knopf = document.getElementById('btn-zum-steckbrief');
+    if (!knopf) return;
+    const t = this.zurueckMoeglich() ? this.gewaehlt() : null;
+    knopf.hidden = !t;
+    if (t) document.getElementById('zum-steckbrief-name').textContent =
+      'Steckbrief ' + [t.s.first, t.s.last].filter(Boolean).join(' ');
+  },
+
+  /* Ein verstecktes Suchfeld behielte sonst den Fokus und schluckte das
+     nächste Enter */
+  fokusWeg() {
+    const a = document.activeElement;
+    if (a && a !== document.body && a.blur) a.blur();
   },
 
   /* Pfeiltasten wandern durch die Treffer, Enter öffnet den markierten.
@@ -137,6 +189,7 @@ const Schueler = {
   /* Wechselt in den Reiter „Schüler“ und zeigt den Steckbrief */
   oeffne(klasseId, schuelerId) {
     this.aktuell = { klasseId, schuelerId };
+    this.fokusWeg();
     document.querySelector('.tab-btn[data-tab="schueler"]').click();
     this.zeigeProfil();
     window.scrollTo({ top: 0 });
@@ -181,6 +234,7 @@ const Schueler = {
     const { cls, s } = t;
     const andere = this.auchIn(t);
 
+    document.getElementById('profil-klasse-name').textContent = cls.name;
     document.getElementById('profil-name').textContent =
       [s.first, s.last].filter(Boolean).join(' ');
 

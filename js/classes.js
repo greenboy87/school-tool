@@ -1246,6 +1246,7 @@ const Classes = {
       document.getElementById('class-title').appendChild(span);
     }
     this.zeigeLeitungsNamen();
+    if (typeof Schueler !== 'undefined') Schueler.zurueckKnopfStellen();
     this.fuelleMedienmanager();
     if (typeof Notes !== 'undefined') Notes.klassenNotizLaden();
     this.renderStudents();

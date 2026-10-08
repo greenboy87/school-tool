@@ -770,6 +770,12 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 }
 
 /* ---------- Schüler-Steckbrief ---------- */
+/* Hin-und-her-Knöpfe zwischen Steckbrief und Klasse; ↵ verrät die Taste */
+.zurueck-knopf kbd {
+  font: inherit; font-size: .75em; padding: 0 .35em; margin-left: .25em;
+  border: 1px solid var(--border); border-radius: 4px; color: var(--muted);
+}
+#btn-zum-steckbrief { border-color: var(--accent); }
 .profil-layout { display: grid; grid-template-columns: minmax(16rem, 22rem) 1fr; gap: 1rem; align-items: start; }
 .profil-suche-karte .suche-treffer { max-height: 60vh; }
 .profil-kopf { display: flex; gap: 1.5rem; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; }

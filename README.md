@@ -86,6 +86,12 @@ anderen Klasse gleichen Namens (etwa der Kopie fürs nächste Schuljahr), wird d
 genommen; „Auch in“ verlinkt diese Klassen. In der Klassenliste steht das Gesicht vor dem
 Namen, ein Tipp auf Name oder Bild öffnet ebenfalls den Steckbrief.
 
+**Hin und her mit Enter:** Suchen, Enter öffnet den Steckbrief. Noch einmal Enter wechselt
+in die Klasse des Schülers, mit der Klassenliste offen und dem Schüler markiert. Ein
+weiteres Enter führt zurück zum Steckbrief. Dasselbe geht per Knopf: „Zur Klasse …“ im
+Steckbrief und „Steckbrief …“ neben dem Klassennamen. Solange ein Eingabefeld den Fokus hat
+(etwa die Notizen), gehört das Enter dem Feld.
+
 ### 🙈 Gesichter ausblenden
 Der Schalter **Gesichter** oben rechts (Auge-Symbol) blendet alle Schülerfotos auf einmal aus:
 in Klassenliste, Suche, Steckbrief, Sitzplan und beim Zuordnen der Gesichter. Statt der

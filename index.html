@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=148">
+<link rel="stylesheet" href="style.css?v=149">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=148"></script>
-<script src="js/theme.js?v=148"></script>
-<script src="js/auth.js?v=148"></script>
+<script src="js/icons.js?v=149"></script>
+<script src="js/theme.js?v=149"></script>
+<script src="js/auth.js?v=149"></script>
 </head>
 <body>
 
@@ -133,6 +133,8 @@
       <div id="class-detail" hidden>
         <div class="class-header card">
           <h2 id="class-title"></h2>
+          <button id="btn-zum-steckbrief" class="small zurueck-knopf" data-icon="userCheck" hidden
+                  title="Zurück zum Steckbrief (Enter)"><span id="zum-steckbrief-name"></span> <kbd>↵</kbd></button>
           <nav class="sub-tabs">
             <button class="subtab-btn active" data-subtab="schueler" data-icon="users">Schüler</button>
             <button class="subtab-btn" data-subtab="gruppen" data-icon="shuffle">Gruppen</button>
@@ -909,7 +911,8 @@
             <h2 id="profil-name"></h2>
             <dl id="profil-angaben" class="profil-angaben"></dl>
             <p id="profil-foto-hinweis" class="hint" hidden>Noch kein Foto – im Sitzplan dieser Klasse unter „Gesichter zuordnen“ nachtragen.</p>
-            <button id="btn-profil-klasse" class="small" data-icon="list">In der Klassenliste zeigen</button>
+            <button id="btn-profil-klasse" class="small zurueck-knopf" data-icon="list"
+                    title="Zur Klasse wechseln, der Schüler ist dort markiert (Enter)">Zur Klasse <span id="profil-klasse-name"></span> <kbd>↵</kbd></button>
           </div>
         </div>
         <div class="two-col">
@@ -962,28 +965,28 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=148"></script>
-<script src="js/firebase-config.js?v=148"></script>
-<script type="module" src="js/live-firebase.js?v=148"></script>
-<script src="js/topics-seed.js?v=148"></script>
-<script src="js/ai-import.js?v=148"></script>
-<script src="js/store.js?v=148"></script>
-<script src="js/noise.js?v=148"></script>
-<script src="js/classes.js?v=148"></script>
-<script src="js/sitzplan.js?v=148"></script>
-<script src="js/schueler.js?v=148"></script>
-<script src="js/lessons.js?v=148"></script>
-<script src="js/band.js?v=148"></script>
-<script src="js/notes.js?v=148"></script>
-<script src="js/tresor.js?v=148"></script>
-<script src="js/erklaerungen.js?v=148"></script>
-<script src="js/setlisten.js?v=148"></script>
-<script src="js/einklappen.js?v=148"></script>
-<script src="js/live-groups.js?v=148"></script>
-<script src="js/tipps.js?v=148"></script>
-<script src="js/sport-tabellen.js?v=148"></script>
-<script src="js/sport.js?v=148"></script>
-<script src="js/tools.js?v=148"></script>
-<script src="js/app.js?v=148"></script>
+<script src="js/vendor/qrcode.min.js?v=149"></script>
+<script src="js/firebase-config.js?v=149"></script>
+<script type="module" src="js/live-firebase.js?v=149"></script>
+<script src="js/topics-seed.js?v=149"></script>
+<script src="js/ai-import.js?v=149"></script>
+<script src="js/store.js?v=149"></script>
+<script src="js/noise.js?v=149"></script>
+<script src="js/classes.js?v=149"></script>
+<script src="js/sitzplan.js?v=149"></script>
+<script src="js/schueler.js?v=149"></script>
+<script src="js/lessons.js?v=149"></script>
+<script src="js/band.js?v=149"></script>
+<script src="js/notes.js?v=149"></script>
+<script src="js/tresor.js?v=149"></script>
+<script src="js/erklaerungen.js?v=149"></script>
+<script src="js/setlisten.js?v=149"></script>
+<script src="js/einklappen.js?v=149"></script>
+<script src="js/live-groups.js?v=149"></script>
+<script src="js/tipps.js?v=149"></script>
+<script src="js/sport-tabellen.js?v=149"></script>
+<script src="js/sport.js?v=149"></script>
+<script src="js/tools.js?v=149"></script>
+<script src="js/app.js?v=149"></script>
 </body>
 </html>
