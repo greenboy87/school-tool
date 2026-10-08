@@ -92,6 +92,18 @@ weiteres Enter führt zurück zum Steckbrief. Dasselbe geht per Knopf: „Zur Kl
 Steckbrief und „Steckbrief …“ neben dem Klassennamen. Solange ein Eingabefeld den Fokus hat
 (etwa die Notizen), gehört das Enter dem Feld.
 
+### ⌨️ Mit den Pfeiltasten
+| Wo | ↑ / ↓ | ← / → | Enter |
+|---|---|---|---|
+| Klassen | vorige / nächste Klasse (der Unterreiter bleibt) | voriger / nächster Unterreiter | zum Steckbrief des zuletzt gezeigten Schülers |
+| Schüler (Steckbrief) | Seite scrollen | voriger / nächster Schüler der Klasse | zur Klasse |
+| Band | Seite scrollen | voriger / nächster Band-Unterreiter | – |
+| Suchfelder | Treffer wählen | Cursor im Feld | Treffer öffnen |
+
+Die Pfeile wirken nur, solange kein Eingabefeld den Fokus hat. Beim Gesichterzuordnen
+gehören sie dem Rahmen, im Vollbild bleibt alles, wie es ist. Am Anfang und Ende einer
+Liste wird nicht umgelaufen.
+
 ### 🙈 Gesichter ausblenden
 Der Schalter **Gesichter** oben rechts (Auge-Symbol) blendet alle Schülerfotos auf einmal aus:
 in Klassenliste, Suche, Steckbrief, Sitzplan und beim Zuordnen der Gesichter. Statt der

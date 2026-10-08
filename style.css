@@ -770,6 +770,19 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 }
 
 /* ---------- Schüler-Steckbrief ---------- */
+.profil-blaettern {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  margin: -.3rem 0 1rem; padding-bottom: .6rem; border-bottom: 1px solid var(--border);
+}
+.profil-blaettern button { max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profil-blaettern .unsichtbar { visibility: hidden; }
+.profil-blaettern kbd, .tasten-hinweis kbd {
+  font: inherit; font-size: .75em; padding: 0 .35em;
+  border: 1px solid var(--border); border-radius: 4px; color: var(--muted);
+}
+.tasten-hinweis { margin: .2rem 0 .6rem; font-size: .78rem; }
+/* Auf Touch-Geräten ohne Tastatur sind die Tastenhinweise nur Ballast */
+@media (hover: none) and (pointer: coarse) { .tasten-hinweis { display: none; } }
 /* Hin-und-her-Knöpfe zwischen Steckbrief und Klasse; ↵ verrät die Taste */
 .zurueck-knopf kbd {
   font: inherit; font-size: .75em; padding: 0 .35em; margin-left: .25em;

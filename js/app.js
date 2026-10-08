@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Classes.init();
   Sitzplan.init();
   Schueler.init();
+  Tasten.init();
   Lessons.init();
   Band.init();
   Setlisten.init();

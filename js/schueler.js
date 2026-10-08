@@ -25,6 +25,10 @@ const Schueler = {
     }
     const zurListe = document.getElementById('btn-profil-klasse');
     if (zurListe) zurListe.addEventListener('click', () => this.zurKlasse());
+    const vor = document.getElementById('btn-profil-vor');
+    if (vor) vor.addEventListener('click', () => this.blaettern(-1));
+    const weiter = document.getElementById('btn-profil-weiter');
+    if (weiter) weiter.addEventListener('click', () => this.blaettern(1));
     const zumProfil = document.getElementById('btn-zum-steckbrief');
     if (zumProfil) zumProfil.addEventListener('click', () => this.zumSteckbrief());
 
@@ -49,6 +53,34 @@ const Schueler = {
     const reiter = document.querySelector('.tab-btn[data-tab="schueler"]');
     if (reiter) reiter.addEventListener('click', () => this.zeigeProfil());
     this.zeigeProfil();
+  },
+
+  /* Voriger / nächster Schüler in der Reihenfolge der Klassenliste.
+     Am Anfang und Ende der Liste ist Schluss, damit man merkt, wo man ist. */
+  blaettern(schritt) {
+    const t = this.gewaehlt();
+    if (!t) return false;
+    const liste = t.cls.students;
+    const ziel = liste[liste.indexOf(t.s) + schritt];
+    if (!ziel) return false;
+    this.aktuell = { klasseId: t.cls.id, schuelerId: ziel.id };
+    this.zeigeProfil();
+    return true;
+  },
+
+  blaetterLeisteStellen(cls, s) {
+    const liste = cls.students;
+    const pos = liste.indexOf(s);
+    const stelle = (id, nachbar) => {
+      const knopf = document.getElementById(id);
+      knopf.disabled = !nachbar;
+      knopf.querySelector('span').textContent = nachbar ? Classes.studentName(nachbar) : '';
+      knopf.classList.toggle('unsichtbar', !nachbar);
+    };
+    stelle('btn-profil-vor', liste[pos - 1]);
+    stelle('btn-profil-weiter', liste[pos + 1]);
+    document.getElementById('profil-position').textContent =
+      `${cls.name} · ${pos + 1} von ${liste.length}`;
   },
 
   /* Vom Steckbrief in die Klasse: Klasse gewählt, Klassenliste offen, der
@@ -235,6 +267,7 @@ const Schueler = {
     const andere = this.auchIn(t);
 
     document.getElementById('profil-klasse-name').textContent = cls.name;
+    this.blaetterLeisteStellen(cls, s);
     document.getElementById('profil-name').textContent =
       [s.first, s.last].filter(Boolean).join(' ');
 
@@ -264,8 +297,6 @@ const Schueler = {
     const lt = k => { k = (k || '').trim(); return k ? (lehrer[k.toUpperCase()] || k) : ''; };
     const l = cls.leitung || {};
     zeile('Klassenleitung', [lt(l.kl), lt(l.co)].filter(Boolean).join(' / '));
-    const nr = cls.students.indexOf(s) + 1;
-    zeile('Nr. in der Liste', `${nr} von ${cls.students.length}`);
     if (Classes.medien(cls).includes(s.id)) zeile('Aufgabe', 'Medienmanager');
     const platz = this.sitzplatz(cls, s);
     if (platz) zeile('Sitzplatz', platz);
