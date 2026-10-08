@@ -99,6 +99,7 @@ Steckbrief und „Steckbrief …“ neben dem Klassennamen. Solange ein Eingabef
 | Schüler (Steckbrief) | Seite scrollen | voriger / nächster Schüler der Klasse | zur Klasse |
 | Band | Seite scrollen | voriger / nächster Band-Unterreiter | – |
 | Suchfelder | Treffer wählen | Cursor im Feld | Treffer öffnen |
+| überall | | | **V** blendet Gesichter ein/aus |
 
 Die Pfeile wirken nur, solange kein Eingabefeld den Fokus hat. Beim Gesichterzuordnen
 gehören sie dem Rahmen, im Vollbild bleibt alles, wie es ist. Am Anfang und Ende einer
@@ -109,7 +110,8 @@ Der Schalter **Gesichter** oben rechts (Auge-Symbol) blendet alle Schülerfotos 
 in Klassenliste, Suche, Steckbrief, Sitzplan und beim Zuordnen der Gesichter. Statt der
 Bilder stehen dann Initialen da. Praktisch, sobald jemand über die Schulter schaut. Der
 Schalter wirkt sofort, ohne Neuladen, und bleibt auf diesem Gerät gespeichert. Ist er beim
-Öffnen der Seite aus, blitzt auch beim Laden kein Gesicht auf. Ausgedruckte Sitzpläne
+Öffnen der Seite aus, blitzt auch beim Laden kein Gesicht auf. Schneller geht es mit der
+Taste **V** (wie „View“), solange kein Eingabefeld den Fokus hat. Ausgedruckte Sitzpläne
 enthalten die Fotos weiterhin.
 
 ### 📝 Notizen und Medienmanager je Klasse
@@ -302,7 +304,9 @@ Sonst zeigen Browser noch die zwischengespeicherte alte Fassung.
 ## Datensicherung
 
 Die Daten liegen im Browser-Speicher (localStorage/IndexedDB). Gesichert wird über den
-Wolken-Knopf **Backup** in der Kopfzeile, zurückgespielt über **Zurück**.
+Wolken-Knopf **Backup** in der Kopfzeile, zurückgespielt über **Backup zurückspielen …** im
+Info-Fenster (Knopf **i** oben rechts). Der Knopf liegt bewusst nicht in der Kopfzeile: Er
+ersetzt alle Daten dieses Geräts und wird nur im Notfall gebraucht.
 
 > Der Browser-Speicher hängt an **Browser + Profil + Adresse** zugleich. `http://localhost:8080`
 > und `https://greenboy87.github.io/school-tool/` sind zwei getrennte Speicher, ein zweites
@@ -320,7 +324,7 @@ deine Daten, wenn der lokale Stand leer, kaputt oder auf einem anderen Rechner u
 - **Sitzpläne und Fotos kommen mit**, weil sie vom Server geholt werden statt aus dem
   localStorage dieses Geräts. Je Datei sind **7 MiB** möglich: Verschlüsselt und in
   Base64 wächst eine Datei um ein Drittel, und Firebase nimmt je Wert höchstens 10 MB.
-- Zurückspielen mit **Zurück** – dieselbe Datei, derselbe Knopf. Das alte Backup-Format wird
+- Zurückspielen über **i → Backup zurückspielen …** mit derselben Datei. Das alte Backup-Format wird
   weiterhin gelesen.
 
 > Es gab früher daneben einen Knopf, der nur den Stand *dieses Geräts* wegschrieb. Der ist raus:

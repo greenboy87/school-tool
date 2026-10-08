@@ -1384,6 +1384,17 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   .sync-status { max-width: 5.5rem; }
 }
 
+/* Tablet hochkant (iPad: 768 px): noch enger, damit die Leiste einzeilig bleibt.
+   Der Sync-Status steht weiter im title des Sync-Knopfs. */
+@media screen and (min-width: 721px) and (max-width: 900px) {
+  .topbar { gap: .4rem; padding: .6rem .5rem; }
+  .main-tabs { gap: 0; }
+  .tab-btn { font-size: .8rem; padding: .5rem .32rem; }
+  .sync-status { display: none; }
+  .backup-btns { gap: .2rem; }
+  .backup-btns button { padding-left: .45rem; padding-right: .45rem; }
+}
+
 @media screen and (max-width: 720px) {
   .topbar { gap: .5rem; padding: .55rem .7rem; }
   /* Der Name steht im Titel des Browserfensters – hier reicht das Symbol,

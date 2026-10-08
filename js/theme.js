@@ -65,6 +65,15 @@ const Gesichter = {
       schalter.checked = this.sichtbar();
       schalter.addEventListener('change', () => this.set(schalter.checked));
     });
+    // V wie „View“: Gesichter ein/aus – nur wenn gerade nichts getippt wird
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'v' && e.key !== 'V') return;
+      if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+      const ziel = e.target;
+      if (ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]')) return;
+      e.preventDefault();
+      this.set(!this.sichtbar());
+    });
   },
 };
 

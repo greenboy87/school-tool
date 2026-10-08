@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=150">
+<link rel="stylesheet" href="style.css?v=152">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=150"></script>
-<script src="js/theme.js?v=150"></script>
-<script src="js/auth.js?v=150"></script>
+<script src="js/icons.js?v=152"></script>
+<script src="js/theme.js?v=152"></script>
+<script src="js/auth.js?v=152"></script>
 </head>
 <body>
 
@@ -29,11 +29,9 @@
     <span class="hint sync-status" id="tresor-status"></span>
     <button id="btn-server-backup" data-icon="cloud" aria-label="Backup vom Server holen"
             title="SICHERN – der Knopf fürs wöchentliche Sichern.&#10;Holt den vollständigen Stand vom Sync-Server als Datei, mit Sitzplänen und Fotos.&#10;&#10;Auf diesem Gerät ändert sich dabei nichts. Braucht nur das Sync-Passwort."><span class="knopf-text">Backup</span></button>
-    <button id="btn-import" data-icon="reset" aria-label="Backup zurückspielen"
-            title="ZURÜCKSPIELEN – nicht zum Sichern!&#10;Liest eine Backup-Datei ein und ersetzt damit alle jetzigen Klassen, Noten und Notizen."><span class="knopf-text">Zurück</span></button>
     <button id="btn-info" class="nur-icon" aria-label="Hinweise zur Datenspeicherung"
             title="Wo liegen meine Daten?">i</button>
-    <label class="gesichter-schalter" title="Gesichter ein- oder ausblenden – etwa wenn ein Schüler über die Schulter schaut">
+    <label class="gesichter-schalter" title="Gesichter ein- oder ausblenden (Taste V) – etwa wenn ein Schüler über die Schulter schaut">
       <input type="checkbox" id="gesichter-schalter" role="switch" checked>
       <span class="schalter-bahn" aria-hidden="true"></span>
       <span class="auge-an" data-icon="eye"></span><span class="auge-aus" data-icon="eyeOff"></span>
@@ -54,7 +52,13 @@
   <p class="hint">Fassung <strong id="info-version">?</strong> · Bei Fragen zu einem Fehler hilft
      diese Zahl weiter. Zeigt sie eine ältere als erwartet, holt <strong>Strg+Shift+R</strong>
      (auf dem Mac <strong>Cmd+Shift+R</strong>) die neue Fassung.</p>
-  <button id="btn-info-zu" class="small">Schließen</button>
+  <p><strong>Backup zurückspielen:</strong> Liest eine Backup-Datei ein und ersetzt damit
+     <em>alle</em> jetzigen Klassen, Noten und Notizen auf diesem Gerät. Nur für den Notfall.</p>
+  <div class="btn-row">
+    <button id="btn-import" class="small danger" data-icon="reset"
+            title="ZURÜCKSPIELEN – nicht zum Sichern!&#10;Liest eine Backup-Datei ein und ersetzt damit alle jetzigen Klassen, Noten und Notizen.">Backup zurückspielen …</button>
+    <button id="btn-info-zu" class="small">Schließen</button>
+  </div>
 </div>
 
 <!-- ========== LÄRMAMPEL ========== -->
@@ -117,7 +121,7 @@
                placeholder="Schüler in allen Klassen suchen …">
         <ul id="suche-treffer" class="suche-treffer" hidden></ul>
       </div>
-      <div class="hint tasten-hinweis"><kbd>↑</kbd> <kbd>↓</kbd> Klasse · <kbd>←</kbd> <kbd>→</kbd> Unterreiter · <kbd>↵</kbd> Steckbrief</div>
+      <div class="hint tasten-hinweis"><kbd>↑</kbd> <kbd>↓</kbd> Klasse · <kbd>←</kbd> <kbd>→</kbd> Unterreiter · <kbd>↵</kbd> Steckbrief · <kbd>V</kbd> Gesichter</div>
       <ul id="class-list" class="class-list"></ul>
       <form id="form-new-class" class="new-class-form">
         <input type="text" id="new-class-name" placeholder="z.&thinsp;B. 5c Musik" required>
@@ -899,7 +903,7 @@
         <ul id="profil-treffer" class="suche-treffer" hidden></ul>
       </div>
       <p class="hint">Sucht in allen Klassen. Mit ↑/↓ auswählen, Enter öffnet den Steckbrief. Die Gesichter kommen aus dem Sitzplan („Gesichter zuordnen“).</p>
-      <div class="hint tasten-hinweis"><kbd>←</kbd> <kbd>→</kbd> voriger / nächster Schüler · <kbd>↵</kbd> zur Klasse und zurück</div>
+      <div class="hint tasten-hinweis"><kbd>←</kbd> <kbd>→</kbd> voriger / nächster Schüler · <kbd>↵</kbd> zur Klasse und zurück · <kbd>V</kbd> Gesichter ein/aus</div>
     </section>
     <section class="card profil-bereich">
       <div id="profil-leer" class="empty-state">
@@ -972,29 +976,29 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=150"></script>
-<script src="js/firebase-config.js?v=150"></script>
-<script type="module" src="js/live-firebase.js?v=150"></script>
-<script src="js/topics-seed.js?v=150"></script>
-<script src="js/ai-import.js?v=150"></script>
-<script src="js/store.js?v=150"></script>
-<script src="js/noise.js?v=150"></script>
-<script src="js/classes.js?v=150"></script>
-<script src="js/sitzplan.js?v=150"></script>
-<script src="js/schueler.js?v=150"></script>
-<script src="js/tasten.js?v=150"></script>
-<script src="js/lessons.js?v=150"></script>
-<script src="js/band.js?v=150"></script>
-<script src="js/notes.js?v=150"></script>
-<script src="js/tresor.js?v=150"></script>
-<script src="js/erklaerungen.js?v=150"></script>
-<script src="js/setlisten.js?v=150"></script>
-<script src="js/einklappen.js?v=150"></script>
-<script src="js/live-groups.js?v=150"></script>
-<script src="js/tipps.js?v=150"></script>
-<script src="js/sport-tabellen.js?v=150"></script>
-<script src="js/sport.js?v=150"></script>
-<script src="js/tools.js?v=150"></script>
-<script src="js/app.js?v=150"></script>
+<script src="js/vendor/qrcode.min.js?v=152"></script>
+<script src="js/firebase-config.js?v=152"></script>
+<script type="module" src="js/live-firebase.js?v=152"></script>
+<script src="js/topics-seed.js?v=152"></script>
+<script src="js/ai-import.js?v=152"></script>
+<script src="js/store.js?v=152"></script>
+<script src="js/noise.js?v=152"></script>
+<script src="js/classes.js?v=152"></script>
+<script src="js/sitzplan.js?v=152"></script>
+<script src="js/schueler.js?v=152"></script>
+<script src="js/tasten.js?v=152"></script>
+<script src="js/lessons.js?v=152"></script>
+<script src="js/band.js?v=152"></script>
+<script src="js/notes.js?v=152"></script>
+<script src="js/tresor.js?v=152"></script>
+<script src="js/erklaerungen.js?v=152"></script>
+<script src="js/setlisten.js?v=152"></script>
+<script src="js/einklappen.js?v=152"></script>
+<script src="js/live-groups.js?v=152"></script>
+<script src="js/tipps.js?v=152"></script>
+<script src="js/sport-tabellen.js?v=152"></script>
+<script src="js/sport.js?v=152"></script>
+<script src="js/tools.js?v=152"></script>
+<script src="js/app.js?v=152"></script>
 </body>
 </html>
