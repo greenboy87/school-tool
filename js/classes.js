@@ -87,6 +87,8 @@ const Classes = {
         document.querySelectorAll('.subtab-page').forEach(p => p.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('subtab-' + btn.dataset.subtab).classList.add('active');
+        // Gesichter koennen inzwischen im Sitzplan dazugekommen sein
+        if (btn.dataset.subtab === 'schueler' && this.currentClass()) this.renderStudents();
       });
     });
 
@@ -185,10 +187,10 @@ const Classes = {
     // Suche ueber alle Klassen hinweg
     const suchfeld = document.getElementById('schueler-suche');
     if (suchfeld) {
-      suchfeld.addEventListener('input', () => this.sucheSchueler());
-      // Esc raeumt die Trefferliste weg, ohne das Feld erst leeren zu muessen
+      suchfeld.addEventListener('input', () => { Schueler.markiert = 0; this.sucheSchueler(); });
+      // Esc raeumt weg, Pfeile waehlen, Enter oeffnet den Steckbrief
       suchfeld.addEventListener('keydown', e => {
-        if (e.key === 'Escape') { suchfeld.value = ''; this.sucheSchueler(); }
+        Schueler.trefferTasten(e, suchfeld, 'suche-treffer');
       });
     }
 
@@ -1099,7 +1101,11 @@ const Classes = {
     for (const cls of this.data.classes) {
       for (const s of cls.students) {
         const name = this.studentName(s);
-        if (name.toLowerCase().includes(suche)) treffer.push({ cls, s, name });
+        // „Timo Batz“ soll genauso finden wie „Batz, Timo“
+        const andersrum = [s.first, s.last].filter(Boolean).join(' ');
+        if (name.toLowerCase().includes(suche) || andersrum.toLowerCase().includes(suche)) {
+          treffer.push({ cls, s, name });
+        }
       }
     }
     treffer.sort((a, b) => a.name.localeCompare(b.name, 'de') ||
@@ -1115,22 +1121,10 @@ const Classes = {
     }
     // Bei einem Allerweltsnamen wird die Liste sonst unübersichtlich lang
     const zuViel = treffer.length - 25;
-    for (const t of treffer.slice(0, 25)) {
-      const li = document.createElement('li');
-      const name = document.createElement('span');
-      name.className = 'treffer-name';
-      name.textContent = t.name;
-      const wo = document.createElement('span');
-      wo.className = 'treffer-klasse';
-      // In der Trefferzeile den Namen, solange er bekannt ist – sonst das
-      // blanke Kürzel, statt die Zeile mit „nicht in der Liste“ zu füllen
-      const kl = ((t.cls.leitung || {}).kl || '').trim();
-      const leitung = kl ? (this.lehrer()[kl.toUpperCase()] || kl) : '';
-      wo.textContent = t.cls.name + (leitung ? ` · KL ${leitung}` : '');
-      li.append(name, wo);
-      li.addEventListener('click', () => this.springeZuSchueler(t.cls.id, t.s.id));
-      box.appendChild(li);
-    }
+    // Mit Gesicht; Klick oder Enter fuehrt zum Steckbrief im Reiter „Schüler“
+    Schueler.neuerDurchgang();
+    treffer.slice(0, 25).forEach((t, i) =>
+      box.appendChild(Schueler.trefferZeile(t, i === Schueler.markiert)));
     if (zuViel > 0) {
       const li = document.createElement('li');
       li.className = 'hint';
@@ -1375,6 +1369,7 @@ const Classes = {
     const ol = document.getElementById('student-list');
     document.getElementById('student-count').textContent = cls.students.length;
     ol.innerHTML = '';
+    Schueler.neuerDurchgang();
     cls.students.forEach((s, idx) => {
       const li = document.createElement('li');
       li.dataset.id = s.id;
@@ -1383,9 +1378,22 @@ const Classes = {
       handle.title = 'Zum Umsortieren ziehen';
       handle.innerHTML = Icons.raw('grip');
       handle.addEventListener('pointerdown', ev => this.startStudentDrag(ev, li));
+      // Gesicht aus dem Sitzplan; Name und Bild oeffnen den Steckbrief
+      const mitFoto = Sitzplan.hatFotos(cls);
+      let foto = null;
+      if (mitFoto) {
+        foto = document.createElement('span');
+        foto.className = 'mini-gesicht';
+        foto.textContent = ((s.first || '')[0] || '') + ((s.last || '')[0] || '');
+        foto.classList.add('ohne');
+        Schueler.gesichtEinsetzen(foto, cls, s);
+        foto.addEventListener('click', () => Schueler.oeffne(cls.id, s.id));
+      }
       const span = document.createElement('span');
       span.className = 'sname';
       span.textContent = this.studentName(s) + ' ';
+      span.title = 'Steckbrief öffnen';
+      span.addEventListener('click', () => Schueler.oeffne(cls.id, s.id));
       const move = (dir) => {
         const j = idx + dir;
         if (j < 0 || j >= cls.students.length) return;
@@ -1414,9 +1422,10 @@ const Classes = {
         this.renderClassList();
         this.renderStudents();
       });
-      li.append(handle, span, up, down, del);
+      li.append(handle, ...(foto ? [foto] : []), span, up, down, del);
       ol.appendChild(li);
     });
+    ol.classList.toggle('mit-gesichtern', Sitzplan.hatFotos(cls));
     if (window.Einklappen) Einklappen.anwenden('schueler');
   },
 

@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   Classes.init();
   Sitzplan.init();
+  Schueler.init();
   Lessons.init();
   Band.init();
   Setlisten.init();

@@ -72,9 +72,19 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
 ### 🔎 Schüler in allen Klassen suchen
 Das Suchfeld über der Klassenliste durchsucht **alle** Klassen auf einmal – praktisch, wenn
 ein Name im Lehrerzimmer fällt und unklar ist, aus welcher Klasse er stammt. Jeder Treffer
-zeigt Klasse und Klassenleitung; ein Klick springt in die Klasse und hebt den Schüler in der
-Liste kurz hervor. Ist die Klasse durch den Schuljahr-Filter ausgeblendet, schaltet der
-Sprung den Filter auf „alle“, damit sie nicht unsichtbar bleibt.
+zeigt Gesicht, Klasse und Klassenleitung. Mit ↑/↓ wählen, **Enter** (oder ein Klick) öffnet
+den Steckbrief im Reiter *Schüler*. Von dort führt „In der Klassenliste zeigen“ in die Klasse
+und hebt den Schüler kurz hervor; ist die Klasse durch den Schuljahr-Filter ausgeblendet,
+schaltet der Sprung den Filter auf „alle“, damit sie nicht unsichtbar bleibt.
+
+### 🪪 Schüler-Steckbrief (Reiter *Schüler*)
+Ein Schüler auf einen Blick: großes Foto, Klasse, Klassenleitung, Platz in der Liste,
+Sitzplatz, Medienmanager-Aufgabe, alle Noten aus *Projekte & Noten* und ein freies
+Notizfeld (speichert sofort). Die Fotos stammen aus dem Sitzplan („Gesichter zuordnen“) –
+es wird nichts doppelt gespeichert. Hat ein Schüler in seiner Klasse kein Foto, aber in einer
+anderen Klasse gleichen Namens (etwa der Kopie fürs nächste Schuljahr), wird das dortige
+genommen; „Auch in“ verlinkt diese Klassen. In der Klassenliste steht das Gesicht vor dem
+Namen, ein Tipp auf Name oder Bild öffnet ebenfalls den Steckbrief.
 
 ### 📝 Notizen und Medienmanager je Klasse
 - Eigener Unterreiter **Notizen** pro Klasse – Absprachen, Elternkontakte, wer wen nicht neben

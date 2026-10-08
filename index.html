@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=144">
+<link rel="stylesheet" href="style.css?v=146">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=144"></script>
-<script src="js/theme.js?v=144"></script>
-<script src="js/auth.js?v=144"></script>
+<script src="js/icons.js?v=146"></script>
+<script src="js/theme.js?v=146"></script>
+<script src="js/auth.js?v=146"></script>
 </head>
 <body>
 
@@ -17,6 +17,7 @@
   <nav class="main-tabs">
     <button class="tab-btn active" data-tab="ampel" data-icon="traffic" title="Lärmampel">Ampel</button>
     <button class="tab-btn" data-tab="klassen" data-icon="book" title="Klassen &amp; Noten">Klassen</button>
+    <button class="tab-btn" data-tab="schueler" data-icon="userCheck" title="Schüler-Steckbrief">Schüler</button>
     <button class="tab-btn" data-tab="band" data-icon="music" title="Schulband">Band</button>
     <button class="tab-btn" data-tab="notizen" data-icon="clipboard" title="Notizen">Notes</button>
     <button class="tab-btn" data-tab="sport" data-icon="timer" title="Sport">Sport</button>
@@ -878,6 +879,50 @@
   </div>
 </main>
 
+<!-- ========== SCHÜLER-STECKBRIEF ========== -->
+<main id="tab-schueler" class="tab-page">
+  <div class="profil-layout">
+    <section class="card profil-suche-karte">
+      <h2 data-icon="users">Schüler suchen</h2>
+      <div class="schueler-suche">
+        <input type="search" id="profil-suche" autocomplete="off"
+               placeholder="Name eingeben, Enter öffnet den Steckbrief …">
+        <ul id="profil-treffer" class="suche-treffer" hidden></ul>
+      </div>
+      <p class="hint">Sucht in allen Klassen. Mit ↑/↓ auswählen, Enter öffnet den Steckbrief. Die Gesichter kommen aus dem Sitzplan („Gesichter zuordnen“).</p>
+    </section>
+    <section class="card profil-bereich">
+      <div id="profil-leer" class="empty-state">
+        <p>Noch kein Schüler gewählt.</p>
+        <p class="hint">Links einen Namen suchen – oder in der Klassenliste auf einen Namen tippen.</p>
+      </div>
+      <div id="profil-karte" class="profil-karte" hidden>
+        <div class="profil-kopf">
+          <div id="profil-foto" class="profil-foto ohne"></div>
+          <div class="profil-kopf-text">
+            <h2 id="profil-name"></h2>
+            <dl id="profil-angaben" class="profil-angaben"></dl>
+            <p id="profil-foto-hinweis" class="hint" hidden>Noch kein Foto – im Sitzplan dieser Klasse unter „Gesichter zuordnen“ nachtragen.</p>
+            <button id="btn-profil-klasse" class="small" data-icon="list">In der Klassenliste zeigen</button>
+          </div>
+        </div>
+        <div class="two-col">
+          <div>
+            <h3>Noten</h3>
+            <ul id="profil-noten" class="profil-noten"></ul>
+          </div>
+          <div>
+            <h3>Notizen</h3>
+            <textarea id="profil-notiz" rows="7"
+                      placeholder="z.&thinsp;B. Instrument, Besonderheiten, Elterngespräch am …"></textarea>
+            <p class="hint">Wird automatisch gespeichert – nur auf diesem Gerät bzw. verschlüsselt im Geräte-Sync.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
 <!-- ========== EXTRAS ========== -->
 <main id="tab-tools" class="tab-page">
   <div class="tools-grid">
@@ -911,27 +956,28 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=144"></script>
-<script src="js/firebase-config.js?v=144"></script>
-<script type="module" src="js/live-firebase.js?v=144"></script>
-<script src="js/topics-seed.js?v=144"></script>
-<script src="js/ai-import.js?v=144"></script>
-<script src="js/store.js?v=144"></script>
-<script src="js/noise.js?v=144"></script>
-<script src="js/classes.js?v=144"></script>
-<script src="js/sitzplan.js?v=144"></script>
-<script src="js/lessons.js?v=144"></script>
-<script src="js/band.js?v=144"></script>
-<script src="js/notes.js?v=144"></script>
-<script src="js/tresor.js?v=144"></script>
-<script src="js/erklaerungen.js?v=144"></script>
-<script src="js/setlisten.js?v=144"></script>
-<script src="js/einklappen.js?v=144"></script>
-<script src="js/live-groups.js?v=144"></script>
-<script src="js/tipps.js?v=144"></script>
-<script src="js/sport-tabellen.js?v=144"></script>
-<script src="js/sport.js?v=144"></script>
-<script src="js/tools.js?v=144"></script>
-<script src="js/app.js?v=144"></script>
+<script src="js/vendor/qrcode.min.js?v=146"></script>
+<script src="js/firebase-config.js?v=146"></script>
+<script type="module" src="js/live-firebase.js?v=146"></script>
+<script src="js/topics-seed.js?v=146"></script>
+<script src="js/ai-import.js?v=146"></script>
+<script src="js/store.js?v=146"></script>
+<script src="js/noise.js?v=146"></script>
+<script src="js/classes.js?v=146"></script>
+<script src="js/sitzplan.js?v=146"></script>
+<script src="js/schueler.js?v=146"></script>
+<script src="js/lessons.js?v=146"></script>
+<script src="js/band.js?v=146"></script>
+<script src="js/notes.js?v=146"></script>
+<script src="js/tresor.js?v=146"></script>
+<script src="js/erklaerungen.js?v=146"></script>
+<script src="js/setlisten.js?v=146"></script>
+<script src="js/einklappen.js?v=146"></script>
+<script src="js/live-groups.js?v=146"></script>
+<script src="js/tipps.js?v=146"></script>
+<script src="js/sport-tabellen.js?v=146"></script>
+<script src="js/sport.js?v=146"></script>
+<script src="js/tools.js?v=146"></script>
+<script src="js/app.js?v=146"></script>
 </body>
 </html>
