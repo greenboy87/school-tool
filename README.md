@@ -86,6 +86,14 @@ anderen Klasse gleichen Namens (etwa der Kopie fürs nächste Schuljahr), wird d
 genommen; „Auch in“ verlinkt diese Klassen. In der Klassenliste steht das Gesicht vor dem
 Namen, ein Tipp auf Name oder Bild öffnet ebenfalls den Steckbrief.
 
+### 🙈 Gesichter ausblenden
+Der Schalter **Gesichter** oben rechts (Auge-Symbol) blendet alle Schülerfotos auf einmal aus:
+in Klassenliste, Suche, Steckbrief, Sitzplan und beim Zuordnen der Gesichter. Statt der
+Bilder stehen dann Initialen da. Praktisch, sobald jemand über die Schulter schaut. Der
+Schalter wirkt sofort, ohne Neuladen, und bleibt auf diesem Gerät gespeichert. Ist er beim
+Öffnen der Seite aus, blitzt auch beim Laden kein Gesicht auf. Ausgedruckte Sitzpläne
+enthalten die Fotos weiterhin.
+
 ### 📝 Notizen und Medienmanager je Klasse
 - Eigener Unterreiter **Notizen** pro Klasse – Absprachen, Elternkontakte, wer wen nicht neben
   sich haben sollte. Speichert beim Tippen von selbst, gehört zur Klasse (nicht zum Gerät) und

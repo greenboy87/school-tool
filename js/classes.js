@@ -1384,7 +1384,7 @@ const Classes = {
       if (mitFoto) {
         foto = document.createElement('span');
         foto.className = 'mini-gesicht';
-        foto.textContent = ((s.first || '')[0] || '') + ((s.last || '')[0] || '');
+        foto.dataset.initialen = ((s.first || '')[0] || '') + ((s.last || '')[0] || '');
         foto.classList.add('ohne');
         Schueler.gesichtEinsetzen(foto, cls, s);
         foto.addEventListener('click', () => Schueler.oeffne(cls.id, s.id));

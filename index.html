@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=146">
+<link rel="stylesheet" href="style.css?v=148">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=146"></script>
-<script src="js/theme.js?v=146"></script>
-<script src="js/auth.js?v=146"></script>
+<script src="js/icons.js?v=148"></script>
+<script src="js/theme.js?v=148"></script>
+<script src="js/auth.js?v=148"></script>
 </head>
 <body>
 
@@ -33,6 +33,12 @@
             title="ZURÜCKSPIELEN – nicht zum Sichern!&#10;Liest eine Backup-Datei ein und ersetzt damit alle jetzigen Klassen, Noten und Notizen."><span class="knopf-text">Zurück</span></button>
     <button id="btn-info" class="nur-icon" aria-label="Hinweise zur Datenspeicherung"
             title="Wo liegen meine Daten?">i</button>
+    <label class="gesichter-schalter" title="Gesichter ein- oder ausblenden – etwa wenn ein Schüler über die Schulter schaut">
+      <input type="checkbox" id="gesichter-schalter" role="switch" checked>
+      <span class="schalter-bahn" aria-hidden="true"></span>
+      <span class="auge-an" data-icon="eye"></span><span class="auge-aus" data-icon="eyeOff"></span>
+      <span class="knopf-text">Gesichter</span>
+    </label>
     <button id="btn-theme" title="Zum hellen Design wechseln">Hell</button>
     <input type="file" id="import-file" accept=".json" hidden>
   </div>
@@ -956,28 +962,28 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=146"></script>
-<script src="js/firebase-config.js?v=146"></script>
-<script type="module" src="js/live-firebase.js?v=146"></script>
-<script src="js/topics-seed.js?v=146"></script>
-<script src="js/ai-import.js?v=146"></script>
-<script src="js/store.js?v=146"></script>
-<script src="js/noise.js?v=146"></script>
-<script src="js/classes.js?v=146"></script>
-<script src="js/sitzplan.js?v=146"></script>
-<script src="js/schueler.js?v=146"></script>
-<script src="js/lessons.js?v=146"></script>
-<script src="js/band.js?v=146"></script>
-<script src="js/notes.js?v=146"></script>
-<script src="js/tresor.js?v=146"></script>
-<script src="js/erklaerungen.js?v=146"></script>
-<script src="js/setlisten.js?v=146"></script>
-<script src="js/einklappen.js?v=146"></script>
-<script src="js/live-groups.js?v=146"></script>
-<script src="js/tipps.js?v=146"></script>
-<script src="js/sport-tabellen.js?v=146"></script>
-<script src="js/sport.js?v=146"></script>
-<script src="js/tools.js?v=146"></script>
-<script src="js/app.js?v=146"></script>
+<script src="js/vendor/qrcode.min.js?v=148"></script>
+<script src="js/firebase-config.js?v=148"></script>
+<script type="module" src="js/live-firebase.js?v=148"></script>
+<script src="js/topics-seed.js?v=148"></script>
+<script src="js/ai-import.js?v=148"></script>
+<script src="js/store.js?v=148"></script>
+<script src="js/noise.js?v=148"></script>
+<script src="js/classes.js?v=148"></script>
+<script src="js/sitzplan.js?v=148"></script>
+<script src="js/schueler.js?v=148"></script>
+<script src="js/lessons.js?v=148"></script>
+<script src="js/band.js?v=148"></script>
+<script src="js/notes.js?v=148"></script>
+<script src="js/tresor.js?v=148"></script>
+<script src="js/erklaerungen.js?v=148"></script>
+<script src="js/setlisten.js?v=148"></script>
+<script src="js/einklappen.js?v=148"></script>
+<script src="js/live-groups.js?v=148"></script>
+<script src="js/tipps.js?v=148"></script>
+<script src="js/sport-tabellen.js?v=148"></script>
+<script src="js/sport.js?v=148"></script>
+<script src="js/tools.js?v=148"></script>
+<script src="js/app.js?v=148"></script>
 </body>
 </html>

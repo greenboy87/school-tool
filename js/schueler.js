@@ -114,7 +114,8 @@ const Schueler = {
     li.dataset.klasse = t.cls.id;
     li.dataset.schueler = t.s.id;
     const bild = document.createElement('span');
-    bild.className = 'mini-gesicht';
+    bild.className = 'mini-gesicht ohne';
+    bild.dataset.initialen = ((t.s.first || '')[0] || '') + ((t.s.last || '')[0] || '');
     const quelle = this.fotoQuelle(t);
     if (quelle) this.gesichtEinsetzen(bild, quelle.cls, quelle.s);
     const text = document.createElement('span');
@@ -188,7 +189,7 @@ const Schueler = {
     foto.style.backgroundImage = '';
     foto.dataset.gesichtFuer = '';
     foto.classList.add('ohne');
-    foto.textContent = ((s.first || '')[0] || '') + ((s.last || '')[0] || '');
+    foto.dataset.initialen = ((s.first || '')[0] || '') + ((s.last || '')[0] || '');
     const quelle = this.fotoQuelle(t, andere);
     if (quelle) this.gesichtEinsetzen(foto, quelle.cls, quelle.s, 320);
     document.getElementById('profil-foto-hinweis').hidden = !!quelle;
@@ -277,7 +278,6 @@ const Schueler = {
     if (!url || !el.isConnected || el.dataset.gesichtFuer !== fuer) return;
     el.style.backgroundImage = `url(${url})`;
     el.classList.remove('ohne');
-    el.textContent = '';
   },
 
   async gesicht(cls, id, kante = 96) {

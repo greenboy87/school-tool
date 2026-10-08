@@ -36,3 +36,36 @@ const Theme = {
 };
 
 Theme.init();
+
+/* Gesichter ein/aus – für den Moment, in dem ein Schüler über die Schulter
+   schaut. Steht am <html>, damit beim Laden kein Gesicht kurz aufblitzt; das
+   Ausblenden selbst erledigt das Stylesheet, ganz ohne Neuzeichnen. */
+const Gesichter = {
+  KEY: 'schooltool-gesichter',
+
+  sichtbar() { return localStorage.getItem(this.KEY) !== 'aus'; },
+
+  apply() {
+    if (this.sichtbar()) delete document.documentElement.dataset.gesichter;
+    else document.documentElement.dataset.gesichter = 'aus';
+    const schalter = document.getElementById('gesichter-schalter');
+    if (schalter) schalter.checked = this.sichtbar();
+  },
+
+  set(an) {
+    try { localStorage.setItem(this.KEY, an ? 'an' : 'aus'); } catch (e) { /* egal */ }
+    this.apply();
+  },
+
+  init() {
+    this.apply();
+    document.addEventListener('DOMContentLoaded', () => {
+      const schalter = document.getElementById('gesichter-schalter');
+      if (!schalter) return;
+      schalter.checked = this.sichtbar();
+      schalter.addEventListener('change', () => this.set(schalter.checked));
+    });
+  },
+};
+
+Gesichter.init();
