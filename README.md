@@ -73,40 +73,36 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
 Das Suchfeld über der Klassenliste durchsucht **alle** Klassen auf einmal – praktisch, wenn
 ein Name im Lehrerzimmer fällt und unklar ist, aus welcher Klasse er stammt. Jeder Treffer
 zeigt Gesicht, Klasse und Klassenleitung. Mit ↑/↓ wählen, **Enter** (oder ein Klick) öffnet
-den Steckbrief im Reiter *Schüler*. Von dort führt „In der Klassenliste zeigen“ in die Klasse
-und hebt den Schüler kurz hervor; ist die Klasse durch den Schuljahr-Filter ausgeblendet,
-schaltet der Sprung den Filter auf „alle“, damit sie nicht unsichtbar bleibt.
+die Klasse und wählt den Schüler aus – rechts erscheint sein Steckbrief. Ist die Klasse durch
+den Schuljahr-Filter ausgeblendet, schaltet der Sprung den Filter auf „alle“, damit sie nicht
+unsichtbar bleibt.
 
-### 🪪 Schüler-Steckbrief (Reiter *Schüler*)
-Ein Schüler auf einen Blick: großes Foto, Klasse, Klassenleitung, Platz in der Liste,
-Sitzplatz, Medienmanager-Aufgabe, alle Noten aus *Projekte & Noten* und ein freies
-Notizfeld (speichert sofort). Die Fotos stammen aus dem Sitzplan („Gesichter zuordnen“) –
-es wird nichts doppelt gespeichert. Hat ein Schüler in seiner Klasse kein Foto, aber in einer
-anderen Klasse gleichen Namens (etwa der Kopie fürs nächste Schuljahr), wird das dortige
-genommen; „Auch in“ verlinkt diese Klassen. In der Klassenliste steht das Gesicht vor dem
-Namen, ein Tipp auf Name oder Bild öffnet ebenfalls den Steckbrief.
+### 🪪 Schüler-Steckbrief (rechts neben der Klassenliste)
+Ein Tipp auf einen Namen (oder sein Gesicht) in der Klassenliste wählt den Schüler aus: Die
+Zeile wird markiert, und rechts – über „Schüler hinzufügen“ – steht sein Steckbrief: Foto,
+Klassenleitung, Sitzplatz, Medienmanager-Aufgabe, alle Noten aus *Projekte & Noten* und ein
+freies Notizfeld (speichert sofort). Auf dem Handy steht er unter der Liste, die Seite
+scrollt beim Antippen hin.
 
-**Hin und her mit Enter:** Suchen, Enter öffnet den Steckbrief. Noch einmal Enter wechselt
-in die Klasse des Schülers, mit der Klassenliste offen und dem Schüler markiert. Ein
-weiteres Enter führt zurück zum Steckbrief. Dasselbe geht per Knopf: „Zur Klasse …“ im
-Steckbrief und „Steckbrief …“ neben dem Klassennamen. Solange ein Eingabefeld den Fokus hat
-(etwa die Notizen), gehört das Enter dem Feld.
+Die Fotos stammen aus dem Sitzplan („Gesichter zuordnen“) – es wird nichts doppelt
+gespeichert. Hat ein Schüler in seiner Klasse kein Foto, aber in einer anderen Klasse
+gleichen Namens (etwa der Kopie fürs nächste Schuljahr), wird das dortige genommen; „Auch in“
+verlinkt diese Klassen.
 
-**Auswahl aufheben:** Das **×** im Suchfeld (oder **Esc** im Suchfeld) leert die Suche,
-wählt den Schüler ab und nimmt den Steckbrief-Knopf neben dem Klassennamen weg. Die Klasse
-bleibt offen.
+**Abwählen:** derselbe Name noch einmal, das **×** am Steckbrief, das **×** im Suchfeld oder
+**Esc**. Wer links eine andere Klasse wählt, lässt die Wahl ebenfalls hinter sich.
 
-### ⌨️ Mit den Pfeiltasten
-| Wo | ↑ / ↓ | ← / → | Enter |
+### ⌨️ Tastatur
+| Wo | ↑ / ↓ | ← / → | sonst |
 |---|---|---|---|
-| Klassen | vorige / nächste Klasse (der Unterreiter bleibt) | voriger / nächster Unterreiter | zum Steckbrief des zuletzt gezeigten Schülers |
-| Schüler (Steckbrief) | Seite scrollen | voriger / nächster Schüler der Klasse | zur Klasse |
-| Band | Seite scrollen | voriger / nächster Band-Unterreiter | – |
-| Suchfelder | Treffer wählen | Cursor im Feld | Treffer öffnen (Esc hebt die Auswahl auf) |
+| Klassen, kein Schüler gewählt | vorige / nächste Klasse (der Unterreiter bleibt) | voriger / nächster Unterreiter | |
+| Klassen, Schüler gewählt | voriger / nächster Schüler | voriger / nächster Unterreiter | **Esc** wählt ab |
+| Band | Seite scrollen | voriger / nächster Band-Unterreiter | |
+| Suchfeld | Treffer wählen | Cursor im Feld | **Enter** wählt, **Esc** leert |
 | überall | | | **V** blendet Gesichter ein/aus |
 
-Die Pfeile wirken nur, solange kein Eingabefeld den Fokus hat. Beim Gesichterzuordnen
-gehören sie dem Rahmen, im Vollbild bleibt alles, wie es ist. Am Anfang und Ende einer
+Die Tasten wirken nur, solange kein Eingabefeld den Fokus hat. Beim Gesichterzuordnen
+gehören die Pfeile dem Rahmen, im Vollbild bleibt alles, wie es ist. Am Anfang und Ende einer
 Liste wird nicht umgelaufen.
 
 ### 🙈 Gesichter ausblenden

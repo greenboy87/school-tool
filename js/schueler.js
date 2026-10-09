@@ -1,6 +1,8 @@
 /* Schüler-Steckbrief: ein Schüler auf einen Blick – Gesicht, Klasse, Noten,
-   eigene Notizen. Die Gesichter stammen aus dem Sitzplan (Klassenfoto plus
-   Rahmen je Schüler); hier wird nur ausgeschnitten, nichts neu gespeichert. */
+   eigene Notizen. Er steht im Reiter „Klassen“ rechts neben der Klassenliste
+   und erscheint, sobald ein Schüler gewählt ist. Die Gesichter stammen aus dem
+   Sitzplan (Klassenfoto plus Rahmen je Schüler); hier wird nur ausgeschnitten,
+   nichts neu gespeichert. */
 const Schueler = {
   aktuell: null,          // { klasseId, schuelerId }
   markiert: 0,            // Pfeiltasten-Auswahl in der Trefferliste
@@ -8,11 +10,6 @@ const Schueler = {
   _ausschnitte: {},       // Ausschnitt-Schlüssel → dataURL
 
   init() {
-    const feld = document.getElementById('profil-suche');
-    if (feld) {
-      feld.addEventListener('input', () => { this.markiert = 0; this.zeigeTreffer(); });
-      feld.addEventListener('keydown', e => this.trefferTasten(e, feld, 'profil-treffer'));
-    }
     const notiz = document.getElementById('profil-notiz');
     if (notiz) {
       notiz.addEventListener('input', () => {
@@ -23,51 +20,87 @@ const Schueler = {
         Classes.persist();
       });
     }
-    const zurListe = document.getElementById('btn-profil-klasse');
-    if (zurListe) zurListe.addEventListener('click', () => this.zurKlasse());
-    const vor = document.getElementById('btn-profil-vor');
-    if (vor) vor.addEventListener('click', () => this.blaettern(-1));
-    const weiter = document.getElementById('btn-profil-weiter');
-    if (weiter) weiter.addEventListener('click', () => this.blaettern(1));
-    const weg = document.getElementById('btn-auswahl-weg');
-    if (weg) weg.addEventListener('click', () => this.auswahlAufheben());
-    const zumProfil = document.getElementById('btn-zum-steckbrief');
-    if (zumProfil) zumProfil.addEventListener('click', () => this.zumSteckbrief());
+    const an = (id, f) => { const el = document.getElementById(id); if (el) el.addEventListener('click', f); };
+    an('btn-profil-vor', () => this.blaettern(-1));
+    an('btn-profil-weiter', () => this.blaettern(1));
+    an('btn-steckbrief-zu', () => this.auswahlAufheben());
+    an('btn-auswahl-weg', () => this.auswahlAufheben());
 
-    /* Hin und her mit Enter: im Steckbrief zur Klasse, in der Klasse zurück
-       zum Steckbrief. Nur wenn gerade kein Feld oder Knopf den Fokus hat –
-       sonst gehört das Enter dem Feld (Notizen, Suche, Formulare). */
+    // Esc wählt ab – nur wenn gerade nichts getippt wird
     document.addEventListener('keydown', e => {
-      if (e.key !== 'Enter' || e.repeat || e.shiftKey || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key !== 'Escape' || !this.aktuell) return;
       const ziel = e.target;
-      if (ziel && ziel.closest && ziel.closest('input, textarea, select, button, a, [contenteditable]')) return;
-      const reiter = document.querySelector('.tab-btn.active');
-      if (!reiter) return;
-      if (reiter.dataset.tab === 'schueler' && this.gewaehlt()) {
-        e.preventDefault();
-        this.zurKlasse();
-      } else if (reiter.dataset.tab === 'klassen' && this.zurueckMoeglich()) {
-        e.preventDefault();
-        this.zumSteckbrief();
-      }
+      if (ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (typeof Sitzplan !== 'undefined' && Sitzplan.gesichter) return;
+      this.auswahlAufheben();
     });
-    // Beim Hineinwechseln frisch zeichnen – Noten oder Gesichter könnten neu sein
-    const reiter = document.querySelector('.tab-btn[data-tab="schueler"]');
-    if (reiter) reiter.addEventListener('click', () => this.zeigeProfil());
+  },
+
+  /* Ist der Steckbrief gerade zu sehen? Dann gehören ↑/↓ den Schülern. */
+  imSteckbrief() {
+    const reiter = document.getElementById('tab-klassen');
+    const sub = document.getElementById('subtab-schueler');
+    return !!(this.zeigbar() && reiter && reiter.classList.contains('active') &&
+              sub && sub.classList.contains('active'));
+  },
+
+  /* Gewählt und in der offenen Klasse */
+  zeigbar() {
+    const t = this.gewaehlt();
+    return t && Classes.currentClassId === t.cls.id ? t : null;
+  },
+
+  /* Schüler wählen: Klasse öffnen (auch über den Schuljahr-Filter hinweg),
+     Unterreiter „Schüler“, Steckbrief rechts. */
+  oeffne(klasseId, schuelerId) {
+    this.aktuell = { klasseId, schuelerId };
+    this.auswahlKnopfStellen();
+    this.fokusWeg();
+    const reiter = document.querySelector('.tab-btn[data-tab="klassen"]');
+    if (reiter && !reiter.classList.contains('active')) reiter.click();
+    Classes.springeZuSchueler(klasseId, schuelerId);
+    this.steckbriefInSicht();
+  },
+
+  /* Klick in der Klassenliste: wählen – oder, beim schon gewählten, abwählen */
+  umschalten(klasseId, schuelerId) {
+    const a = this.aktuell;
+    if (a && a.klasseId === klasseId && a.schuelerId === schuelerId) { this.auswahlAufheben(); return; }
+    this.aktuell = { klasseId, schuelerId };
+    this.markierungStellen();
     this.zeigeProfil();
+    this.auswahlKnopfStellen();
+    this.steckbriefInSicht();
   },
 
   /* Voriger / nächster Schüler in der Reihenfolge der Klassenliste.
      Am Anfang und Ende der Liste ist Schluss, damit man merkt, wo man ist. */
   blaettern(schritt) {
-    const t = this.gewaehlt();
+    const t = this.zeigbar();
     if (!t) return false;
     const liste = t.cls.students;
     const ziel = liste[liste.indexOf(t.s) + schritt];
     if (!ziel) return false;
     this.aktuell = { klasseId: t.cls.id, schuelerId: ziel.id };
+    this.markierungStellen();
     this.zeigeProfil();
+    const zeile = document.querySelector(`#student-list li[data-id="${ziel.id}"]`);
+    if (zeile) zeile.scrollIntoView({ block: 'nearest' });
     return true;
+  },
+
+  /* Die gewählte Zeile in der Klassenliste sichtbar markieren */
+  markierungStellen() {
+    const id = this.zeigbar() ? this.aktuell.schuelerId : null;
+    document.querySelectorAll('#student-list li').forEach(li =>
+      li.classList.toggle('gewaehlt', li.dataset.id === id));
+  },
+
+  /* Auf schmalen Bildschirmen steht der Steckbrief unter der Liste */
+  steckbriefInSicht() {
+    if (window.innerWidth > 800) return;
+    const el = document.getElementById('steckbrief');
+    if (el && !el.hidden) el.scrollIntoView({ block: 'start', behavior: 'smooth' });
   },
 
   blaetterLeisteStellen(cls, s) {
@@ -81,8 +114,7 @@ const Schueler = {
     };
     stelle('btn-profil-vor', liste[pos - 1]);
     stelle('btn-profil-weiter', liste[pos + 1]);
-    document.getElementById('profil-position').textContent =
-      `${cls.name} · ${pos + 1} von ${liste.length}`;
+    document.getElementById('profil-position').textContent = `${pos + 1} von ${liste.length}`;
   },
 
   /* Alles zurück auf Anfang: Suchwort und Treffer weg, kein Schüler mehr
@@ -93,7 +125,7 @@ const Schueler = {
     const feld = document.getElementById('schueler-suche');
     if (feld) { feld.value = ''; Classes.sucheSchueler(); feld.blur(); }
     document.querySelectorAll('#student-list li.gefunden').forEach(li => li.classList.remove('gefunden'));
-    this.zurueckKnopfStellen();
+    this.markierungStellen();
     this.auswahlKnopfStellen();
     this.zeigeProfil();
   },
@@ -106,54 +138,15 @@ const Schueler = {
     knopf.hidden = !((feld && feld.value) || this.aktuell);
   },
 
-  /* Vom Steckbrief in die Klasse: Klasse gewählt, Klassenliste offen, der
-     Schüler kurz hervorgehoben */
-  zurKlasse() {
-    if (!this.gewaehlt()) return;
-    this.fokusWeg();
-    document.querySelector('.tab-btn[data-tab="klassen"]').click();
-    Classes.springeZuSchueler(this.aktuell.klasseId, this.aktuell.schuelerId);
-    this.zurueckKnopfStellen();
-  },
-
-  zumSteckbrief() {
-    if (!this.aktuell) return;
-    this.oeffne(this.aktuell.klasseId, this.aktuell.schuelerId);
-  },
-
-  /* Zurück geht es nur, solange die Klasse des zuletzt gezeigten Schülers offen ist */
-  zurueckMoeglich() {
-    const t = this.gewaehlt();
-    const cls = Classes.currentClass();
-    return !!(t && cls && cls.id === t.cls.id);
-  },
-
-  zurueckKnopfStellen() {
-    const knopf = document.getElementById('btn-zum-steckbrief');
-    if (!knopf) return;
-    const t = this.zurueckMoeglich() ? this.gewaehlt() : null;
-    knopf.hidden = !t;
-    this.auswahlKnopfStellen();
-    if (t) document.getElementById('zum-steckbrief-name').textContent =
-      'Steckbrief ' + [t.s.first, t.s.last].filter(Boolean).join(' ');
-  },
-
-  /* Ein verstecktes Suchfeld behielte sonst den Fokus und schluckte das
-     nächste Enter */
+  /* Ein Suchfeld behielte sonst den Fokus und schluckte die Pfeiltasten */
   fokusWeg() {
     const a = document.activeElement;
     if (a && a !== document.body && a.blur) a.blur();
   },
 
-  /* Pfeiltasten wandern durch die Treffer, Enter öffnet den markierten.
-     Wird auch von der Suche im Klassen-Reiter benutzt. */
+  /* Pfeiltasten wandern durch die Treffer, Enter wählt den markierten */
   trefferTasten(e, feld, boxId) {
     const zeilen = [...document.querySelectorAll(`#${boxId} li[data-schueler]`)];
-    if (e.key === 'Escape') {
-      feld.value = '';
-      feld.dispatchEvent(new Event('input'));
-      return;
-    }
     if (!zeilen.length) return;
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
@@ -162,16 +155,19 @@ const Schueler = {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const z = zeilen[Math.min(this.markiert, zeilen.length - 1)];
-      // Feld leeren, damit die Trefferliste nicht über dem Steckbrief stehen bleibt
-      feld.value = '';
-      feld.dispatchEvent(new Event('input'));
-      this.oeffne(z.dataset.klasse, z.dataset.schueler);
+      this.trefferWaehlen(feld, z.dataset.klasse, z.dataset.schueler);
       return;
     } else {
       return;
     }
     zeilen.forEach((z, i) => z.classList.toggle('markiert', i === this.markiert));
     zeilen[this.markiert].scrollIntoView({ block: 'nearest' });
+  },
+
+  /* Feld leeren, damit die Trefferliste nicht stehen bleibt – dann wählen */
+  trefferWaehlen(feld, klasseId, schuelerId) {
+    if (feld) { feld.value = ''; feld.dispatchEvent(new Event('input')); }
+    this.oeffne(klasseId, schuelerId);
   },
 
   /* Alle Treffer über alle Klassen – dieselbe Regel wie in der Klassensuche */
@@ -189,30 +185,6 @@ const Schueler = {
     treffer.sort((a, b) => a.name.localeCompare(b.name, 'de') ||
                            a.cls.name.localeCompare(b.cls.name, 'de'));
     return treffer;
-  },
-
-  zeigeTreffer() {
-    const feld = document.getElementById('profil-suche');
-    const box = document.getElementById('profil-treffer');
-    const suche = feld.value.trim().toLowerCase();
-    box.innerHTML = '';
-    if (suche.length < 2) { box.hidden = true; return; }
-    box.hidden = false;
-    const treffer = this.finde(suche);
-    if (!treffer.length) {
-      box.innerHTML = '<li class="hint">Kein Schüler gefunden.</li>';
-      return;
-    }
-    this.neuerDurchgang();
-    treffer.slice(0, 25).forEach((t, i) => {
-      box.appendChild(this.trefferZeile(t, i === this.markiert));
-    });
-    if (treffer.length > 25) {
-      const li = document.createElement('li');
-      li.className = 'hint';
-      li.textContent = `… und ${treffer.length - 25} weitere. Tippe mehr Buchstaben.`;
-      box.appendChild(li);
-    }
   },
 
   /* Eine Trefferzeile mit kleinem Gesicht – geteilt mit der Klassensuche */
@@ -238,18 +210,9 @@ const Schueler = {
     wo.textContent = t.cls.name + (leitung ? ` · KL ${leitung}` : '');
     text.append(name, wo);
     li.append(bild, text);
-    li.addEventListener('click', () => this.oeffne(t.cls.id, t.s.id));
+    li.addEventListener('click', () =>
+      this.trefferWaehlen(document.getElementById('schueler-suche'), t.cls.id, t.s.id));
     return li;
-  },
-
-  /* Wechselt in den Reiter „Schüler“ und zeigt den Steckbrief */
-  oeffne(klasseId, schuelerId) {
-    this.aktuell = { klasseId, schuelerId };
-    this.auswahlKnopfStellen();
-    this.fokusWeg();
-    document.querySelector('.tab-btn[data-tab="schueler"]').click();
-    this.zeigeProfil();
-    window.scrollTo({ top: 0 });
   },
 
   gewaehlt() {
@@ -280,18 +243,17 @@ const Schueler = {
   },
 
   zeigeProfil() {
-    const leer = document.getElementById('profil-leer');
-    const karte = document.getElementById('profil-karte');
-    if (!leer || !karte) return;
-    const t = this.gewaehlt();
-    leer.hidden = !!t;
+    const karte = document.getElementById('steckbrief');
+    if (!karte) return;
+    // Wer die Klasse wechselt, lässt die Wahl hinter sich
+    if (this.aktuell && !this.zeigbar()) { this.aktuell = null; this.auswahlKnopfStellen(); }
+    const t = this.zeigbar();
     karte.hidden = !t;
     if (!t) return;
     this.neuerDurchgang();
     const { cls, s } = t;
     const andere = this.auchIn(t);
 
-    document.getElementById('profil-klasse-name').textContent = cls.name;
     this.blaetterLeisteStellen(cls, s);
     document.getElementById('profil-name').textContent =
       [s.first, s.last].filter(Boolean).join(' ');
@@ -317,7 +279,6 @@ const Schueler = {
       if (wert instanceof Node) dd.appendChild(wert); else dd.textContent = wert;
       angaben.append(dt, dd);
     };
-    zeile('Klasse', cls.name + (cls.year ? ` (${cls.year})` : ''));
     const lehrer = Classes.lehrer();
     const lt = k => { k = (k || '').trim(); return k ? (lehrer[k.toUpperCase()] || k) : ''; };
     const l = cls.leitung || {};

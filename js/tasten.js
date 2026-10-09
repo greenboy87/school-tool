@@ -1,8 +1,7 @@
 /* Pfeiltasten links/rechts: seitwärts blättern, wo es etwas zum Blättern gibt.
-   ↑/↓ wechseln im Klassen-Reiter weiter die Klasse (classes.js), Enter
-   springt zwischen Steckbrief und Klasse (schueler.js).
+   ↑/↓ wechseln im Klassen-Reiter die Klasse – oder, bei gewähltem Schüler,
+   den Schüler (classes.js). Esc wählt ab (schueler.js).
 
-   - Reiter „Schüler“: voriger / nächster Schüler derselben Klasse
    - Reiter „Klassen“: voriger / nächster Unterreiter (Schüler … Notizen)
    - Reiter „Band“:    voriger / nächster Band-Unterreiter
 
@@ -17,8 +16,7 @@ const Tasten = {
       const reiter = document.querySelector('.tab-btn.active');
       if (!reiter) return;
       let erledigt = false;
-      if (reiter.dataset.tab === 'schueler') erledigt = Schueler.blaettern(schritt);
-      else if (reiter.dataset.tab === 'klassen' && Classes.currentClassId) {
+      if (reiter.dataset.tab === 'klassen' && Classes.currentClassId) {
         erledigt = this.reiterWeiter('#class-detail .subtab-btn', schritt);
       } else if (reiter.dataset.tab === 'band') {
         erledigt = this.reiterWeiter('.bandtab-btn', schritt);

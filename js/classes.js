@@ -142,7 +142,8 @@ const Classes = {
       });
     }
 
-    /* Mit Pfeil hoch/runter durch die Klassen blaettern. Gilt nur im Reiter
+    /* Mit Pfeil hoch/runter durch die Klassen blaettern (oder, bei gewaehltem
+       Schueler, durch die Schueler). Gilt nur im Reiter
        „Klassen“ und nur, wenn gerade nichts getippt wird – sonst spraenge die
        Ansicht weg, waehrend man in einer Note, einer Notiz oder dem Suchfeld
        mit den Pfeilen navigiert. */
@@ -156,6 +157,12 @@ const Classes = {
       if (ziel && (ziel.closest('input, textarea, select, [contenteditable="true"]'))) return;
       // Beim Gesichterzuordnen ruecken die Pfeile den Rahmen, im Vollbild bleibt die Klasse
       if ((typeof Sitzplan !== 'undefined' && Sitzplan.gesichter) || document.fullscreenElement) return;
+      // Ist rechts ein Steckbrief offen, gehen die Pfeile durch die Schueler –
+      // die Liste steht ja senkrecht. Esc waehlt ab, dann sind es wieder Klassen.
+      if (typeof Schueler !== 'undefined' && Schueler.imSteckbrief()) {
+        if (Schueler.blaettern(e.key === 'ArrowDown' ? 1 : -1)) e.preventDefault();
+        return;
+      }
 
       const sichtbar = this.data.classes.filter(c =>
         this.yearFilter === 'all' || (c.year || '') === this.yearFilter);
@@ -1253,7 +1260,6 @@ const Classes = {
       document.getElementById('class-title').appendChild(span);
     }
     this.zeigeLeitungsNamen();
-    if (typeof Schueler !== 'undefined') Schueler.zurueckKnopfStellen();
     this.fuelleMedienmanager();
     if (typeof Notes !== 'undefined') Notes.klassenNotizLaden();
     this.renderStudents();
@@ -1386,7 +1392,8 @@ const Classes = {
       handle.title = 'Zum Umsortieren ziehen';
       handle.innerHTML = Icons.raw('grip');
       handle.addEventListener('pointerdown', ev => this.startStudentDrag(ev, li));
-      // Gesicht aus dem Sitzplan; Name und Bild oeffnen den Steckbrief
+      // Gesicht aus dem Sitzplan; ein Tipp auf Name oder Bild waehlt den
+      // Schueler und zeigt rechts den Steckbrief, ein zweiter waehlt ab
       const mitFoto = Sitzplan.hatFotos(cls);
       let foto = null;
       if (mitFoto) {
@@ -1395,13 +1402,13 @@ const Classes = {
         foto.dataset.initialen = ((s.first || '')[0] || '') + ((s.last || '')[0] || '');
         foto.classList.add('ohne');
         Schueler.gesichtEinsetzen(foto, cls, s);
-        foto.addEventListener('click', () => Schueler.oeffne(cls.id, s.id));
+        foto.addEventListener('click', () => Schueler.umschalten(cls.id, s.id));
       }
       const span = document.createElement('span');
       span.className = 'sname';
       span.textContent = this.studentName(s) + ' ';
-      span.title = 'Steckbrief öffnen';
-      span.addEventListener('click', () => Schueler.oeffne(cls.id, s.id));
+      span.title = 'Steckbrief zeigen – nochmal tippen zum Abwählen';
+      span.addEventListener('click', () => Schueler.umschalten(cls.id, s.id));
       const move = (dir) => {
         const j = idx + dir;
         if (j < 0 || j >= cls.students.length) return;
@@ -1434,6 +1441,9 @@ const Classes = {
       ol.appendChild(li);
     });
     ol.classList.toggle('mit-gesichtern', Sitzplan.hatFotos(cls));
+    // Steckbrief rechts mitziehen – auch wenn der Gewaehlte gerade entfernt wurde
+    Schueler.markierungStellen();
+    Schueler.zeigeProfil();
     if (window.Einklappen) Einklappen.anwenden('schueler');
   },
 

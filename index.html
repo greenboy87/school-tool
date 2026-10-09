@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=153">
+<link rel="stylesheet" href="style.css?v=157">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23d97757%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=153"></script>
-<script src="js/theme.js?v=153"></script>
-<script src="js/auth.js?v=153"></script>
+<script src="js/icons.js?v=157"></script>
+<script src="js/theme.js?v=157"></script>
+<script src="js/auth.js?v=157"></script>
 </head>
 <body>
 
@@ -17,7 +17,6 @@
   <nav class="main-tabs">
     <button class="tab-btn active" data-tab="ampel" data-icon="traffic" title="Lärmampel">Ampel</button>
     <button class="tab-btn" data-tab="klassen" data-icon="book" title="Klassen &amp; Noten">Klassen</button>
-    <button class="tab-btn" data-tab="schueler" data-icon="userCheck" title="Schüler-Steckbrief">Schüler</button>
     <button class="tab-btn" data-tab="band" data-icon="music" title="Schulband">Band</button>
     <button class="tab-btn" data-tab="notizen" data-icon="clipboard" title="Notizen">Notes</button>
     <button class="tab-btn" data-tab="sport" data-icon="timer" title="Sport">Sport</button>
@@ -123,7 +122,7 @@
                 title="Auswahl aufheben – Suche leeren, Schüler abwählen (Esc)" aria-label="Auswahl aufheben">×</button>
         <ul id="suche-treffer" class="suche-treffer" hidden></ul>
       </div>
-      <div class="hint tasten-hinweis"><kbd>↑</kbd> <kbd>↓</kbd> Klasse · <kbd>←</kbd> <kbd>→</kbd> Unterreiter · <kbd>↵</kbd> Steckbrief · <kbd>V</kbd> Gesichter</div>
+      <div class="hint tasten-hinweis"><span title="Ist ein Schüler gewählt, gehen ↑/↓ durch die Schüler"><kbd>↑</kbd><kbd>↓</kbd> Klasse/Schüler</span> · <kbd>←</kbd><kbd>→</kbd> Unterreiter · <kbd>Esc</kbd> abwählen · <kbd>V</kbd> Gesichter</div>
       <ul id="class-list" class="class-list"></ul>
       <form id="form-new-class" class="new-class-form">
         <input type="text" id="new-class-name" placeholder="z.&thinsp;B. 5c Musik" required>
@@ -140,8 +139,6 @@
       <div id="class-detail" hidden>
         <div class="class-header card">
           <h2 id="class-title"></h2>
-          <button id="btn-zum-steckbrief" class="small zurueck-knopf" data-icon="userCheck" hidden
-                  title="Zurück zum Steckbrief (Enter)"><span id="zum-steckbrief-name"></span> <kbd>↵</kbd></button>
           <nav class="sub-tabs">
             <button class="subtab-btn active" data-subtab="schueler" data-icon="users">Schüler</button>
             <button class="subtab-btn" data-subtab="gruppen" data-icon="shuffle">Gruppen</button>
@@ -193,7 +190,29 @@
                 <ol id="student-list" class="student-list"></ol>
               </div>
             </div>
-            <div>
+            <div class="schueler-rechts">
+              <div id="steckbrief" class="steckbrief" hidden>
+                <div class="profil-blaettern">
+                  <button id="btn-profil-vor" class="small" title="Voriger Schüler (Pfeil hoch)"><kbd>↑</kbd> <span></span></button>
+                  <span id="profil-position" class="hint"></span>
+                  <button id="btn-profil-weiter" class="small" title="Nächster Schüler (Pfeil runter)"><span></span> <kbd>↓</kbd></button>
+                  <button id="btn-steckbrief-zu" class="small steckbrief-zu" title="Schüler abwählen (Esc)" aria-label="Steckbrief schließen">×</button>
+                </div>
+                <div class="profil-kopf">
+                  <div id="profil-foto" class="profil-foto ohne"></div>
+                  <div class="profil-kopf-text">
+                    <h2 id="profil-name"></h2>
+                    <dl id="profil-angaben" class="profil-angaben"></dl>
+                    <div id="profil-foto-hinweis" class="hint" hidden>Noch kein Foto – im Sitzplan unter „Gesichter zuordnen“ nachtragen.</div>
+                  </div>
+                </div>
+                <h3>Noten</h3>
+                <ul id="profil-noten" class="profil-noten"></ul>
+                <h3>Notizen</h3>
+                <textarea id="profil-notiz" rows="4"
+                          placeholder="z.&thinsp;B. Instrument, Besonderheiten, Elterngespräch am …"></textarea>
+              </div>
+              <div class="schueler-hinzufuegen">
               <h3>Schüler hinzufügen</h3>
               <p class="hint">Einen Namen pro Zeile einfügen – „Nachname, Vorname“ oder „Vorname Nachname“. „Einsortieren“ sortiert die Liste alphabetisch, „Ans Ende anhängen“ setzt neue Schüler unten an die Liste (z.&thinsp;B. bei Klassenwechsel unterm Schuljahr). Du kannst auch direkt die Klassenliste als PDF importieren – die gefundenen Namen erscheinen dann hier zur Kontrolle.</p>
               <textarea id="student-input" rows="10" placeholder="Bach, Leonhard&#10;Bitter, Nico&#10;…"></textarea>
@@ -201,6 +220,7 @@
                 <button id="btn-add-students" class="primary">Hinzufügen (A–Z einsortieren)</button>
                 <button id="btn-append-students">Ans Ende anhängen</button>
                 <label class="file-btn" data-icon="file">Aus Datei (PDF/.txt/.csv)<input type="file" id="student-file" accept=".txt,.csv,.pdf,application/pdf" hidden></label>
+              </div>
               </div>
             </div>
           </div>
@@ -894,57 +914,6 @@
   </div>
 </main>
 
-<!-- ========== SCHÜLER-STECKBRIEF ========== -->
-<main id="tab-schueler" class="tab-page">
-  <div class="profil-layout">
-    <section class="card profil-suche-karte">
-      <h2 data-icon="users">Schüler suchen</h2>
-      <div class="schueler-suche">
-        <input type="search" id="profil-suche" autocomplete="off"
-               placeholder="Name eingeben, Enter öffnet den Steckbrief …">
-        <ul id="profil-treffer" class="suche-treffer" hidden></ul>
-      </div>
-      <p class="hint">Sucht in allen Klassen. Mit ↑/↓ auswählen, Enter öffnet den Steckbrief. Die Gesichter kommen aus dem Sitzplan („Gesichter zuordnen“).</p>
-      <div class="hint tasten-hinweis"><kbd>←</kbd> <kbd>→</kbd> voriger / nächster Schüler · <kbd>↵</kbd> zur Klasse und zurück · <kbd>V</kbd> Gesichter ein/aus</div>
-    </section>
-    <section class="card profil-bereich">
-      <div id="profil-leer" class="empty-state">
-        <p>Noch kein Schüler gewählt.</p>
-        <p class="hint">Links einen Namen suchen – oder in der Klassenliste auf einen Namen tippen.</p>
-      </div>
-      <div id="profil-karte" class="profil-karte" hidden>
-        <div class="profil-blaettern">
-          <button id="btn-profil-vor" class="small" title="Voriger Schüler der Klasse (Pfeil links)"><kbd>←</kbd> <span></span></button>
-          <span id="profil-position" class="hint"></span>
-          <button id="btn-profil-weiter" class="small" title="Nächster Schüler der Klasse (Pfeil rechts)"><span></span> <kbd>→</kbd></button>
-        </div>
-        <div class="profil-kopf">
-          <div id="profil-foto" class="profil-foto ohne"></div>
-          <div class="profil-kopf-text">
-            <h2 id="profil-name"></h2>
-            <dl id="profil-angaben" class="profil-angaben"></dl>
-            <p id="profil-foto-hinweis" class="hint" hidden>Noch kein Foto – im Sitzplan dieser Klasse unter „Gesichter zuordnen“ nachtragen.</p>
-            <button id="btn-profil-klasse" class="small zurueck-knopf" data-icon="list"
-                    title="Zur Klasse wechseln, der Schüler ist dort markiert (Enter)">Zur Klasse <span id="profil-klasse-name"></span> <kbd>↵</kbd></button>
-          </div>
-        </div>
-        <div class="two-col">
-          <div>
-            <h3>Noten</h3>
-            <ul id="profil-noten" class="profil-noten"></ul>
-          </div>
-          <div>
-            <h3>Notizen</h3>
-            <textarea id="profil-notiz" rows="7"
-                      placeholder="z.&thinsp;B. Instrument, Besonderheiten, Elterngespräch am …"></textarea>
-            <p class="hint">Wird automatisch gespeichert – nur auf diesem Gerät bzw. verschlüsselt im Geräte-Sync.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
-</main>
-
 <!-- ========== EXTRAS ========== -->
 <main id="tab-tools" class="tab-page">
   <div class="tools-grid">
@@ -978,29 +947,29 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=153"></script>
-<script src="js/firebase-config.js?v=153"></script>
-<script type="module" src="js/live-firebase.js?v=153"></script>
-<script src="js/topics-seed.js?v=153"></script>
-<script src="js/ai-import.js?v=153"></script>
-<script src="js/store.js?v=153"></script>
-<script src="js/noise.js?v=153"></script>
-<script src="js/classes.js?v=153"></script>
-<script src="js/sitzplan.js?v=153"></script>
-<script src="js/schueler.js?v=153"></script>
-<script src="js/tasten.js?v=153"></script>
-<script src="js/lessons.js?v=153"></script>
-<script src="js/band.js?v=153"></script>
-<script src="js/notes.js?v=153"></script>
-<script src="js/tresor.js?v=153"></script>
-<script src="js/erklaerungen.js?v=153"></script>
-<script src="js/setlisten.js?v=153"></script>
-<script src="js/einklappen.js?v=153"></script>
-<script src="js/live-groups.js?v=153"></script>
-<script src="js/tipps.js?v=153"></script>
-<script src="js/sport-tabellen.js?v=153"></script>
-<script src="js/sport.js?v=153"></script>
-<script src="js/tools.js?v=153"></script>
-<script src="js/app.js?v=153"></script>
+<script src="js/vendor/qrcode.min.js?v=157"></script>
+<script src="js/firebase-config.js?v=157"></script>
+<script type="module" src="js/live-firebase.js?v=157"></script>
+<script src="js/topics-seed.js?v=157"></script>
+<script src="js/ai-import.js?v=157"></script>
+<script src="js/store.js?v=157"></script>
+<script src="js/noise.js?v=157"></script>
+<script src="js/classes.js?v=157"></script>
+<script src="js/sitzplan.js?v=157"></script>
+<script src="js/schueler.js?v=157"></script>
+<script src="js/tasten.js?v=157"></script>
+<script src="js/lessons.js?v=157"></script>
+<script src="js/band.js?v=157"></script>
+<script src="js/notes.js?v=157"></script>
+<script src="js/tresor.js?v=157"></script>
+<script src="js/erklaerungen.js?v=157"></script>
+<script src="js/setlisten.js?v=157"></script>
+<script src="js/einklappen.js?v=157"></script>
+<script src="js/live-groups.js?v=157"></script>
+<script src="js/tipps.js?v=157"></script>
+<script src="js/sport-tabellen.js?v=157"></script>
+<script src="js/sport.js?v=157"></script>
+<script src="js/tools.js?v=157"></script>
+<script src="js/app.js?v=157"></script>
 </body>
 </html>
