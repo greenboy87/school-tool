@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Tresor.init();
   Einklappen.init();
   LiveGroups.init();
+  TinyBandLehrer.init();
   Tools.init();
   Sport.init();
   Tipps.init();

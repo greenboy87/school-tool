@@ -9,6 +9,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
 import {
   getDatabase, ref, set, update, remove, onValue, get, onDisconnect, serverTimestamp,
+  runTransaction,
 } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js';
 
 const FB = {
@@ -16,6 +17,9 @@ const FB = {
   fehler: null,
   db: null,
   ref, set, update, remove, onValue, get, onDisconnect, serverTimestamp,
+  /* Für Plätze, die nur einer haben darf (Tiny Band: Drums in einer Band) –
+     Firebase prüft dabei selbst, ob jemand schneller war, und wiederholt sonst */
+  runTransaction,
   /* Wurzel aller Räume – bewusst ein eigener Ast neben dem Musik-Quiz */
   WURZEL: 'schoolTool/raeume',
 };

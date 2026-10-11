@@ -24,7 +24,16 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
 
 **R2.** **Veröffentlichen**. Fertig – im School-Tool einmal Strg+Shift+R.
 
-> **Zuletzt geändert am 18.09.2026 (zweite Änderung, die erste reicht nicht):**
+> **Zuletzt geändert am 11.10.2026 – Tiny Band:** Unter `zuordnung` sind `erst`,
+> `zweit`, `band` und `inst` dazugekommen, neben `zuordnung` die Äste `baende` und
+> `ergebnis`. Instrumente sind nur als Kürzel `dr`, `ba`, `sy`, `ge`, `uk` erlaubt,
+> Band-Kennungen nur in der Form `b` + 4–12 Kleinbuchstaben/Ziffern, Bandnamen bis
+> 40 Zeichen. Ohne diese Zeilen lehnt die Datenbank jede Tiny-Band-Wahl ab, und auf
+> den iPads steht „Das hat die Datenbank abgelehnt“. Der normale Gruppenmodus läuft
+> auch mit den alten Regeln weiter. **Wer die Regeln schon eingetragen hat, muss sie
+> erneut aus dem Block unten kopieren** (R1 und R2).
+>
+> **Geändert am 18.09.2026 (zweite Änderung, die erste reicht nicht):**
 > Unter `plaene` und `fotos` sind `teile` und `t0`, `t1`, … dazugekommen. Grund:
 > Firebase nimmt je Wert höchstens 10.485.760 Bytes an – das ist eine harte Grenze
 > der Datenbank, die sich mit keiner Regel anheben lässt. Große Sitzpläne werden
@@ -100,6 +109,35 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
               "gruppe":  { ".validate": "newData.isString() && newData.val().length <= 40" },
               "ts":      { ".validate": "newData.isNumber()" },
               "von":     { ".validate": "newData.isString() && newData.val().length <= 16" },
+              "erst":    { ".validate": "newData.isString() && newData.val().matches(/^(dr|ba|sy|ge|uk)$/)" },
+              "zweit":   { ".validate": "newData.isString() && newData.val().matches(/^(dr|ba|sy|ge|uk)$/) && newData.val() != newData.parent().child('erst').val()" },
+              "band":    { ".validate": "newData.isString() && newData.val().matches(/^b[a-z0-9]{4,12}$/)" },
+              "inst":    { ".validate": "newData.isString() && newData.val().matches(/^(dr|ba|sy|ge|uk)$/)" },
+              "$andere": { ".validate": false }
+            }
+          },
+          "baende": {
+            "$band": {
+              ".validate": "$band.matches(/^b[a-z0-9]{4,12}$/) && newData.hasChildren(['name'])",
+              "name":    { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+              "ts":      { ".validate": "newData.isNumber()" },
+              "mitglieder": {
+                "$sid":  { ".validate": "$sid.matches(/^s[0-9]{1,3}$/) && newData.val() == true" }
+              },
+              "plaetze": {
+                "$inst": {
+                  ".validate": "$inst.matches(/^(dr|ba|sy|ge|uk)$/)",
+                  "$sid":  { ".validate": "$sid.matches(/^s[0-9]{1,3}$/) && newData.val() == true" }
+                }
+              },
+              "$andere": { ".validate": false }
+            }
+          },
+          "ergebnis": {
+            "$sid": {
+              ".validate": "$sid.matches(/^s[0-9]{1,3}$/) && newData.hasChildren(['band'])",
+              "band":    { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+              "inst":    { ".validate": "newData.isString() && newData.val().matches(/^(dr|ba|sy|ge|uk)$/)" },
               "$andere": { ".validate": false }
             }
           },
@@ -190,6 +228,35 @@ fügst nur einen Block hinzu:
               "gruppe":  { ".validate": "newData.isString() && newData.val().length <= 40" },
               "ts":      { ".validate": "newData.isNumber()" },
               "von":     { ".validate": "newData.isString() && newData.val().length <= 16" },
+              "erst":    { ".validate": "newData.isString() && newData.val().matches(/^(dr|ba|sy|ge|uk)$/)" },
+              "zweit":   { ".validate": "newData.isString() && newData.val().matches(/^(dr|ba|sy|ge|uk)$/) && newData.val() != newData.parent().child('erst').val()" },
+              "band":    { ".validate": "newData.isString() && newData.val().matches(/^b[a-z0-9]{4,12}$/)" },
+              "inst":    { ".validate": "newData.isString() && newData.val().matches(/^(dr|ba|sy|ge|uk)$/)" },
+              "$andere": { ".validate": false }
+            }
+          },
+          "baende": {
+            "$band": {
+              ".validate": "$band.matches(/^b[a-z0-9]{4,12}$/) && newData.hasChildren(['name'])",
+              "name":    { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+              "ts":      { ".validate": "newData.isNumber()" },
+              "mitglieder": {
+                "$sid":  { ".validate": "$sid.matches(/^s[0-9]{1,3}$/) && newData.val() == true" }
+              },
+              "plaetze": {
+                "$inst": {
+                  ".validate": "$inst.matches(/^(dr|ba|sy|ge|uk)$/)",
+                  "$sid":  { ".validate": "$sid.matches(/^s[0-9]{1,3}$/) && newData.val() == true" }
+                }
+              },
+              "$andere": { ".validate": false }
+            }
+          },
+          "ergebnis": {
+            "$sid": {
+              ".validate": "$sid.matches(/^s[0-9]{1,3}$/) && newData.hasChildren(['band'])",
+              "band":    { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40" },
+              "inst":    { ".validate": "newData.isString() && newData.val().matches(/^(dr|ba|sy|ge|uk)$/)" },
               "$andere": { ".validate": false }
             }
           },
@@ -216,6 +283,11 @@ solange das Speichern fehlschlägt, ist am laufenden Betrieb nichts verändert.
   Platznummern der Form `s0`–`s999`, ein Gruppenname bis 40 Zeichen, ein Zeitstempel.
   `"$andere": { ".validate": false }` weist alles andere ab. Damit lässt sich die
   Datenbank nicht als fremder Speicherplatz missbrauchen.
+* **Tiny Band:** `baende/<id>/plaetze/<kürzel>` hält, wer in einer Band welches
+  Instrument spielt. Die Seite belegt einen Platz per Transaktion – tippen zwei Kinder
+  gleichzeitig auf Drums, bekommt ihn nur eines. Wie viele Plätze es je Instrument
+  gibt, prüft die Seite; die Regeln prüfen Form und Kürzel. `ergebnis` schreibt nur
+  die Lehrkraft, mit Bandname und Kürzel.
 * **Namen tauchen hier bewusst nirgends auf.** Die Klassenliste reist im QR-Code
   (im Anker `#…` der Adresse) direkt vom Beamer auf die Handys. Anker werden von
   Browsern grundsätzlich nicht an Server geschickt.

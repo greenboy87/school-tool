@@ -187,6 +187,67 @@ vom Beamer direkt aufs Handy, und Anker schicken Browser grundsätzlich nicht an
 der Datenbank stehen nur Platznummern (`s0`, `s1`, …) und Gruppennamen, und der Raumcode wird
 bei jeder Sammlung neu ausgewürfelt.
 
+### 🎸 Tiny Band per QR-Code
+Für das Bandprojekt „Tiny Band – End Of Beginning“: Ein Song wird in Bands à 4–5 Kindern
+gespielt. Erst bilden sich die Bands, dann treffen sich alle mit demselben Instrument in
+**Expertengruppen**, danach geht es zurück in die Band.
+
+Neben *Sammlung starten* steht ein **Modus**:
+- **Normal** – Gruppen bilden wie oben.
+- **Tiny Band – Weg A „Instrument wählen“** – jedes Kind wählt Erst- und Zweitinstrument,
+  die Lehrkraft bildet daraus die Bands.
+- **Tiny Band – Weg B „Band wählen“** – die Klasse gründet selbst Bands (höchstens 5
+  Mitglieder) und verteilt darin die Instrumente.
+
+Dazu **Bands** (Vorgabe: Klassenstärke ÷ 5, abgerundet) und **Song** (Vorgabe „End Of
+Beginning“, steht auf den iPads). Beides reist wie die Klassenliste im QR-Code mit. Der Code
+führt auf die eigene Seite `tinyband.html` im Look der Präsentation: Nachthimmel,
+Chicago-Skyline, Retro-Sonne, große Tippflächen fürs iPad, Hoch- und Querformat.
+
+**Besetzung** (eine Konstante in `js/tinyband-instrumente.js`, für andere Songs austauschbar):
+
+| Instrument | je Band | Anspruch |
+|---|---|---|
+| Drums (Drumset) | genau 1, Pflicht | ●○○ |
+| E-Bass | genau 1, Pflicht | ●●● |
+| Synth (Keyboard) | 1–2, mind. 1 Pflicht | ●○○ |
+| Gesang (freiwillig) | 0–2 | ●●○ |
+| Ukulele | 0–1 | ●●○ |
+
+**Weg A auf dem Lehrerbildschirm:** eine Spalte je Instrument mit Erstwahl-Zähler (Zweitwahl
+klein dahinter) und den Namen, dazu „Noch offen“. **Bands bilden** besetzt zuerst die
+Pflichtplätze mit Erstwünschen (Überhang per Los). Lücken füllen Kinder, deren Erstwunsch
+ohnehin überbucht ist und die das Instrument als Zweitwunsch haben, dann Kinder ohne Wahl,
+zuletzt übrige Zweitwünsche. Danach 2. Synth, Gesang und Ukulele, wieder Erst- vor
+Zweitwunsch. Wer nirgends passt, spielt Synth. Das Ergebnis steht als Matrix Band ×
+Instrument da: die Zahl hinter dem Namen hängt in eine andere Band um, „—“ nimmt heraus,
+das zweite Feld wechselt das Instrument, Bandnamen sind änderbar. ① und ② zeigen, ob es
+der Erst- oder Zweitwunsch war. Fehlt einer Band ein Pflichtinstrument, steht es rot da.
+
+**Weg B auf dem Lehrerbildschirm:** die Bands als Karten mit Besetzung; fehlende
+Pflichtinstrumente rot. Auf den iPads sind belegte Plätze live ausgegraut. Tippen zwei Kinder
+gleichzeitig auf Drums in derselben Band, bekommt ihn nur eines (die Platzvergabe läuft
+per Transaktion), das andere sieht „schon vergeben“. Genauso kann eine Band nicht über 5
+Mitglieder wachsen. Die Fertig-Ansicht sagt der Band, was noch fehlt („Euch fehlt noch:
+E-Bass“).
+
+**Ergebnis an die Klasse senden** – jedes iPad zeigt dann groß *Deine Band*, *Dein
+Instrument* und *Deine Expertengruppe*, jeweils mit den Mitspielern. Nach Änderungen in der
+Matrix einfach erneut senden.
+
+**Gruppen übernehmen** legt zwei Projekte an: *Tiny Band – Bands* (das Instrument steht am
+Namen) und *Tiny Band – Expertengruppen* (die Band steht am Namen).
+
+**Groß für die Leinwand** öffnet ein Beamerfenster im Tiny-Band-Look: QR-Code plus Live-Stand.
+In Weg A nur Zahlen je Instrument (wer was gewählt hat, geht die Klasse nichts an), in
+Weg B und nach „Bands bilden“ die Bands mit Vornamen.
+
+> **Einmalig:** Tiny Band braucht die erweiterten Firebase-Regeln vom 11.10.2026
+> (`firebase-regeln.md`, Schritte R1 und R2). Ohne sie lehnt die Datenbank die Wahlen ab.
+
+Wie beim normalen Modus stehen in der Datenbank nur Platznummern, Bandnamen und
+Instrument-Kürzel (`dr`, `ba`, `sy`, `ge`, `uk`) – nie Namen.
+
 ## 🏃 Sport
 
 Eigener Reiter mit **Stoppuhr** und den **Bewertungstabellen**.

@@ -1,0 +1,336 @@
+/* Tiny Band – Schülerseite und Beamerfenster.
+   Immer dunkel, unabhängig vom Design des School-Tools: Nachthimmel, Sterne,
+   Chicago-Skyline, am Anfang eine Retro-Sonne. iPad zuerst – keine Hover-
+   Effekte, Tippflächen mindestens 56 px, Hoch- und Querformat. */
+
+:root {
+  --tb-himmel-oben: #120A2A;
+  --tb-himmel-unten: #3D1A5C;
+  --tb-karte: #22143D;
+  --tb-rand: #3E2A66;
+  --tb-text: #FFFFFF;
+  --tb-neben: #CDBDF0;
+  --tb-orange: #FF9E5E;
+  --tb-violett: #9B5CF6;
+  --tb-hell: #FFFFFF;
+  --tb-hell-text: #1B1230;
+  --tb-rot: #FF6B7D;
+  --tb-radius: 16px;
+  --tb-schatten: 0 10px 30px rgba(5, 2, 15, .45);
+  --tb-tipp: 56px;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+body.tb-seite {
+  margin: 0; min-height: 100vh; min-height: 100dvh;
+  color: var(--tb-text);
+  background: linear-gradient(180deg, var(--tb-himmel-oben) 0%, var(--tb-himmel-unten) 100%) fixed;
+  background-color: var(--tb-himmel-oben);
+  font-family: "Century Gothic", Futura, "Avenir Next", system-ui, sans-serif;
+  font-size: 18px; line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+/* ---------- Kulisse ---------- */
+.tb-sterne {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(1.2px 1.2px at 8% 12%, #fff 98%, transparent),
+    radial-gradient(1px 1px at 22% 30%, rgba(255,255,255,.8) 98%, transparent),
+    radial-gradient(1.4px 1.4px at 37% 8%, #fff 98%, transparent),
+    radial-gradient(1px 1px at 51% 22%, rgba(255,255,255,.7) 98%, transparent),
+    radial-gradient(1.2px 1.2px at 64% 6%, #fff 98%, transparent),
+    radial-gradient(1px 1px at 77% 27%, rgba(255,255,255,.8) 98%, transparent),
+    radial-gradient(1.5px 1.5px at 89% 14%, #fff 98%, transparent),
+    radial-gradient(1px 1px at 14% 45%, rgba(255,255,255,.6) 98%, transparent),
+    radial-gradient(1px 1px at 46% 41%, rgba(255,255,255,.6) 98%, transparent),
+    radial-gradient(1.2px 1.2px at 70% 48%, rgba(255,255,255,.7) 98%, transparent),
+    radial-gradient(1px 1px at 93% 39%, rgba(255,255,255,.6) 98%, transparent),
+    radial-gradient(1px 1px at 31% 57%, rgba(255,255,255,.5) 98%, transparent);
+}
+.tb-stadt {
+  position: fixed; left: 0; right: 0; bottom: 0; height: 22vh; min-height: 120px; max-height: 240px;
+  pointer-events: none; z-index: 1;
+}
+.tb-stadt svg { width: 100%; height: 100%; display: block; }
+/* Halbe Retro-Sonne mit waagrechten Schlitzen, hinter der Skyline */
+.tb-sonne {
+  position: fixed; left: 50%; bottom: calc(min(22vh, 240px) - 40px);
+  width: min(70vw, 520px); aspect-ratio: 2 / 1; transform: translateX(-50%);
+  border-radius: 999px 999px 0 0; pointer-events: none; z-index: 0;
+  background: linear-gradient(180deg, #FFC46E 0%, #FF5E78 100%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0 42%, transparent 42%),
+    repeating-linear-gradient(180deg, #000 0 14px, transparent 14px 20px);
+  mask-image: linear-gradient(180deg, #000 0 42%, transparent 42%),
+    repeating-linear-gradient(180deg, #000 0 14px, transparent 14px 20px);
+  opacity: 0; transition: opacity .6s ease;
+  filter: drop-shadow(0 0 40px rgba(255, 120, 110, .35));
+}
+body.mit-sonne .tb-sonne { opacity: .9; }
+
+/* ---------- Kopf ---------- */
+.tb-kopf {
+  position: relative; z-index: 2;
+  padding: max(18px, env(safe-area-inset-top)) 24px 8px;
+  max-width: 1100px; margin: 0 auto;
+}
+.tb-label {
+  font-size: 12px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--tb-neben);
+}
+.tb-schritte {
+  list-style: none; margin: 14px 0 0; padding: 0;
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.tb-schritte li {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+  color: rgba(205, 189, 240, .55);
+  padding: 6px 12px 6px 0;
+}
+.tb-schritte li + li::before {
+  content: ''; width: 22px; height: 2px; background: var(--tb-rand); margin-right: 6px;
+}
+.tb-raute {
+  width: 10px; height: 10px; transform: rotate(45deg); border: 2px solid currentColor; flex: none;
+}
+.tb-schritte li.erledigt { color: var(--tb-neben); }
+.tb-schritte li.erledigt .tb-raute { background: var(--tb-neben); border-color: var(--tb-neben); }
+.tb-schritte li.jetzt { color: var(--tb-text); }
+.tb-schritte li.jetzt .tb-raute {
+  width: 14px; height: 14px; background: var(--tb-orange); border-color: var(--tb-orange);
+  box-shadow: 0 0 14px rgba(255, 158, 94, .7);
+}
+.tb-raumzeile {
+  display: flex; justify-content: space-between; gap: 12px; margin-top: 10px;
+  font-size: 14px; color: var(--tb-neben);
+}
+.tb-code {
+  font-family: ui-monospace, Menlo, monospace; letter-spacing: .06em;
+  padding: 2px 10px; border-radius: 999px; border: 1px solid var(--tb-violett); color: var(--tb-text);
+}
+
+/* ---------- Inhalt ---------- */
+.tb-haupt {
+  position: relative; z-index: 2;
+  max-width: 1100px; margin: 0 auto;
+  padding: 8px 24px calc(min(22vh, 240px) + 40px);
+}
+.tb-schirm h1 { font-size: 34px; line-height: 1.15; margin: 10px 0 6px; font-weight: 800; }
+.tb-neben { color: var(--tb-neben); margin: 0 0 16px; }
+.tb-fuer {
+  display: inline-block; margin-top: 8px; padding: 4px 14px; border-radius: 999px;
+  background: var(--tb-violett); color: #fff; font-weight: 700; font-size: 15px;
+}
+.tb-fuer:empty { display: none; }
+
+/* Weiche Übergänge zwischen den Schritten */
+.tb-rein { animation: tb-rein .35s ease-out both; }
+@keyframes tb-rein { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .tb-rein { animation: none; }
+  .tb-sonne, .tb-inst, .tb-name, .tb-bandwahl { transition: none !important; }
+}
+
+.tb-karte {
+  background: var(--tb-karte); border: 1px solid var(--tb-rand); border-radius: var(--tb-radius);
+  box-shadow: var(--tb-schatten); padding: 18px 20px; color: var(--tb-text);
+}
+.tb-mitte { text-align: center; max-width: 620px; margin: 40px auto; }
+
+/* ---------- Knöpfe ---------- */
+button { font: inherit; color: inherit; }
+.tb-knopf {
+  min-height: var(--tb-tipp); padding: 0 24px; border-radius: 999px;
+  border: 2px solid var(--tb-violett); background: transparent; color: var(--tb-text);
+  font-weight: 700; font-size: 17px; cursor: pointer; touch-action: manipulation;
+}
+.tb-knopf.haupt { background: var(--tb-orange); border-color: var(--tb-orange); color: var(--tb-hell-text); }
+.tb-knopf.leise { border-color: var(--tb-rand); color: var(--tb-neben); }
+.tb-knopf.klein { min-height: 44px; padding: 0 16px; font-size: 15px; }
+.tb-knopf:active { transform: scale(.97); }
+.tb-unten { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; }
+.tb-knopfreihe { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+
+/* ---------- Namen ---------- */
+.tb-suche, .tb-zeile input {
+  width: 100%; min-height: var(--tb-tipp); padding: 0 18px; font: inherit; font-size: 18px;
+  color: var(--tb-hell-text); background: var(--tb-hell); border: 2px solid transparent; border-radius: 14px;
+  outline: none;
+}
+.tb-suche:focus, .tb-zeile input:focus { border-color: var(--tb-orange); }
+.tb-suche { margin-bottom: 16px; }
+.tb-namen { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+.tb-name {
+  position: relative; display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  min-height: 64px; padding: 10px 46px 10px 18px; text-align: left;
+  background: var(--tb-karte); border: 2px solid var(--tb-rand); border-radius: 14px;
+  font-size: 18px; font-weight: 700; cursor: pointer; touch-action: manipulation;
+  transition: transform .15s, border-color .15s, box-shadow .15s;
+}
+.tb-name.gewaehlt { border-color: var(--tb-orange); box-shadow: 0 0 0 1px var(--tb-orange), var(--tb-schatten); transform: translateY(-2px); }
+.tb-schon {
+  margin-top: 4px; font-size: 13px; font-weight: 400; color: var(--tb-neben);
+  padding: 1px 10px; border-radius: 999px; border: 1px solid var(--tb-violett);
+}
+/* Häkchen oben rechts – bei Namen, Instrumenten und Bands gleich */
+.tb-haken {
+  position: absolute; top: 10px; right: 10px; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--tb-orange); opacity: 0; transform: scale(.6); transition: opacity .15s, transform .15s;
+}
+.tb-haken::after {
+  content: ''; position: absolute; left: 9px; top: 5px; width: 6px; height: 12px;
+  border: solid var(--tb-hell-text); border-width: 0 3px 3px 0; transform: rotate(45deg);
+}
+.gewaehlt > .tb-haken { opacity: 1; transform: none; }
+
+/* Leiste unten: wen man mitnimmt */
+.tb-leiste {
+  position: sticky; bottom: max(16px, env(safe-area-inset-bottom)); z-index: 3;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  margin-top: 20px; padding: 10px 10px 10px 22px; border-radius: 999px;
+  background: rgba(34, 20, 61, .96); border: 1px solid var(--tb-violett); box-shadow: var(--tb-schatten);
+  font-weight: 700;
+}
+.tb-leiste span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Instrumente ---------- */
+.tb-karten { display: grid; grid-template-columns: repeat(auto-fit, minmax(172px, 1fr)); gap: 14px; }
+.tb-inst {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  min-height: 210px; padding: 20px 12px 16px; text-align: center;
+  background: var(--tb-karte); border: 2px solid var(--tb-rand); border-radius: var(--tb-radius);
+  box-shadow: var(--tb-schatten); cursor: pointer; touch-action: manipulation;
+  transition: transform .18s, border-color .18s, box-shadow .18s, opacity .18s;
+}
+.tb-inst.gewaehlt {
+  border-color: var(--tb-orange); transform: translateY(-6px);
+  box-shadow: 0 0 0 2px var(--tb-orange), 0 18px 36px rgba(5, 2, 15, .55);
+}
+.tb-inst:disabled { opacity: .35; filter: grayscale(.8); cursor: not-allowed; }
+.tb-kreis {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 76px; height: 76px; border-radius: 50%; background: var(--tb-farbe, var(--tb-violett)); color: #fff;
+}
+.tb-kreis .tb-icon { width: 60%; height: 60%; }
+.tb-kreis.klein { width: 40px; height: 40px; }
+.tb-inst-name { font-size: 21px; font-weight: 800; margin-top: 4px; }
+.tb-inst-unter { font-size: 14px; color: var(--tb-neben); min-height: 1.2em; }
+.tb-inst-notiz { font-size: 14px; color: var(--tb-neben); min-height: 1.2em; }
+.tb-inst:disabled .tb-inst-notiz { color: var(--tb-text); font-weight: 700; }
+
+.tb-punkte { display: inline-flex; gap: 6px; align-items: center; margin: 2px 0; }
+.tb-punkte i { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--tb-orange); }
+.tb-punkte i.voll { background: var(--tb-orange); }
+
+.tb-meldung { min-height: 1.4em; margin: 14px 0 0; font-weight: 700; }
+.tb-meldung.warnung { color: var(--tb-orange); }
+
+/* ---------- Bands (Weg B) ---------- */
+.tb-bandliste { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.tb-bandwahl {
+  position: relative; display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center;
+  min-height: 120px; text-align: left; cursor: pointer; touch-action: manipulation;
+  border-width: 2px; transition: transform .15s, border-color .15s;
+}
+.tb-bandwahl.gewaehlt { border-color: var(--tb-orange); }
+.tb-bandwahl:disabled { opacity: .4; cursor: not-allowed; }
+.tb-bandwahl .tb-haken { top: -10px; right: -10px; }
+.tb-bandname { font-size: 22px; font-weight: 800; overflow-wrap: anywhere; }
+.tb-zahl {
+  font-weight: 800; padding: 2px 12px; border-radius: 999px; border: 1px solid var(--tb-violett); font-size: 15px;
+}
+.tb-mini-besetzung { grid-column: 1 / -1; display: flex; gap: 6px; }
+.tb-mini {
+  display: inline-flex; width: 30px; height: 30px; border-radius: 50%; padding: 6px;
+  background: transparent; border: 1.5px solid var(--tb-rand); color: rgba(255,255,255,.35);
+}
+.tb-mini.da { background: var(--tb-farbe); border-color: var(--tb-farbe); color: #fff; }
+.tb-mini .tb-icon { width: 100%; height: 100%; }
+.tb-mitglieder { grid-column: 1 / -1; color: var(--tb-neben); font-size: 15px; }
+.tb-neue-band { margin-top: 4px; }
+.tb-zeile { display: flex; gap: 12px; margin-top: 10px; }
+.tb-zeile input { flex: 1; min-width: 0; }
+
+/* ---------- Fertig ---------- */
+.tb-fertig { display: grid; gap: 14px; }
+.tb-wahlkarte { display: grid; gap: 10px; }
+.tb-wahl-kopf { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 20px; }
+.tb-wahl { display: flex; align-items: center; gap: 12px; }
+.tb-wahl .tb-label { width: 72px; }
+.tb-wahl strong { font-size: 20px; }
+.tb-hinweis {
+  padding: 14px 18px; border-radius: 14px; font-weight: 700;
+  background: rgba(255, 107, 125, .15); border: 1px solid var(--tb-rot); color: #FFD3D9;
+}
+.tb-besetzung { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tb-besetzung li { display: flex; align-items: center; gap: 12px; }
+.tb-besetzung.gross .tb-inst-name { font-size: 18px; margin: 0; min-width: 6.5em; }
+.tb-besetzung .tb-wer { color: var(--tb-neben); }
+.tb-besetzung li.tb-fehlt .tb-wer { color: var(--tb-rot); font-weight: 700; }
+.tb-besetzung li.tb-fehlt .tb-kreis { background: transparent; border: 2px dashed var(--tb-rot); color: var(--tb-rot); }
+.tb-besetzung li.tb-ohne { color: var(--tb-neben); font-style: italic; }
+
+/* ---------- Ergebnis ---------- */
+.tb-ergebnisse { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+.tb-ergebnis {
+  background: var(--tb-hell); color: var(--tb-hell-text); border-radius: 22px; padding: 24px 26px;
+  box-shadow: 0 0 0 4px var(--tb-farbe, var(--tb-orange)), var(--tb-schatten);
+  display: grid; gap: 18px;
+}
+.tb-ergebnis .tb-label, .tb-ergebnis .tb-neben { color: #5B4A80; }
+.tb-ergebnis .tb-neben { margin: 2px 0 0; }
+.tb-ergebnis-name { font-size: 15px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--tb-violett); }
+.tb-gross { font-size: 34px; font-weight: 800; line-height: 1.1; overflow-wrap: anywhere; }
+.tb-mittel { font-size: 24px; font-weight: 800; }
+.tb-inst-zeile { display: flex; align-items: center; gap: 16px; margin-top: 4px; }
+.tb-inst-zeile .tb-neben { display: block; }
+
+/* ---------- Querformat und kleine Geräte ---------- */
+@media (orientation: landscape) and (min-width: 900px) {
+  .tb-karten { grid-template-columns: repeat(5, 1fr); }
+}
+@media (max-width: 600px) {
+  body.tb-seite { font-size: 17px; }
+  .tb-kopf, .tb-haupt { padding-left: 16px; padding-right: 16px; }
+  .tb-schirm h1 { font-size: 28px; }
+  .tb-karten { grid-template-columns: repeat(2, 1fr); }
+  .tb-inst { min-height: 180px; }
+  .tb-kreis { width: 64px; height: 64px; }
+  .tb-zeile { flex-direction: column; }
+  .tb-schritte li span:last-child { display: none; }
+  .tb-schritte li.jetzt span:last-child { display: inline; }
+}
+
+/* ---------- Beamerfenster ---------- */
+body.tb-beamer { font-size: 20px; overflow: hidden; height: 100vh; }
+.tb-beamer .tb-kopf { max-width: none; padding: 22px 36px 0; }
+.tb-beamer .tb-label { font-size: 16px; }
+.tb-beamer-haupt {
+  position: relative; z-index: 2; display: grid; grid-template-columns: auto 1fr; gap: 36px;
+  padding: 18px 36px; align-items: start; height: calc(100vh - 70px);
+}
+.tb-beamer-qr { text-align: center; }
+.tb-qr { background: #fff; padding: 18px; border-radius: 20px; display: inline-block; line-height: 0; box-shadow: var(--tb-schatten); }
+.tb-qr img, .tb-qr canvas { display: block; }
+.tb-raum { font-size: 22px; margin: 16px 0 6px; }
+.tb-raum strong { color: var(--tb-orange); letter-spacing: .06em; }
+.tb-beamer-qr .tb-neben { max-width: 440px; margin: 0 auto; }
+.tb-beamer-live { overflow: hidden; }
+.tb-beamer-live > .tb-label { margin-bottom: 12px; }
+.tb-beamer-spalten { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+.tb-beamer-inst { text-align: center; display: grid; justify-items: center; gap: 6px; }
+.tb-beamer-inst .tb-gross { font-size: 56px; }
+.tb-beamer-inst .tb-neben { white-space: nowrap; margin: 0; }
+.tb-stand { margin-top: 16px; font-size: 22px; }
+.tb-beamer-baende { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.tb-beamer-baende .tb-karte { padding: 14px 16px; }
+.tb-beamer-baende .tb-bandname { font-size: 22px; margin-bottom: 10px; display: block; }
+.tb-beamer-baende .tb-besetzung { gap: 6px; font-size: 18px; }
+.tb-beamer-baende li.tb-fehlt { color: var(--tb-rot); font-weight: 700; }
+.tb-karte.unvollstaendig { border-color: var(--tb-rot); }

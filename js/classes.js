@@ -1260,6 +1260,8 @@ const Classes = {
       document.getElementById('class-title').appendChild(span);
     }
     this.zeigeLeitungsNamen();
+    // Die Bandzahl für Tiny Band richtet sich nach der Klassenstärke
+    if (window.TinyBandLehrer) TinyBandLehrer.optionenStellen();
     this.fuelleMedienmanager();
     if (typeof Notes !== 'undefined') Notes.klassenNotizLaden();
     this.renderStudents();
@@ -1594,6 +1596,14 @@ const Classes = {
           const li = document.createElement('li');
           const nameSpan = document.createElement('span');
           nameSpan.textContent = this.studentName(s) + ' ';
+          // Rolle am Namen, etwa das Instrument bei Tiny Band
+          if (p.rollen && p.rollen[s.id]) {
+            const rolle = document.createElement('span');
+            rolle.className = 'rolle-tag';
+            rolle.textContent = p.rollen[s.id];
+            nameSpan.appendChild(rolle);
+            nameSpan.append(' ');
+          }
           const single = document.createElement('input');
           single.className = 'grade single';
           single.placeholder = '·';

@@ -25,9 +25,9 @@ Läuft über GitHub, nicht über Dateisynchronisation: `git pull` vor dem Arbeit
 ## Versionsnummer nach jeder CSS/JS-Änderung hochzählen
 
 Alle eingebundenen Dateien tragen eine Versionsnummer (`style.css?v=62`). Nach
-einer Änderung an CSS oder JS diese Zahl in **allen vier** HTML-Dateien auf
-denselben Wert hochzählen: `index.html`, `ampel.html`, `gruppen.html` und
-`namen.html`. Sonst liefern Browser die zwischengespeicherte alte Fassung —
+einer Änderung an CSS oder JS diese Zahl in **allen fünf** HTML-Dateien auf
+denselben Wert hochzählen: `index.html`, `ampel.html`, `gruppen.html`,
+`namen.html` und `tinyband.html`. Sonst liefern Browser die zwischengespeicherte alte Fassung —
 `ampel.html` hing dadurch schon einmal 45 Versionen zurück, während der Rest
 aktuell war.
 

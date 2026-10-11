@@ -14,6 +14,9 @@ const LiveGroups = {
   zuordnung: {},
   abmelden: null,
   beamerFenster: null,
+  /* Tiny Band: null im Normalbetrieb, sonst { modus: 'A'|'B', baende, song }.
+     Die Einzelheiten stehen in tinyband-lehrer.js; hier nur die Weichen. */
+  tiny: null,
 
   init() {
     const start = document.getElementById('btn-live-start');
@@ -42,6 +45,11 @@ const LiveGroups = {
   },
 
   /* ---------- Sammlung starten ---------- */
+  modus() {
+    const wahl = document.getElementById('live-modus');
+    return wahl ? wahl.value : 'normal';
+  },
+
   starte() {
     const cls = Classes.currentClass();
     if (!cls) { alert('Bitte zuerst links eine Klasse auswählen.'); return; }
@@ -55,7 +63,11 @@ const LiveGroups = {
       return;
     }
 
-    const projekt = this.projektName();
+    // Tiny Band fragt nicht nach einem Projektnamen – der Song steht schon fest
+    const modus = this.modus();
+    this.tiny = modus === 'A' || modus === 'B' ? TinyBandLehrer.optionenLesen(cls, modus) : null;
+    if (this.tiny === false) { this.tiny = null; return; }
+    const projekt = this.tiny ? `Tiny Band – ${this.tiny.song}`.slice(0, 60) : this.projektName();
     if (projekt === null) return;
     this.projektVorschlag = projekt;
 
@@ -81,6 +93,8 @@ const LiveGroups = {
     document.getElementById('live-gesamt').textContent = String(cls.students.length);
     document.getElementById('live-panel').hidden = false;
     document.getElementById('btn-live-start').hidden = true;
+    document.getElementById('live-modus').disabled = true;
+    TinyBandLehrer.gestartet();
     this.status(`Sammlung läuft – Raum ${this.raum} für ${cls.name}.`);
     // Ein offenes Beamerfenster zeigte sonst weiter den QR-Code der Vorstunde
     if (this.beamerFenster && !this.beamerFenster.closed) this.beamer();
@@ -111,7 +125,10 @@ const LiveGroups = {
       b: this.bezeichnung || 'Gruppenname',
       n: cls.students.map(s => Classes.studentName(s)),
     };
-    const basis = location.href.replace(/[^/]*$/, '') + 'gruppen.html';
+    // Tiny Band: Modus, Bandzahl und Song reisen mit – in der Datenbank stehen sie nicht
+    if (this.tiny) Object.assign(daten, { m: this.tiny.modus, z: this.tiny.baende, t: this.tiny.song });
+    const seite = this.tiny ? 'tinyband.html' : 'gruppen.html';
+    const basis = location.href.replace(/[^/]*$/, '') + seite;
     return basis + '#' + this.nachBase64(JSON.stringify(daten));
   },
 
@@ -151,10 +168,13 @@ const LiveGroups = {
   lausche() {
     const { db, ref, onValue } = window.FB;
     if (this.abmelden) this.abmelden();
-    this.abmelden = onValue(ref(db, `${window.FB.WURZEL}/${this.raum}/zuordnung`), snap => {
+    const fehler = err => this.status(this.fehlertext(err, 'Die Gruppenliste kann nicht gelesen werden'), true);
+    const ab = [onValue(ref(db, `${window.FB.WURZEL}/${this.raum}/zuordnung`), snap => {
       this.zuordnung = snap.val() || {};
       this.zeichne();
-    }, err => this.status(this.fehlertext(err, 'Die Gruppenliste kann nicht gelesen werden'), true));
+    }, fehler)];
+    if (this.tiny) ab.push(...TinyBandLehrer.lausche(fehler));
+    this.abmelden = () => ab.forEach(f => f());
   },
 
   gruppenBilden() {
@@ -177,6 +197,7 @@ const LiveGroups = {
   zeichne() {
     const cls = Classes.data.classes.find(c => c.id === this.klasseId);
     if (!cls) return;
+    if (this.tiny) { TinyBandLehrer.zeichne(cls); return; }
     const gruppen = this.gruppenBilden();
     const drin = new Set(gruppen.flatMap(g => g.ids));
 
@@ -226,6 +247,7 @@ const LiveGroups = {
   uebernehmen() {
     const cls = Classes.data.classes.find(c => c.id === this.klasseId);
     if (!cls) return;
+    if (this.tiny) { TinyBandLehrer.uebernehmen(cls); return; }
     const gruppen = this.gruppenBilden();
     if (!gruppen.length) { alert('Es hat sich noch niemand eingetragen.'); return; }
 
@@ -262,14 +284,18 @@ const LiveGroups = {
     if (this.beamerFenster && !this.beamerFenster.closed) this.beamerFenster.close();
     this.raum = null;
     this.zuordnung = {};
+    this.tiny = null;
+    TinyBandLehrer.zuruecksetzen();
     document.getElementById('live-panel').hidden = true;
     document.getElementById('btn-live-start').hidden = false;
+    document.getElementById('live-modus').disabled = false;
     this.status('Sammlung beendet, Raum gelöscht.');
   },
 
   /* ---------- Großansicht für die Leinwand ---------- */
   beamer() {
     if (!this.raum) { alert('Es läuft gerade keine Sammlung.'); return; }
+    if (this.tiny) { TinyBandLehrer.beamer(); return; }
     const cls = Classes.data.classes.find(c => c.id === this.klasseId);
     const w = window.open('', 'gruppen-beamer', 'width=900,height=900');
     if (!w) { alert('Das Fenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben.'); return; }

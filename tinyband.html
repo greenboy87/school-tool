@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#120A2A">
+<title>Tiny Band</title>
+<link rel="stylesheet" href="tinyband.css?v=158">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22><path d=%22M12 2 22 12 12 22 2 12Z%22 fill=%22%23FF9E5E%22/></svg>">
+<script src="js/tinyband-instrumente.js?v=158"></script>
+<script src="js/firebase-config.js?v=158"></script>
+<script type="module" src="js/live-firebase.js?v=158"></script>
+</head>
+<body class="tb-seite mit-sonne">
+
+<!-- Kulisse: Nachthimmel, Sonne (nur am Anfang), Skyline -->
+<div class="tb-sterne" aria-hidden="true"></div>
+<div class="tb-sonne" aria-hidden="true"></div>
+<div class="tb-stadt" id="tb-stadt" aria-hidden="true"></div>
+
+<header class="tb-kopf">
+  <div class="tb-label" id="tb-titel">Tiny Band · End Of Beginning</div>
+  <ol class="tb-schritte" id="tb-schritte" aria-label="Fortschritt"></ol>
+  <!-- Klasse und Raum – zeigt auf geteilten iPads sofort, wo man ist -->
+  <div class="tb-raumzeile" id="tb-raumzeile" hidden></div>
+</header>
+
+<main class="tb-haupt">
+
+  <!-- Kein gültiger QR-Code oder Sammlung beendet -->
+  <section id="tb-fehler" class="tb-schirm" hidden>
+    <div class="tb-karte tb-mitte">
+      <h1>Kein gültiger Zugang</h1>
+      <p id="tb-fehler-text" class="tb-neben">Diese Seite öffnet man, indem man den QR-Code von der
+        Leinwand scannt. Bitte frag deine Lehrkraft, den Code noch einmal anzuzeigen.</p>
+    </div>
+  </section>
+
+  <!-- Schritt 1: Wer bist du? (mehrere Namen möglich) -->
+  <section id="tb-wer" class="tb-schirm" hidden>
+    <h1 id="tb-wer-titel">Wer bist du?</h1>
+    <p class="tb-neben" id="tb-wer-info">Tippe deinen Namen an.</p>
+    <input type="search" id="tb-suche" class="tb-suche" placeholder="Namen suchen …" autocomplete="off"
+           enterkeyhint="search">
+    <div id="tb-namen" class="tb-namen"></div>
+    <div id="tb-weiter-leiste" class="tb-leiste" hidden>
+      <span id="tb-weiter-text"></span>
+      <button type="button" id="tb-weiter" class="tb-knopf haupt">Weiter</button>
+    </div>
+  </section>
+
+  <!-- Weg A und B: Instrument wählen -->
+  <section id="tb-instrument" class="tb-schirm" hidden>
+    <div class="tb-fuer" id="tb-inst-fuer"></div>
+    <h1 id="tb-inst-titel">Dein Erstinstrument</h1>
+    <p class="tb-neben" id="tb-inst-info"></p>
+    <div id="tb-karten" class="tb-karten"></div>
+    <p id="tb-inst-meldung" class="tb-meldung" role="status"></p>
+    <div class="tb-unten">
+      <button type="button" id="tb-inst-zurueck" class="tb-knopf leise">Zurück</button>
+    </div>
+  </section>
+
+  <!-- Weg B: Band gründen oder beitreten -->
+  <section id="tb-band" class="tb-schirm" hidden>
+    <div class="tb-fuer" id="tb-band-fuer"></div>
+    <h1>Eure Band</h1>
+    <p class="tb-neben" id="tb-band-info">Tretet einer Band bei oder gründet eine neue.</p>
+    <div id="tb-bandliste" class="tb-bandliste"></div>
+    <form id="tb-neue-band" class="tb-karte tb-neue-band">
+      <label for="tb-bandname" class="tb-label">Neue Band gründen</label>
+      <div class="tb-zeile">
+        <input type="text" id="tb-bandname" maxlength="40" placeholder="Name eurer Band" autocomplete="off"
+               enterkeyhint="done">
+        <button type="submit" class="tb-knopf haupt">Gründen</button>
+      </div>
+    </form>
+    <p id="tb-band-meldung" class="tb-meldung" role="status"></p>
+    <div class="tb-unten">
+      <button type="button" id="tb-band-zurueck" class="tb-knopf leise">Zurück</button>
+    </div>
+  </section>
+
+  <!-- Fertig: was gewählt ist, live -->
+  <section id="tb-fertig" class="tb-schirm" hidden>
+    <h1 id="tb-fertig-titel">Fertig!</h1>
+    <p class="tb-neben" id="tb-fertig-info"></p>
+    <div id="tb-fertig-inhalt" class="tb-fertig"></div>
+    <div class="tb-unten">
+      <button type="button" id="tb-anderer" class="tb-knopf leise">Anderen Schüler hinzufügen</button>
+    </div>
+  </section>
+
+  <!-- Ergebnis der Lehrkraft -->
+  <section id="tb-ergebnis" class="tb-schirm" hidden>
+    <h1 id="tb-ergebnis-titel">Deine Band steht!</h1>
+    <div id="tb-ergebnis-inhalt" class="tb-ergebnisse"></div>
+  </section>
+
+</main>
+
+<script src="js/tinyband-schueler.js?v=158"></script>
+</body>
+</html>

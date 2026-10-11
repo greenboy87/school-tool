@@ -481,6 +481,58 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 #project-groups-info.frisch { animation: frisch-aufblitzen 1.8s ease-out; border-radius: var(--radius); }
 
 /* ----- Gruppenbildung per QR-Code ----- */
+/* ---------- Tiny Band (Lehrerseite) ---------- */
+.tb-optionen { margin-top: -.3rem; }
+.tb-optionen input[type="number"] { width: 4.5rem; }
+.tb-kreis {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 2.2rem; height: 2.2rem; border-radius: 50%; background: var(--tb-farbe); color: #fff;
+}
+.tb-kreis.klein { width: 1.5rem; height: 1.5rem; margin-right: .3rem; vertical-align: middle; }
+.tb-kreis .tb-icon { width: 62%; height: 62%; }
+.tb-punkte { display: inline-flex; gap: 3px; margin-left: .4rem; vertical-align: middle; }
+.tb-punkte i { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--accent); }
+.tb-punkte i.voll { background: var(--accent); }
+.tb-spalten { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; }
+.tb-spalte {
+  border: 1px solid var(--border); border-top: 4px solid var(--tb-farbe);
+  border-radius: var(--radius); padding: .7rem .8rem;
+}
+.tb-spalte-kopf { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+.tb-zaehler { display: flex; align-items: baseline; gap: .4rem; }
+.tb-zaehler strong { font-size: 2rem; line-height: 1; }
+.tb-zaehler small { color: var(--muted); }
+.tb-zaehler.knapp strong { color: var(--danger); }
+.tb-spalte .gruppen-namen { list-style: none; padding: 0; margin: .5rem 0 0; font-size: .88rem; line-height: 1.5; }
+.tb-spalte .gruppen-namen li.zweit { color: var(--muted); font-size: .82rem; }
+.tb-baende { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .8rem; }
+.tb-bandkarte.unvollstaendig { border-color: var(--danger); }
+.tb-besetzung { list-style: none; margin: 0; padding: 0; font-size: .9rem; line-height: 1.6; }
+.tb-besetzung li { display: flex; gap: .4rem; align-items: baseline; }
+.tb-besetzung .tb-punkt { width: .6rem; height: .6rem; border-radius: 50%; background: var(--tb-farbe); flex: none; align-self: center; }
+.tb-besetzung .tb-inst { font-weight: 600; min-width: 4.8rem; }
+.tb-besetzung li.tb-fehlt { color: var(--danger); font-weight: 600; }
+.tb-besetzung li.tb-ohne { color: var(--muted); font-style: italic; }
+.tb-warnung { color: var(--danger); font-weight: 600; font-size: .85rem; margin: .4rem 0 0; }
+.tb-matrix { margin-top: 1.4rem; }
+.tb-matrix-kopf { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+.tb-matrix-kopf h3 { margin: 0; }
+.tb-tabelle { width: 100%; border-collapse: collapse; margin-top: .6rem; font-size: .88rem; }
+.tb-tabelle th, .tb-tabelle td { border: 1px solid var(--border); padding: .45rem .5rem; vertical-align: top; text-align: left; }
+.tb-tabelle tr:first-child th { border-bottom: 3px solid var(--tb-farbe, var(--border)); white-space: nowrap; }
+.tb-tabelle th .gruppen-name { width: 100%; min-width: 7rem; font-weight: 600; }
+.tb-tabelle tr.unvollstaendig > th { box-shadow: inset 4px 0 0 var(--danger); }
+.tb-tabelle td.tb-fehlt { background: var(--danger-bg); }
+.tb-tabelle td.tb-zuviel { background: var(--active-soft); }
+.tb-eintrag { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem; padding: .15rem 0; }
+.tb-eintrag > span { margin-right: .2rem; }
+.tb-eintrag .small-select { font-size: .78rem; padding: .05rem .2rem; }
+.rolle-tag {
+  display: inline-block; margin-left: .3rem; padding: 0 .45rem; border-radius: 999px;
+  font-size: .75em; color: var(--accent-soft); border: 1px solid var(--border); vertical-align: 1px;
+}
+@media (max-width: 900px) { .tb-matrix { overflow-x: auto; } .tb-tabelle { min-width: 760px; } }
+
 .live-oben { display: flex; gap: 1.4rem; flex-wrap: wrap; align-items: flex-start; margin: 1rem 0; }
 .live-qr { text-align: center; }
 .live-qr #live-qr-code { background: #fff; padding: .7rem; border-radius: var(--radius); display: inline-block; line-height: 0; }
