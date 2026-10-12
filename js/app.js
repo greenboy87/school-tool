@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Einklappen.init();
   LiveGroups.init();
   TinyBandLehrer.init();
+  Exen.init();
   Tools.init();
   Sport.init();
   Tipps.init();

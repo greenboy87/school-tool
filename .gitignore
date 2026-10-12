@@ -16,3 +16,8 @@
 # Nur lokale Editor-/Testhilfen
 .claude/
 __test-*.js
+
+# Ex-Dateien enthalten Lösungen und Bewertungscode. Ins öffentliche Repository
+# gehört nur die Spezifikation (docs/ex/ex-format.md), nie eine Ex selbst.
+docs/ex/*.html
+*Ex c+.html

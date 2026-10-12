@@ -1495,3 +1495,8 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   .tab-page { padding: .8rem .7rem; }
   .card { padding: .9rem .8rem; }
 }
+
+/* ========== Exen ========== */
+.ex-anmeldung { max-width: 720px; }
+.ex-anmeldung-status { margin: .6rem 0; }
+.ex-anmeldung-status.warnung { color: var(--danger); }

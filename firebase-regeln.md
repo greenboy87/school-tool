@@ -10,6 +10,28 @@ Regelwerk unten hinein.
 
 ---
 
+## Anmeldung einschalten (für die Exen, einmalig)
+
+Die Exen brauchen echte Anmeldungen, damit die Regeln „nur die Lehrkraft“
+durchsetzen können: Die Lehrkraft meldet sich mit Google an, die Schüler-iPads
+anonym. Gruppen und Tiny Band laufen weiter ohne Anmeldung.
+
+**A1.** Firebase-Konsole → **Authentication** → *Jetzt starten* (falls noch nie
+geöffnet) → Reiter **Anmeldemethode**:
+* **Anonym** aktivieren, speichern.
+* **Google** aktivieren, Support-E-Mail wählen, speichern.
+
+**A2.** Reiter **Einstellungen** → **Autorisierte Domains**: `greenboy87.github.io`
+hinzufügen (`localhost` steht schon drin).
+
+**A3.** Im School-Tool Reiter **Exen** → **Mit Google anmelden** →
+**Kennung kopieren**. Diese Kennung (UID) kommt an zwei Stellen hinein:
+`window.LEHRER_UID` in [`js/firebase-config.js`](js/firebase-config.js) und
+`LEHRER_UID` in den Regeln unten. Die Kennung ist kein Geheimnis – geschützt wird
+durch die Regeln, nicht durch sie.
+
+---
+
 ## Weg A – eigenes Firebase-Projekt (empfohlen)
 
 > **Wenn das Projekt schon steht** (bei Tom: `school-tool-cbbf9`), sind nur die
