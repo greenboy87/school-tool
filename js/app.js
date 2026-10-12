@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   TinyBandLehrer.init();
   Exen.init();
   ExSitzung.init();
+  ExAuswertung.init();
   Tools.init();
   Sport.init();
   Tipps.init();

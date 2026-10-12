@@ -175,6 +175,7 @@ const ExSitzung = {
         nummern, erstellt: Date.now(),
       };
       Classes.persist();
+      document.dispatchEvent(new CustomEvent('ex-sitzungen'));
       this.oeffnen(code);
     } catch (e) {
       alert('Die Sitzung ließ sich nicht anlegen: ' + e.message +
@@ -401,7 +402,11 @@ const ExSitzung = {
           <button data-aktion="beenden" class="danger">Ex beenden</button>
         </span>`;
     } else {
-      kopf = `<span>Beendet · ${zaehle('abgegeben')} abgegeben${zaehle('nicht-abgegeben') ? ` · ${zaehle('nicht-abgegeben')} ohne Abgabe` : ''}</span>`;
+      kopf = `<span>Beendet · ${zaehle('abgegeben')} abgegeben${zaehle('nicht-abgegeben') ? ` · ${zaehle('nicht-abgegeben')} ohne Abgabe` : ''}</span>
+        <span class="btn-row">
+          <button data-aktion="zur-auswertung" class="primary">Zur Auswertung</button>
+          <button data-aktion="ausblenden" class="small" title="Die Sitzung bleibt gespeichert und ist über die Auswertung erreichbar">Hier ausblenden</button>
+        </span>`;
     }
 
     box.innerHTML = `
@@ -467,6 +472,13 @@ const ExSitzung = {
           break;
         }
         case 'beenden': await this.beenden(); return;
+        case 'zur-auswertung': {
+          const l = this.lokal();
+          ExAuswertung.oeffnen(ExAuswertung.schluesselVon(l));
+          document.getElementById('ex-auswertung').scrollIntoView({ behavior: 'smooth' });
+          return;
+        }
+        case 'ausblenden': this.vergessen(); return;
         case 'uebernehmen': await this.uebernehmen(uid, nr); return;
         case 'starten': await this.starten(); return;
         default: return;
@@ -552,6 +564,7 @@ const ExSitzung = {
       await FB.remove(FB.ref(FB.db, `schoolTool/exsessions/${code}`));
       delete this.sitzungen()[code];
       Classes.persist();
+      document.dispatchEvent(new CustomEvent('ex-sitzungen'));
       this.vergessen();
     } catch (e) {
       alert('Abbrechen fehlgeschlagen: ' + e.message);

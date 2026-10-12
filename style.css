@@ -1552,3 +1552,55 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .ex-status.st-schreibt { border-color: var(--accent); color: var(--accent); }
 .ex-status.st-abgegeben { background: var(--accent); border-color: var(--accent); color: #fff; }
 .ex-status.st-zeit-um, .ex-status.st-nicht-abgegeben { border-color: var(--danger); color: var(--danger); }
+
+/* ----- Ex-Auswertung ----- */
+.ex-auswertung { margin-top: 1.2rem; }
+.ex-auswertung h3 { margin: 1rem 0 .6rem; }
+.ex-notenschluessel { display: grid; grid-template-columns: minmax(240px, 1fr) 2fr; gap: 1.2rem; align-items: start; }
+@media (max-width: 800px) { .ex-notenschluessel { grid-template-columns: 1fr; } }
+.ex-notenschluessel h4 { margin: 0 0 .5rem; }
+.ex-notenschluessel-regler label { display: flex; align-items: center; gap: .4rem; margin: .35rem 0; flex-wrap: wrap; }
+.ex-notenschluessel-regler input[type=number] { width: 4.2rem; }
+.ex-stufe { display: grid; grid-template-columns: 1.6rem 8.5rem 6.5rem 1fr 1.8rem; gap: .5rem; align-items: center; padding: .2rem 0; border-bottom: 1px solid var(--border); }
+.ex-stufe-note { font-weight: 800; font-size: 1.15rem; text-align: center; }
+.ex-stufe-grenze input { width: 5rem; }
+.ex-stufe-balken { height: .8rem; border-radius: 4px; background: var(--border); overflow: hidden; }
+.ex-stufe-balken span { display: block; height: 100%; background: var(--accent); }
+.ex-stufe-zahl { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.ex-stufe-wer { grid-column: 2 / -1; font-size: .85rem; }
+.ex-stufe-wer summary { cursor: pointer; color: var(--muted); }
+.ex-tabelle-huelle { overflow-x: auto; margin-top: 1rem; }
+.ex-uebersicht td, .ex-uebersicht th { white-space: nowrap; }
+.ex-uebersicht td.ex-offen { background: color-mix(in srgb, #f5a524 22%, transparent); }
+.ex-uebersicht tr.ex-ohne td { color: var(--muted); }
+.ex-note { font-size: 1.1rem; }
+.ex-selbst { display: flex; flex-wrap: wrap; gap: 1rem 2rem; }
+.ex-selbst-block ol { margin: .3rem 0 0; padding-left: 1.2rem; }
+.ex-smileys { display: flex; gap: .8rem; margin-top: .3rem; }
+.ex-smileys > span { display: flex; flex-direction: column; align-items: center; font-variant-numeric: tabular-nums; }
+.ex-smiley { font-size: 1.5rem; }
+.ex-auswertung-aktionen { margin-top: 1.2rem; align-items: center; }
+.ex-mit-loesungen { display: flex; align-items: center; gap: .3rem; font-size: .9rem; }
+
+.ex-korrektur { position: fixed; inset: 0; z-index: 200; background: var(--bg); display: flex; flex-direction: column; }
+body.ex-korrektur-offen { overflow: hidden; }
+.ex-korrektur-kopf { display: flex; align-items: center; gap: .6rem; padding: .6rem 1rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.ex-korrektur-wer { display: flex; flex-direction: column; flex: 1; min-width: 12rem; }
+.ex-korrektur-stand { font-size: 1.05rem; }
+.ex-korrektur-inhalt { flex: 1; display: grid; grid-template-columns: 1.15fr 1fr; min-height: 0; }
+@media (max-width: 900px) { .ex-korrektur-inhalt { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; } }
+.ex-korrektur-ex iframe { width: 100%; height: 100%; border: 0; display: block; }
+.ex-korrektur-details { overflow-y: auto; padding: .8rem 1rem 2rem; border-left: 1px solid var(--border); }
+.ex-k-aufgabe h4 { display: flex; justify-content: space-between; margin: 1rem 0 .4rem; }
+.ex-k-details { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.ex-k-details td { padding: .3rem .4rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.ex-k-details tr.st-richtig .ex-k-ant { color: #3fa34d; }
+.ex-k-details tr.st-falsch .ex-k-ant { color: var(--danger); }
+.ex-k-details tr.st-leer .ex-k-ant { color: var(--muted); }
+.ex-k-details tr.offen td { background: color-mix(in srgb, #f5a524 22%, transparent); }
+.ex-k-details tr.geaendert .ex-k-p input { outline: 2px solid var(--accent); }
+.ex-k-p { white-space: nowrap; }
+.ex-k-p input, .ex-k-manuell input { width: 3.6rem; }
+.ex-k-antwort { white-space: pre-wrap; padding: .5rem .6rem; border: 1px solid var(--border); border-radius: 8px; margin-bottom: .5rem; }
+.ex-k-erwartung { font-size: .88rem; }
+.ex-k-manuell { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }

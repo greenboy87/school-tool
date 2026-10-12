@@ -66,7 +66,7 @@ Leserechte nach unten. Unter `exen/{exId}` könnten Schüler die Lösung mitlese
    protokollieren, Wiederherstellen nach Reload.
 6. ✅ **Dashboard während der Ex:** Fortschritt, Ereignisse, Status, Rauswerfen,
    Zeitzuschlag für alle oder einzeln, „Ex beenden“.
-7. **Auswertung:** `bewerte()` im Web Worker, Notenschlüssel (Standard
+7. ✅ **Auswertung:** `bewerte()` im Web Worker, Notenschlüssel (Standard
    speicherbar), Zeitzuschlag ausgewiesen, Korrekturansicht (links Ex im Modus
    `ansicht`, rechts Details, alles überschreibbar, `pruefen` gelb),
    Selbsteinschätzung als Klassenübersicht, Export in die Notenliste und als CSV.
