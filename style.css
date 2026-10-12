@@ -1500,3 +1500,14 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .ex-anmeldung { max-width: 720px; }
 .ex-anmeldung-status { margin: .6rem 0; }
 .ex-anmeldung-status.warnung { color: var(--danger); }
+.ex-bibliothek { max-width: 900px; margin-top: 1.2rem; }
+.ex-bibliothek.drop-active { outline: 2px dashed var(--accent); outline-offset: 4px; }
+.ex-meldung { margin: .6rem 0; padding: .6rem .8rem; border-radius: 8px; white-space: pre-line;
+  background: var(--accent-soft); color: #1b1714; font-size: .9rem; }
+.ex-meldung.fehler { background: var(--danger); }
+.ex-meldung ul { margin: .4rem 0 0; padding-left: 1.2rem; }
+.ex-liste { list-style: none; margin: .6rem 0 0; padding: 0; display: grid; gap: .6rem; }
+.ex-liste li { display: flex; gap: .8rem; align-items: center; justify-content: space-between;
+  padding: .7rem .9rem; border: 1px solid var(--border); border-radius: 10px; }
+.ex-liste .ex-titel { font-weight: 700; }
+.ex-liste .btn-row { margin: 0; flex-shrink: 0; }

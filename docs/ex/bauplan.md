@@ -23,7 +23,8 @@ Lösungen und kommen nie ins Repository (`.gitignore`).
 
 | Pfad | Inhalt | Lesen | Schreiben |
 |---|---|---|---|
-| `exen/{exId}/meta` | ex-meta ohne data-URIs | Lehrkraft | Lehrkraft |
+| `exindex/{exId}` | kurze Angaben für die Bibliotheksliste (Titel, Art, Dauer, Punkte …) | Lehrkraft | Lehrkraft |
+| `exen/{exId}/meta` | ex-meta ohne data-URIs (als JSON-Text) | Lehrkraft | Lehrkraft |
 | `exen/{exId}/schueler` | Schülerfassung (HTML, in Stücken `t0`, `t1` …) | Lehrkraft; Schüler erst, wenn die Session **läuft** und er **freigegeben** ist | Lehrkraft |
 | `exgeheim/{exId}` | Lösungs-JSON + Bewertungscode | nur Lehrkraft | nur Lehrkraft |
 | `exsessions/{code}` | Status, exId, Klasse, exNummer, erlaubte Nummern, Start/Ende | Angemeldete mit Code | Lehrkraft |
@@ -31,13 +32,19 @@ Lösungen und kommen nie ins Repository (`.gitignore`).
 | `exsessions/{code}/abgaben/{uid}` | Antworten, Fortschritt, Ereignisse, abgegeben + Zeit | Lehrkraft, der Schüler selbst | Schüler nur eigenen Eintrag, nur bei `laeuft`, nicht `entfernt`, nach `abgegeben` gar nicht mehr |
 | `exzugang/{uid}` | Code der Session | Lehrkraft, der Schüler selbst | Lehrkraft (Freigeben, Übernehmen) |
 
+Warum `exindex` ein eigener Ast ist: Die Liste soll nicht jedes Mal alle
+Schülerfassungen mitladen.
+
+Die Originaldatei (mit Lösungen und Vorschau-Leiste) bleibt nur lokal auf dem
+Lehrergerät (IndexedDB `schooltool-exen`), für die Vorschau.
+
 Warum `exgeheim` ein eigener Ast ist: In der Realtime Database vererben sich
 Leserechte nach unten. Unter `exen/{exId}` könnten Schüler die Lösung mitlesen.
 
 ## Schritte (je Schritt ein Commit)
 
 0. ✅ Firebase Auth, Reiter „Exen“ mit Lehrer-Anmeldung, `.gitignore`, Spezifikation
-1. **Bibliothek:** Import per Drag & Drop/Dateiauswahl mit DOMParser, Prüfung
+1. ✅ **Bibliothek:** Import per Drag & Drop/Dateiauswahl mit DOMParser, Prüfung
    `tom-ex/2`, ex-meta lesen, Lösung und Bewertung herauslösen, alles mit
    `data-ex-secret` entfernen, `medien[].src` entfernen, Prüfung, dass nichts
    Geheimes übrig ist. Hochladen in Stücken. Liste, Vorschau (Originaldatei lokal),

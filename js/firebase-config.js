@@ -16,4 +16,4 @@ window.FIREBASE_CONFIG = {
    Datenbank-Regeln (dort steht dieselbe Kennung); hier dient sie nur dazu,
    dass die Oberfläche weiß, ob das angemeldete Konto das richtige ist.
    Die Kennung ist kein Geheimnis. Leer = noch nicht eingerichtet. */
-window.LEHRER_UID = '';
+window.LEHRER_UID = 'QywuB8eYlOPmTjXCI5I9itdLhsq2';

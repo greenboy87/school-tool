@@ -46,7 +46,13 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
 
 **R2.** **Veröffentlichen**. Fertig – im School-Tool einmal Strg+Shift+R.
 
-> **Zuletzt geändert am 11.10.2026 – Tiny Band:** Unter `zuordnung` sind `erst`,
+> **Zuletzt geändert am 12.10.2026 – Exen:** Neu sind die Äste `exindex`, `exen` und
+> `exgeheim`. Lesen und schreiben darf dort nur das Google-Konto der Lehrkraft
+> (die lange Kennung in `auth.uid === '…'`). Vorher muss die Anmeldung
+> eingeschaltet sein (Abschnitt „Anmeldung einschalten“ oben). Tresor, Gruppen und
+> Tiny Band ändern sich nicht. **Den kompletten Block unten erneut kopieren** (R1 und R2).
+>
+> **Geändert am 11.10.2026 – Tiny Band:** Unter `zuordnung` sind `erst`,
 > `zweit`, `band` und `inst` dazugekommen, neben `zuordnung` die Äste `baende` und
 > `ergebnis`. Instrumente sind nur als Kürzel `dr`, `ba`, `sy`, `ge`, `uk` erlaubt,
 > Band-Kennungen nur in der Form `b` + 4–12 Kleinbuchstaben/Ziffern, Bandnamen bis
@@ -112,6 +118,37 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
             }
           },
           "$andere": { ".validate": false }
+        }
+      },
+      "exindex": {
+        ".read": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+        "$exId": {
+          ".write": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".validate": "$exId.matches(/^[a-z0-9][a-z0-9-]{1,60}$/)"
+        }
+      },
+      "exen": {
+        "$exId": {
+          ".read": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".write": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".validate": "$exId.matches(/^[a-z0-9][a-z0-9-]{1,60}$/)",
+          "meta": { ".validate": "newData.isString() && newData.val().length <= 200000" },
+          "schueler": {
+            "teile": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 20" },
+            "laenge": { ".validate": "newData.isNumber()" },
+            "$teil": { ".validate": "$teil.matches(/^t[0-9]{1,2}$/) && newData.isString() && newData.val().length <= 1000000" }
+          },
+          "$andere": { ".validate": false }
+        }
+      },
+      "exgeheim": {
+        "$exId": {
+          ".read": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".write": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          "loesung":   { ".validate": "newData.isString() && newData.val().length <= 1000000" },
+          "bewertung": { ".validate": "newData.isString() && newData.val().length <= 1000000" },
+          "stand":     { ".validate": "newData.isNumber()" },
+          "$andere":   { ".validate": false }
         }
       },
       "raeume": {
@@ -231,6 +268,37 @@ fügst nur einen Block hinzu:
             }
           },
           "$andere": { ".validate": false }
+        }
+      },
+      "exindex": {
+        ".read": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+        "$exId": {
+          ".write": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".validate": "$exId.matches(/^[a-z0-9][a-z0-9-]{1,60}$/)"
+        }
+      },
+      "exen": {
+        "$exId": {
+          ".read": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".write": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".validate": "$exId.matches(/^[a-z0-9][a-z0-9-]{1,60}$/)",
+          "meta": { ".validate": "newData.isString() && newData.val().length <= 200000" },
+          "schueler": {
+            "teile": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 20" },
+            "laenge": { ".validate": "newData.isNumber()" },
+            "$teil": { ".validate": "$teil.matches(/^t[0-9]{1,2}$/) && newData.isString() && newData.val().length <= 1000000" }
+          },
+          "$andere": { ".validate": false }
+        }
+      },
+      "exgeheim": {
+        "$exId": {
+          ".read": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".write": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          "loesung":   { ".validate": "newData.isString() && newData.val().length <= 1000000" },
+          "bewertung": { ".validate": "newData.isString() && newData.val().length <= 1000000" },
+          "stand":     { ".validate": "newData.isNumber()" },
+          "$andere":   { ".validate": false }
         }
       },
       "raeume": {
