@@ -9,7 +9,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
 import {
   getDatabase, ref, set, update, remove, onValue, get, onDisconnect, serverTimestamp,
-  runTransaction,
+  runTransaction, push,
 } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js';
 import {
   getAuth, onAuthStateChanged, signInAnonymously, signInWithPopup, GoogleAuthProvider, signOut,
@@ -19,7 +19,7 @@ const FB = {
   bereit: false,
   fehler: null,
   db: null,
-  ref, set, update, remove, onValue, get, onDisconnect, serverTimestamp,
+  ref, set, update, remove, onValue, get, onDisconnect, serverTimestamp, push,
   /* Für Plätze, die nur einer haben darf (Tiny Band: Drums in einer Band) –
      Firebase prüft dabei selbst, ob jemand schneller war, und wiederholt sonst */
   runTransaction,

@@ -60,7 +60,7 @@ Leserechte nach unten. Unter `exen/{exId}` könnten Schüler die Lösung mitlese
    neuen UID an (z. B. nach einem Safari-Absturz), zeigt der Warteraum
    „übernehmen“. Das verschiebt Abgabe und Teilnehmerstatus auf die neue UID und
    setzt `exzugang`. Die Ex startet mit den gespeicherten Antworten.
-5. **Schreiben:** `<iframe sandbox="allow-scripts">` mit srcdoc, Schnittstelle nach
+5. ✅ **Schreiben:** `<iframe sandbox="allow-scripts">` mit srcdoc, Schnittstelle nach
    ex-format.md Abschnitt 3, gedrosseltes Speichern (DB + localStorage), Timer mit
    Serverzeit, bei Ablauf `abgabe-anfordern` und `sperren`, „App verlassen“
    protokollieren, Wiederherstellen nach Reload.
@@ -70,6 +70,12 @@ Leserechte nach unten. Unter `exen/{exId}` könnten Schüler die Lösung mitlese
    speicherbar), Zeitzuschlag ausgewiesen, Korrekturansicht (links Ex im Modus
    `ansicht`, rechts Details, alles überschreibbar, `pruefen` gelb),
    Selbsteinschätzung als Klassenübersicht, Export in die Notenliste und als CSV.
+   **Notenschlüssel (Wunsch vom 12.10.2026):** je Ex speicherbar. Standard: Die
+   schlechteste 4 gibt es ab der Hälfte der Punkte, darüber gleich breite Stufen
+   bis zur 1; darunter 5 und 6. Die Dreierspanne lässt sich breiter machen, dafür
+   werden 1er, 2er, 4er und 5er schmäler. Grenzen auf halbe Punkte. Dazu ein
+   Werkzeug mit Live-Notenbild (wie viele und wer welche Note hätte), vor und nach
+   der Sichtung, immer nach aktuellem Punktestand inkl. nachträglicher Änderungen.
 8. **Nachschreiben** für `fehlt` und `entfernt`, gleiche Auswertung.
 9. **Regeln** in `firebase-regeln.md`, getestet im Emulator.
 10. **Testdurchlauf** mit der E-Gitarre-Ex: Import und Geheim-Prüfung, Start mit
