@@ -138,7 +138,7 @@ const Exen = {
     const esc = Band.esc.bind(Band);
     ul.innerHTML = ids.map(id => {
       const x = this.index[id];
-      const teile = [x.art, x.fach, `${x.dauerMinuten} min`, `${x.punkteGesamt} P`,
+      const teile = [x.art, x.fach, `${x.punkteGesamt} P`,
         `${x.aufgaben} Aufgaben`, x.hoerbeispiele ? `${x.hoerbeispiele} Hörbeispiele (live)` : '']
         .filter(Boolean).map(esc).join(' · ');
       const datum = x.importiert ? new Date(x.importiert).toLocaleDateString('de-DE') : '';

@@ -98,25 +98,36 @@ const ExSitzung = {
     this.vorschauText();
   },
 
-  /* Die Dauer kommt aus der Ex-Datei (ex-meta.dauerMinuten) und lässt sich für
-     eine Sitzung ändern, ohne dass es in der Auswertung als Zeitzuschlag zählt */
+  /* Die Dauer steckt nicht in der Ex, sie wird hier festgelegt. Vorschlag: was
+     zuletzt für diese Ex galt, sonst eine Angabe aus älteren Ex-Dateien, sonst
+     die zuletzt benutzte Dauer überhaupt, sonst 20 Minuten. Das zählt nicht als
+     Zeitzuschlag. */
+  STANDARD_DAUER: 20,
+  dauerVorschlag() {
+    const id = document.getElementById('ex-start-ex').value;
+    const x = Exen.index[id] || {};
+    const gemerkt = Classes.data.exDauer || {};
+    return gemerkt[id] || x.dauerMinuten || gemerkt._zuletzt || this.STANDARD_DAUER;
+  },
+
   dauerVorbelegen() {
-    const x = Exen.index[document.getElementById('ex-start-ex').value];
-    document.getElementById('ex-start-dauer').value = x ? x.dauerMinuten : '';
+    document.getElementById('ex-start-dauer').value = this.dauerVorschlag();
   },
 
   dauer() {
-    const x = Exen.index[document.getElementById('ex-start-ex').value];
     const d = Math.round(Number(document.getElementById('ex-start-dauer').value));
-    return d >= 1 && d <= 240 ? d : (x ? x.dauerMinuten : 20);
+    return d >= 1 && d <= 240 ? d : this.dauerVorschlag();
+  },
+
+  dauerMerken(exId, d) {
+    Classes.data.exDauer = { ...(Classes.data.exDauer || {}), [exId]: d, _zuletzt: d };
   },
 
   vorschauText() {
     const x = Exen.index[document.getElementById('ex-start-ex').value];
     const n = this.exNummer();
     document.getElementById('ex-start-vorschau').textContent = x
-      ? `Kopf auf den iPads: „${n}. ${x.art || 'Ex'} · ${x.fach || ''}“ · ${this.dauer()} Minuten` +
-        (this.dauer() !== x.dauerMinuten ? ` (statt ${x.dauerMinuten})` : '') + ` · ${x.punkteGesamt} Punkte`
+      ? `Kopf auf den iPads: „${n}. ${x.art || 'Ex'} · ${x.fach || ''}“ · ${this.dauer()} Minuten · ${x.punkteGesamt} Punkte`
       : 'Zuerst eine Ex in die Bibliothek ziehen.';
   },
 
@@ -238,9 +249,11 @@ const ExSitzung = {
     try {
       const code = await this.neuerCode();
       const exNummer = nach ? nach.exNummer : this.exNummer();
+      const dauer = this.dauer();
+      this.dauerMerken(exId, dauer);
       await FB.set(FB.ref(FB.db, `schoolTool/exsessions/${code}/info`), {
         status: 'warteraum', exId, titel: ex.titel, art: ex.art || '', fach: ex.fach || '',
-        klasse: cls.name, exNummer, wiedergabe: 'zentral', dauerMinuten: this.dauer(),
+        klasse: cls.name, exNummer, wiedergabe: 'zentral', dauerMinuten: dauer,
         zuschlagMin: 0, erstellt: FB.serverTimestamp(), erlaubt, fehlt,
         ...(nach ? { nachschreiben: true } : {}),
       });

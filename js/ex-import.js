@@ -54,9 +54,11 @@ const ExImport = {
     const cloudMeta = { ...schuelerMeta, bilder: Object.keys(meta.bilder || {}) };
     const info = {
       titel: meta.titel, art: meta.art || '', fach: meta.fach || '',
-      dauerMinuten: meta.dauerMinuten, punkteGesamt: meta.punkteGesamt,
+      punkteGesamt: meta.punkteGesamt,
       aufgaben: meta.aufgaben.length, hoerbeispiele: (meta.medien || []).length,
     };
+    // Die Dauer legt die Lehrkraft beim Start fest; ältere Exen bringen sie noch mit – dann als Vorschlag
+    if (meta.dauerMinuten > 0) info.dauerMinuten = meta.dauerMinuten;
     return {
       meta: cloudMeta, info, schuelerHtml,
       loesungJson: JSON.stringify(loesung), bewertung,
@@ -78,7 +80,7 @@ const ExImport = {
       fehler.push('id fehlt oder enthält andere Zeichen als a–z, 0–9 und Bindestrich');
     }
     if (typeof m.titel !== 'string' || !m.titel.trim()) fehler.push('titel fehlt');
-    if (!(m.dauerMinuten > 0 && m.dauerMinuten <= 240)) fehler.push('dauerMinuten fehlt oder ist unplausibel');
+    if (m.dauerMinuten != null && !(m.dauerMinuten > 0 && m.dauerMinuten <= 240)) fehler.push('dauerMinuten ist unplausibel (am besten ganz weglassen – die Dauer wird beim Start festgelegt)');
     if (!(m.punkteGesamt > 0)) fehler.push('punkteGesamt fehlt');
     if (!Array.isArray(m.aufgaben) || !m.aufgaben.length) fehler.push('aufgaben fehlt oder ist leer');
     else {

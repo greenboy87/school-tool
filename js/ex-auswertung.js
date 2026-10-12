@@ -610,20 +610,50 @@ const ExAuswertung = {
     this.korrekturZeichnen();
   },
 
-  nachricht(e) {
-    const f = this.korrekturIframe;
-    if (!f || e.source !== f.contentWindow) return;
-    const m = e.data;
-    if (!m || m.quelle !== 'tom-ex' || m.typ !== 'bereit') return;
-    const s = this.a.schueler.find(x => x.nr === this.korrekturNr);
+  /* Kontext für die Ex in der Ansicht der Lehrkraft (Korrektur und Druck):
+     dazu das Ergebnis mit allen Korrekturen, damit die Ex Punkte zeigen kann */
+  kontextFuer(s, modus) {
     const i = s.info;
     const d = new Date(i.startzeit || i.erstellt || Date.now());
-    f.contentWindow.postMessage({ quelle: 'tom-schooltool', typ: 'init', kontext: {
+    return {
       nummer: s.nr, klasse: i.klasse, exNummer: i.exNummer, notenschutz: !!s.t.notenschutz,
       datum: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-      wiedergabe: 'zentral', medien: {}, seed: `${s.code}-${s.nr}`, modus: 'ansicht',
-      antworten: s.antworten, abgegeben: true,
-    } }, '*');
+      wiedergabe: 'zentral', medien: {}, seed: `${s.code}-${s.nr}`, modus,
+      antworten: s.antworten, abgegeben: true, ergebnis: this.ergebnisFuerEx(s),
+    };
+  },
+
+  /* { summe, max, note, vorlaeufig, aufgaben: { a1: { punkte, max, details: [{ punkte, max, status }] } } } */
+  ergebnisFuerEx(s) {
+    const e = this.ergebnis(s);
+    if (!e) return null;
+    const k = this.korr(s.nr), aufgaben = {};
+    for (const aufgabe of this.a.meta.aufgaben) {
+      const x = s.r.aufgaben[aufgabe.id];
+      if (!x) continue;
+      aufgaben[aufgabe.id] = {
+        punkte: e.je[aufgabe.id].punkte, max: e.je[aufgabe.id].max,
+        details: (x.details || []).map((d, i) => {
+          const o = k.d[aufgabe.id] && k.d[aufgabe.id][i];
+          const punkte = typeof o === 'number' ? o : d.punkte;
+          const status = typeof o === 'number' ? (o >= d.max ? 'richtig' : o > 0 ? 'teilweise' : 'falsch') : d.status;
+          return { punkte, max: d.max, status };
+        }),
+      };
+    }
+    return { summe: e.summe, max: this.a.meta.punkteGesamt, note: e.note, vorlaeufig: e.vorlaeufig, aufgaben };
+  },
+
+  nachricht(e) {
+    const m = e.data;
+    if (!m || m.quelle !== 'tom-ex') return;
+    // Druckfassungen, die gerade im Hintergrund entstehen
+    const warte = this.druckWartet && this.druckWartet.get(e.source);
+    if (warte) { warte(m); return; }
+    const f = this.korrekturIframe;
+    if (!f || e.source !== f.contentWindow || m.typ !== 'bereit') return;
+    const s = this.a.schueler.find(x => x.nr === this.korrekturNr);
+    f.contentWindow.postMessage({ quelle: 'tom-schooltool', typ: 'init', kontext: this.kontextFuer(s, 'ansicht') }, '*');
   },
 
   korrekturZeichnen() {
@@ -782,73 +812,178 @@ const ExAuswertung = {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
   },
 
-  /* ---------- Drucken: je Schüler eine Seite ---------- */
-  drucken(mitLoesungen, nurNummern) {
-    const a = this.a, esc = s => Band.esc(s), fmt = x => String(x).replace('.', ',');
-    const g = this.grenzen(), max = a.meta.punkteGesamt;
-    const datum = new Date(this.datum() + 'T12:00').toLocaleDateString('de-DE');
-    const schluessel = [1, 2, 3, 4, 5, 6].map(n =>
-      `<td><strong>${n}</strong><br>${n === 1 ? `${fmt(g[1])}–${fmt(max)}` : n === 6 ? `0–${fmt(Math.max(0, g[5] - 0.5))}` : `${fmt(g[n])}–${fmt(g[n - 1] - 0.5)}`}</td>`).join('');
-    const seiten = a.schueler.filter(s => s.r && (!nurNummern || nurNummern.includes(s.nr))).map(s => {
-      const e = this.ergebnis(s), k = this.korr(s.nr);
-      const aufgaben = a.meta.aufgaben.map(aufgabe => {
-        const x = s.r.aufgaben[aufgabe.id], p = e.je[aufgabe.id];
-        if (!x) return '';
-        let zeilen;
-        if (x.manuell || x.punkte == null) {
-          zeilen = (x.details || []).map(d => `<tr><td colspan="${mitLoesungen ? 2 : 1}" class="frei">${esc(d.antwort) || '—'}</td><td class="p">${fmt(p.punkte)}${p.vorschlag ? '?' : ''}/${fmt(p.max)}</td></tr>`).join('') +
-            (mitLoesungen && x.erwartung ? `<tr><td colspan="3" class="loes">Erwartung: ${esc(x.erwartung)}</td></tr>` : '');
-        } else {
-          zeilen = (x.details || []).map((d, i) => {
-            const o = k.d[aufgabe.id] && k.d[aufgabe.id][i];
-            const wert = typeof o === 'number' ? o : (Number(d.punkte) || 0);
-            const zeichen = wert >= d.max ? '✓' : wert > 0 ? '½' : '✗';
-            return `<tr><td>${esc(d.label)}: <strong>${esc(d.antwort) || '—'}</strong> <span class="z">${zeichen}</span></td>
-              ${mitLoesungen ? `<td class="loes">${esc(d.loesung)}</td>` : ''}<td class="p">${fmt(wert)}/${fmt(d.max)}</td></tr>`;
-          }).join('');
+  /* ---------- Drucken ----------
+     Jede Ex darf eine eigene Druckfassung liefern (ex-format.md, Modus „druck“):
+     Sie wird unsichtbar mit den Antworten und dem Ergebnis gestartet und schickt
+     ihre Druckansicht zurück. Das School-Tool setzt daraus einen Druckauftrag
+     zusammen – je Schüler ein Kopf mit Note und Notenschlüssel, dann die Ex, je
+     Aufgabe die Punkte. Exen ohne Druckfassung bekommen die Tabelle. */
+  DRUCK_FRIST: 8000,
+
+  druckfassung(s) {
+    return new Promise(resolve => {
+      const iframe = document.createElement('iframe');
+      iframe.setAttribute('sandbox', 'allow-scripts');
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.style.cssText = 'position:fixed;left:-10000px;top:0;width:900px;height:1200px;border:0;';
+      this.druckWartet = this.druckWartet || new Map();
+      let fertig = false;
+      const ende = ergebnis => {
+        if (fertig) return;
+        fertig = true;
+        clearTimeout(frist);
+        this.druckWartet.delete(iframe.contentWindow);
+        iframe.remove();
+        resolve(ergebnis);
+      };
+      const frist = setTimeout(() => ende(null), this.DRUCK_FRIST);
+      document.body.append(iframe);
+      this.druckWartet.set(iframe.contentWindow, m => {
+        if (m.typ === 'bereit') {
+          iframe.contentWindow.postMessage({ quelle: 'tom-schooltool', typ: 'init', kontext: this.kontextFuer(s, 'druck') }, '*');
+        } else if (m.typ === 'druck' && typeof m.html === 'string') {
+          ende({ html: m.html, css: typeof m.css === 'string' ? m.css : '' });
         }
-        return `<h3>${esc(aufgabe.titel)} <span>${fmt(p.punkte)} / ${fmt(p.max)} P</span></h3><table class="d">${zeilen}</table>`;
-      }).join('');
-      return `<section class="seite">
-        <header><div><div class="klein">${esc(a.gruppe.exNummer)}. ${esc(a.meta.art || 'Ex')} · ${esc(a.meta.fach || '')} · Klasse ${esc(a.gruppe.klasse)} · ${datum}</div>
-          <h1>${esc(a.meta.titel)}</h1><div class="name">${esc(s.name)} <span class="klein">(Nr. ${esc(s.nr)})</span></div></div>
-          <div class="ergebnis"><div class="note">${e.note}</div><div>${fmt(e.summe)} / ${fmt(max)} Punkte</div></div></header>
-        ${s.t.notenschutz ? '<p class="klein">Notenschutz: Die Rechtschreibung wurde nicht gewertet.</p>' : ''}
-        ${aufgaben}
-        <table class="schluessel"><tr><td class="klein">Notenschlüssel<br>(Punkte)</td>${schluessel}</tr></table>
-        <p class="klein unten">Unterschrift eines Erziehungsberechtigten: ______________________________</p>
-      </section>`;
-    }).join('');
-    if (!seiten) { alert('Es gibt nichts zu drucken.'); return; }
+      });
+      iframe.srcdoc = this.a.html;
+    });
+  },
+
+  /* Was die Ex liefert, enthält eingetippten Text von Schülern. Bevor es in ein
+     Fenster dieser Seite kommt: alles Ausführbare und Nachladende entfernen.
+     Das Druckfenster verbietet Skripte zusätzlich per Content-Security-Policy. */
+  bereinigen(html) {
+    const doc = new DOMParser().parseFromString(`<!DOCTYPE html><body>${html}</body>`, 'text/html');
+    doc.querySelectorAll('script, iframe, frame, object, embed, link, meta, base, form, template, noscript').forEach(el => el.remove());
+    doc.body.querySelectorAll('*').forEach(el => {
+      for (const at of [...el.attributes]) {
+        const name = at.name.toLowerCase(), wert = at.value.trim().toLowerCase();
+        if (name.startsWith('on')) el.removeAttribute(at.name);
+        else if (['href', 'src', 'xlink:href', 'action', 'formaction', 'srcset', 'poster'].includes(name) &&
+          !wert.startsWith('data:image/') && !wert.startsWith('#')) el.removeAttribute(at.name);
+      }
+    });
+    return doc.body;
+  },
+
+  cssBereinigen(css) {
+    return String(css).replace(/@import[^;]*;?/gi, '').replace(/<\/?style[^>]*>/gi, '');
+  },
+
+  async drucken(mitLoesungen, nurNummern) {
+    const a = this.a, esc = s => Band.esc(s), fmt = x => String(x).replace('.', ',');
+    const liste = a.schueler.filter(s => s.r && (!nurNummern || nurNummern.includes(s.nr)));
+    if (!liste.length) { alert('Es gibt nichts zu drucken.'); return; }
+    // Das Fenster sofort öffnen, solange der Klick noch zählt – sonst blockt der Browser es
     const w = window.open('', 'ex-druck');
     if (!w) { alert('Das Druckfenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben.'); return; }
     w.document.open();
-    w.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><title>${esc(a.meta.titel)} – ${esc(a.gruppe.klasse)}</title><style>
-      @page { size: A4; margin: 14mm 14mm 16mm; }
-      * { box-sizing: border-box; }
-      body { font: 10.5pt/1.35 system-ui, -apple-system, "Segoe UI", sans-serif; color: #111; margin: 0; }
-      .seite { page-break-after: always; break-after: page; }
-      .seite:last-child { page-break-after: auto; break-after: auto; }
-      header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6pt; margin-bottom: 8pt; }
-      h1 { font-size: 17pt; margin: 2pt 0; }
-      .name { font-size: 13pt; font-weight: 600; }
-      .klein { font-size: 8.5pt; color: #444; }
-      .ergebnis { text-align: right; }
-      .note { font-size: 30pt; font-weight: 800; line-height: 1; }
-      h3 { font-size: 11pt; margin: 10pt 0 3pt; display: flex; justify-content: space-between; border-bottom: 1px solid #bbb; }
-      table { width: 100%; border-collapse: collapse; }
-      table.d td { padding: 2pt 4pt; border-bottom: 1px solid #e3e3e3; vertical-align: top; }
-      td.p { width: 15mm; text-align: right; white-space: nowrap; }
-      td.loes { color: #555; font-style: italic; width: 40%; }
-      td.frei { white-space: pre-wrap; }
-      .z { font-weight: 700; }
-      table.schluessel { margin-top: 12pt; font-size: 8.5pt; text-align: center; }
-      table.schluessel td { border: 1px solid #999; padding: 2pt; }
-      .unten { margin-top: 14pt; }
-      h3, table.d tr { break-inside: avoid; }
-    </style></head><body>${seiten}</body></html>`);
+    w.document.write('<!DOCTYPE html><meta charset="UTF-8"><title>Druck wird vorbereitet …</title><p style="font:16px system-ui;padding:2rem">Druck wird vorbereitet …</p>');
+    w.document.close();
+
+    const fassungen = [];
+    for (let n = 0; n < liste.length; n++) {
+      try { w.document.title = `Druck wird vorbereitet … ${n + 1}/${liste.length}`; } catch (e) {}
+      fassungen.push(await this.druckfassung(liste[n]));
+    }
+    const css = this.cssBereinigen((fassungen.find(Boolean) || {}).css || '');
+    const ohne = fassungen.filter(f => !f).length;
+
+    const g = this.grenzen(), max = a.meta.punkteGesamt;
+    const datum = new Date(this.datum() + 'T12:00').toLocaleDateString('de-DE');
+    const schluessel = `<table class="stdr-schluessel"><tr><td>Notenschlüssel<br>(Punkte)</td>${[1, 2, 3, 4, 5, 6].map(n =>
+      `<td><strong>${n}</strong><br>${this.bereichText(n)}</td>`).join('')}</tr></table>`;
+
+    const seiten = liste.map((s, idx) => {
+      const e = this.ergebnis(s);
+      const kopf = `<header class="stdr-kopf"><div>
+          <div class="stdr-klein">${esc(a.gruppe.exNummer)}. ${esc(a.meta.art || 'Ex')} · ${esc(a.meta.fach || '')} · Klasse ${esc(a.gruppe.klasse)} · ${datum}</div>
+          <div class="stdr-titel">${esc(a.meta.titel)}</div>
+          <div class="stdr-name">${esc(s.name)} <span class="stdr-klein">(Nr. ${esc(s.nr)})</span></div></div>
+        <div class="stdr-ergebnis"><div class="stdr-note">${e.note}</div><div>${fmt(e.summe)} / ${fmt(max)} Punkte</div></div></header>
+        ${s.t.notenschutz ? '<p class="stdr-klein">Notenschutz: Die Rechtschreibung wurde nicht gewertet.</p>' : ''}`;
+      let rumpf;
+      const f = fassungen[idx];
+      if (f) {
+        const body = this.bereinigen(f.html);
+        // Je Aufgabe ein Punktefeld – die Ex markiert ihre Blöcke mit data-aufgabe
+        body.querySelectorAll('[data-aufgabe]').forEach(block => {
+          const p = e.je[block.getAttribute('data-aufgabe')];
+          if (!p) return;
+          const marke = block.ownerDocument.createElement('div');
+          marke.className = 'stdr-punkte';
+          marke.textContent = `${fmt(p.punkte)}${p.vorschlag ? '?' : ''} / ${fmt(p.max)} P`;
+          block.prepend(marke);
+        });
+        rumpf = `<div class="stdr-ex">${body.innerHTML}</div>` + (mitLoesungen ? this.loesungsTabelle(s, true) : '');
+      } else {
+        rumpf = this.loesungsTabelle(s, mitLoesungen);
+      }
+      return `<section class="stdr-seite">${kopf}${rumpf}${schluessel}
+        <p class="stdr-klein stdr-unten">Unterschrift eines Erziehungsberechtigten: ______________________________</p></section>`;
+    }).join('');
+
+    w.document.open();
+    w.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
+      <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; img-src data:; style-src 'unsafe-inline'; font-src data:">
+      <title>${esc(a.meta.titel)} – ${esc(a.gruppe.klasse)}</title>
+      <style>${css}</style>
+      <style>
+      @page { size: A4; margin: 12mm 12mm 14mm; }
+      html, body { background: #fff !important; color: #111; margin: 0; }
+      .stdr-seite { break-after: page; page-break-after: always; font: 10.5pt/1.35 system-ui, -apple-system, "Segoe UI", sans-serif; }
+      .stdr-seite:last-child { break-after: auto; page-break-after: auto; }
+      .stdr-kopf { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6pt; margin-bottom: 8pt; }
+      .stdr-titel { font-size: 17pt; font-weight: 700; margin: 2pt 0; }
+      .stdr-name { font-size: 13pt; font-weight: 600; }
+      .stdr-klein { font-size: 8.5pt; color: #444; }
+      .stdr-ergebnis { text-align: right; }
+      .stdr-note { font-size: 30pt; font-weight: 800; line-height: 1; }
+      .stdr-ex [data-aufgabe] { position: relative; }
+      .stdr-punkte { position: absolute; top: 4pt; right: 6pt; padding: 1pt 7pt; border: 2px solid #111; border-radius: 6pt;
+        font: 700 11pt system-ui, sans-serif; background: #fff; color: #111; z-index: 1; }
+      .stdr-tab h3 { font-size: 11pt; margin: 10pt 0 3pt; display: flex; justify-content: space-between; border-bottom: 1px solid #bbb; }
+      .stdr-tab table { width: 100%; border-collapse: collapse; }
+      .stdr-tab td { padding: 2pt 4pt; border-bottom: 1px solid #e3e3e3; vertical-align: top; }
+      .stdr-tab td.p { width: 15mm; text-align: right; white-space: nowrap; }
+      .stdr-tab td.loes { color: #555; font-style: italic; width: 40%; }
+      .stdr-tab td.frei { white-space: pre-wrap; }
+      .stdr-schluessel { width: 100%; border-collapse: collapse; margin-top: 12pt; font-size: 8.5pt; text-align: center; break-inside: avoid; }
+      .stdr-schluessel td { border: 1px solid #999; padding: 2pt; }
+      .stdr-unten { margin-top: 14pt; }
+      .stdr-tab h3, .stdr-tab tr { break-inside: avoid; }
+      </style></head><body>${seiten}</body></html>`);
     w.document.close();
     w.focus();
-    setTimeout(() => w.print(), 300);
+    if (ohne && ohne === fassungen.length) {
+      // Diese Ex hat (noch) keine Druckfassung – die Tabelle ist gedruckt
+    } else if (ohne) {
+      alert(`${ohne} von ${fassungen.length} Druckfassungen kamen nicht rechtzeitig – dort steht die Tabelle.`);
+    }
+    setTimeout(() => w.print(), 400);
+  },
+
+  /* Die Tabelle: je Aufgabe Antwort, ✓/✗, Punkte – wahlweise mit Lösung */
+  loesungsTabelle(s, mitLoesungen) {
+    const a = this.a, esc = x => Band.esc(x), fmt = x => String(x).replace('.', ',');
+    const e = this.ergebnis(s), k = this.korr(s.nr);
+    return '<div class="stdr-tab">' + a.meta.aufgaben.map(aufgabe => {
+      const x = s.r.aufgaben[aufgabe.id], p = e.je[aufgabe.id];
+      if (!x) return '';
+      let zeilen;
+      if (x.manuell || x.punkte == null) {
+        zeilen = (x.details || []).map(d => `<tr><td colspan="${mitLoesungen ? 2 : 1}" class="frei">${esc(d.antwort) || '—'}</td><td class="p">${fmt(p.punkte)}${p.vorschlag ? '?' : ''}/${fmt(p.max)}</td></tr>`).join('') +
+          (mitLoesungen && x.erwartung ? `<tr><td colspan="3" class="loes">Erwartung: ${esc(x.erwartung)}</td></tr>` : '');
+      } else {
+        zeilen = (x.details || []).map((d, i) => {
+          const o = k.d[aufgabe.id] && k.d[aufgabe.id][i];
+          const wert = typeof o === 'number' ? o : (Number(d.punkte) || 0);
+          const zeichen = wert >= d.max ? '✓' : wert > 0 ? '½' : '✗';
+          return `<tr><td>${esc(d.label)}: <strong>${esc(d.antwort) || '—'}</strong> <b>${zeichen}</b></td>
+            ${mitLoesungen ? `<td class="loes">${esc(d.loesung)}</td>` : ''}<td class="p">${fmt(wert)}/${fmt(d.max)}</td></tr>`;
+        }).join('');
+      }
+      return `<h3>${esc(aufgabe.titel)} <span>${fmt(p.punkte)} / ${fmt(p.max)} P</span></h3><table>${zeilen}</table>`;
+    }).join('') + '</div>';
   },
 };

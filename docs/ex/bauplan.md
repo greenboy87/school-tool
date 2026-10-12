@@ -98,3 +98,14 @@ Leserechte nach unten. Unter `exen/{exId}` könnten Schüler die Lösung mitlese
     Korrekturansicht, Notenschlüssel-Balken, Export, Druckbild, Nachschreiben.
     **Noch am echten iPad zu prüfen:** App-Wechsel/Bildschirmsperre („App verlassen“,
     im Browserfenster nur nachgestellt), echter Druckdialog, Wake-Lock.
+
+## Ergänzungen nach dem ersten Test (12.10.2026)
+
+- **Dauer** nicht mehr in der Ex, sondern beim Start im Tool (Feld in der Start-Karte,
+  „Dauer ändern“ im Warteraum). `dauerMinuten` aus älteren Exen nur noch als Vorschlag.
+- **„Ex beenden“** schließt, sobald alle abgegeben haben (höchstens 8 s Wartezeit).
+- **Druckfassung** (`modus: "druck"`, ex-format.md 3a): Die Ex liefert ihre Druckansicht,
+  das Tool setzt je Schüler Kopf, Punkte je Aufgabe, Note und Notenschlüssel dazu.
+  Bereinigung (keine Skripte, keine externen Adressen) + CSP im Druckfenster. Ohne
+  Druckfassung: Tabelle. Getestet mit dem Grundgerüst; die E-Gitarre braucht noch ihre
+  Druckfassung.

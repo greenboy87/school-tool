@@ -264,8 +264,9 @@ Jede Ex ist eine eigene HTML-Datei mit eigener Oberfläche (Format `tom-ex/2`, s
   `data-ex-secret` trägt, ohne HTML-Kommentare und ohne Audiodaten. Findet die Prüfung
   danach noch Geheimes, bricht der Import ab. **Vorschau** öffnet die Originaldatei mit
   ihrer Vorschau-Leiste (liegt nur auf dem Gerät, auf dem importiert wurde).
-- **Ex starten:** Klasse, Ex, Nummer der Ex („1.“ → „1. Stegreifaufgabe“), fehlende
-  Schüler abwählen → **Warteraum öffnen**. Code und QR-Code, **Groß für den Beamer**.
+- **Ex starten:** Klasse, Ex, Nummer der Ex („1.“ → „1. Stegreifaufgabe“), **Dauer** (steckt
+  nicht in der Ex; vorgeschlagen wird die zuletzt benutzte), fehlende Schüler abwählen →
+  **Warteraum öffnen**. Code und QR-Code, **Groß für den Beamer**.
 - **Schülerseite** `ex.html`: Code (oder QR-Code), Nummer antippen, bei Bedarf
   „Ich habe Notenschutz“. Danach „Warte auf Freigabe“.
 - **Warteraum:** Freigeben (einzeln/alle), Rauswerfen, als fehlend markieren, Notenschutz
@@ -278,7 +279,9 @@ Jede Ex ist eine eigene HTML-Datei mit eigener Oberfläche (Format `tom-ex/2`, s
   Balken zum Ziehen (Standard: schlechteste 4 ab 50 %, 6 unter 20 %, Regler „Dreierspanne
   breiter“), Live-Notenbild, Korrekturansicht (links die Ex wie beim Schüler, rechts jede
   Teilpunktzahl überschreibbar), Selbsteinschätzung, **In die Notenliste übernehmen**,
-  CSV und **Alle drucken** (eine Seite je Schüler, wahlweise mit Lösungen).
+  CSV und **Alle drucken**: je Schüler die Ex selbst in ihrer Druckfassung mit Antworten,
+  Punkten je Aufgabe, Note und Notenschlüssel (Exen ohne Druckfassung: Tabelle), wahlweise
+  mit Lösungen.
 - **Nachschreiben** für alle, die nicht geschrieben haben – landet in derselben Auswertung.
 
 > **Einmalig:** Anmeldung in Firebase einschalten und die Regeln vom 12.10.2026 eintragen
