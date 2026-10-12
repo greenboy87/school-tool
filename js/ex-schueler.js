@@ -89,7 +89,7 @@ const ExSchueler = {
     }
     const kopf = document.getElementById('ex-kopfzeile');
     kopf.hidden = false;
-    document.getElementById('ex-kopf-titel').textContent = `${i.klasse} · ${i.exNummer}. ${i.art || 'Ex'}`;
+    document.getElementById('ex-kopf-titel').textContent = `${i.klasse} · ${i.exNummer}. ${i.art || 'Ex'}${i.nachschreiben ? ' · Nachschreiben' : ''}`;
 
     if (!ich || (this.nummerWaehlen && ich.status === 'wartet')) {
       if (i.status === 'beendet') { this.meldung('Die Ex ist beendet', 'Hier kann man nicht mehr beitreten.'); return; }

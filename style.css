@@ -1628,3 +1628,6 @@ body.ex-korrektur-offen { overflow: hidden; }
 .ex-nsb-griff.zieht .ex-nsb-wert, .ex-nsb-griff:focus-visible .ex-nsb-wert { color: var(--accent); font-weight: 700; }
 .ex-nsb-griff.zieht .ex-nsb-knopf::after, .ex-nsb-griff:focus-visible .ex-nsb-knopf::after { background: var(--accent); border-color: var(--accent); }
 .ex-nsb-griff.zieht .ex-nsb-knopf, .ex-nsb-griff:focus-visible .ex-nsb-knopf { border-color: var(--accent); }
+.ex-start.nachschreiben { outline: 2px solid var(--accent); outline-offset: -2px; }
+.ex-anwesend li.geschrieben { opacity: .55; }
+.ex-anwesend li.geschrieben .hint { margin-left: .3rem; }

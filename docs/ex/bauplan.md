@@ -81,7 +81,7 @@ Leserechte nach unten. Unter `exen/{exId}` könnten Schüler die Lösung mitlese
    (Name, Klasse, Datum, Punkte, Note, Notenschlüssel; je Aufgabe Antwort, Punkte,
    Status, Korrekturen), Schalter „mit Lösungen“ für die Fassung zum Mitnehmen.
    Ein Druckauftrag mit Seitenumbrüchen. Namen nur lokal.
-8. **Nachschreiben** für `fehlt` und `entfernt`, gleiche Auswertung.
+8. ✅ **Nachschreiben** für `fehlt` und `entfernt`, gleiche Auswertung.
 9. **Regeln** in `firebase-regeln.md`, getestet im Emulator.
 10. **Testdurchlauf** mit der E-Gitarre-Ex: Import und Geheim-Prüfung, Start mit
     abgewähltem Schüler, Notenschutz bestätigen, Rauswerfen, Station 1

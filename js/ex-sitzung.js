@@ -24,6 +24,7 @@ const ExSitzung = {
   uhr: null,              // Takt fürs Dashboard, solange die Ex läuft
   abmelden: [],           // Live-Abfragen der aktiven Sitzung
   beamerFenster: null,
+  nach: null,             // Nachschreiben in Vorbereitung: { key, exId, klasseId, exNummer, nummern, geschrieben }
 
   init() {
     if (!document.getElementById('ex-start')) return;
@@ -32,6 +33,7 @@ const ExSitzung = {
     document.getElementById('ex-start-nummer').addEventListener('input', () => this.vorschauText());
     document.getElementById('ex-anwesend').addEventListener('change', () => this.anwesenheitZaehlen());
     document.getElementById('btn-ex-warteraum').addEventListener('click', () => this.warteraumOeffnen());
+    document.getElementById('btn-ex-nach-abbrechen').addEventListener('click', () => this.nachschreibenAbbrechen());
     document.getElementById('btn-ex-beamer').addEventListener('click', () => this.beamer());
     document.getElementById('btn-ex-abbrechen').addEventListener('click', () => this.abbrechen());
     document.getElementById('ex-warteraum').addEventListener('click', e => {
@@ -115,21 +117,73 @@ const ExSitzung = {
     const ul = document.getElementById('ex-anwesend');
     const cls = this.klasse();
     ul.innerHTML = '';
-    if (cls) cls.students.forEach((s, i) => {
+    if (!cls) { this.anwesenheitZaehlen(); return; }
+    // Beim Nachschreiben gilt die Nummernzuordnung der ursprünglichen Ex, nicht die heutige Klassenliste
+    const eintraege = this.nach
+      ? Object.entries(this.nach.nummern).sort((a, b) => a[0] - b[0])
+        .map(([nr, sid]) => [nr, cls.students.find(x => x.id === sid)])
+      : cls.students.map((s, i) => [String(i + 1), s]);
+    for (const [nr, s] of eintraege) {
+      const geschrieben = this.nach && this.nach.geschrieben.has(nr);
       const li = document.createElement('li');
-      li.innerHTML = `<label><input type="checkbox" checked data-sid="${Band.esc(s.id)}">
-        <span class="nr">${i + 1}</span> <span class="name">${Band.esc(Classes.studentName(s))}</span></label>`;
+      li.classList.toggle('geschrieben', !!geschrieben);
+      li.innerHTML = `<label><input type="checkbox" ${geschrieben ? 'disabled' : 'checked'} data-nr="${Band.esc(nr)}" data-sid="${Band.esc(s ? s.id : '')}">
+        <span class="nr">${Band.esc(nr)}</span> <span class="name">${Band.esc(s ? Classes.studentName(s) : '(nicht mehr in der Klasse)')}</span>
+        ${geschrieben ? '<span class="hint">hat geschrieben</span>' : ''}</label>`;
       ul.append(li);
-    });
+    }
     this.anwesenheitZaehlen();
   },
 
   anwesenheitZaehlen() {
-    const boxen = [...document.querySelectorAll('#ex-anwesend input')];
+    const boxen = [...document.querySelectorAll('#ex-anwesend input:not(:disabled)')];
     boxen.forEach(b => b.closest('li').classList.toggle('fehlt', !b.checked));
     const da = boxen.filter(b => b.checked).length;
     document.getElementById('ex-anwesend-zahl').textContent =
       boxen.length ? `${da} von ${boxen.length} da` : '';
+  },
+
+  /* ---------- Nachschreiben ----------
+     Eine neue Sitzung derselben Ex für dieselbe Klasse und Ex-Nummer; die
+     Auswertung fasst beide zusammen. Vorausgewählt ist, wer nicht geschrieben
+     hat (fehlt, entfernt, nie beigetreten). */
+  async nachschreibenVorbereiten(key) {
+    const codes = Object.entries(this.sitzungen()).filter(([, l]) => `${l.exId}|${l.klasseId}|${l.exNummer}` === key);
+    if (!codes.length) return;
+    const geschrieben = new Set();
+    for (const [code] of codes) {
+      const s = (await FB.get(FB.ref(FB.db, `schoolTool/exsessions/${code}`))).val();
+      if (!s) continue;
+      for (const [uid, t] of Object.entries(s.teilnehmer || {})) {
+        if (t.status === 'freigegeben' && s.abgaben && s.abgaben[uid]) geschrieben.add(t.nummer);
+      }
+    }
+    const erste = codes.map(([, l]) => l).sort((a, b) => a.erstellt - b.erstellt)[0];
+    if (!Exen.index[erste.exId]) { alert('Die Ex ist nicht mehr in der Bibliothek. Bitte zuerst erneut importieren.'); return; }
+    this.nach = { key, exId: erste.exId, klasseId: erste.klasseId, exNummer: erste.exNummer, nummern: erste.nummern, geschrieben };
+    document.getElementById('ex-start-klasse').value = erste.klasseId;
+    document.getElementById('ex-start-ex').value = erste.exId;
+    document.getElementById('ex-start-nummer').value = erste.exNummer;
+    this.nachschreibenOberflaeche();
+    const offen = Object.keys(erste.nummern).filter(nr => !geschrieben.has(nr)).length;
+    if (!offen) alert('Alle haben diese Ex schon geschrieben.');
+    document.getElementById('ex-start').scrollIntoView({ behavior: 'smooth' });
+  },
+
+  nachschreibenAbbrechen() {
+    this.nach = null;
+    this.nachschreibenOberflaeche();
+  },
+
+  nachschreibenOberflaeche() {
+    const an = !!this.nach;
+    document.getElementById('ex-start').classList.toggle('nachschreiben', an);
+    document.getElementById('ex-start-titel').textContent = an ? 'Nachschreiben vorbereiten' : 'Ex starten';
+    ['ex-start-klasse', 'ex-start-ex', 'ex-start-nummer'].forEach(id => { document.getElementById(id).disabled = an; });
+    document.getElementById('btn-ex-warteraum').lastChild.textContent = an ? 'Warteraum fürs Nachschreiben öffnen' : 'Warteraum öffnen';
+    document.getElementById('btn-ex-nach-abbrechen').hidden = !an;
+    this.vorschauText();
+    this.anwesenheitZeichnen();
   },
 
   /* ---------- Sitzung anlegen ---------- */
@@ -152,10 +206,12 @@ const ExSitzung = {
     if (this.code && this.info && this.info.status !== 'beendet' &&
         !confirm('Auf diesem Gerät ist noch eine Sitzung offen. Trotzdem eine neue starten?')) return;
 
-    const nummern = {}, erlaubt = {}, fehlt = {};
-    document.querySelectorAll('#ex-anwesend input').forEach((b, i) => {
-      const nr = String(i + 1);
-      nummern[nr] = b.dataset.sid;
+    const nach = this.nach;
+    const nummern = nach ? { ...nach.nummern } : {}, erlaubt = {}, fehlt = {};
+    document.querySelectorAll('#ex-anwesend input').forEach(b => {
+      const nr = b.dataset.nr;
+      if (!nach) nummern[nr] = b.dataset.sid;
+      if (b.disabled) return;                 // hat schon geschrieben
       if (b.checked) erlaubt['n' + nr] = true; else fehlt['n' + nr] = true;
     });
     if (!Object.keys(erlaubt).length) { alert('Es ist niemand als anwesend markiert.'); return; }
@@ -164,11 +220,12 @@ const ExSitzung = {
     knopf.disabled = true;
     try {
       const code = await this.neuerCode();
-      const exNummer = this.exNummer();
+      const exNummer = nach ? nach.exNummer : this.exNummer();
       await FB.set(FB.ref(FB.db, `schoolTool/exsessions/${code}/info`), {
         status: 'warteraum', exId, titel: ex.titel, art: ex.art || '', fach: ex.fach || '',
         klasse: cls.name, exNummer, wiedergabe: 'zentral', dauerMinuten: ex.dauerMinuten,
         zuschlagMin: 0, erstellt: FB.serverTimestamp(), erlaubt, fehlt,
+        ...(nach ? { nachschreiben: true } : {}),
       });
       this.sitzungen()[code] = {
         exId, titel: ex.titel, klasseId: cls.id, klasse: cls.name, exNummer,
@@ -176,6 +233,7 @@ const ExSitzung = {
       };
       Classes.persist();
       document.dispatchEvent(new CustomEvent('ex-sitzungen'));
+      if (nach) this.nachschreibenAbbrechen();
       this.oeffnen(code);
     } catch (e) {
       alert('Die Sitzung ließ sich nicht anlegen: ' + e.message +
@@ -238,7 +296,7 @@ const ExSitzung = {
   zeichnen() {
     const i = this.info, lokal = this.lokal();
     document.getElementById('ex-sitzung').hidden = false;
-    document.getElementById('ex-sitzung-titel').textContent = `${i.exNummer}. ${i.art || 'Ex'}: ${i.titel}`;
+    document.getElementById('ex-sitzung-titel').textContent = `${i.exNummer}. ${i.art || 'Ex'}: ${i.titel}${i.nachschreiben ? ' – Nachschreiben' : ''}`;
     const status = { warteraum: 'Warteraum offen', laeuft: 'läuft', beendet: 'beendet' }[i.status] || i.status;
     document.getElementById('ex-sitzung-info').textContent =
       `Klasse ${i.klasse} · ${i.dauerMinuten} Minuten · ${Object.keys(i.erlaubt || {}).length} erwartet` +
@@ -405,6 +463,7 @@ const ExSitzung = {
       kopf = `<span>Beendet · ${zaehle('abgegeben')} abgegeben${zaehle('nicht-abgegeben') ? ` · ${zaehle('nicht-abgegeben')} ohne Abgabe` : ''}</span>
         <span class="btn-row">
           <button data-aktion="zur-auswertung" class="primary">Zur Auswertung</button>
+          <button data-aktion="nachschreiben" class="small">Nachschreiben vorbereiten</button>
           <button data-aktion="ausblenden" class="small" title="Die Sitzung bleibt gespeichert und ist über die Auswertung erreichbar">Hier ausblenden</button>
         </span>`;
     }
@@ -479,6 +538,7 @@ const ExSitzung = {
           return;
         }
         case 'ausblenden': this.vergessen(); return;
+        case 'nachschreiben': { const l = this.lokal(); this.nachschreibenVorbereiten(`${l.exId}|${l.klasseId}|${l.exNummer}`); return; }
         case 'uebernehmen': await this.uebernehmen(uid, nr); return;
         case 'starten': await this.starten(); return;
         default: return;

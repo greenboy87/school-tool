@@ -126,6 +126,8 @@ const ExAuswertung = {
   schuelerSammeln() {
     const a = this.a;
     const nachNr = {};
+    // Ein Platzhalter (fehlt / nicht teilgenommen) darf von einer späteren Sitzung ersetzt werden
+    const ohneEintrag = nr => !nachNr[nr] || (!nachNr[nr].t && !nachNr[nr].abgabe);
     const codes = Object.keys(a.sitzungen).sort((x, y) =>
       (a.sitzungen[x].info.erstellt || 0) - (a.sitzungen[y].info.erstellt || 0));
     for (const code of codes) {
@@ -142,11 +144,11 @@ const ExAuswertung = {
       }
       for (const k of Object.keys(s.info.fehlt || {})) {
         const nr = k.slice(1);
-        if (!nachNr[nr]) nachNr[nr] = { nr, sid: lokal.nummern && lokal.nummern[nr], code, info: s.info, fehlt: true };
+        if (ohneEintrag(nr)) nachNr[nr] = { nr, sid: lokal.nummern && lokal.nummern[nr], code, info: s.info, fehlt: true };
       }
       for (const k of Object.keys(s.info.erlaubt || {})) {
         const nr = k.slice(1);
-        if (!nachNr[nr]) nachNr[nr] = { nr, sid: lokal.nummern && lokal.nummern[nr], code, info: s.info, nichtDa: true };
+        if (ohneEintrag(nr)) nachNr[nr] = { nr, sid: lokal.nummern && lokal.nummern[nr], code, info: s.info, nichtDa: true };
       }
     }
     a.schueler = Object.values(nachNr).sort((x, y) => x.nr - y.nr);
@@ -322,6 +324,7 @@ const ExAuswertung = {
         <button class="primary" data-aktion="export-notenliste" data-icon="book">In die Notenliste übernehmen</button>
         <button data-aktion="export-csv" data-icon="download">CSV</button>
         <button data-aktion="drucken" data-icon="printer">Alle drucken</button>
+        <button data-aktion="nachschreiben" class="small">Nachschreiben vorbereiten</button>
         <label class="ex-mit-loesungen"><input type="checkbox" id="ex-druck-loesungen" checked> mit Lösungen</label>
         <button class="small" data-aktion="neu-bewerten" data-icon="reset" title="Abgaben neu laden und neu bewerten (etwa nach einem Neu-Import der Ex)">Neu laden</button>
       </div>`;
@@ -563,6 +566,7 @@ const ExAuswertung = {
       case 'export-csv': this.exportCsv(); break;
       case 'drucken': this.drucken(document.getElementById('ex-druck-loesungen').checked); break;
       case 'neu-bewerten': this.oeffnen(this.a.key); break;
+      case 'nachschreiben': ExSitzung.nachschreibenVorbereiten(this.a.key); break;
     }
   },
 
