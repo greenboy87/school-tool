@@ -593,7 +593,12 @@ const ExSitzung = {
     if (!confirm('Ex für alle beenden?' + (offen ? `\n\n${offen} haben noch nicht abgegeben – ihr aktueller Stand wird eingesammelt.` : ''))) return;
     const code = this.code;
     await FB.update(this.ref('info'), { einsammeln: FB.serverTimestamp() });
-    await new Promise(r => setTimeout(r, 8000));
+    // Schließen, sobald alle abgegeben haben – auf Nachzügler höchstens 8 s warten.
+    // Die Geräte geben gleichzeitig ab, die Dauer hängt also nicht an der Klassengröße.
+    const alleDa = () => this.aktiveEintraege().every(([uid, t]) =>
+      t.status !== 'freigegeben' || (this.abgaben[uid] && this.abgaben[uid].abgegeben));
+    const frist = Date.now() + 8000;
+    while (Date.now() < frist && !alleDa()) await new Promise(r => setTimeout(r, 250));
     if (this.code !== code) return;
     const w = { [`exsessions/${code}/info/status`]: 'beendet', [`exsessions/${code}/info/endzeit`]: FB.serverTimestamp() };
     for (const [uid, t] of this.aktiveEintraege()) {
