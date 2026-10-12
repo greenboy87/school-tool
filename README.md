@@ -236,7 +236,10 @@ Instrument* und *Deine Expertengruppe*, jeweils mit den Mitspielern. Nach Änder
 Matrix einfach erneut senden.
 
 **Gruppen übernehmen** legt zwei Projekte an: *Tiny Band – Bands* (das Instrument steht am
-Namen) und *Tiny Band – Expertengruppen* (die Band steht am Namen).
+Namen) und *Tiny Band – Expertengruppen* (die Band steht am Namen). Wer mehrere Varianten
+ausprobiert, bekommt durchnummerierte Paare („Tiny Band – Bands (2)“). Dieselbe Einteilung
+ein zweites Mal zu übernehmen legt keine Kopie an, und „Bands bilden“ warnt, wenn die
+bisherige Einteilung noch nicht übernommen ist.
 
 **Groß für die Leinwand** öffnet ein Beamerfenster im Tiny-Band-Look: QR-Code plus Live-Stand.
 In Weg A nur Zahlen je Instrument (wer was gewählt hat, geht die Klasse nichts an), in

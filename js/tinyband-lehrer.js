@@ -19,6 +19,9 @@ const TinyBandLehrer = {
   ergebnis: {},           // was zuletzt gesendet wurde, live
   einteilung: null,       // Weg A nach „Bands bilden“: { namen: [], wer: { sN: { band, inst } } }
   geaendertSeitSenden: false,
+  /* Was zuletzt übernommen wurde – damit ein zweiter Klick keine Kopie anlegt.
+     { signatur, ids: [Bands-Projekt, Experten-Projekt] } */
+  uebernommen: null,
 
   init() {
     const wahl = document.getElementById('live-modus');
@@ -77,6 +80,7 @@ const TinyBandLehrer = {
   gestartet() {
     const t = this.tiny();
     this.einteilung = null;
+    this.uebernommen = null;
     this.baende = {};
     this.ergebnis = {};
     this.geaendertSeitSenden = false;
@@ -268,7 +272,15 @@ const TinyBandLehrer = {
     if (!cls) return;
     const N = this.tiny().baende;
     const alle = this.alleSids(cls);
-    if (this.einteilung && !confirm('Die Bands neu bilden?\n\nÄnderungen von Hand gehen dabei verloren.')) return;
+    if (this.einteilung) {
+      // Noch nicht übernommen? Dann ginge diese Einteilung beim Neubilden verloren.
+      const cls0 = Classes.data.classes.find(c => c.id === LiveGroups.klasseId);
+      const sicher = this.istUebernommen(cls0, this.einteilungListe(cls0));
+      if (!confirm('Die Bands neu bilden?\n\n' + (sicher
+        ? 'Die bisherige Einteilung ist schon als Projekt übernommen und bleibt dort erhalten.'
+        : 'Die bisherige Einteilung ist noch NICHT übernommen und geht verloren – ' +
+          'vorher „Gruppen übernehmen“, wenn du sie behalten willst.'))) return;
+    }
     const ohneWahl = alle.filter(sid => !this.istDabei(sid));
     if (ohneWahl.length && !confirm(`${ohneWahl.length} haben noch nicht gewählt und kommen zum ` +
       `${TinyBand.name(TinyBand.AUFFANG)}, wo Platz ist:\n${ohneWahl.map(sid => this.name(cls, sid)).join('; ')}\n\nTrotzdem bilden?`)) return;
@@ -560,6 +572,19 @@ const TinyBandLehrer = {
   },
 
   /* ---------- Übernehmen: zwei Projekte ---------- */
+
+  /* Fingerabdruck einer Einteilung: wer in welcher Band mit welchem Instrument */
+  signatur(liste) {
+    return JSON.stringify((liste || []).map(x => [x.sid, x.bandName, x.inst || '']).sort());
+  },
+
+  /* Steht genau diese Einteilung schon als Projekt da (und wurde nicht gelöscht)? */
+  istUebernommen(cls, liste) {
+    const u = this.uebernommen;
+    if (!u || !cls || !liste) return false;
+    return u.signatur === this.signatur(liste) && u.ids.every(id => cls.projects.some(p => p.id === id));
+  },
+
   uebernehmen(cls) {
     const liste = this.einteilungListe(cls);
     if (!liste) { alert('Erst „Bands bilden“ – dann gibt es etwas zu übernehmen.'); return; }
@@ -569,8 +594,19 @@ const TinyBandLehrer = {
     if (draussen.length && !confirm(`${draussen.length} sind in keiner Band:\n` +
       draussen.map(sid => this.name(cls, sid)).join('; ') + '\n\nTrotzdem übernehmen?')) return;
 
+    if (this.istUebernommen(cls, liste)) {
+      alert('Genau diese Einteilung ist schon übernommen – siehe „' +
+        cls.projects.find(p => p.id === this.uebernommen.ids[0]).name + '“.\n\n' +
+        'Für eine zweite Variante erst „Bands bilden“ (oder in der Matrix ändern), dann übernehmen.');
+      return;
+    }
+
     if (Classes.currentClassId !== cls.id) Classes.selectClass(cls.id);
     const heute = new Date().toISOString().slice(0, 10);
+    // Zweiter Durchgang am selben Projekt: Nummer dran, sonst sind die Einträge
+    // in der Projektliste nicht zu unterscheiden
+    const schon = cls.projects.filter(p => /^Tiny Band – Bands( \(\d+\))?$/.test(p.name)).length;
+    const nr = schon ? ` (${schon + 1})` : '';
     const id = sid => this.schueler(cls, sid).id;
     const reihenfolge = k => { const n = TinyBand.kuerzel().indexOf(k); return n < 0 ? 99 : n; };
 
@@ -582,7 +618,7 @@ const TinyBandLehrer = {
     }
     const sortiert = [...baende.entries()].sort((a, b) => a[0] - b[0]).map(e => e[1]);
     const pBands = {
-      id: Store.uid(), name: 'Tiny Band – Bands', date: heute, entered: false, grades: {},
+      id: Store.uid(), name: 'Tiny Band – Bands' + nr, date: heute, entered: false, grades: {},
       groups: sortiert.map(b => b.ids.sort((a, c) => reihenfolge(a.inst) - reihenfolge(c.inst)).map(x => id(x.sid))),
       groupNames: sortiert.map(b => b.name),
       rollen: Object.fromEntries(liste.filter(x => x.inst).map(x => [id(x.sid), TinyBand.name(x.inst)])),
@@ -592,12 +628,13 @@ const TinyBandLehrer = {
       .map(i => ({ i, wer: liste.filter(x => x.inst === i.k) }))
       .filter(g => g.wer.length);
     const pExperten = {
-      id: Store.uid(), name: 'Tiny Band – Expertengruppen', date: heute, entered: false, grades: {},
+      id: Store.uid(), name: 'Tiny Band – Expertengruppen' + nr, date: heute, entered: false, grades: {},
       groups: experten.map(g => g.wer.map(x => id(x.sid))),
       groupNames: experten.map(g => g.i.name),
       rollen: Object.fromEntries(liste.map(x => [id(x.sid), x.bandName])),
     };
     cls.projects.push(pBands, pExperten);
+    this.uebernommen = { signatur: this.signatur(liste), ids: [pBands.id, pExperten.id] };
     Classes.currentProjectId = pBands.id;
     Classes.persist();
     Classes.renderProjects();
