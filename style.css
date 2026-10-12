@@ -1,58 +1,85 @@
 /* ========== School-Tool ========== */
 /* Dunkles Theme ist der Standard; Hell wird über data-theme="light" gesetzt. */
+/* Design „Polarlicht-Glas“: Milchglas-Karten vor einem violetten Farbschimmer.
+   Alle Farben, Radien und Effekte stehen hier – der Rest der Datei benutzt nur
+   diese Variablen. */
 :root {
   color-scheme: dark;
-  --bg: #262624;
-  --card: #30302e;
-  --text: #f5f4ee;
-  --muted: #b0ada2;
-  --accent: #d97757;
-  --accent-dark: #c2603f;
-  --accent-soft: #e8a184;
-  --border: #403f3b;
-  --danger: #ea6a6a;
-  --danger-border: #5a3532;
-  --danger-bg: #3a2624;
-  --input-bg: #2a2a27;
-  --hover: #3a3a36;
-  --panel: #2f2f2c;
-  --active-soft: #3e332c;
-  --track: #3a3a36;
-  --on-accent-muted: #f7ded3;
-  --housing: #1a1a18;
-  --housing-off: #403f3b;
-  --green: #4caf62;
-  --yellow: #e3b341;
-  --red: #e35d4a;
-  --radius: 12px;
-  --shadow: 0 2px 12px rgba(0, 0, 0, .4);
+  --bg: #120f26;
+  --page-bg:
+    radial-gradient(900px 480px at 8% -5%, rgba(45, 212, 191, .16), transparent 65%),
+    radial-gradient(1000px 560px at 88% 0%, rgba(168, 85, 247, .38), transparent 65%),
+    radial-gradient(1000px 560px at 50% 105%, rgba(236, 72, 153, .22), transparent 65%),
+    #120f26;
+  --card: rgba(255, 255, 255, .065);
+  --card-solid: #1f1940;           /* wo Glas nicht geht: Popups, Knopf im Bogen */
+  --card-border: rgba(255, 255, 255, .12);
+  --bar-bg: rgba(18, 15, 38, .62);
+  --glass: blur(20px) saturate(140%);
+  --text: #f7f3ff;
+  --muted: #bdb3de;
+  --accent: #e9a8ff;
+  --accent-dark: #d58cf5;
+  --accent-soft: #f5d0fe;
+  --accent-grad: linear-gradient(120deg, #c4b5fd, #f0abfc);
+  --on-accent: #221438;            /* Schrift auf Akzentflächen */
+  --on-accent-muted: #4d3870;
+  --highlight: #5eead4;            /* Türkis: Markierungsbalken */
+  --border: rgba(255, 255, 255, .14);
+  --danger: #fda4af;
+  --danger-border: rgba(253, 164, 175, .35);
+  --danger-bg: rgba(253, 164, 175, .1);
+  --input-bg: rgba(0, 0, 0, .22);
+  --hover: rgba(255, 255, 255, .08);
+  --panel: rgba(255, 255, 255, .05);
+  --active-soft: rgba(233, 168, 255, .14);
+  --track: rgba(255, 255, 255, .1);
+  --housing: #1a1433;
+  --housing-off: #3a3060;
+  --green: #5eead4;
+  --yellow: #fcd34d;
+  --red: #fb7185;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 10px 36px rgba(8, 4, 24, .5);
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #faf9f5;
-  --card: #ffffff;
-  --text: #1f1e1d;
-  --muted: #6b6a62;
-  --accent: #c2603f;
-  --accent-dark: #a94e30;
-  --accent-soft: #a94e30;
-  --border: #e5e2d9;
-  --danger: #c0392b;
-  --danger-border: #eccac4;
-  --danger-bg: #fbeeeb;
-  --input-bg: #ffffff;
-  --hover: #f1efe8;
-  --panel: #f4f2ea;
-  --active-soft: #f8e7dd;
-  --track: #ebe8df;
-  --on-accent-muted: #f7ded3;
-  --housing: #2a2926;
-  --housing-off: #4a4843;
-  --green: #3d9e52;
-  --yellow: #d9a520;
-  --red: #d1493a;
-  --shadow: 0 2px 10px rgba(60, 50, 40, .09);
+  --bg: #f5f2ff;
+  --page-bg:
+    radial-gradient(900px 480px at 8% -5%, rgba(45, 212, 191, .16), transparent 65%),
+    radial-gradient(1000px 560px at 88% 0%, rgba(168, 85, 247, .18), transparent 65%),
+    radial-gradient(1000px 560px at 50% 105%, rgba(236, 72, 153, .12), transparent 65%),
+    #f5f2ff;
+  --card: rgba(255, 255, 255, .72);
+  --card-solid: #ffffff;
+  --card-border: rgba(80, 50, 140, .12);
+  --bar-bg: rgba(255, 255, 255, .72);
+  --text: #1e1633;
+  --muted: #615a7d;
+  --accent: #7c3aed;
+  --accent-dark: #6d28d9;
+  --accent-soft: #6d28d9;
+  --accent-grad: linear-gradient(120deg, #8b5cf6, #c026d3);
+  --on-accent: #ffffff;
+  --on-accent-muted: #ede4ff;
+  --highlight: #0d9488;
+  --border: rgba(80, 50, 140, .16);
+  --danger: #be123c;
+  --danger-border: #f5c2cf;
+  --danger-bg: #fff1f4;
+  --input-bg: rgba(255, 255, 255, .85);
+  --hover: rgba(124, 58, 237, .07);
+  --panel: rgba(124, 58, 237, .04);
+  --active-soft: rgba(124, 58, 237, .1);
+  --track: rgba(80, 50, 140, .1);
+  --housing: #2a2148;
+  --housing-off: #4a4170;
+  --green: #0d9488;
+  --yellow: #ca8a04;
+  --red: #e11d48;
+  --shadow: 0 6px 24px rgba(80, 50, 140, .12);
 }
 
 /* ---------- Icons ---------- */
@@ -70,7 +97,8 @@ h1[data-icon], h2[data-icon], h3[data-icon] { display: flex; align-items: center
 html, body { margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
+  background: var(--page-bg) fixed;
+  background-color: var(--bg);
   color: var(--text);
   min-height: 100vh;
 }
@@ -87,7 +115,8 @@ code { background: var(--panel); border-radius: 4px; padding: 0 .3em; }
 /* ---------- Topbar ---------- */
 .topbar {
   display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
-  background: var(--card); box-shadow: var(--shadow);
+  background: var(--bar-bg); border-bottom: 1px solid var(--card-border);
+  -webkit-backdrop-filter: var(--glass); backdrop-filter: var(--glass);
   padding: .7rem 1.2rem; position: sticky; top: 0; z-index: 20;
 }
 .main-tabs { display: flex; gap: .3rem; flex: 1; }
@@ -106,35 +135,37 @@ code { background: var(--panel); border-radius: 4px; padding: 0 .3em; }
 
 .tab-btn {
   border: none; background: transparent; font-size: .95rem; font-weight: 600;
-  color: var(--muted); padding: .55rem .9rem; border-radius: 8px; cursor: pointer;
+  color: var(--muted); padding: .55rem .9rem; border-radius: var(--radius-sm); cursor: pointer;
 }
 .tab-btn:hover { background: var(--hover); }
-.tab-btn.active { background: var(--accent); color: #fff; }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { background: var(--accent-grad); color: var(--on-accent); }
 
 /* ---------- Allgemeine Elemente ---------- */
 .tab-page { display: none; padding: 1.2rem; max-width: 1200px; margin: 0 auto; }
 .tab-page.active { display: block; }
 
 .card {
-  background: var(--card); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
+  -webkit-backdrop-filter: var(--glass); backdrop-filter: var(--glass);
   box-shadow: var(--shadow); padding: 1.2rem;
 }
 
 button, .file-btn {
   font: inherit; font-size: .9rem; font-weight: 600;
   border: 1px solid var(--border); background: var(--input-bg); color: var(--text);
-  border-radius: 8px; padding: .5rem .9rem; cursor: pointer; display: inline-block;
+  border-radius: var(--radius-sm); padding: .5rem .9rem; cursor: pointer; display: inline-block;
 }
 button:hover, .file-btn:hover { background: var(--hover); }
-button.primary, .file-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-button.primary:hover, .file-btn.primary:hover { background: var(--accent-dark); }
+button.primary, .file-btn.primary { background: var(--accent-grad); border-color: transparent; color: var(--on-accent); }
+button.primary:hover, .file-btn.primary:hover { filter: brightness(1.07); }
 button.danger { color: var(--danger); border-color: var(--danger-border); }
 button.danger:hover { background: var(--danger-bg); }
 button.small { font-size: .8rem; padding: .3rem .6rem; }
 
-input[type="text"], input[type="date"], input[type="number"], input[type="password"], textarea, select {
+input[type="text"], input[type="search"], input[type="date"], input[type="number"], input[type="password"], textarea, select {
   font: inherit; padding: .5rem .7rem; border: 1px solid var(--border);
-  border-radius: 8px; background: var(--input-bg); color: var(--text); max-width: 100%;
+  border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); max-width: 100%;
 }
 textarea { width: 100%; resize: vertical; }
 input:focus, textarea:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
@@ -159,7 +190,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .bogen-seg { fill: none; stroke-width: 22; }
 .bogen-spur { opacity: .16; }
 .bogen-marker { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
-.bogen-knopf { stroke: var(--card); stroke-width: 3; transition: fill .15s; }
+.bogen-knopf { stroke: var(--card-solid); stroke-width: 3; transition: fill .15s; }
 .laerm-bogen[data-state="red"] .bogen-knopf { filter: drop-shadow(0 0 6px var(--red)); }
 .laerm-bogen .db-display {
   position: absolute; left: 0; right: 0; bottom: -.15em; text-align: center; line-height: 1;
@@ -187,13 +218,13 @@ input[type="checkbox"] { accent-color: var(--accent); }
 
 .class-list { list-style: none; margin: 0 0 1rem; padding: 0; }
 .class-list li {
-  padding: .55rem .7rem; border-radius: 8px; cursor: pointer; font-weight: 600;
+  padding: .55rem .7rem; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600;
   display: flex; justify-content: space-between; align-items: center;
 }
 .class-list li:hover { background: var(--hover); }
-.class-list li.active { background: var(--accent); color: #fff; }
+.class-list li.active { background: var(--active-soft); color: var(--accent-soft); box-shadow: inset 3px 0 0 var(--highlight); }
 .class-list .count { font-size: .75rem; color: var(--muted); font-weight: 400; }
-.class-list li.active .count { color: var(--on-accent-muted); }
+.class-list li.active .count { color: var(--muted); }
 
 /* Klassen ordnen: Kopfzeile mit Schalter, Pfeile erst im Ordnen-Zustand */
 .klassen-kopf { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
@@ -202,7 +233,6 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .klassen-pfeile { display: flex; gap: .15rem; flex: 0 0 auto; }
 .klassen-pfeile button { padding: .15rem .3rem; line-height: 1; }
 .klassen-pfeile .icon { margin: 0; width: 1em; height: 1em; }
-.class-list li.active .klassen-pfeile button { color: #fff; border-color: rgba(255,255,255,.4); }
 
 .new-class-form { display: flex; flex-direction: column; gap: .4rem; }
 .new-class-form input, .new-class-form select { width: 100%; min-width: 0; }
@@ -213,7 +243,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 @media (min-width: 1100px) { .sub-tabs { flex: 1; order: 0; } }
 .subtab-btn {
   border: none; background: transparent; font-weight: 600; color: var(--muted);
-  padding: .45rem .75rem; border-radius: 8px; cursor: pointer; font-size: .88rem;
+  padding: .45rem .75rem; border-radius: var(--radius-sm); cursor: pointer; font-size: .88rem;
   white-space: nowrap;
 }
 .subtab-btn:hover { background: var(--hover); }
@@ -250,7 +280,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .project-list { list-style: none; margin: .8rem 0; padding: 0; }
 .project-list li {
   display: flex; align-items: center; gap: .8rem; padding: .55rem .7rem;
-  border: 1px solid var(--border); border-radius: 8px; margin-bottom: .4rem; cursor: pointer;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: .4rem; cursor: pointer;
 }
 .project-list li:hover { background: var(--hover); }
 .project-list li.active { border-color: var(--accent); background: var(--active-soft); }
@@ -290,7 +320,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
    sieht, bevor der QR-Code steht: hinterher laesst es sich nicht mehr aendern */
 .live-bezeichnung { display: flex; align-items: center; gap: .45rem; font-size: .85rem; color: var(--muted); }
 .live-bezeichnung input { width: 11rem; padding: .4rem .55rem; font: inherit; font-size: .88rem;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text); }
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text); }
 .group-box input.grade { width: 4em; padding: .2rem .4rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; text-align: center; background: var(--input-bg); color: var(--text); }
 .group-box input.grade.single { width: 3em; font-size: .85em; }
 /* Umhaengen: kleines Feld hinter dem Namen, damit die Zeile nicht auseinanderfaellt */
@@ -308,7 +338,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 #btn-info { font-weight: 700; font-style: italic; }
 .info-box {
   position: absolute; right: 1.2rem; top: 4.2rem; z-index: 30;
-  max-width: 26rem; border: 1px solid var(--border);
+  max-width: 26rem; background: var(--card-solid);
 }
 .info-box h3 { margin-top: 0; }
 .info-box p { font-size: .9rem; line-height: 1.5; color: var(--muted); margin: 0 0 .7rem; }
@@ -329,7 +359,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 .foto-kachel .del {
   position: absolute; top: .4rem; right: .4rem; line-height: 0;
-  padding: .3rem; border-radius: 999px; background: var(--card);
+  padding: .3rem; border-radius: 999px; background: var(--card-solid);
   border: 1px solid var(--border); color: var(--danger); opacity: .85;
 }
 .foto-kachel .del:hover { opacity: 1; }
@@ -569,7 +599,7 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .lesson-item {
   display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
   padding: .5rem .7rem; border: 1px solid var(--border);
-  border-radius: 8px; margin-bottom: .35rem;
+  border-radius: var(--radius-sm); margin-bottom: .35rem;
 }
 .lesson-item.state-progress { border-color: var(--yellow); background: color-mix(in srgb, var(--yellow) 8%, transparent); }
 .lesson-item.state-done { border-color: var(--green); opacity: .7; }
@@ -578,19 +608,19 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .lesson-item.state-done .lesson-name { text-decoration: line-through; text-decoration-color: var(--muted); }
 .lesson-meta { font-size: .78rem; color: var(--muted); }
 .lesson-states { display: flex; gap: .3rem; flex: 0 0 auto; }
-.lesson-states .state-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.lesson-states .state-btn.active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .lesson-states .danger .icon { margin: 0; }
 
 .seatplan-view { margin-top: 1rem; }
-.seatplan-view iframe { width: 100%; height: 75vh; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
-.seatplan-view img { max-width: 100%; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.seatplan-view iframe { width: 100%; height: 75vh; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; }
+.seatplan-view img { max-width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; }
 
 /* ---------- Schulband ---------- */
 .bandtab-page { display: none; }
 .bandtab-page.active { display: block; }
 .bandtab-btn {
   border: none; background: transparent; font-weight: 600; color: var(--muted);
-  padding: .45rem .75rem; border-radius: 8px; cursor: pointer; font-size: .88rem;
+  padding: .45rem .75rem; border-radius: var(--radius-sm); cursor: pointer; font-size: .88rem;
   white-space: nowrap;
 }
 .bandtab-btn:hover { background: var(--hover); }
@@ -611,7 +641,7 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .leitungs-person { cursor: help; }
 #member-anlass {
   padding: .35rem .5rem; font: inherit; font-size: .85rem;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
 }
 #btn-print-members-sel:disabled { opacity: .5; cursor: default; }
 .cell-input {
@@ -656,7 +686,7 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 }
 .kal-tag.fremd { color: var(--muted); opacity: .4; }
 .kal-tag.heute { border-color: var(--border); font-weight: 600; }
-.kal-tag.auftritt { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; cursor: pointer; }
+.kal-tag.auftritt { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; cursor: pointer; }
 .kal-tag.auftritt:hover { background: var(--accent-dark); border-color: var(--accent-dark); }
 .kal-tag.auftritt.fremd { opacity: .55; }
 
@@ -681,11 +711,11 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
   /* Kopfzeile: Titel mit Akzentlinie, darunter die Eckdaten */
   .band-print h1 {
     font-size: 20pt; font-weight: 700; letter-spacing: -.01em;
-    margin: 0; padding-bottom: 6pt; border-bottom: 2.5pt solid #c2603f;
+    margin: 0; padding-bottom: 6pt; border-bottom: 2.5pt solid #6d28d9;
   }
   /* Der Termin des Ereignisses – die wichtigste Angabe nach dem Titel */
   .band-print .termin {
-    margin: 7pt 0 0; font-size: 13pt; font-weight: 700; color: #c2603f;
+    margin: 7pt 0 0; font-size: 13pt; font-weight: 700; color: #6d28d9;
   }
   .band-print .meta {
     display: flex; justify-content: space-between; gap: 2em;
@@ -706,7 +736,7 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
     padding: 6pt 8pt 6pt 0; vertical-align: top;
     border-bottom: .5pt solid #d8d5cc;
   }
-  .band-print tbody tr:nth-child(even) td { background: #faf9f5; }
+  .band-print tbody tr:nth-child(even) td { background: #f7f5fc; }
   .band-print td:last-child, .band-print th:last-child { padding-right: 0; }
 
   /* Schmale Spalten (Nummer, Klasse) kompakt und gut lesbar */
@@ -731,7 +761,7 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
   /* Anmerkung zur ganzen Setlist steht über der Tabelle */
   .band-print .setlist-notiz {
     margin: 0 0 12pt; padding: 6pt 8pt;
-    border-left: 2.5pt solid #c2603f; background: #faf9f5;
+    border-left: 2.5pt solid #6d28d9; background: #f7f5fc;
     font-size: 10pt; white-space: pre-wrap;
   }
 
@@ -747,7 +777,7 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .schueler-suche { position: relative; margin-bottom: .6rem; }
 .schueler-suche input {
   width: 100%; padding: .5rem .65rem; font: inherit; font-size: .9rem;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
 }
 /* × im Suchfeld: hebt Suche und Schülerauswahl auf. Das eingebaute Kreuz
    des Browsers erscheint nur beim Überfahren und kann nur das Feld leeren. */
@@ -758,11 +788,11 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
   width: 1.7rem; height: 1.7rem; padding: 0; border: none; border-radius: 6px;
   background: var(--hover); color: var(--text); font-size: 1.1rem; line-height: 1; cursor: pointer;
 }
-.auswahl-weg:hover { background: var(--accent); color: #fff; }
+.auswahl-weg:hover { background: var(--accent); color: var(--on-accent); }
 .suche-treffer { list-style: none; margin: .4rem 0 0; padding: 0; max-height: 18rem; overflow-y: auto; }
 .suche-treffer li {
   display: flex; flex-direction: column; gap: .1rem;
-  padding: .45rem .6rem; border-radius: 8px; cursor: pointer;
+  padding: .45rem .6rem; border-radius: var(--radius-sm); cursor: pointer;
   border: 1px solid transparent;
 }
 .suche-treffer li:hover { background: var(--hover); border-color: var(--border); }
@@ -860,19 +890,19 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 .steckbrief {
   position: sticky; top: .5rem; z-index: 1;
   max-height: calc(100vh - 1rem); overflow-y: auto;
-  background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
   padding: .8rem 1rem 1rem; margin-bottom: 1.5rem;
 }
 .steckbrief h3 { margin: .9rem 0 .4rem; font-size: 1rem; }
 .steckbrief-zu { margin-left: .3rem; font-size: 1.05rem; line-height: 1; padding: .25rem .55rem; }
-.steckbrief-zu:hover { background: var(--accent); color: #fff; }
+.steckbrief-zu:hover { background: var(--accent); color: var(--on-accent); }
 #profil-position { flex: 1; text-align: center; white-space: nowrap; }
 /* Der gewählte Schüler in der Klassenliste */
-#student-list li.gewaehlt { background: var(--active-soft); box-shadow: inset 0 0 0 1px var(--accent); border-radius: 8px; }
+#student-list li.gewaehlt { background: var(--active-soft); box-shadow: inset 0 0 0 1px var(--accent); border-radius: var(--radius-sm); }
 #student-list li.gewaehlt .sname { color: var(--accent); font-weight: 600; }
 .profil-kopf { display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap; }
 .profil-foto {
-  flex: none; width: 8.5rem; height: 8.5rem; border-radius: 14px;
+  flex: none; width: 8.5rem; height: 8.5rem; border-radius: var(--radius);
   background: var(--hover) center / cover no-repeat;
   display: flex; align-items: center; justify-content: center;
   font-size: 3rem; font-weight: 700; color: var(--muted); text-transform: uppercase;
@@ -896,7 +926,7 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 .profil-noten li.hint { border: none; }
 #profil-notiz {
   width: 100%; box-sizing: border-box; font: inherit; padding: .5rem .65rem;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
 }
 /* Acht Reiter passen auf dem Handy nicht nebeneinander – zwei Zeilen à vier */
 @media screen and (max-width: 520px) {
@@ -913,7 +943,7 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 #student-list li.gefunden {
   background: var(--active-soft);
   box-shadow: inset 0 0 0 1px var(--accent);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 /* ---------- Klassenleitung ---------- */
@@ -940,7 +970,7 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 .lehrer-werkzeuge { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin-top: .7rem; }
 .lehrer-werkzeuge input[type="search"] {
   flex: 1 1 14rem; min-width: 10rem; padding: .45rem .6rem; font: inherit; font-size: .88rem;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
 }
 .lehrer-werkzeuge label { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--muted); }
 
@@ -992,7 +1022,7 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
   font-size: .78em; font-weight: 700; line-height: 1.35;
   border-radius: 999px; margin-right: .2em;
 }
-.rolle-ziffer.rolle-1 { background: var(--accent); color: #fff; }
+.rolle-ziffer.rolle-1 { background: var(--accent); color: var(--on-accent); }
 .rolle-ziffer.rolle-2 { border: 1px solid var(--accent-soft); color: var(--accent-soft); }
 .lehrer-spalten li.hat-leitung { color: var(--text); }
 
@@ -1000,8 +1030,8 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 .tipp-blase {
   position: fixed; z-index: 9999; pointer-events: none;
   max-width: 22rem; padding: .35rem .6rem;
-  background: var(--housing); color: #f5f4ee;
-  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--housing); color: #f7f3ff;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
   font-size: .82rem; line-height: 1.35;
   box-shadow: var(--shadow);
 }
@@ -1021,13 +1051,13 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 .sport-wahl label { display: flex; flex-direction: column; gap: .25rem; font-size: .82rem; color: var(--muted); }
 .sport-wahl select {
   padding: .45rem .55rem; font: inherit; font-size: .9rem;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
 }
 .sport-eingabe { display: flex; align-items: flex-end; gap: .8rem; margin-bottom: .9rem; }
 .sport-eingabe label { display: flex; flex-direction: column; gap: .25rem; font-size: .82rem; color: var(--muted); }
 .sport-eingabe input {
   padding: .45rem .55rem; font: inherit; font-size: .95rem;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
 }
 .sport-messnote { font-size: 1.05rem; font-weight: 700; padding-bottom: .35rem; }
 .sport-tabelle { max-width: 22rem; }
@@ -1041,12 +1071,12 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 
 #sport-suche {
   width: 100%; max-width: 26rem; padding: .5rem .65rem; font: inherit; font-size: .9rem;
-  border: 1px solid var(--border); border-radius: 8px; background: var(--input-bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
 }
 .sport-treffer { display: grid; gap: .4rem; margin-top: .7rem; max-height: 22rem; overflow-y: auto; }
 .sport-treffer-zeile {
   display: grid; gap: .15rem; text-align: left; width: 100%;
-  padding: .5rem .65rem; border: 1px solid var(--border); border-radius: 8px;
+  padding: .5rem .65rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: var(--panel); color: var(--text);
 }
 .sport-treffer-zeile:hover { background: var(--hover); border-color: var(--accent); }
@@ -1076,7 +1106,7 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 .stoppuhr-leiste { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .9rem; }
 .leisten-feld {
   display: flex; flex-direction: column; align-items: center; gap: .05rem;
-  padding: .25rem .7rem; border: 1px solid var(--border); border-radius: 8px;
+  padding: .25rem .7rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
   font-variant-numeric: tabular-nums; min-width: 3.6rem;
 }
 /* „Note 3“ klein und ruhig, der Wert darunter gross – nebeneinander waren die
@@ -1089,25 +1119,26 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
   gap: min(1.6vw, 1.6rem); margin: 0; justify-content: center;
 }
 .stoppuhr-buehne:fullscreen .leisten-feld {
-  padding: .4rem 1.1rem; border-radius: 14px; min-width: min(11vw, 9rem);
+  padding: .4rem 1.1rem; border-radius: var(--radius); min-width: min(11vw, 9rem);
 }
 .stoppuhr-buehne:fullscreen .leisten-feld b { font-size: min(1.9vw, 3.2vh); }
 .stoppuhr-buehne:fullscreen .leisten-wert { font-size: min(3.6vw, 6.2vh); }
-.stoppuhr-buehne:fullscreen .btn-row button { font-size: 1.5rem; padding: .9rem 1.8rem; border-radius: 12px; }
+.stoppuhr-buehne:fullscreen .btn-row button { font-size: 1.5rem; padding: .9rem 1.8rem; border-radius: var(--radius); }
 .stoppuhr-buehne:fullscreen .btn-row .icon { width: 1.3em; height: 1.3em; }
 
 .footer { text-align: center; padding: 1.5rem; }
 
 /* ---------- Popup (ampel.html) ---------- */
 /* Bleibt in beiden Themes dunkel – die Ampel liest sich so am besten. */
-.popup-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1f1e1d; }
+.popup-body { display: flex; align-items: center; justify-content: center; min-height: 100vh;
+  background: radial-gradient(600px 400px at 70% 0%, rgba(168, 85, 247, .35), transparent 70%), #120f26; }
 .popup-ampel { display: flex; flex-direction: column; align-items: center; gap: .8rem; padding: 1rem; }
-.popup-ampel .db-display { color: #f5f4ee; }
-.popup-ampel .bogen-marker { stroke: #f5f4ee; }
-.popup-ampel .bogen-knopf { stroke: #1f1e1d; }
+.popup-ampel .db-display { color: #f7f3ff; }
+.popup-ampel .bogen-marker { stroke: #f7f3ff; }
+.popup-ampel .bogen-knopf { stroke: #120f26; }
 
 .alarm-config input[type="number"] { width: 4.2em; padding: .2rem .4rem; }
-.popup-alarm-count { color: #b0ada2; display: flex; align-items: center; }
+.popup-alarm-count { color: #bdb3de; display: flex; align-items: center; }
 
 /* ---------- Sperrbildschirm ---------- */
 html.locked, html.locked body { overflow: hidden; }
@@ -1116,11 +1147,12 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .lock-screen {
   position: fixed; inset: 0; z-index: 1000;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(160deg, #3a352e, #1b1a18);
+  background: var(--page-bg); background-color: var(--bg);
   padding: 1.5rem;
 }
 .lock-box {
-  background: var(--card); border-radius: 16px; box-shadow: 0 12px 40px rgba(0, 0, 0, .35);
+  background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius);
+  -webkit-backdrop-filter: var(--glass); backdrop-filter: var(--glass); box-shadow: var(--shadow);
   padding: 2rem 2.2rem; text-align: center; width: 100%; max-width: 340px;
 }
 .lock-icon { line-height: 1; margin-bottom: .6rem; color: var(--accent); }
@@ -1150,13 +1182,13 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .alarm-count { font-size: clamp(1rem, 4vw, 1.6rem); font-weight: 700; opacity: .9; }
 .alarm-reset {
   font-size: clamp(.9rem, 3vw, 1.2rem); font-weight: 700;
-  background: #fff; color: var(--red); border: none; border-radius: 10px;
+  background: #fff; color: var(--red); border: none; border-radius: var(--radius-sm);
   padding: .7em 1.6em; cursor: pointer;
 }
-.alarm-reset:hover { background: #ffe6dc; }
+.alarm-reset:hover { background: #ffe4ea; }
 @keyframes alarm-pulse {
   0%, 100% { background: var(--red); }
-  50% { background: #a83525; }
+  50% { background: #be123c; }
 }
 
 /* ---------- Sitzordnung ----------
@@ -1166,7 +1198,7 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .sitz-raum-zeile {
   display: flex; flex-wrap: wrap; align-items: center; gap: .8rem;
   margin: .2rem 0 .8rem; padding: .7rem .8rem;
-  background: var(--panel); border-radius: 8px;
+  background: var(--panel); border-radius: var(--radius-sm);
 }
 .sitz-raum-zeile label { display: inline-flex; align-items: center; gap: .4rem; font-size: .9rem; }
 .sitz-raum-zeile input { width: 4.5rem; }
@@ -1176,7 +1208,7 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .sitz-tafel {
   text-align: center; font-weight: 600; letter-spacing: .12em; font-size: .78rem;
   color: var(--muted); background: var(--panel);
-  border-radius: 8px; padding: .4rem; margin: .2rem 0 1.2rem;
+  border-radius: var(--radius-sm); padding: .4rem; margin: .2rem 0 1.2rem;
 }
 
 .sitz-gitter {
@@ -1189,7 +1221,7 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .sitz-platz {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: .1rem; min-height: 4.2rem; padding: .5rem .35rem;
-  border: 1px solid var(--border); border-radius: 10px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
   background: var(--card); color: var(--text);
   cursor: pointer; text-align: center; line-height: 1.25;
   transition: border-color .12s ease, background .12s ease;
@@ -1246,25 +1278,25 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 /* ----- Gesichter aus dem Klassenfoto zuordnen ----- */
 .gesichter-bereich {
   margin: .4rem 0 1rem; padding: .9rem;
-  border: 1px solid var(--accent); border-radius: 10px; background: var(--panel);
+  border: 1px solid var(--accent); border-radius: var(--radius-sm); background: var(--panel);
 }
 .gesichter-leiste { align-items: center; margin-bottom: .5rem; }
 .gesichter-regler { display: inline-flex; align-items: center; gap: .4rem; font-size: .85rem; }
 .gesichter-regler input { width: 8rem; }
 /* Das Foto traegt die Rahmen – beide muessen deshalb deckungsgleich liegen */
 .gesichter-buehne { position: relative; display: inline-block; max-width: 100%; touch-action: none; }
-.gesichter-buehne img { display: block; max-width: 100%; height: auto; border-radius: 8px; cursor: crosshair; }
+.gesichter-buehne img { display: block; max-width: 100%; height: auto; border-radius: var(--radius-sm); cursor: crosshair; }
 #gesichter-rahmen { position: absolute; inset: 0; pointer-events: none; }
 .gesichter-kasten {
   position: absolute; border: 2px solid var(--accent); border-radius: 6px;
   pointer-events: auto; cursor: pointer;
 }
 .gesichter-kasten.offen { border-style: dashed; background: rgba(255, 255, 255, .12); }
-.gesichter-kasten.fertig { border-color: #35c463; }
+.gesichter-kasten.fertig { border-color: var(--green); }
 .gesichter-kasten span {
   position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
   margin-top: 2px; padding: 1px 5px; border-radius: 4px; white-space: nowrap;
-  background: #35c463; color: #06230f; font-size: .7rem; font-weight: 700;
+  background: var(--green); color: var(--bg); font-size: .7rem; font-weight: 700;
 }
 .gesichter-wahl { margin-top: .8rem; }
 .gesichter-wahl input { width: min(100%, 22rem); }
@@ -1281,7 +1313,7 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .sitz-pdf-zeile { margin: .2rem 0 .6rem; }
 .sitz-pdf-vorschau {
   margin: .4rem 0 1rem; padding: .9rem;
-  border: 1px solid var(--accent); border-radius: 10px; background: var(--panel);
+  border: 1px solid var(--accent); border-radius: var(--radius-sm); background: var(--panel);
 }
 .sitz-vorschau-gitter {
   display: flex; flex-wrap: wrap; gap: .7rem; margin: .7rem 0 1rem;
@@ -1289,12 +1321,12 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .sitz-vorschau-zelle { margin: 0; width: 5rem; text-align: center; font-size: .72rem; }
 .sitz-vorschau-zelle img {
   width: 4.2rem; height: 4.2rem; object-fit: cover;
-  border-radius: 8px; border: 1px solid var(--border); background: var(--card);
+  border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card);
 }
 .sitz-vorschau-ohne {
   width: 4.2rem; height: 4.2rem; margin: 0 auto;
   display: flex; align-items: center; justify-content: center;
-  border: 1px dashed var(--border); border-radius: 8px; color: var(--muted); font-size: .68rem;
+  border: 1px dashed var(--border); border-radius: var(--radius-sm); color: var(--muted); font-size: .68rem;
 }
 .sitz-vorschau-zelle figcaption { margin-top: .25rem; overflow-wrap: anywhere; }
 
@@ -1302,7 +1334,7 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .sitz-bank {
   display: flex; flex-wrap: wrap; gap: .45rem;
   min-height: 3rem; padding: .6rem;
-  border: 1px dashed var(--border); border-radius: 10px; background: var(--panel);
+  border: 1px dashed var(--border); border-radius: var(--radius-sm); background: var(--panel);
 }
 .sitz-bank-chip {
   padding: .35rem .7rem; font-size: .85rem;
@@ -1452,7 +1484,7 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 @media screen and (min-width: 721px) and (max-width: 1440px) {
   .titel-text { display: none; }
   .knopf-text { display: none; }
-  .backup-btns button .icon { margin-right: 0; }
+  .backup-btns button:has(.knopf-text) .icon { margin-right: 0; }
   .sync-status { max-width: 8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 
@@ -1491,7 +1523,7 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
      die Symbole allein, die Erklärung steht weiter im aria-label */
   .knopf-text { display: none; }
   .backup-btns button { padding-left: .45rem; padding-right: .45rem; }
-  .backup-btns button .icon { margin-right: 0; }
+  .backup-btns button:has(.knopf-text) .icon { margin-right: 0; }
   .tab-page { padding: .8rem .7rem; }
   .card { padding: .9rem .8rem; }
 }

@@ -306,11 +306,11 @@ const LiveGroups = {
     w.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
       <title>Gruppen bilden</title><style>
       body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;
-        justify-content:center;gap:1.2rem;background:#faf9f5;color:#1f1e1d;
+        justify-content:center;gap:1.2rem;background:#f5f2ff;color:#1e1633;
         font-family:system-ui,-apple-system,"Segoe UI",sans-serif;}
       h1{font-size:2.4rem;margin:0;}
-      p{font-size:1.5rem;margin:0;color:#6b6a62;text-align:center;}
-      .code{font-size:2rem;font-weight:700;letter-spacing:.08em;color:#c2603f;}
+      p{font-size:1.5rem;margin:0;color:#615a7d;text-align:center;}
+      .code{font-size:2rem;font-weight:700;letter-spacing:.08em;color:#7c3aed;}
       .klein{font-size:1rem;max-width:34rem;line-height:1.5;}
       #qr{background:#fff;padding:1.5rem;border-radius:1rem;box-shadow:0 2px 20px rgba(0,0,0,.12);}
       </style></head><body>
