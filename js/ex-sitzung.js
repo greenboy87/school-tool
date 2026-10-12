@@ -29,7 +29,8 @@ const ExSitzung = {
   init() {
     if (!document.getElementById('ex-start')) return;
     document.getElementById('ex-start-klasse').addEventListener('change', () => this.anwesenheitZeichnen());
-    document.getElementById('ex-start-ex').addEventListener('change', () => this.vorschauText());
+    document.getElementById('ex-start-ex').addEventListener('change', () => { this.dauerVorbelegen(); this.vorschauText(); });
+    document.getElementById('ex-start-dauer').addEventListener('input', () => this.vorschauText());
     document.getElementById('ex-start-nummer').addEventListener('input', () => this.vorschauText());
     document.getElementById('ex-anwesend').addEventListener('change', () => this.anwesenheitZaehlen());
     document.getElementById('btn-ex-warteraum').addEventListener('click', () => this.warteraumOeffnen());
@@ -93,14 +94,29 @@ const ExSitzung = {
     }
     if (ids.includes(alt)) sel.value = alt;
     document.getElementById('btn-ex-warteraum').disabled = !ids.length;
+    if (sel.value !== alt) this.dauerVorbelegen();
     this.vorschauText();
+  },
+
+  /* Die Dauer kommt aus der Ex-Datei (ex-meta.dauerMinuten) und lässt sich für
+     eine Sitzung ändern, ohne dass es in der Auswertung als Zeitzuschlag zählt */
+  dauerVorbelegen() {
+    const x = Exen.index[document.getElementById('ex-start-ex').value];
+    document.getElementById('ex-start-dauer').value = x ? x.dauerMinuten : '';
+  },
+
+  dauer() {
+    const x = Exen.index[document.getElementById('ex-start-ex').value];
+    const d = Math.round(Number(document.getElementById('ex-start-dauer').value));
+    return d >= 1 && d <= 240 ? d : (x ? x.dauerMinuten : 20);
   },
 
   vorschauText() {
     const x = Exen.index[document.getElementById('ex-start-ex').value];
     const n = this.exNummer();
     document.getElementById('ex-start-vorschau').textContent = x
-      ? `Kopf auf den iPads: „${n}. ${x.art || 'Ex'} · ${x.fach || ''}“ · ${x.dauerMinuten} Minuten · ${x.punkteGesamt} Punkte`
+      ? `Kopf auf den iPads: „${n}. ${x.art || 'Ex'} · ${x.fach || ''}“ · ${this.dauer()} Minuten` +
+        (this.dauer() !== x.dauerMinuten ? ` (statt ${x.dauerMinuten})` : '') + ` · ${x.punkteGesamt} Punkte`
       : 'Zuerst eine Ex in die Bibliothek ziehen.';
   },
 
@@ -164,6 +180,7 @@ const ExSitzung = {
     document.getElementById('ex-start-klasse').value = erste.klasseId;
     document.getElementById('ex-start-ex').value = erste.exId;
     document.getElementById('ex-start-nummer').value = erste.exNummer;
+    this.dauerVorbelegen();
     this.nachschreibenOberflaeche();
     const offen = Object.keys(erste.nummern).filter(nr => !geschrieben.has(nr)).length;
     if (!offen) alert('Alle haben diese Ex schon geschrieben.');
@@ -223,7 +240,7 @@ const ExSitzung = {
       const exNummer = nach ? nach.exNummer : this.exNummer();
       await FB.set(FB.ref(FB.db, `schoolTool/exsessions/${code}/info`), {
         status: 'warteraum', exId, titel: ex.titel, art: ex.art || '', fach: ex.fach || '',
-        klasse: cls.name, exNummer, wiedergabe: 'zentral', dauerMinuten: ex.dauerMinuten,
+        klasse: cls.name, exNummer, wiedergabe: 'zentral', dauerMinuten: this.dauer(),
         zuschlagMin: 0, erstellt: FB.serverTimestamp(), erlaubt, fehlt,
         ...(nach ? { nachschreiben: true } : {}),
       });
@@ -448,6 +465,7 @@ const ExSitzung = {
       kopf = `<span>${frei} freigegeben · ${wartend} warten · ${zaehle('offen')} noch nicht da</span>
         <span class="btn-row">
           ${wartend ? '<button data-aktion="alle-freigeben" class="small">Alle freigeben</button>' : ''}
+          <button data-aktion="dauer" class="small" title="Gilt für alle; zählt nicht als Zeitzuschlag">Dauer: ${i.dauerMinuten} min ändern</button>
           <button data-aktion="starten" class="primary" ${frei ? '' : 'disabled'}>Ex starten</button>
         </span>`;
     } else if (laeuft) {
@@ -541,6 +559,14 @@ const ExSitzung = {
         case 'nachschreiben': { const l = this.lokal(); this.nachschreibenVorbereiten(`${l.exId}|${l.klasseId}|${l.exNummer}`); return; }
         case 'uebernehmen': await this.uebernehmen(uid, nr); return;
         case 'starten': await this.starten(); return;
+        case 'dauer': {
+          const ein = prompt('Dauer der Ex in Minuten (gilt für alle, zählt nicht als Zeitzuschlag):', String(this.info.dauerMinuten));
+          if (ein == null) return;
+          const d = Math.round(Number(String(ein).replace(',', '.')));
+          if (!(d >= 1 && d <= 240)) { alert('Bitte 1 bis 240 Minuten.'); return; }
+          w[`${s}/info/dauerMinuten`] = d;
+          break;
+        }
         default: return;
       }
       await FB.update(FB.ref(FB.db, 'schoolTool'), w);
