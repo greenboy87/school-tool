@@ -46,7 +46,14 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
 
 **R2.** **Veröffentlichen**. Fertig – im School-Tool einmal Strg+Shift+R.
 
-> **Zuletzt geändert am 12.10.2026 – Exen:** Neu sind die Äste `exindex`, `exen` und
+> **Zuletzt geändert am 12.10.2026 (zweite Änderung) – Ex-Sitzungen:** Neu sind
+> `exsessions` (Warteraum, Teilnehmer, Abgaben) und `exzugang`; unter `exen` dürfen
+> freigegebene Schüler einer laufenden Ex jetzt die Schülerfassung lesen. Schüler
+> schreiben nur ihren eigenen Eintrag, nur solange die Ex läuft und ihre Zeit nicht
+> abgelaufen ist, und nach der Abgabe gar nicht mehr. **Den kompletten Block erneut
+> kopieren** (R1 und R2).
+>
+> **Geändert am 12.10.2026 – Exen:** Neu sind die Äste `exindex`, `exen` und
 > `exgeheim`. Lesen und schreiben darf dort nur das Google-Konto der Lehrkraft
 > (die lange Kennung in `auth.uid === '…'`). Vorher muss die Anmeldung
 > eingeschaltet sein (Abschnitt „Anmeldung einschalten“ oben). Tresor, Gruppen und
@@ -134,6 +141,7 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
           ".validate": "$exId.matches(/^[a-z0-9][a-z0-9-]{1,60}$/)",
           "meta": { ".validate": "newData.isString() && newData.val().length <= 200000" },
           "schueler": {
+            ".read": "auth != null && root.child('schoolTool/exzugang/' + auth.uid).exists() && root.child('schoolTool/exsessions/' + root.child('schoolTool/exzugang/' + auth.uid).val() + '/info/exId').val() === $exId && root.child('schoolTool/exsessions/' + root.child('schoolTool/exzugang/' + auth.uid).val() + '/info/status').val() === 'laeuft' && root.child('schoolTool/exsessions/' + root.child('schoolTool/exzugang/' + auth.uid).val() + '/teilnehmer/' + auth.uid + '/status').val() === 'freigegeben'",
             "teile": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 20" },
             "laenge": { ".validate": "newData.isNumber()" },
             "$teil": { ".validate": "$teil.matches(/^t[0-9]{1,2}$/) && newData.isString() && newData.val().length <= 1000000" }
@@ -149,6 +157,64 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
           "bewertung": { ".validate": "newData.isString() && newData.val().length <= 1000000" },
           "stand":     { ".validate": "newData.isNumber()" },
           "$andere":   { ".validate": false }
+        }
+      },
+      "exsessions": {
+        ".read": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+        "$code": {
+          ".write": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".validate": "$code.matches(/^[1-9][0-9]{5}$/)",
+          "info": { ".read": "auth != null" },
+          "teilnehmer": {
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && (root.child('schoolTool/exsessions/' + $code + '/info/status').val() === 'warteraum' || root.child('schoolTool/exsessions/' + $code + '/info/status').val() === 'laeuft') && (!data.exists() || data.child('status').val() === 'wartet')",
+              ".validate": "newData.hasChildren(['nummer', 'status']) && root.child('schoolTool/exsessions/' + $code + '/info/erlaubt/n' + newData.child('nummer').val()).exists()",
+              "nummer":  { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{1,3}$/)" },
+              "status":  { ".validate": "newData.isString() && (newData.val() === 'wartet' || (auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2' && newData.val().matches(/^(freigegeben|fehlt|entfernt|ersetzt)$/)))" },
+              "notenschutzAngefragt": { ".validate": "newData.isBoolean()" },
+              "notenschutz": { ".validate": "newData.isBoolean() && auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'" },
+              "zuschlagMin": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120 && auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'" },
+              "ts":      { ".validate": "newData.isNumber()" },
+              "$andere": { ".validate": false }
+            }
+          },
+          "abgaben": {
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && root.child('schoolTool/exsessions/' + $code + '/info/status').val() === 'laeuft' && root.child('schoolTool/exsessions/' + $code + '/teilnehmer/' + $uid + '/status').val() === 'freigegeben' && data.child('abgegeben').val() !== true && now < root.child('schoolTool/exsessions/' + $code + '/info/startzeit').val() + (root.child('schoolTool/exsessions/' + $code + '/info/dauerMinuten').val() + root.child('schoolTool/exsessions/' + $code + '/info/zuschlagMin').val() + root.child('schoolTool/exsessions/' + $code + '/teilnehmer/' + $uid + '/zuschlagMin').val()) * 60000 + 120000",
+              "antworten":   { ".validate": "newData.isString() && newData.val().length <= 300000" },
+              "fortschritt": {
+                "erledigt": { ".validate": "newData.isNumber()" },
+                "gesamt":   { ".validate": "newData.isNumber()" },
+                "$andere":  { ".validate": false }
+              },
+              "stand":       { ".validate": "newData.isNumber()" },
+              "abgegeben":   { ".validate": "newData.isBoolean()" },
+              "abgegebenUm": { ".validate": "newData.isNumber()" },
+              "erzwungen":   { ".validate": "newData.isBoolean()" },
+              "ereignisse": {
+                "$e": {
+                  ".validate": "newData.hasChildren(['art', 'zeit'])",
+                  "art":     { ".validate": "newData.isString() && newData.val().length <= 40" },
+                  "zeit":    { ".validate": "newData.isNumber()" },
+                  "medium":  { ".validate": "newData.isString() && newData.val().length <= 20" },
+                  "station": { ".validate": "newData.isString() && newData.val().length <= 20" },
+                  "anzahl":  { ".validate": "newData.isNumber()" },
+                  "dauerSek": { ".validate": "newData.isNumber()" },
+                  "$andere": { ".validate": false }
+                }
+              },
+              "$andere": { ".validate": false }
+            }
+          }
+        }
+      },
+      "exzugang": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2')",
+          ".write": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".validate": "newData.isString() && newData.val().matches(/^[1-9][0-9]{5}$/)"
         }
       },
       "raeume": {
@@ -284,6 +350,7 @@ fügst nur einen Block hinzu:
           ".validate": "$exId.matches(/^[a-z0-9][a-z0-9-]{1,60}$/)",
           "meta": { ".validate": "newData.isString() && newData.val().length <= 200000" },
           "schueler": {
+            ".read": "auth != null && root.child('schoolTool/exzugang/' + auth.uid).exists() && root.child('schoolTool/exsessions/' + root.child('schoolTool/exzugang/' + auth.uid).val() + '/info/exId').val() === $exId && root.child('schoolTool/exsessions/' + root.child('schoolTool/exzugang/' + auth.uid).val() + '/info/status').val() === 'laeuft' && root.child('schoolTool/exsessions/' + root.child('schoolTool/exzugang/' + auth.uid).val() + '/teilnehmer/' + auth.uid + '/status').val() === 'freigegeben'",
             "teile": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 20" },
             "laenge": { ".validate": "newData.isNumber()" },
             "$teil": { ".validate": "$teil.matches(/^t[0-9]{1,2}$/) && newData.isString() && newData.val().length <= 1000000" }
@@ -299,6 +366,64 @@ fügst nur einen Block hinzu:
           "bewertung": { ".validate": "newData.isString() && newData.val().length <= 1000000" },
           "stand":     { ".validate": "newData.isNumber()" },
           "$andere":   { ".validate": false }
+        }
+      },
+      "exsessions": {
+        ".read": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+        "$code": {
+          ".write": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".validate": "$code.matches(/^[1-9][0-9]{5}$/)",
+          "info": { ".read": "auth != null" },
+          "teilnehmer": {
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && (root.child('schoolTool/exsessions/' + $code + '/info/status').val() === 'warteraum' || root.child('schoolTool/exsessions/' + $code + '/info/status').val() === 'laeuft') && (!data.exists() || data.child('status').val() === 'wartet')",
+              ".validate": "newData.hasChildren(['nummer', 'status']) && root.child('schoolTool/exsessions/' + $code + '/info/erlaubt/n' + newData.child('nummer').val()).exists()",
+              "nummer":  { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{1,3}$/)" },
+              "status":  { ".validate": "newData.isString() && (newData.val() === 'wartet' || (auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2' && newData.val().matches(/^(freigegeben|fehlt|entfernt|ersetzt)$/)))" },
+              "notenschutzAngefragt": { ".validate": "newData.isBoolean()" },
+              "notenschutz": { ".validate": "newData.isBoolean() && auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'" },
+              "zuschlagMin": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120 && auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'" },
+              "ts":      { ".validate": "newData.isNumber()" },
+              "$andere": { ".validate": false }
+            }
+          },
+          "abgaben": {
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && root.child('schoolTool/exsessions/' + $code + '/info/status').val() === 'laeuft' && root.child('schoolTool/exsessions/' + $code + '/teilnehmer/' + $uid + '/status').val() === 'freigegeben' && data.child('abgegeben').val() !== true && now < root.child('schoolTool/exsessions/' + $code + '/info/startzeit').val() + (root.child('schoolTool/exsessions/' + $code + '/info/dauerMinuten').val() + root.child('schoolTool/exsessions/' + $code + '/info/zuschlagMin').val() + root.child('schoolTool/exsessions/' + $code + '/teilnehmer/' + $uid + '/zuschlagMin').val()) * 60000 + 120000",
+              "antworten":   { ".validate": "newData.isString() && newData.val().length <= 300000" },
+              "fortschritt": {
+                "erledigt": { ".validate": "newData.isNumber()" },
+                "gesamt":   { ".validate": "newData.isNumber()" },
+                "$andere":  { ".validate": false }
+              },
+              "stand":       { ".validate": "newData.isNumber()" },
+              "abgegeben":   { ".validate": "newData.isBoolean()" },
+              "abgegebenUm": { ".validate": "newData.isNumber()" },
+              "erzwungen":   { ".validate": "newData.isBoolean()" },
+              "ereignisse": {
+                "$e": {
+                  ".validate": "newData.hasChildren(['art', 'zeit'])",
+                  "art":     { ".validate": "newData.isString() && newData.val().length <= 40" },
+                  "zeit":    { ".validate": "newData.isNumber()" },
+                  "medium":  { ".validate": "newData.isString() && newData.val().length <= 20" },
+                  "station": { ".validate": "newData.isString() && newData.val().length <= 20" },
+                  "anzahl":  { ".validate": "newData.isNumber()" },
+                  "dauerSek": { ".validate": "newData.isNumber()" },
+                  "$andere": { ".validate": false }
+                }
+              },
+              "$andere": { ".validate": false }
+            }
+          }
+        }
+      },
+      "exzugang": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2')",
+          ".write": "auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'",
+          ".validate": "newData.isString() && newData.val().matches(/^[1-9][0-9]{5}$/)"
         }
       },
       "raeume": {

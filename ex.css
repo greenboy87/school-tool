@@ -1,0 +1,53 @@
+/* Schülerseite der Exen – fürs iPad: große Flächen, gut lesbar, quer und hoch. */
+
+.ex-seite { padding: 0; background: var(--bg); min-height: 100vh; }
+
+.ex-kopfzeile {
+  display: flex; justify-content: space-between; gap: .8rem;
+  padding: calc(.6rem + env(safe-area-inset-top)) 1rem .6rem;
+  font-size: .9rem; color: var(--muted); border-bottom: 1px solid var(--border);
+}
+.ex-kopf-code { font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+
+.ex-huelle { max-width: 44rem; margin: 0 auto; padding: 1.2rem 1rem calc(2.5rem + env(safe-area-inset-bottom)); }
+
+.ex-karte { background: var(--card); border: 1px solid var(--border); border-radius: 1.1rem; padding: 1.4rem 1.3rem 1.6rem; }
+.ex-karte h1 { font-size: 1.6rem; margin: 0 0 .4rem; }
+.ex-mitte { text-align: center; margin-top: 12vh; }
+
+.ex-code-form { display: flex; gap: .6rem; justify-content: center; margin-top: 1rem; }
+#code-feld { font-size: 2rem; width: 9.5rem; text-align: center; letter-spacing: .15em; padding: .4rem .6rem; }
+
+.ex-nummern {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(4.4rem, 1fr));
+  gap: .55rem; margin: 1.1rem 0 1.3rem;
+}
+.ex-nummern button {
+  font-size: 1.6rem; font-weight: 700; padding: 0; height: 4.4rem; border-radius: .9rem;
+  font-variant-numeric: tabular-nums;
+}
+.ex-nummern button.gewaehlt { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.ex-notenschutz { display: flex; align-items: center; gap: .7rem; font-size: 1.05rem; cursor: pointer; }
+.ex-notenschutz input { position: absolute; opacity: 0; pointer-events: none; }
+.ex-notenschutz .schalter-bahn {
+  position: relative; flex-shrink: 0; width: 3rem; height: 1.7rem; border-radius: 1rem;
+  background: var(--border); transition: background .15s;
+}
+.ex-notenschutz .schalter-bahn::after {
+  content: ''; position: absolute; top: .2rem; left: .2rem; width: 1.3rem; height: 1.3rem;
+  border-radius: 50%; background: #fff; transition: transform .15s;
+}
+.ex-notenschutz input:checked + .schalter-bahn { background: var(--accent); }
+.ex-notenschutz input:checked + .schalter-bahn::after { transform: translateX(1.3rem); }
+.ex-notenschutz input:focus-visible + .schalter-bahn { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ex-notenschutz-hint { margin: .3rem 0 1.2rem 3.7rem; }
+
+.ex-gross { width: 100%; font-size: 1.2rem; padding: .9rem; }
+.ex-fehler { color: var(--danger); min-height: 1.2em; margin: .8rem 0 0; }
+
+.ex-nr-gross { font-size: 4.5rem; font-weight: 800; color: var(--accent); line-height: 1; margin-bottom: .6rem; font-variant-numeric: tabular-nums; }
+
+/* Die Ex: Vollbild über allem */
+.ex-rahmen { position: fixed; inset: 0; background: var(--bg); z-index: 50; }
+.ex-rahmen iframe { width: 100%; height: 100%; border: 0; display: block; }

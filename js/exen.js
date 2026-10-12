@@ -119,6 +119,7 @@ const Exen = {
     this.abmeldenIndex = FB.onValue(FB.ref(FB.db, this.pfad('exindex')), snap => {
       this.index = snap.val() || {};
       this.listeZeichnen();
+      document.dispatchEvent(new CustomEvent('ex-index'));
     }, e => {
       // Nach einer Ablehnung beendet Firebase die Live-Abfrage – merken, damit
       // der nächste gelungene Import sie neu startet

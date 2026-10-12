@@ -49,11 +49,11 @@ Leserechte nach unten. Unter `exen/{exId}` könnten Schüler die Lösung mitlese
    `data-ex-secret` entfernen, `medien[].src` entfernen, Prüfung, dass nichts
    Geheimes übrig ist. Hochladen in Stücken. Liste, Vorschau (Originaldatei lokal),
    Löschen, Neu-Import mit Rückfrage.
-2. **Start:** Klasse, Ex, Ex-Nummer, Anwesenheit (Abgewählte = `fehlt`),
+2. ✅ **Start:** Klasse, Ex, Ex-Nummer, Anwesenheit (Abgewählte = `fehlt`),
    6-stelliger Code, QR-Code mit `js/vendor/qrcode.min.js`.
-3. **Schülerseite `ex.html`:** Anonyme Anmeldung, Nummernraster ohne Namen,
+3. ✅ **Schülerseite `ex.html`:** Anonyme Anmeldung, Nummernraster ohne Namen,
    Notenschutz-Anfrage, Warteraum „Warte auf Freigabe“.
-4. **Lehrer-Warteraum:** Live-Liste mit lokal aufgelösten Namen, Freigeben
+4. ✅ **Lehrer-Warteraum:** Live-Liste mit lokal aufgelösten Namen, Freigeben
    (einzeln/alle), Rauswerfen, als fehlend markieren, Notenschutz bestätigen,
    Warnung bei doppelter Nummer, Start mit Serverzeit.
    **Wiederanmeldung:** Meldet sich eine Nummer mit vorhandener Abgabe unter einer
