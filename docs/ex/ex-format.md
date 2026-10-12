@@ -2,9 +2,11 @@
 
 Verbindliches Format für digitale Exen, die in diesem Project erstellt und im School-Tool (GitHub + Firebase) gestartet werden. Ersetzt tom-ex/1.
 
-**Grundidee:** Jede Ex ist **eine einzige HTML-Datei**. Sie bringt Design, Aufgaben und Bedienung selbst mit (Tippen, Ziehen, Regler, Zeichnen …). Deshalb sind die Aufgabentypen frei und werden pro Ex individuell gebaut. Das School-Tool ist nur der Rahmen und bleibt immer gleich: Anmeldung, Warteraum, Rauswerfen, Timer, Speichern, Abgabe, Dashboard, Hörbeispiele, Auswertung.
+**Grundidee:** Jede Ex ist **eine einzige HTML-Datei**. Sie bringt Design, Aufgaben und Bedienung selbst mit (Tippen, Ziehen, Regler, Zeichnen …). Deshalb sind die Aufgabentypen frei und werden pro Ex individuell gebaut. Das School-Tool ist nur der Rahmen und bleibt immer gleich: Anmeldung, Warteraum, Rauswerfen, Timer, Speichern, Abgabe, Dashboard, Auswertung.
 
 Referenz-Ex: `Die E-Gitarre - Ex c+.html` (Ordner „Klasse 7 - 2_Die E-Gitarre +“).
+
+Speicher im School-Tool: Firebase **Realtime Database** unter `schoolTool/` (`exen/`, `exgeheim/`, `exsessions/`, `exzugang/`). Für die Ex-Datei selbst spielt das keine Rolle, sie spricht nur über die Schnittstelle in Abschnitt 3.
 
 ## 1. Aufbau der Datei
 
@@ -44,7 +46,8 @@ Referenz-Ex: `Die E-Gitarre - Ex c+.html` (Ordner „Klasse 7 - 2_Die E-Gitarre 
 
 - `bewertung`: `auto` | `manuell` | `teil` (auto mit Prüf-Hinweisen)
 - `rechtschreibung: true`: Bei Notenschutz bewertet `bewerte()` Schreibfehler tolerant.
-- Medien und Bilder liegen als data-URI in der Datei. Das School-Tool lädt sie beim Import nach Firebase Storage und übergibt den Schülergeräten die URLs (`kontext.medien`).
+- **Hörbeispiele spielt Tom immer live vor** (z. B. aus der Präsentation). Das School-Tool lädt, speichert und überträgt keine Audiodateien. `medien[].src` ist optional (nur für die lokale Vorschau) und wird beim Import aus der Schülerfassung entfernt. `wiedergabe` ist immer `zentral`. Kopfhörer-Modus und `kontext.medien` sind für später vorgesehen, aktuell aber nicht gebaut.
+- Bilder liegen als data-URI in der Datei und bleiben in der Schülerfassung.
 - Nicht in die Datei gehören: die Nummer der Ex (z. B. „1.“), Klasse und Datum. Das setzt das School-Tool beim Start.
 
 ## 3. Schnittstelle Ex ⇄ School-Tool (postMessage)
@@ -57,7 +60,7 @@ Die Ex läuft im School-Tool in einem `<iframe sandbox="allow-scripts">`. Sie ha
 |---|---|---|
 | `init` | `kontext: {nummer, klasse, datum, exNummer, notenschutz, wiedergabe: "zentral"\|"kopfhoerer", medien: {id: url}, seed, modus: "schreiben"\|"ansicht", antworten, abgegeben}` | Start bzw. Wiederherstellen nach Reload. `ansicht` ist für die Lehrkraft gedacht (alles schreibgeschützt). |
 | `zeit` | `restSekunden` | Timer-Anzeige (individuell inkl. Zeitzuschlag) |
-| `medium` | `id, status: "spielt"\|"pause"\|"ende"` | zentrale Wiedergabe vom Lehrer-Dashboard |
+| `medium` | `id, status: "spielt"\|"pause"\|"ende"` | *später:* Anzeige „läuft gerade“ bei Wiedergabe vom Dashboard. Aktuell nicht gesendet, die Ex muss ohne funktionieren. |
 | `notenschutz` | `aktiv` | Lehrkraft hat den Schalter bestätigt oder zurückgenommen |
 | `sperren` | `grund: "zeit"\|"entfernt"\|"beendet"` | Ex sofort schreibgeschützt |
 | `abgabe-anfordern` | – | Ex antwortet sofort mit `abgeben` |
@@ -67,7 +70,7 @@ Die Ex läuft im School-Tool in einem `<iframe sandbox="allow-scripts">`. Sie ha
 | typ | Daten | Bedeutung |
 |---|---|---|
 | `bereit` | `format` | Ex ist geladen, wartet auf `init` |
-| `antworten` | `antworten, fortschritt: {erledigt, gesamt}` | bei jeder Änderung (gedrosselt); das Tool speichert in Firestore |
+| `antworten` | `antworten, fortschritt: {erledigt, gesamt}` | bei jeder Änderung (gedrosselt); das Tool speichert unter `exsessions/{code}/abgaben/{uid}` |
 | `abgeben` | `antworten, fortschritt` | Schüler hat abgegeben |
 | `ereignis` | `art, …` | z. B. `abspielen` (medium, anzahl), `station-abgeschlossen` |
 
@@ -100,7 +103,7 @@ Die Lehrkraft kann jede Teilpunktzahl überschreiben. Manuelle Aufgaben bekommen
 - Design passend zur Stunde (Farben und Motive aus der Präsentation), funktioniert auf dem iPad quer und hoch.
 - Bei Zuordnungen und Wortspeichern immer 1–2 Ablenker.
 - Hörbeispiele aus Toms Material nicht kürzen. In der Ex in anderer Reihenfolge als im Unterricht, mit neutralen IDs (hb1 …).
-- Hörbeispiele immer für beide Varianten vorsehen: zentral vorspielen (Lehrer-Dashboard) und Kopfhörer (eigener Player mit `maxAbspielen`).
+- Hörbeispiele: Die Ex zeigt nur „Hörbeispiel 1, 2 …“ mit dem Hinweis, dass die Lehrkraft vorspielt. Tom spielt sie live in der Reihenfolge der Ex (die Zuordnung zur Präsentation steht in `ex-loesung.quellenHinweis`).
 - Kopf: „{exNummer}. {art} · Fach“, Nr., Klasse, Datum, Punkte. Ohne Logo, ohne Unterschriftsfeld, ohne äußere Form.
 - Am Ende: Selbsteinschätzung (Smileys, zählt nicht zur Note), dann die Abgabe mit Übersicht über offene Teile.
 - Tonschritte in Intervallzählweise (Startnote zählt mit).
