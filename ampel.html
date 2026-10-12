@@ -4,32 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lärmampel</title>
-<link rel="stylesheet" href="style.css?v=160">
-<script src="js/icons.js?v=160"></script>
-<script src="js/theme.js?v=160"></script>
-<script src="js/auth.js?v=160"></script>
+<link rel="stylesheet" href="style.css?v=161">
+<script src="js/icons.js?v=161"></script>
+<script src="js/theme.js?v=161"></script>
+<script src="js/auth.js?v=161"></script>
 </head>
 <body class="popup-body">
   <div class="popup-ampel">
-    <div class="traffic-light compact">
-      <div class="light red" id="light-red"></div>
-      <div class="light yellow" id="light-yellow"></div>
-      <div class="light green" id="light-green"></div>
+    <div class="laerm-bogen compact" id="laerm-bogen">
+      <div class="db-display small"><span id="db-value">–</span><span class="db-unit">dB</span></div>
     </div>
-    <div class="db-display small"><span id="db-value">–</span><span class="db-unit">dB</span></div>
     <div class="popup-alarm-count hint" data-icon="alert">Rotfärbungen:&nbsp;<strong id="alarm-count">0</strong></div>
     <button id="btn-mic" class="primary small" data-icon="mic">Start</button>
   </div>
-<script src="js/noise.js?v=160"></script>
+<script src="js/noise.js?v=161"></script>
 <script>
   const meter = new NoiseMeter({
     dbEl: document.getElementById('db-value'),
     alarmCountEl: document.getElementById('alarm-count'),
-    lights: {
-      red: document.getElementById('light-red'),
-      yellow: document.getElementById('light-yellow'),
-      green: document.getElementById('light-green'),
-    },
+    gauge: document.getElementById('laerm-bogen'),
   });
   const btn = document.getElementById('btn-mic');
   btn.addEventListener('click', async () => {

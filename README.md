@@ -41,8 +41,10 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
 ## Funktionen
 
 ### 🚦 Lärmampel
-- Misst den Lärmpegel übers Mikrofon und zeigt ihn in dB an
-- Grün / Gelb (5 dB vor dem Grenzwert) / Rot (Grenzwert überschritten), Grenzwert einstellbar
+- Misst den Lärmpegel übers Mikrofon und zeigt ihn in dB an – als **Halbkreis-Spektrum**
+  (30–110 dB), das von links nach rechts bis zum aktuellen Pegel aufleuchtet
+- Farbverlauf Grün → Gelb (10 dB vor dem Grenzwert) → Rot (Grenzwert überschritten);
+  der Grenzwert ist einstellbar und als Strich am Bogen markiert
 - Zähler für Überschreitungen
 - **Als Popup** oder als **schwebendes Mini-Fenster** („Immer im Vordergrund“, Chrome/Edge) – bleibt auch über einer Vollbild-Präsentation sichtbar
 

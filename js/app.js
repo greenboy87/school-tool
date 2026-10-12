@@ -33,11 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     barEl: document.getElementById('db-bar'),
     violationsEl: document.getElementById('violations'),
     alarmCountEl: document.getElementById('alarm-count'),
-    lights: {
-      red: document.getElementById('light-red'),
-      yellow: document.getElementById('light-yellow'),
-      green: document.getElementById('light-green'),
-    },
+    gauge: document.getElementById('laerm-bogen'),
   });
 
   const slider = document.getElementById('threshold');
@@ -140,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('btn-popup').addEventListener('click', () => {
     window.open('ampel.html', 'laermampel',
-      'width=200,height=420,menubar=no,toolbar=no,location=no,status=no');
+      'width=320,height=280,menubar=no,toolbar=no,location=no,status=no');
   });
 
   // „Immer im Vordergrund“: Document Picture-in-Picture (Chrome/Edge).
@@ -150,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     try {
-      const pipWin = await documentPictureInPicture.requestWindow({ width: 190, height: 400 });
+      const pipWin = await documentPictureInPicture.requestWindow({ width: 300, height: 250 });
       // Styles übernehmen
       for (const sheet of document.styleSheets) {
         try {
@@ -163,22 +159,15 @@ document.addEventListener('DOMContentLoaded', () => {
       pipWin.document.body.className = 'popup-body';
       pipWin.document.body.innerHTML = `
         <div class="popup-ampel">
-          <div class="traffic-light compact">
-            <div class="light red"></div>
-            <div class="light yellow"></div>
-            <div class="light green"></div>
+          <div class="laerm-bogen compact" id="pip-bogen">
+            <div class="db-display small"><span id="pip-db">–</span><span class="db-unit">dB</span></div>
           </div>
-          <div class="db-display small"><span id="pip-db">–</span><span class="db-unit">dB</span></div>
           <div class="popup-alarm-count hint">🔴 <strong id="pip-alarm-count">0</strong>×</div>
         </div>`;
       const pipMeter = new NoiseMeter({
         dbEl: pipWin.document.getElementById('pip-db'),
         alarmCountEl: pipWin.document.getElementById('pip-alarm-count'),
-        lights: {
-          red: pipWin.document.querySelector('.light.red'),
-          yellow: pipWin.document.querySelector('.light.yellow'),
-          green: pipWin.document.querySelector('.light.green'),
-        },
+        gauge: pipWin.document.getElementById('pip-bogen'),
       });
       await pipMeter.start();
       pipWin.addEventListener('pagehide', () => pipMeter.stop());

@@ -152,19 +152,21 @@ input[type="checkbox"] { accent-color: var(--accent); }
 .ampel-visual { flex: 0 0 auto; }
 .ampel-controls { flex: 1; min-width: 260px; }
 
-.traffic-light {
-  background: var(--housing); border-radius: 22px; padding: 18px;
-  display: flex; flex-direction: column; gap: 14px; width: fit-content;
+/* Halbkreis-Spektrum: Bogen aus Segmenten, Zahl in der Mitte */
+.laerm-bogen { position: relative; width: 300px; max-width: 100%; }
+.laerm-bogen.compact { width: 240px; }
+.bogen-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.bogen-seg { fill: none; stroke-width: 22; }
+.bogen-spur { opacity: .16; }
+.bogen-marker { stroke: var(--text); stroke-width: 3; stroke-linecap: round; }
+.bogen-knopf { stroke: var(--card); stroke-width: 3; transition: fill .15s; }
+.laerm-bogen[data-state="red"] .bogen-knopf { filter: drop-shadow(0 0 6px var(--red)); }
+.laerm-bogen .db-display {
+  position: absolute; left: 0; right: 0; bottom: -.15em; text-align: center; line-height: 1;
+  transition: color .15s;
 }
-.light {
-  width: 84px; height: 84px; border-radius: 50%;
-  background: var(--housing-off); transition: background .15s, box-shadow .15s;
-}
-.traffic-light.compact { padding: 12px; gap: 10px; border-radius: 16px; }
-.traffic-light.compact .light { width: 56px; height: 56px; }
-.light.red.on    { background: var(--red);    box-shadow: 0 0 30px var(--red); }
-.light.yellow.on { background: var(--yellow); box-shadow: 0 0 30px var(--yellow); }
-.light.green.on  { background: var(--green);  box-shadow: 0 0 30px var(--green); }
+.laerm-bogen[data-state="yellow"] .db-display { color: var(--yellow); }
+.laerm-bogen[data-state="red"] .db-display { color: var(--red); }
 
 .db-display { font-size: 3.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .db-display.small { font-size: 2rem; }
@@ -1101,8 +1103,8 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 .popup-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #1f1e1d; }
 .popup-ampel { display: flex; flex-direction: column; align-items: center; gap: .8rem; padding: 1rem; }
 .popup-ampel .db-display { color: #f5f4ee; }
-.popup-ampel .traffic-light { background: #131211; }
-.popup-ampel .light { background: #3b3a36; }
+.popup-ampel .bogen-marker { stroke: #f5f4ee; }
+.popup-ampel .bogen-knopf { stroke: #1f1e1d; }
 
 .alarm-config input[type="number"] { width: 4.2em; padding: .2rem .4rem; }
 .popup-alarm-count { color: #b0ada2; display: flex; align-items: center; }
