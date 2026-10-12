@@ -267,11 +267,6 @@ const ExAuswertung = {
     return 6;
   },
 
-  schluesselSetzen(teil) {
-    this.a.d.schluessel = { ...this.schluessel(), ...teil };
-    Classes.persist();
-    this.zeichnen();
-  },
 
   /* ---------- Übersicht ---------- */
   zeitzuschlag(s) {
@@ -292,33 +287,205 @@ const ExAuswertung = {
     return `ja, +${z.gewaehrt} min` + (z.genutzt ? ` (${z.genutzt} min genutzt)` : ' (nicht genutzt)');
   },
 
+  fmt(x) { return String(x).replace('.', ','); },
+
+  bereichText(n) {
+    const g = this.grenzen(), max = this.a.meta.punkteGesamt, f = x => this.fmt(x);
+    if (n === 1) return `${f(g[1])}–${f(max)}`;
+    if (n === 6) return g[5] > 0 ? `0–${f(Math.max(0, g[5] - 0.5))}` : '–';
+    return `${f(g[n])}–${f(g[n - 1] - 0.5)}`;
+  },
+
+  /* Alle bewerteten Schüler mit aktuellem Ergebnis, nach Note sortiert */
+  ergebnisse() {
+    return this.a.schueler.filter(s => s.r).map(s => ({ s, e: this.ergebnis(s) }));
+  },
+
+  /* Grundgerüst; die Teile darin zeichnen sich einzeln, damit beim Ziehen am
+     Notenschlüssel der gezogene Punkt nicht neu entsteht */
   zeichnen() {
     const a = this.a, esc = s => Band.esc(s);
     const inhalt = document.getElementById('ex-auswertung-inhalt');
-    const g = this.grenzen(), sch = this.schluessel(), max = a.meta.punkteGesamt;
-    const mitErgebnis = a.schueler.filter(s => s.r).map(s => ({ s, e: this.ergebnis(s) }));
+    inhalt.innerHTML = `
+      <h3>${esc(a.gruppe.exNummer)}. ${esc(a.meta.art || 'Ex')}: ${esc(a.meta.titel)} · ${esc(a.gruppe.klasse)}</h3>
+      <div class="ex-notenschluessel">
+        <div>
+          <h4>Notenschlüssel <span class="hint">(${this.fmt(a.meta.punkteGesamt)} Punkte)</span></h4>
+          <div id="ex-ns-regler" class="ex-notenschluessel-regler"></div>
+          <div id="ex-ns-balken" class="ex-ns-balken"></div>
+        </div>
+        <div id="ex-notenbild" class="ex-notenbild"></div>
+      </div>
+      <div id="ex-uebersicht"></div>
+      ${this.selbstHtml()}
+      <div class="btn-row ex-auswertung-aktionen">
+        <button class="primary" data-aktion="export-notenliste" data-icon="book">In die Notenliste übernehmen</button>
+        <button data-aktion="export-csv" data-icon="download">CSV</button>
+        <button data-aktion="drucken" data-icon="printer">Alle drucken</button>
+        <label class="ex-mit-loesungen"><input type="checkbox" id="ex-druck-loesungen" checked> mit Lösungen</label>
+        <button class="small" data-aktion="neu-bewerten" data-icon="reset" title="Abgaben neu laden und neu bewerten (etwa nach einem Neu-Import der Ex)">Neu laden</button>
+      </div>`;
+    this.reglerZeichnen();
+    this.balkenBauen();
+    this.notenAktualisieren();
+    Icons.hydrate(inhalt);
+  },
+
+  /* Was sich mit jeder Grenze oder Korrektur ändert */
+  notenAktualisieren() {
+    this.balkenLage();
+    this.notenbildZeichnen();
+    this.uebersichtZeichnen();
+  },
+
+  reglerZeichnen() {
+    const sch = this.schluessel();
+    document.getElementById('ex-ns-regler').innerHTML = `
+      <label>Schlechteste 4 ab <input type="number" min="20" max="80" step="1" value="${sch.p4}" data-param="p4"> %</label>
+      <label>6 unter <input type="number" min="0" max="50" step="1" value="${sch.p6}" data-param="p6"> %</label>
+      <label class="ex-regler">Dreierspanne breiter <input type="range" min="0" max="50" step="5" value="${sch.b}" data-param="b">
+        <span class="hint">${sch.b ? `+${sch.b} %` : 'gleich breit'}</span></label>
+      ${sch.grenzen ? '<p class="hint">Grenzen von Hand verschoben. <button class="small" data-aktion="grenzen-weg">Wieder aus den Reglern berechnen</button></p>' : ''}
+      <div class="btn-row">
+        <button class="small" data-aktion="standard-speichern" title="Diese Regler-Werte als Vorgabe für künftige Exen merken">Als Standard speichern</button>
+        <button class="small" data-aktion="standard-laden">Standard laden</button>
+      </div>`;
+  },
+
+  /* ---------- Der senkrechte Balken: oben volle Punktzahl, unten 0 ---------- */
+  balkenBauen() {
+    const box = document.getElementById('ex-ns-balken');
+    const max = this.a.meta.punkteGesamt;
+    box.innerHTML = `
+      <div class="ex-nsb-spur">
+        ${[1, 2, 3, 4, 5, 6].map(n => `<div class="ex-nsb-abschnitt n${n}" data-note="${n}">
+          <span class="ex-nsb-note">${n}</span><span class="ex-nsb-zahl"></span></div>`).join('')}
+        <div class="ex-nsb-schueler"></div>
+        <div class="ex-nsb-griff fest" style="top:0%"><span class="ex-nsb-wert">${this.fmt(max)} P</span><span class="ex-nsb-knopf" title="volle Punktzahl"></span></div>
+        ${[1, 2, 3, 4, 5].map(n => `<div class="ex-nsb-griff" data-grenze="${n}" tabindex="0" role="slider"
+            aria-label="Beginn der Note ${n}" aria-valuemin="0" aria-valuemax="${max}">
+          <span class="ex-nsb-wert"></span><span class="ex-nsb-knopf"></span></div>`).join('')}
+      </div>`;
+    const spur = box.querySelector('.ex-nsb-spur');
+    box.querySelectorAll('.ex-nsb-griff[data-grenze]').forEach(griff => {
+      griff.addEventListener('pointerdown', e => this.ziehenStart(e, griff, spur));
+      griff.addEventListener('keydown', e => this.griffTaste(e, griff));
+    });
+  },
+
+  prozent(punkte) { return 100 * (1 - punkte / this.a.meta.punkteGesamt); },
+
+  balkenLage() {
+    const box = document.getElementById('ex-ns-balken');
+    if (!box || !box.firstElementChild) return;
+    const g = this.grenzen(), max = this.a.meta.punkteGesamt;
+    const oben = { 1: max, 2: g[1], 3: g[2], 4: g[3], 5: g[4], 6: g[5] };
+    const unten = { 1: g[1], 2: g[2], 3: g[3], 4: g[4], 5: g[5], 6: 0 };
+    const verteilung = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    const liste = this.ergebnisse();
+    liste.forEach(x => { verteilung[x.e.note]++; });
+    box.querySelectorAll('.ex-nsb-abschnitt').forEach(el => {
+      const n = +el.dataset.note;
+      el.style.top = this.prozent(oben[n]) + '%';
+      el.style.height = (this.prozent(unten[n]) - this.prozent(oben[n])) + '%';
+      el.querySelector('.ex-nsb-zahl').textContent = verteilung[n] ? `${verteilung[n]}×` : '';
+      el.title = `Note ${n}: ${this.bereichText(n)} Punkte`;
+    });
+    // Liegen Grenzen dicht beieinander, rücken die Beschriftungen nach unten auseinander
+    const hoehe = box.querySelector('.ex-nsb-spur').clientHeight;
+    let vorige = 0;
+    box.querySelectorAll('.ex-nsb-griff[data-grenze]').forEach(griff => {
+      const n = +griff.dataset.grenze;
+      griff.style.top = this.prozent(g[n]) + '%';
+      const wert = griff.querySelector('.ex-nsb-wert');
+      wert.textContent = `${n} ab ${this.fmt(g[n])} P`;
+      const y = this.prozent(g[n]) * hoehe / 100;
+      const beschriftung = Math.max(y, vorige + 16);
+      wert.style.transform = beschriftung > y ? `translateY(${beschriftung - y}px)` : '';
+      vorige = beschriftung;
+      griff.setAttribute('aria-valuenow', g[n]);
+    });
+    // Jeder Schüler als Punkt am Balken – beim Ziehen sieht man, wer über die Grenze rutscht
+    const punkte = {};
+    box.querySelector('.ex-nsb-schueler').innerHTML = liste.map(x => {
+      const k = x.e.summe;
+      const versatz = punkte[k] = (punkte[k] || 0) + 1;
+      return `<span class="ex-nsb-punkt${x.e.vorlaeufig ? ' vorlaeufig' : ''}" style="top:${this.prozent(k)}%;right:${versatz * 9 - 4}px"
+        title="${Band.esc(x.s.name)}: ${this.fmt(k)} P → ${x.e.note}"></span>`;
+    }).join('');
+  },
+
+  /* Eine Grenze setzen – auf halbe Punkte, ohne die Nachbarn zu überholen */
+  grenzeSetzen(n, wert) {
+    const g = { ...this.grenzen() }, max = this.a.meta.punkteGesamt;
+    const obergrenze = n === 1 ? max : g[n - 1] - 0.5;
+    const untergrenze = n === 5 ? 0.5 : g[n + 1] + 0.5;
+    const v = Math.min(obergrenze, Math.max(untergrenze, Math.round(wert * 2) / 2));
+    if (v === g[n]) return false;
+    g[n] = v;
+    this.a.d.schluessel = { ...this.schluessel(), grenzen: g };
+    return true;
+  },
+
+  ziehenStart(e, griff, spur) {
+    e.preventDefault();
+    griff.setPointerCapture(e.pointerId);
+    griff.classList.add('zieht');
+    const n = +griff.dataset.grenze;
+    const rechteck = spur.getBoundingClientRect();
+    const bewegen = ev => {
+      const anteil = Math.min(1, Math.max(0, (ev.clientY - rechteck.top) / rechteck.height));
+      if (this.grenzeSetzen(n, this.a.meta.punkteGesamt * (1 - anteil))) this.notenAktualisieren();
+    };
+    const ende = () => {
+      griff.classList.remove('zieht');
+      griff.removeEventListener('pointermove', bewegen);
+      griff.removeEventListener('pointerup', ende);
+      griff.removeEventListener('pointercancel', ende);
+      Classes.persist();
+      this.reglerZeichnen();
+    };
+    griff.addEventListener('pointermove', bewegen);
+    griff.addEventListener('pointerup', ende);
+    griff.addEventListener('pointercancel', ende);
+  },
+
+  griffTaste(e, griff) {
+    const schritt = { ArrowUp: 0.5, ArrowRight: 0.5, ArrowDown: -0.5, ArrowLeft: -0.5, PageUp: 2, PageDown: -2 }[e.key];
+    if (!schritt) return;
+    e.preventDefault();
+    const n = +griff.dataset.grenze;
+    if (this.grenzeSetzen(n, this.grenzen()[n] + schritt)) {
+      Classes.persist();
+      this.notenAktualisieren();
+      this.reglerZeichnen();
+    }
+  },
+
+  notenbildZeichnen() {
+    const esc = s => Band.esc(s), fmt = x => this.fmt(x);
+    const liste = this.ergebnisse();
     const verteilung = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
-    mitErgebnis.forEach(x => verteilung[x.e.note].push(x));
-    const schnitt = mitErgebnis.length
-      ? (mitErgebnis.reduce((n, x) => n + x.e.note, 0) / mitErgebnis.length).toFixed(2).replace('.', ',') : '–';
-    const offenGesamt = mitErgebnis.filter(x => x.e.vorlaeufig).length;
+    liste.forEach(x => verteilung[x.e.note].push(x));
+    const schnitt = liste.length ? fmt((liste.reduce((n, x) => n + x.e.note, 0) / liste.length).toFixed(2)) : '–';
+    const vorlaeufig = liste.filter(x => x.e.vorlaeufig).length;
     const hoechst = Math.max(1, ...Object.values(verteilung).map(v => v.length));
-    const bereich = n => n === 1 ? `${fmt(g[1])}–${fmt(max)}` : n === 6 ? `0–${fmt(Math.max(0, g[5] - 0.5))}`
-      : `${fmt(g[n])}–${fmt(g[n - 1] - 0.5)}`;
-    const fmt = x => String(x).replace('.', ',');
+    document.getElementById('ex-notenbild').innerHTML = `
+      <h4>Notenbild <span class="hint">Schnitt ${schnitt}${vorlaeufig ? ` · ${vorlaeufig} vorläufig*` : ''}</span></h4>
+      ${[1, 2, 3, 4, 5, 6].map(n => `
+        <div class="ex-stufe">
+          <span class="ex-stufe-note">${n}</span>
+          <span class="hint ex-stufe-bereich">${this.bereichText(n)} P</span>
+          <span class="ex-stufe-balken"><span class="n${n}" style="width:${Math.round(100 * verteilung[n].length / hoechst)}%"></span></span>
+          <span class="ex-stufe-zahl">${verteilung[n].length}</span>
+          <span class="ex-stufe-wer">${verteilung[n].sort((x, y) => y.e.summe - x.e.summe).map(x =>
+            `${esc(x.s.name)} <span class="hint">${fmt(x.e.summe)}${x.e.vorlaeufig ? '*' : ''}</span>`).join(' · ')}</span>
+        </div>`).join('')}
+      ${vorlaeufig ? '<p class="hint">* vorläufig: Es gibt noch gelbe Prüfstellen oder manuelle Aufgaben ohne Punkte (dort zählt bis dahin der Vorschlag, mit ? markiert).</p>' : ''}`;
+  },
 
-    const stufen = [1, 2, 3, 4, 5, 6].map(n => `
-      <div class="ex-stufe">
-        <span class="ex-stufe-note">${n}</span>
-        ${n < 6 ? `<label class="ex-stufe-grenze">ab <input type="number" step="0.5" min="0" max="${max}" value="${g[n]}" data-grenze="${n}"> P</label>`
-          : `<span class="ex-stufe-grenze">darunter</span>`}
-        <span class="hint ex-stufe-bereich">${bereich(n)} P</span>
-        <span class="ex-stufe-balken"><span style="width:${Math.round(100 * verteilung[n].length / hoechst)}%"></span></span>
-        <span class="ex-stufe-zahl">${verteilung[n].length}</span>
-        <details class="ex-stufe-wer"><summary>wer?</summary>${verteilung[n].map(x =>
-          `${esc(x.s.name)} (${fmt(x.e.summe)}${x.e.vorlaeufig ? '*' : ''})`).join(', ') || '—'}</details>
-      </div>`).join('');
-
+  uebersichtZeichnen() {
+    const a = this.a, esc = s => Band.esc(s), fmt = x => this.fmt(x);
     const kopfAufgaben = a.meta.aufgaben.map(x => `<th title="${esc(x.titel)}">${esc(x.id)}<br><span class="hint">/${fmt(x.punkte)}</span></th>`).join('');
     const zeilen = a.schueler.map(s => {
       if (s.fehlt || !s.abgabe) {
@@ -340,44 +507,11 @@ const ExAuswertung = {
         <td class="hint">${esc(this.zuschlagText(s))}</td><td>${s.t.notenschutz ? 'ja' : ''}</td>
         <td class="aktionen"><button class="small" data-korrektur="${esc(s.nr)}">${e.offen ? `Korrigieren (${e.offen} offen)` : 'Korrigieren'}</button></td></tr>`;
     }).join('');
-
-    inhalt.innerHTML = `
-      <h3>${esc(a.gruppe.exNummer)}. ${esc(a.meta.art || 'Ex')}: ${esc(a.meta.titel)} · ${esc(a.gruppe.klasse)}</h3>
-      <div class="ex-notenschluessel">
-        <div class="ex-notenschluessel-regler">
-          <h4>Notenschlüssel <span class="hint">(${fmt(max)} Punkte)</span></h4>
-          <label>Schlechteste 4 ab <input type="number" min="20" max="80" step="1" value="${sch.p4}" data-param="p4"> %</label>
-          <label>6 unter <input type="number" min="0" max="50" step="1" value="${sch.p6}" data-param="p6"> %</label>
-          <label class="ex-regler">Dreierspanne breiter <input type="range" min="0" max="50" step="5" value="${sch.b}" data-param="b">
-            <span class="hint">${sch.b ? `+${sch.b} %` : 'gleich breit'}</span></label>
-          ${sch.grenzen ? '<p class="hint">Grenzen von Hand gesetzt. <button class="small" data-aktion="grenzen-weg">Wieder aus den Reglern berechnen</button></p>' : ''}
-          <div class="btn-row">
-            <button class="small" data-aktion="standard-speichern" title="Diese Regler-Werte als Vorgabe für künftige Exen merken">Als Standard speichern</button>
-            <button class="small" data-aktion="standard-laden">Standard laden</button>
-          </div>
-        </div>
-        <div class="ex-notenbild">
-          <h4>Notenbild <span class="hint">Schnitt ${schnitt}${offenGesamt ? ` · ${offenGesamt} vorläufig*` : ''}</span></h4>
-          ${stufen}
-        </div>
-      </div>
-      ${offenGesamt ? '<p class="hint">* vorläufig: Es gibt noch gelbe Prüfstellen oder manuelle Aufgaben ohne Punkte (dort zählt bis dahin der Vorschlag, mit ? markiert).</p>' : ''}
-
+    document.getElementById('ex-uebersicht').innerHTML = `
       <div class="ex-tabelle-huelle">
       <table class="ex-tabelle ex-uebersicht"><thead><tr><th>Nr.</th><th>Name</th>${kopfAufgaben}<th>Summe</th><th>Note</th>
         <th>Zeitzuschlag</th><th>Notenschutz</th><th></th></tr></thead><tbody>${zeilen}</tbody></table>
-      </div>
-
-      ${this.selbstHtml()}
-
-      <div class="btn-row ex-auswertung-aktionen">
-        <button class="primary" data-aktion="export-notenliste" data-icon="book">In die Notenliste übernehmen</button>
-        <button data-aktion="export-csv" data-icon="download">CSV</button>
-        <button data-aktion="drucken" data-icon="printer">Alle drucken</button>
-        <label class="ex-mit-loesungen"><input type="checkbox" id="ex-druck-loesungen" checked> mit Lösungen</label>
-        <button class="small" data-aktion="neu-bewerten" data-icon="reset" title="Abgaben neu laden und neu bewerten (etwa nach einem Neu-Import der Ex)">Neu laden</button>
       </div>`;
-    Icons.hydrate(inhalt);
   },
 
   /* Selbsteinschätzung: Zahlen 1–5 als Smiley-Verteilung, Listen als Häufigkeit */
@@ -423,8 +557,8 @@ const ExAuswertung = {
         alert('Gespeichert: schlechteste 4 ab ' + p4 + ' %, 6 unter ' + p6 + ' %, Dreierspanne +' + br + ' %.');
         break;
       }
-      case 'standard-laden': this.a.d.schluessel = { ...std }; Classes.persist(); this.zeichnen(); break;
-      case 'grenzen-weg': { const s = this.schluessel(); delete s.grenzen; this.a.d.schluessel = s; Classes.persist(); this.zeichnen(); break; }
+      case 'standard-laden': this.a.d.schluessel = { ...std }; Classes.persist(); this.reglerZeichnen(); this.notenAktualisieren(); break;
+      case 'grenzen-weg': { const s = this.schluessel(); delete s.grenzen; this.a.d.schluessel = s; Classes.persist(); this.reglerZeichnen(); this.notenAktualisieren(); break; }
       case 'export-notenliste': this.exportNotenliste(); break;
       case 'export-csv': this.exportCsv(); break;
       case 'drucken': this.drucken(document.getElementById('ex-druck-loesungen').checked); break;
@@ -444,14 +578,10 @@ const ExAuswertung = {
         s[el.dataset.param] = v;
         this.a.d.schluessel = s;
         Classes.persist();
-        this.zeichnen();
+        if (el.type === 'range') el.nextElementSibling.textContent = v ? `+${v} %` : 'gleich breit';
+        else this.reglerZeichnen();
+        this.notenAktualisieren();
       }
-    } else if (el.dataset.grenze && endgueltig) {
-      const g = { ...this.grenzen(), [el.dataset.grenze]: Math.round(Number(el.value) * 2) / 2 };
-      for (const n of [1, 2, 3, 4]) {
-        if (!(g[n] > g[n + 1])) { alert(`Die Grenze für die ${n} muss über der für die ${n + 1} liegen.`); this.zeichnen(); return; }
-      }
-      this.schluesselSetzen({ grenzen: g });
     }
   },
 
@@ -562,7 +692,7 @@ const ExAuswertung = {
     }
     Classes.persist();
     this.korrekturZeichnen();
-    this.zeichnen();
+    this.notenAktualisieren();
   },
 
   korrekturEingabe(e) {
@@ -581,7 +711,7 @@ const ExAuswertung = {
     } else return;
     Classes.persist();
     this.korrekturZeichnen();
-    this.zeichnen();
+    this.notenAktualisieren();
   },
 
   korrekturSchliessen() {
