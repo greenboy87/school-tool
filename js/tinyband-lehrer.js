@@ -543,7 +543,7 @@ const TinyBandLehrer = {
     set(ref(db, `${window.FB.WURZEL}/${LiveGroups.raum}/ergebnis`), daten)
       .then(() => {
         this.geaendertSeitSenden = false;
-        LiveGroups.status(`Ergebnis gesendet – ${liste.length} Geräte-Einträge.`);
+        LiveGroups.status(`Ergebnis gesendet – für ${liste.length} Schüler.`);
         this.zeichneSendestand();
       })
       .catch(err => LiveGroups.status(LiveGroups.fehlertext(err, 'Das Ergebnis konnte nicht gesendet werden'), true));
