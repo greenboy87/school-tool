@@ -82,8 +82,19 @@ Leserechte nach unten. Unter `exen/{exId}` könnten Schüler die Lösung mitlese
    Status, Korrekturen), Schalter „mit Lösungen“ für die Fassung zum Mitnehmen.
    Ein Druckauftrag mit Seitenumbrüchen. Namen nur lokal.
 8. ✅ **Nachschreiben** für `fehlt` und `entfernt`, gleiche Auswertung.
-9. **Regeln** in `firebase-regeln.md`, getestet im Emulator.
-10. **Testdurchlauf** mit der E-Gitarre-Ex: Import und Geheim-Prüfung, Start mit
-    abgewähltem Schüler, Notenschutz bestätigen, Rauswerfen, Station 1
-    abschließen, Reload während der Ex, Wiederanmeldung mit neuer UID, Abgabe,
-    Auswertung mit Korrekturansicht und Export.
+9. ✅ **Regeln** in `firebase-regeln.md` (Stand 12.10.2026). Getestet nicht im
+   Emulator (Node/Java fehlen), sondern mit gezielten Zugriffen gegen die echte
+   Datenbank: ohne Anmeldung, als anonymes Schülergerät und als Lehrkraft. Geprüft
+   u. a.: Lösung, Schülerfassung und Listen für Schüler gesperrt; Schülerfassung erst
+   bei laufender Ex und Freigabe; nur der eigene Eintrag; keine Selbst-Freigabe,
+   kein eigener Notenschutz oder Zuschlag; abgewählte/unbekannte/schon geschriebene
+   Nummern abgelehnt; nach Rauswurf, nach Ablauf der Zeit und nach der Abgabe
+   keine Schreibrechte mehr.
+10. ✅ **Testdurchlauf** mit der E-Gitarre-Ex im Browser (Lehrerseite + Schülerseite in
+    einem zweiten Tab + anonyme Testgeräte): Import und Geheim-Prüfung, Start mit
+    abgewähltem Schüler, Notenschutz bestätigen, Rauswerfen, doppelte Nummer,
+    Station 1 abschließen, Reload während der Ex, Wiederanmeldung mit neuer UID
+    („übernehmen“), Zeitzuschlag, Abgabe bei Zeitablauf, „Ex beenden“, Auswertung mit
+    Korrekturansicht, Notenschlüssel-Balken, Export, Druckbild, Nachschreiben.
+    **Noch am echten iPad zu prüfen:** App-Wechsel/Bildschirmsperre („App verlassen“,
+    im Browserfenster nur nachgestellt), echter Druckdialog, Wake-Lock.

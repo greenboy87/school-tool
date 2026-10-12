@@ -253,6 +253,43 @@ Weg B und nach „Bands bilden“ die Bands mit Vornamen.
 Wie beim normalen Modus stehen in der Datenbank nur Platznummern, Bandnamen und
 Instrument-Kürzel (`dr`, `ba`, `sy`, `ge`, `uk`) – nie Namen.
 
+### ✏️ Digitale Exen auf iPads (Reiter *Exen*)
+Jede Ex ist eine eigene HTML-Datei mit eigener Oberfläche (Format `tom-ex/2`, siehe
+[`docs/ex/ex-format.md`](docs/ex/ex-format.md)); das School-Tool ist der Rahmen drumherum.
+
+- **Lehrer-Anmeldung** mit Google, einmal pro Gerät. Nur dieses Konto darf Exen, Lösungen
+  und Abgaben lesen – das setzen die Datenbank-Regeln durch, nicht die Seite.
+- **Ex-Bibliothek:** Ex-Datei hineinziehen. Lösung und Bewertungscode werden abgetrennt
+  (nur für die Lehrkraft lesbar), die Schüler bekommen eine Fassung ohne alles, was
+  `data-ex-secret` trägt, ohne HTML-Kommentare und ohne Audiodaten. Findet die Prüfung
+  danach noch Geheimes, bricht der Import ab. **Vorschau** öffnet die Originaldatei mit
+  ihrer Vorschau-Leiste (liegt nur auf dem Gerät, auf dem importiert wurde).
+- **Ex starten:** Klasse, Ex, Nummer der Ex („1.“ → „1. Stegreifaufgabe“), fehlende
+  Schüler abwählen → **Warteraum öffnen**. Code und QR-Code, **Groß für den Beamer**.
+- **Schülerseite** `ex.html`: Code (oder QR-Code), Nummer antippen, bei Bedarf
+  „Ich habe Notenschutz“. Danach „Warte auf Freigabe“.
+- **Warteraum:** Freigeben (einzeln/alle), Rauswerfen, als fehlend markieren, Notenschutz
+  bestätigen, Warnung bei doppelter Nummer, **übernehmen**, wenn ein iPad abgestürzt ist
+  und sich neu anmeldet. **Ex starten** – die Zeit läuft nach Serverzeit.
+- **Während der Ex:** Fortschritt je Schüler, Restzeit, Auffälliges („2× App verlassen“),
+  Zeit verlängern für alle oder einzeln, **Ex beenden** sammelt alle Abgaben ein.
+  Hörbeispiele spielt die Lehrkraft live vor; das Tool überträgt keine Audiodateien.
+- **Auswertung:** `bewerte()` der Ex läuft im Web Worker. Notenschlüssel als senkrechter
+  Balken zum Ziehen (Standard: schlechteste 4 ab 50 %, 6 unter 20 %, Regler „Dreierspanne
+  breiter“), Live-Notenbild, Korrekturansicht (links die Ex wie beim Schüler, rechts jede
+  Teilpunktzahl überschreibbar), Selbsteinschätzung, **In die Notenliste übernehmen**,
+  CSV und **Alle drucken** (eine Seite je Schüler, wahlweise mit Lösungen).
+- **Nachschreiben** für alle, die nicht geschrieben haben – landet in derselben Auswertung.
+
+> **Einmalig:** Anmeldung in Firebase einschalten und die Regeln vom 12.10.2026 eintragen
+> (`firebase-regeln.md`).
+
+In der Datenbank stehen nur Nummern, nie Namen; welche Nummer zu wem gehört, weiß nur das
+Lehrergerät (über den Geräte-Sync verschlüsselt). Korrekturen und Notenschlüssel liegen
+ebenfalls lokal. **Ex-Dateien selbst gehören nie ins Repository** – sie enthalten die
+Lösungen, und die Seite ist öffentlich (`.gitignore` hält sie draußen). Zum Erstellen neuer
+Exen gibt es den Claude-Skill „Digitale Ex erstellen“.
+
 ## 🏃 Sport
 
 Eigener Reiter mit **Stoppuhr** und den **Bewertungstabellen**.
