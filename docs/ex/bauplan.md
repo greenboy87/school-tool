@@ -64,7 +64,7 @@ Leserechte nach unten. Unter `exen/{exId}` könnten Schüler die Lösung mitlese
    ex-format.md Abschnitt 3, gedrosseltes Speichern (DB + localStorage), Timer mit
    Serverzeit, bei Ablauf `abgabe-anfordern` und `sperren`, „App verlassen“
    protokollieren, Wiederherstellen nach Reload.
-6. **Dashboard während der Ex:** Fortschritt, Ereignisse, Status, Rauswerfen,
+6. ✅ **Dashboard während der Ex:** Fortschritt, Ereignisse, Status, Rauswerfen,
    Zeitzuschlag für alle oder einzeln, „Ex beenden“.
 7. **Auswertung:** `bewerte()` im Web Worker, Notenschlüssel (Standard
    speicherbar), Zeitzuschlag ausgewiesen, Korrekturansicht (links Ex im Modus
@@ -76,6 +76,11 @@ Leserechte nach unten. Unter `exen/{exId}` könnten Schüler die Lösung mitlese
    werden 1er, 2er, 4er und 5er schmäler. Grenzen auf halbe Punkte. Dazu ein
    Werkzeug mit Live-Notenbild (wie viele und wer welche Note hätte), vor und nach
    der Sichtung, immer nach aktuellem Punktestand inkl. nachträglicher Änderungen.
+   Grenze 5/6 im Standard: unter 20 % der Punkte = 6.
+   **Drucken (Wunsch vom 12.10.2026):** „Alle drucken“ – je Schüler eine Seite
+   (Name, Klasse, Datum, Punkte, Note, Notenschlüssel; je Aufgabe Antwort, Punkte,
+   Status, Korrekturen), Schalter „mit Lösungen“ für die Fassung zum Mitnehmen.
+   Ein Druckauftrag mit Seitenumbrüchen. Namen nur lokal.
 8. **Nachschreiben** für `fehlt` und `entfernt`, gleiche Auswertung.
 9. **Regeln** in `firebase-regeln.md`, getestet im Emulator.
 10. **Testdurchlauf** mit der E-Gitarre-Ex: Import und Geheim-Prüfung, Start mit

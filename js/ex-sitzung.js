@@ -19,6 +19,9 @@ const ExSitzung = {
   code: null,             // aktive Sitzung auf diesem Gerät
   info: null,             // info/ live
   teilnehmer: {},         // teilnehmer/ live: { uid: { nummer, status, … } }
+  abgaben: {},            // abgaben/ live: { uid: { antworten, fortschritt, abgegeben, ereignisse } }
+  offset: 0,              // Serverzeit minus Uhr dieses Geräts
+  uhr: null,              // Takt fürs Dashboard, solange die Ex läuft
   abmelden: [],           // Live-Abfragen der aktiven Sitzung
   beamerFenster: null,
 
@@ -197,15 +200,25 @@ const ExSitzung = {
       this.teilnehmer = snap.val() || {};
       if (this.info) this.warteraumZeichnen();
     }));
+    this.abmelden.push(FB.onValue(this.ref('abgaben'), snap => {
+      this.abgaben = snap.val() || {};
+      if (this.info) this.warteraumZeichnen();
+    }));
+    this.abmelden.push(FB.onValue(FB.ref(FB.db, '.info/serverTimeOffset'), snap => { this.offset = snap.val() || 0; }));
+    // Restzeiten laufen weiter, auch wenn sich in der Datenbank nichts ändert
+    this.uhr = setInterval(() => { if (this.info && this.info.status === 'laeuft') this.warteraumZeichnen(); }, 5000);
     document.dispatchEvent(new CustomEvent('ex-sitzung', { detail: { code } }));
   },
 
   schliessen() {
     this.abmelden.forEach(f => f());
     this.abmelden = [];
+    clearInterval(this.uhr);
+    this.uhr = null;
     this.code = null;
     this.info = null;
     this.teilnehmer = {};
+    this.abgaben = {};
   },
 
   vergessen() {
@@ -279,54 +292,127 @@ const ExSitzung = {
     return zeilen;
   },
 
+  /* ---------- Während der Ex ---------- */
+  jetzt() { return Date.now() + this.offset; },
+
+  /* Restzeit in Sekunden für einen Teilnehmer (Dauer + Zuschlag für alle + eigener) */
+  restSek(t) {
+    const i = this.info;
+    if (!i.startzeit) return null;
+    const ende = i.startzeit + ((i.dauerMinuten || 0) + (i.zuschlagMin || 0) + ((t && t.zuschlagMin) || 0)) * 60000;
+    return Math.round((ende - this.jetzt()) / 1000);
+  },
+
+  zeitText(sek) {
+    if (sek == null) return '';
+    if (sek <= 0) return 'Zeit um';
+    return `${Math.floor(sek / 60)}:${String(sek % 60).padStart(2, '0')}`;
+  },
+
+  /* „2× App verlassen (35 s) · HB 3 2× gespielt“ */
+  auffaelliges(abgabe) {
+    const e = Object.values((abgabe && abgabe.ereignisse) || {});
+    const teile = [];
+    const weg = e.filter(x => x.art === 'app-verlassen');
+    if (weg.length) {
+      const sek = weg.reduce((n, x) => n + (x.dauerSek || 0), 0);
+      teile.push(`${weg.length}× App verlassen (${sek >= 60 ? Math.round(sek / 60) + ' min' : sek + ' s'})`);
+    }
+    const gespielt = {};
+    e.filter(x => x.art === 'abspielen' && x.medium).forEach(x => {
+      gespielt[x.medium] = Math.max(gespielt[x.medium] || 0, x.anzahl || 1);
+    });
+    Object.entries(gespielt).forEach(([m, n]) => teile.push(`${m.toUpperCase().replace(/^HB/, 'HB ')} ${n}× gespielt`));
+    return teile.join(' · ');
+  },
+
+  /* Was in der Status-Spalte steht */
+  statusVon(z) {
+    const i = this.info;
+    if (z.status !== 'freigegeben' || i.status === 'warteraum') return z.status;
+    const ab = this.abgaben[z.uid];
+    if (ab && ab.abgegeben) return 'abgegeben';
+    if (i.status === 'beendet') return 'nicht-abgegeben';
+    const rest = this.restSek(z);
+    return rest != null && rest <= 0 ? 'zeit-um' : 'schreibt';
+  },
+
   warteraumZeichnen() {
     const box = document.getElementById('ex-warteraum');
     const i = this.info;
     if (!i) { box.innerHTML = ''; return; }
     const esc = s => Band.esc(s);
+    const laeuft = i.status === 'laeuft', vorher = i.status === 'warteraum';
     const zeilen = this.zeilen();
-    const zaehle = st => zeilen.filter(z => z.status === st).length;
-    const wartend = zaehle('wartet'), frei = zaehle('freigegeben');
+    zeilen.forEach(z => { z.anzeige = z.uid ? this.statusVon(z) : z.status; });
+    const zaehle = st => zeilen.filter(z => z.anzeige === st).length;
     const doppelt = [...new Set(zeilen.filter(z => z.doppelt).map(z => z.nr))];
     const STATUS = {
       'offen': 'noch nicht da', 'fehlt-vorab': 'fehlt', 'wartet': 'wartet', 'freigegeben': 'freigegeben',
-      'fehlt': 'fehlt', 'entfernt': 'entfernt',
+      'fehlt': 'fehlt', 'entfernt': 'entfernt', 'schreibt': 'schreibt', 'abgegeben': 'abgegeben',
+      'zeit-um': 'Zeit um', 'nicht-abgegeben': 'nicht abgegeben',
     };
     const knopf = (aktion, text, z, extra = '') =>
       `<button class="small ${extra}" data-aktion="${aktion}" data-uid="${esc(z.uid || '')}" data-nr="${esc(z.nr)}">${text}</button>`;
 
     const zeilenHtml = zeilen.map(z => {
       const k = [];
+      const aktiv = z.status === 'wartet' || z.status === 'freigegeben';
       if (z.status === 'wartet') {
         k.push(knopf('freigeben', 'Freigeben', z, 'primary'));
         if (this.kannUebernehmen(z)) k.push(knopf('uebernehmen', 'übernehmen', z));
       }
-      if (z.status === 'entfernt' || z.status === 'fehlt') k.push(knopf('freigeben', 'Wieder freigeben', z));
-      if (z.status === 'wartet' || z.status === 'freigegeben') k.push(knopf('rauswerfen', 'Rauswerfen', z, 'danger'));
-      if (z.status === 'wartet' || z.status === 'offen') k.push(knopf('fehlt', 'Als fehlend markieren', z));
+      if ((z.status === 'entfernt' || z.status === 'fehlt') && i.status !== 'beendet') k.push(knopf('freigeben', 'Wieder freigeben', z));
+      if (laeuft && z.anzeige !== 'abgegeben' && z.status === 'freigegeben') k.push(knopf('zuschlag', 'Zeit +', z));
+      if (aktiv && i.status !== 'beendet' && z.anzeige !== 'abgegeben') k.push(knopf('rauswerfen', 'Rauswerfen', z, 'danger'));
+      if (vorher && (z.status === 'wartet' || z.status === 'offen')) k.push(knopf('fehlt', 'Als fehlend markieren', z));
       if (z.status === 'fehlt-vorab' && i.status !== 'beendet') k.push(knopf('doch-da', 'Doch da', z));
       let ns = '';
-      if (z.uid && z.notenschutz) ns = `<span class="ex-ns an">Notenschutz ✓</span> ${knopf('ns-aus', 'zurücknehmen', z)}`;
+      if (z.uid && z.notenschutz) ns = `<span class="ex-ns an">Notenschutz ✓</span> ${i.status === 'beendet' ? '' : knopf('ns-aus', 'zurücknehmen', z)}`;
       else if (z.uid && z.notenschutzAngefragt) ns = `<span class="ex-ns">angefragt</span> ${knopf('ns-an', 'bestätigen', z, 'primary')} ${knopf('ns-ab', 'ablehnen', z)}`;
-      return `<tr class="st-${z.status}${z.doppelt ? ' doppelt' : ''}">
+      const ab = z.uid ? this.abgaben[z.uid] : null;
+      const f = ab && ab.fortschritt;
+      const fortschritt = f && f.gesamt
+        ? `<span class="ex-balken"><span style="width:${Math.round(100 * f.erledigt / f.gesamt)}%"></span></span> ${f.erledigt}/${f.gesamt}` : '';
+      const zuschlag = z.zuschlagMin ? ` <span class="hint">(+${z.zuschlagMin} min)</span>` : '';
+      const zeit = laeuft && z.status === 'freigegeben' && z.anzeige !== 'abgegeben' ? this.zeitText(this.restSek(z)) : '';
+      return `<tr class="st-${z.anzeige}${z.doppelt ? ' doppelt' : ''}">
         <td class="nr">${esc(z.nr)}</td><td>${esc(this.name(z.nr))}</td>
-        <td><span class="ex-status st-${z.status}">${STATUS[z.status] || esc(z.status)}</span>${z.doppelt ? ' <span class="ex-warnung">2 Geräte!</span>' : ''}</td>
+        <td><span class="ex-status st-${z.anzeige}">${STATUS[z.anzeige] || esc(z.anzeige)}</span>${z.doppelt ? ' <span class="ex-warnung">2 Geräte!</span>' : ''}</td>
+        ${vorher ? '' : `<td class="ex-fortschritt">${fortschritt}</td><td class="ex-zeit">${zeit}${zuschlag}</td><td class="ex-auffaellig">${esc(this.auffaelliges(ab))}</td>`}
         <td>${ns}</td><td class="aktionen">${k.join(' ')}</td></tr>`;
     }).join('');
 
-    box.innerHTML = `
-      ${doppelt.length ? `<p class="ex-warnung-box">Achtung: Nummer ${doppelt.join(', ')} ist auf mehreren Geräten angemeldet.
-        Prüfe, wer sich vertippt hat, und wirf das falsche Gerät raus.</p>` : ''}
-      <div class="ex-warteraum-kopf">
-        <span>${frei} freigegeben · ${wartend} warten · ${zaehle('offen')} noch nicht da</span>
+    const wartend = zaehle('wartet'), frei = zaehle('freigegeben');
+    let kopf;
+    if (vorher) {
+      kopf = `<span>${frei} freigegeben · ${wartend} warten · ${zaehle('offen')} noch nicht da</span>
         <span class="btn-row">
           ${wartend ? '<button data-aktion="alle-freigeben" class="small">Alle freigeben</button>' : ''}
-          ${i.status === 'warteraum' ? `<button data-aktion="starten" class="primary" ${frei ? '' : 'disabled'}>Ex starten</button>` : ''}
-        </span>
-      </div>
-      <table class="ex-tabelle"><thead><tr><th>Nr.</th><th>Name</th><th>Status</th><th>Notenschutz</th><th></th></tr></thead>
+          <button data-aktion="starten" class="primary" ${frei ? '' : 'disabled'}>Ex starten</button>
+        </span>`;
+    } else if (laeuft) {
+      const rest = this.restSek(null);
+      kopf = `<span>${zaehle('schreibt')} schreiben · ${zaehle('abgegeben')} abgegeben${zaehle('zeit-um') ? ` · ${zaehle('zeit-um')} Zeit um` : ''}${wartend ? ` · ${wartend} warten` : ''}
+          · reguläre Restzeit <strong>${this.zeitText(rest)}</strong>${i.zuschlagMin ? ` (+${i.zuschlagMin} min für alle)` : ''}</span>
+        <span class="btn-row">
+          ${wartend ? '<button data-aktion="alle-freigeben" class="small">Alle freigeben</button>' : ''}
+          <button data-aktion="zuschlag-alle" class="small">Zeit + für alle</button>
+          <button data-aktion="beenden" class="danger">Ex beenden</button>
+        </span>`;
+    } else {
+      kopf = `<span>Beendet · ${zaehle('abgegeben')} abgegeben${zaehle('nicht-abgegeben') ? ` · ${zaehle('nicht-abgegeben')} ohne Abgabe` : ''}</span>`;
+    }
+
+    box.innerHTML = `
+      ${doppelt.length && i.status !== 'beendet' ? `<p class="ex-warnung-box">Achtung: Nummer ${doppelt.join(', ')} ist auf mehreren Geräten angemeldet.
+        Prüfe, wer sich vertippt hat, und wirf das falsche Gerät raus.</p>` : ''}
+      ${i.einsammeln && laeuft ? '<p class="ex-warnung-box">Die Abgaben werden eingesammelt …</p>' : ''}
+      <div class="ex-warteraum-kopf">${kopf}</div>
+      <table class="ex-tabelle"><thead><tr><th>Nr.</th><th>Name</th><th>Status</th>
+        ${vorher ? '' : '<th>Fortschritt</th><th>Zeit</th><th>Auffälliges</th>'}
+        <th>Notenschutz</th><th></th></tr></thead>
         <tbody>${zeilenHtml}</tbody></table>`;
-    Icons.hydrate(box);
   },
 
   /* Wiederanmeldung: Gibt es zu dieser Nummer schon einen freigegebenen oder
@@ -368,6 +454,19 @@ const ExSitzung = {
           w[`${s}/teilnehmer/${uid}/notenschutz`] = false;
           w[`${s}/teilnehmer/${uid}/notenschutzAngefragt`] = false;
           break;
+        case 'zuschlag': {
+          const min = this.minutenFragen(`Zusätzliche Zeit für Nr. ${nr} (${this.name(nr)}) in Minuten:`, T.zuschlagMin);
+          if (min == null) return;
+          w[`${s}/teilnehmer/${uid}/zuschlagMin`] = min;
+          break;
+        }
+        case 'zuschlag-alle': {
+          const min = this.minutenFragen('Zusätzliche Zeit für alle in Minuten:', this.info.zuschlagMin);
+          if (min == null) return;
+          w[`${s}/info/zuschlagMin`] = min;
+          break;
+        }
+        case 'beenden': await this.beenden(); return;
         case 'uebernehmen': await this.uebernehmen(uid, nr); return;
         case 'starten': await this.starten(); return;
         default: return;
@@ -376,6 +475,36 @@ const ExSitzung = {
     } catch (e) {
       alert('Das hat nicht geklappt: ' + e.message);
     }
+  },
+
+  /* Zeitzuschlag gesamt (nicht „noch einmal dazu“) – so lässt er sich auch zurücknehmen */
+  minutenFragen(frage, bisher) {
+    const ein = prompt(frage + '\n\nGesamter Zuschlag, 0 nimmt ihn zurück.', String((bisher || 0) + 5));
+    if (ein == null) return null;
+    const min = Math.round(Number(String(ein).replace(',', '.')));
+    if (!Number.isFinite(min) || min < 0 || min > 120) { alert('Bitte eine Zahl von 0 bis 120 eingeben.'); return null; }
+    return min;
+  },
+
+  /* Ex beenden: erst alle Geräte abgeben lassen (die Regeln nehmen nur an, solange
+     die Ex läuft), dann schließen. Wer nicht antwortet, behält seinen letzten
+     gespeicherten Stand – die Lehrkraft markiert ihn als abgegeben. */
+  async beenden() {
+    const offen = this.aktiveEintraege().filter(([uid, t]) =>
+      t.status === 'freigegeben' && !(this.abgaben[uid] && this.abgaben[uid].abgegeben)).length;
+    if (!confirm('Ex für alle beenden?' + (offen ? `\n\n${offen} haben noch nicht abgegeben – ihr aktueller Stand wird eingesammelt.` : ''))) return;
+    const code = this.code;
+    await FB.update(this.ref('info'), { einsammeln: FB.serverTimestamp() });
+    await new Promise(r => setTimeout(r, 8000));
+    if (this.code !== code) return;
+    const w = { [`exsessions/${code}/info/status`]: 'beendet', [`exsessions/${code}/info/endzeit`]: FB.serverTimestamp() };
+    for (const [uid, t] of this.aktiveEintraege()) {
+      if (t.status !== 'freigegeben' || (this.abgaben[uid] && this.abgaben[uid].abgegeben)) continue;
+      w[`exsessions/${code}/abgaben/${uid}/abgegeben`] = true;
+      w[`exsessions/${code}/abgaben/${uid}/abgegebenUm`] = FB.serverTimestamp();
+      w[`exsessions/${code}/abgaben/${uid}/erzwungen`] = true;
+    }
+    await FB.update(FB.ref(FB.db, 'schoolTool'), w);
   },
 
   /* Freigeben: Status, Zeitzuschlag (die Regeln rechnen damit) und der Zugang,

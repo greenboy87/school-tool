@@ -1545,3 +1545,10 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .ex-warnung { color: var(--danger); font-weight: 600; font-size: .85rem; }
 .ex-warnung-box { padding: .6rem .8rem; border-radius: 8px; background: var(--danger); color: #1b1714; }
 #tab-exen button:disabled, .ex-seite button:disabled { opacity: .45; cursor: not-allowed; }
+.ex-balken { display: inline-block; width: 4.5rem; height: .45rem; border-radius: 999px; background: var(--border); vertical-align: middle; overflow: hidden; margin-right: .3rem; }
+.ex-balken span { display: block; height: 100%; background: var(--accent); }
+.ex-tabelle td.ex-fortschritt, .ex-tabelle td.ex-zeit { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ex-tabelle td.ex-auffaellig { font-size: .82rem; color: var(--danger); }
+.ex-status.st-schreibt { border-color: var(--accent); color: var(--accent); }
+.ex-status.st-abgegeben { background: var(--accent); border-color: var(--accent); color: #fff; }
+.ex-status.st-zeit-um, .ex-status.st-nicht-abgegeben { border-color: var(--danger); color: var(--danger); }
