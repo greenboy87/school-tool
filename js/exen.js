@@ -119,8 +119,13 @@ const Exen = {
     this.abmeldenIndex = FB.onValue(FB.ref(FB.db, this.pfad('exindex')), snap => {
       this.index = snap.val() || {};
       this.listeZeichnen();
-    }, e => this.meldung('Die Ex-Liste lässt sich nicht lesen: ' + e.message +
-      '\nSind die neuen Datenbank-Regeln schon eingetragen (firebase-regeln.md)?', true));
+    }, e => {
+      // Nach einer Ablehnung beendet Firebase die Live-Abfrage – merken, damit
+      // der nächste gelungene Import sie neu startet
+      this.abmeldenIndex = null;
+      this.meldung('Die Ex-Liste lässt sich nicht lesen: ' + e.message +
+        '\nSind die neuen Datenbank-Regeln schon eingetragen (firebase-regeln.md)?', true);
+    });
   },
 
   async listeZeichnen() {
@@ -195,6 +200,7 @@ const Exen = {
       return;
     }
     try { await this.originalSpeichern(id, datei); } catch (e) { console.error(e); }
+    if (!this.abmeldenIndex) this.bibliothekSchalten(true);
     this.meldung(`„${teile.info.titel}“ ist importiert. Schülerfassung: ${Math.round(html.length / 1024)} KB, ` +
       'ohne Lösungen, ohne Bewertung, ohne Audiodaten.', false, teile.hinweise);
     this.listeZeichnen();
