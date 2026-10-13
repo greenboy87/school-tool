@@ -91,7 +91,13 @@ const ExSchueler = {
     this.ich = undefined;
     this.abmelden.push(FB.onValue(this.ref('info'), snap => { this.info = snap.val(); this.zeigen(); },
       () => { this.info = null; this.zeigen(); }));
-    this.abmelden.push(FB.onValue(this.ref('teilnehmer/' + this.uid), snap => { this.ich = snap.val(); this.zeigen(); },
+    this.abmelden.push(FB.onValue(this.ref('teilnehmer/' + this.uid), snap => {
+      const vorher = this.ich && this.ich.status;
+      this.ich = snap.val();
+      // Die Lehrkraft hat „Neu wählen lassen“ gedrückt: gleich wieder die Namensauswahl zeigen
+      if (this.ich && this.ich.status === 'wartet' && vorher && vorher !== 'wartet') { this.nummerWaehlen = true; this.gewaehlt = null; }
+      this.zeigen();
+    },
       () => { this.ich = null; this.zeigen(); }));
   },
 

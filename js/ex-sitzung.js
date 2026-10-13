@@ -483,6 +483,8 @@ const ExSitzung = {
       if (aktiv && i.status !== 'beendet' && z.anzeige !== 'abgegeben') k.push(knopf('rauswerfen', 'Rauswerfen', z, 'danger'));
       if (vorher && (z.status === 'wartet' || z.status === 'offen')) k.push(knopf('fehlt', 'Als fehlend markieren', z));
       if (z.status === 'fehlt-vorab' && i.status !== 'beendet') k.push(knopf('doch-da', 'Doch da', z));
+      // Falschen Namen erwischt: vor dem Start zurück zur Namensauswahl, ohne das Gerät zu sperren
+      if (vorher && z.uid && (z.status === 'freigegeben' || z.status === 'entfernt')) k.push(knopf('neu-waehlen', 'Neu wählen lassen', z));
       let ns = '';
       if (z.uid && z.notenschutz) ns = `<span class="ex-ns an">Notenschutz ✓</span> ${i.status === 'beendet' ? '' : knopf('ns-aus', 'zurücknehmen', z)}`;
       else if (z.uid && z.notenschutzAngefragt) ns = `<span class="ex-ns">angefragt</span> ${knopf('ns-an', 'bestätigen', z, 'primary')} ${knopf('ns-ab', 'ablehnen', z)}`;
@@ -557,6 +559,9 @@ const ExSitzung = {
           break;
         case 'alle-freigeben':
           for (const [u, t] of this.aktiveEintraege()) if (t.status === 'wartet') Object.assign(w, this.freigabe(u, t));
+          break;
+        case 'neu-waehlen':
+          w[`${s}/teilnehmer/${uid}/status`] = 'wartet';
           break;
         case 'rauswerfen':
           if (!confirm(`Nr. ${nr} (${this.name(nr)}) rauswerfen? Die Ex wird auf dem Gerät sofort gesperrt. ` +
