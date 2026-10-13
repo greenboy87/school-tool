@@ -100,6 +100,12 @@ const Exen = {
       if (f) this.importieren(f);
     });
     document.addEventListener('ex-sitzungen', () => { if (FB.istLehrer && FB.istLehrer()) this.listeZeichnen(); });
+    const neu = document.getElementById('btn-ex-neu-laden');
+    if (neu) neu.addEventListener('click', () => eingabe.click());
+    Classes.makeDropZone(document.getElementById('ex-schnellwahl'),
+      f => /\.html?$/i.test(f.name) || f.type === 'text/html',
+      'eine Ex-Datei (.html, Format tom-ex/2)',
+      f => this.importieren(f));
     Classes.makeDropZone(document.getElementById('ex-bibliothek'),
       f => /\.html?$/i.test(f.name) || f.type === 'text/html',
       'eine Ex-Datei (.html, Format tom-ex/2)',
@@ -161,8 +167,13 @@ const Exen = {
     Icons.hydrate(ul);
   },
 
+  /* Erscheint in der Bibliothek und in der schmalen Spalte bei „Schreiben“ */
   meldung(text, fehler, hinweise) {
-    const el = document.getElementById('ex-import-meldung');
+    ['ex-import-meldung', 'ex-import-meldung-schnell'].forEach(id => this.meldungIn(document.getElementById(id), text, fehler, hinweise));
+  },
+
+  meldungIn(el, text, fehler, hinweise) {
+    if (!el) return;
     el.hidden = !text;
     el.classList.toggle('fehler', !!fehler);
     el.textContent = text || '';
@@ -210,6 +221,7 @@ const Exen = {
     this.meldung(`„${teile.info.titel}“ ist importiert. Schülerfassung: ${Math.round(html.length / 1024)} KB, ` +
       'ohne Lösungen, ohne Bewertung, ohne Audiodaten.', false, teile.hinweise);
     this.listeZeichnen();
+    document.dispatchEvent(new CustomEvent('ex-importiert', { detail: { id } }));
   },
 
   async loeschen(id) {

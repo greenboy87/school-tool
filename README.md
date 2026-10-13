@@ -255,9 +255,11 @@ Instrument-Kürzel (`dr`, `ba`, `sy`, `ge`, `uk`) – nie Namen.
 ### ✏️ Digitale Exen auf iPads (Reiter *Exen*)
 Jede Ex ist eine eigene HTML-Datei mit eigener Oberfläche (Format `tom-ex/2`, siehe
 [`docs/ex/ex-format.md`](docs/ex/ex-format.md)); das School-Tool ist der Rahmen drumherum.
-Vier Reiter: **Ex schreiben · Ex korrigieren · Ex-Bibliothek · Lehreranmeldung**, darüber
-die **Klasse** – sie gilt fürs Schreiben und für die Liste der geschriebenen Exen. Ein grüner
-Punkt an „Ex schreiben“ zeigt eine offene Sitzung.
+Drei Reiter: **Schreiben · Korrigieren · Bibliothek**, daneben die **Klasse** – sie gilt
+fürs Schreiben und für die Liste der geschriebenen Exen. Ein grüner Punkt an „Schreiben“
+zeigt eine offene Sitzung. Bei „Schreiben“ rechts eine schmale Spalte mit den neuesten Exen
+(antippen wählt sie aus) und **Neue Ex laden**. Ohne Anmeldung steht nur die
+Lehrer-Anmeldung da; danach liegt sie unten in der Bibliothek.
 
 - **Lehrer-Anmeldung** mit Google, einmal pro Gerät. Nur dieses Konto darf Exen, Lösungen
   und Abgaben lesen – das setzen die Datenbank-Regeln durch, nicht die Seite.

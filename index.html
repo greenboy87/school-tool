@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=201">
+<link rel="stylesheet" href="style.css?v=202">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=201"></script>
-<script src="js/theme.js?v=201"></script>
-<script src="js/auswahl.js?v=201"></script>
-<script src="js/auth.js?v=201"></script>
+<script src="js/icons.js?v=202"></script>
+<script src="js/theme.js?v=202"></script>
+<script src="js/auswahl.js?v=202"></script>
+<script src="js/auth.js?v=202"></script>
 </head>
 <body>
 
@@ -972,15 +972,16 @@
 <main id="tab-exen" class="tab-page">
   <section class="card ex-kopf">
     <nav class="sub-tabs ex-reiter" id="ex-reiter">
-      <button class="ex-reiter-btn" data-exreiter="schreiben" data-icon="play">Ex schreiben<span class="ex-laeuft-punkt" id="ex-laeuft-punkt" hidden title="Eine Sitzung ist offen"></span></button>
-      <button class="ex-reiter-btn" data-exreiter="korrigieren" data-icon="check">Ex korrigieren</button>
-      <button class="ex-reiter-btn" data-exreiter="bibliothek" data-icon="file">Ex-Bibliothek</button>
-      <button class="ex-reiter-btn" data-exreiter="anmeldung" data-icon="lock">Lehreranmeldung</button>
+      <button class="ex-reiter-btn" data-exreiter="schreiben" data-icon="play">Schreiben<span class="ex-laeuft-punkt" id="ex-laeuft-punkt" hidden title="Eine Sitzung ist offen"></span></button>
+      <button class="ex-reiter-btn" data-exreiter="korrigieren" data-icon="check">Korrigieren</button>
+      <button class="ex-reiter-btn" data-exreiter="bibliothek" data-icon="file">Bibliothek</button>
     </nav>
     <label class="ex-klasse-wahl" id="ex-klasse-wahl">Klasse <select id="ex-klasse"></select></label>
   </section>
 
   <div class="ex-reiter-seite" data-seite="schreiben">
+  <div class="ex-schreiben-raster">
+  <div class="ex-schreiben-haupt">
   <section id="ex-sitzung" class="card ex-sitzung" hidden>
     <div class="ex-sitzung-kopf">
       <div>
@@ -1024,6 +1025,17 @@
       <button id="btn-ex-nach-abbrechen" class="small" hidden>Abbrechen</button>
     </div>
   </section>
+  </div>
+
+  <aside class="card ex-schnellwahl" id="ex-schnellwahl">
+    <h3 data-icon="file">Exen</h3>
+    <button id="btn-ex-neu-laden" class="primary small" data-icon="upload">Neue Ex laden …</button>
+    <div id="ex-import-meldung-schnell" class="ex-meldung" role="status" hidden></div>
+    <ul id="ex-schnellwahl-liste" class="ex-schnellwahl-liste"></ul>
+    <p id="ex-schnellwahl-leer" class="hint" hidden>Noch keine Ex in der Bibliothek.</p>
+    <button id="btn-ex-ganze-bibliothek" class="small ex-ganze-bib">Ganze Bibliothek</button>
+  </aside>
+  </div>
   </div>
 
   <div class="ex-reiter-seite" data-seite="korrigieren">
@@ -1216,36 +1228,36 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=201"></script>
-<script src="js/firebase-config.js?v=201"></script>
-<script type="module" src="js/live-firebase.js?v=201"></script>
-<script src="js/topics-seed.js?v=201"></script>
-<script src="js/ai-import.js?v=201"></script>
-<script src="js/store.js?v=201"></script>
-<script src="js/noise.js?v=201"></script>
-<script src="js/classes.js?v=201"></script>
-<script src="js/sitzplan.js?v=201"></script>
-<script src="js/schueler.js?v=201"></script>
-<script src="js/tasten.js?v=201"></script>
-<script src="js/lessons.js?v=201"></script>
-<script src="js/band.js?v=201"></script>
-<script src="js/notes.js?v=201"></script>
-<script src="js/tresor.js?v=201"></script>
-<script src="js/erklaerungen.js?v=201"></script>
-<script src="js/setlisten.js?v=201"></script>
-<script src="js/einklappen.js?v=201"></script>
-<script src="js/tinyband-instrumente.js?v=201"></script>
-<script src="js/live-groups.js?v=201"></script>
-<script src="js/tinyband-lehrer.js?v=201"></script>
-<script src="js/tipps.js?v=201"></script>
-<script src="js/sport-tabellen.js?v=201"></script>
-<script src="js/sport.js?v=201"></script>
-<script src="js/ex-import.js?v=201"></script>
-<script src="js/exen.js?v=201"></script>
-<script src="js/ex-sitzung.js?v=201"></script>
-<script src="js/ex-auswertung.js?v=201"></script>
-<script src="js/ex-reiter.js?v=201"></script>
-<script src="js/tools.js?v=201"></script>
-<script src="js/app.js?v=201"></script>
+<script src="js/vendor/qrcode.min.js?v=202"></script>
+<script src="js/firebase-config.js?v=202"></script>
+<script type="module" src="js/live-firebase.js?v=202"></script>
+<script src="js/topics-seed.js?v=202"></script>
+<script src="js/ai-import.js?v=202"></script>
+<script src="js/store.js?v=202"></script>
+<script src="js/noise.js?v=202"></script>
+<script src="js/classes.js?v=202"></script>
+<script src="js/sitzplan.js?v=202"></script>
+<script src="js/schueler.js?v=202"></script>
+<script src="js/tasten.js?v=202"></script>
+<script src="js/lessons.js?v=202"></script>
+<script src="js/band.js?v=202"></script>
+<script src="js/notes.js?v=202"></script>
+<script src="js/tresor.js?v=202"></script>
+<script src="js/erklaerungen.js?v=202"></script>
+<script src="js/setlisten.js?v=202"></script>
+<script src="js/einklappen.js?v=202"></script>
+<script src="js/tinyband-instrumente.js?v=202"></script>
+<script src="js/live-groups.js?v=202"></script>
+<script src="js/tinyband-lehrer.js?v=202"></script>
+<script src="js/tipps.js?v=202"></script>
+<script src="js/sport-tabellen.js?v=202"></script>
+<script src="js/sport.js?v=202"></script>
+<script src="js/ex-import.js?v=202"></script>
+<script src="js/exen.js?v=202"></script>
+<script src="js/ex-sitzung.js?v=202"></script>
+<script src="js/ex-auswertung.js?v=202"></script>
+<script src="js/ex-reiter.js?v=202"></script>
+<script src="js/tools.js?v=202"></script>
+<script src="js/app.js?v=202"></script>
 </body>
 </html>

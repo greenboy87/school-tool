@@ -1,7 +1,8 @@
-/* Reiter im Bereich Exen: Ex schreiben · Ex korrigieren · Ex-Bibliothek ·
-   Lehreranmeldung. Darüber steht die Klasse – sie gilt für „Ex schreiben“
-   (wer schreibt mit) und „Ex korrigieren“ (welche Exen stehen in der Liste).
-   Ohne Lehrer-Anmeldung ist nur der Reiter Lehreranmeldung erreichbar. */
+/* Reiter im Bereich Exen: Schreiben · Korrigieren · Bibliothek. Daneben die
+   Klasse – sie gilt fürs Schreiben (wer schreibt mit) und Korrigieren (welche
+   Exen stehen in der Liste). Ohne Lehrer-Anmeldung steht nur die Anmeldung da;
+   mit Anmeldung wandert sie ans Ende der Bibliothek (Abmelden).
+   Bei „Schreiben“ zeigt eine schmale Spalte die neuesten Exen zum Antippen. */
 const ExReiter = {
   REITER_KEY: 'schooltool-ex-reiter',
   KLASSE_KEY: 'schooltool-ex-klasse',
@@ -15,8 +16,26 @@ const ExReiter = {
       if (b && !b.disabled) this.zeigen(b.dataset.exreiter);
     });
     document.getElementById('ex-klasse').addEventListener('change', e => this.klasseSetzen(e.target.value));
+    document.getElementById('btn-ex-ganze-bibliothek').addEventListener('click', () => this.zeigen('bibliothek'));
+    document.getElementById('ex-schnellwahl-liste').addEventListener('click', e => {
+      const b = e.target.closest('[data-ex-id]');
+      if (b) this.exWaehlen(b.dataset.exId);
+    });
+    document.getElementById('ex-start-ex').addEventListener('change', () => this.schnellwahlZeichnen());
+    document.addEventListener('ex-index', () => {
+      // Gerade importiert: gleich zum Schreiben auswählen
+      if (this.neuId && Exen.index[this.neuId]) { const id = this.neuId; this.neuId = null; this.exWaehlen(id); }
+      this.schnellwahlZeichnen();
+    });
+    document.addEventListener('ex-importiert', e => {
+      this.neuId = e.detail.id;
+      if (Exen.index[this.neuId]) { this.neuId = null; this.exWaehlen(e.detail.id); }
+    });
     document.addEventListener('ex-anmeldung', e => {
       this.lehrer = e.detail.lehrer;
+      // Die Anmeldung steht allein da, solange niemand angemeldet ist
+      const karte = document.querySelector('.ex-anmeldung');
+      document.querySelector(`.ex-reiter-seite[data-seite="${this.lehrer ? 'bibliothek' : 'anmeldung'}"]`).append(karte);
       this.klassenFuellen();
       this.zeigen(this.lehrer ? (this.gemerkt() || 'schreiben') : 'anmeldung', null, true);
     });
@@ -78,6 +97,42 @@ const ExReiter = {
     }
     if (typeof ExAuswertung !== 'undefined') ExAuswertung.klasseGewechselt();
     if (!stumm) document.getElementById('ex-klasse').blur();
+  },
+
+  /* Ex in „Ex starten“ auswählen (beim Nachschreiben steht sie fest) */
+  exWaehlen(id) {
+    const sel = document.getElementById('ex-start-ex');
+    if (sel.disabled || ![...sel.options].some(o => o.value === id)) { this.schnellwahlZeichnen(); return; }
+    if (sel.value !== id) {
+      sel.value = id;
+      sel.dispatchEvent(new Event('change'));
+    }
+    this.schnellwahlZeichnen();
+  },
+
+  SCHNELL_ANZAHL: 8,
+
+  schnellwahlZeichnen() {
+    const ul = document.getElementById('ex-schnellwahl-liste');
+    if (!ul || typeof Exen === 'undefined') return;
+    const esc = s => Band.esc(s);
+    const ids = Object.keys(Exen.index).sort((a, b) => (Exen.index[b].importiert || 0) - (Exen.index[a].importiert || 0));
+    const gewaehlt = document.getElementById('ex-start-ex').value;
+    const fest = document.getElementById('ex-start-ex').disabled;
+    const gezeigt = ids.slice(0, this.SCHNELL_ANZAHL);
+    // Die gewählte Ex immer mit anzeigen, auch wenn sie älter ist
+    if (gewaehlt && ids.includes(gewaehlt) && !gezeigt.includes(gewaehlt)) gezeigt.push(gewaehlt);
+    ul.innerHTML = gezeigt.map(id => {
+      const x = Exen.index[id];
+      const datum = x.importiert ? new Date(x.importiert).toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric', year: '2-digit' }) : '';
+      return `<li><button class="ex-schnell-eintrag${id === gewaehlt ? ' active' : ''}" data-ex-id="${esc(id)}"${fest ? ' disabled' : ''}>
+        <strong>${esc(x.titel)}</strong>
+        <span class="hint">${[x.art, x.punkteGesamt ? x.punkteGesamt + ' P' : '', datum ? 'hinzugefügt ' + datum : ''].filter(Boolean).map(esc).join(' · ')}</span>
+      </button></li>`;
+    }).join('');
+    document.getElementById('ex-schnellwahl-leer').hidden = ids.length > 0;
+    const ganz = document.getElementById('btn-ex-ganze-bibliothek');
+    ganz.textContent = ids.length > gezeigt.length ? `Ganze Bibliothek (${ids.length})` : 'Ganze Bibliothek';
   },
 
   /* Grüner Punkt am Reiter „Ex schreiben“, solange eine Sitzung offen ist */
