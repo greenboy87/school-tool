@@ -20,6 +20,11 @@ const Schueler = {
         Classes.persist();
       });
     }
+    // Nachteilsausgleich für Exen: Notenschutz und Zeitzuschlag, nur lokal
+    ['profil-ex-ns', 'profil-ex-zuschlag', 'profil-ex-einheit'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener(id === 'profil-ex-zuschlag' ? 'input' : 'change', () => this.exAngabenSpeichern());
+    });
     const an = (id, f) => { const el = document.getElementById(id); if (el) el.addEventListener('click', f); };
     an('btn-profil-vor', () => this.blaettern(-1));
     an('btn-profil-weiter', () => this.blaettern(1));
@@ -319,6 +324,22 @@ const Schueler = {
     }
 
     document.getElementById('profil-notiz').value = s.notiz || '';
+    const ex = document.getElementById('profil-ex-ns');
+    if (ex) {
+      ex.checked = !!s.exNotenschutz;
+      document.getElementById('profil-ex-zuschlag').value = s.exZuschlag ? s.exZuschlag.wert : '';
+      document.getElementById('profil-ex-einheit').value = s.exZuschlag ? s.exZuschlag.einheit : 'min';
+    }
+  },
+
+  exAngabenSpeichern() {
+    const t = this.gewaehlt();
+    if (!t) return;
+    if (document.getElementById('profil-ex-ns').checked) t.s.exNotenschutz = true; else delete t.s.exNotenschutz;
+    const wert = Math.round(Number(document.getElementById('profil-ex-zuschlag').value));
+    const einheit = document.getElementById('profil-ex-einheit').value === '%' ? '%' : 'min';
+    if (wert > 0 && wert <= 120) t.s.exZuschlag = { wert, einheit }; else delete t.s.exZuschlag;
+    Classes.persist();
   },
 
   datum(iso) {

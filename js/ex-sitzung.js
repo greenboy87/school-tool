@@ -522,9 +522,13 @@ const ExSitzung = {
       const fortschritt = f && f.gesamt
         ? `<span class="ex-balken"><span style="width:${Math.round(100 * f.erledigt / f.gesamt)}%"></span></span> ${f.erledigt}/${f.gesamt}` : '';
       const zuschlag = z.zuschlagMin ? ` <span class="hint">(+${z.zuschlagMin} min)</span>` : '';
+      // Was der Steckbrief beim Freigeben mitbringt – vorher sichtbar machen
+      const sb = z.uid && z.status === 'wartet' ? this.steckbriefAusgleich(z.nr) : {};
+      const sbText = [sb.notenschutz ? 'Notenschutz' : '', sb.zuschlagMin ? `+${sb.zuschlagMin} min` : ''].filter(Boolean).join(', ');
+      const sbHinweis = sbText ? ` <span class="hint" title="Wird beim Freigeben aus dem Steckbrief übernommen">(Steckbrief: ${esc(sbText)})</span>` : '';
       const zeit = laeuft && !i.ohneLimit && z.status === 'freigegeben' && z.anzeige !== 'abgegeben' ? this.zeitText(this.restSek(z)) : '';
       return `<tr class="st-${z.anzeige}${z.doppelt ? ' doppelt' : ''}">
-        <td class="nr">${esc(z.nr)}</td><td>${esc(this.name(z.nr))}</td>
+        <td class="nr">${esc(z.nr)}</td><td>${esc(this.name(z.nr))}${sbHinweis}</td>
         <td><span class="ex-status st-${z.anzeige}">${STATUS[z.anzeige] || esc(z.anzeige)}</span>${z.doppelt ? ' <span class="ex-warnung">2 Geräte!</span>' : ''}</td>
         ${vorher ? '' : `<td class="ex-fortschritt">${fortschritt}</td><td class="ex-zeit">${zeit}${zuschlag}</td><td class="ex-auffaellig">${esc(this.auffaelliges(ab))}</td>`}
         <td>${ns}</td><td class="aktionen">${k.join(' ')}</td></tr>`;
@@ -690,8 +694,30 @@ const ExSitzung = {
   freigabe(uid, t) {
     const s = `exsessions/${this.code}`;
     const w = { [`${s}/teilnehmer/${uid}/status`]: 'freigegeben', [`exzugang/${uid}`]: this.code };
-    if (!t || typeof t.zuschlagMin !== 'number') w[`${s}/teilnehmer/${uid}/zuschlagMin`] = 0;
+    // Aus dem Steckbrief: Notenschutz gleich bestätigen, Zeitzuschlag eintragen –
+    // aber nichts überschreiben, was die Lehrkraft hier schon von Hand gesetzt hat
+    const sb = t ? this.steckbriefAusgleich(t.nummer) : {};
+    if (sb.notenschutz && !t.notenschutz) w[`${s}/teilnehmer/${uid}/notenschutz`] = true;
+    if (!t || typeof t.zuschlagMin !== 'number' || (t.zuschlagMin === 0 && sb.zuschlagMin)) {
+      w[`${s}/teilnehmer/${uid}/zuschlagMin`] = sb.zuschlagMin || 0;
+    }
     return w;
+  },
+
+  /* Notenschutz und Zeitzuschlag aus dem Steckbrief (Reiter Klassen). Prozent
+     beziehen sich auf die Dauer dieser Sitzung, aufgerundet auf ganze Minuten. */
+  steckbriefAusgleich(nr) {
+    const lokal = this.lokal();
+    const cls = lokal && Classes.data.classes.find(c => c.id === lokal.klasseId);
+    const s = cls && cls.students.find(x => x.id === lokal.nummern[nr]);
+    if (!s) return {};
+    let zuschlagMin = 0;
+    if (s.exZuschlag && !(this.info && this.info.ohneLimit)) {
+      zuschlagMin = s.exZuschlag.einheit === '%'
+        ? Math.ceil((this.info ? this.info.dauerMinuten : 0) * s.exZuschlag.wert / 100)
+        : s.exZuschlag.wert;
+    }
+    return { notenschutz: !!s.exNotenschutz, zuschlagMin: Math.min(120, zuschlagMin), roh: s.exZuschlag || null };
   },
 
   async uebernehmen(neuUid, nr) {

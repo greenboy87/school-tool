@@ -271,6 +271,8 @@ Jede Ex ist eine eigene HTML-Datei mit eigener Oberfläche (Format `tom-ex/2`, s
   „Ich habe Notenschutz“. Danach „Warte auf Freigabe“. Die Namen („Mia A.“) stecken im
   QR-Code hinter dem `#` und gehen nie an den Server – in die Datenbank kommt nur die
   Nummer. Wer den Code von Hand eintippt, sieht stattdessen Nummern.
+- **Notenschutz und Zeitzuschlag im Steckbrief** („Bei Exen“: Häkchen und Minuten oder
+  Prozent der Dauer) werden beim Freigeben automatisch übernommen – nur lokal gespeichert.
 - **Warteraum:** Freigeben (einzeln/alle), Rauswerfen, als fehlend markieren, Notenschutz
   bestätigen, Warnung bei doppelter Nummer, **übernehmen**, wenn ein iPad abgestürzt ist
   und sich neu anmeldet. **Ex starten** – die Zeit läuft nach Serverzeit.
