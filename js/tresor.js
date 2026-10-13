@@ -475,7 +475,7 @@ const Tresor = {
 
       const klassen = (daten.classes || []).length;
       const schueler = (daten.classes || []).reduce((a, c) => a + (c.students || []).length, 0);
-      this.status('Server-Backup gespeichert (' + this.zeit(paket.stand) + ')');
+      this.status('Gespeichert (' + this.zeit(paket.stand) + ')');
       alert(
         'Server-Backup gespeichert.\n\n' +
         `Stand vom Server: ${this.zeit(paket.stand)}` +
