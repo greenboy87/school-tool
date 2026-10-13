@@ -82,7 +82,7 @@ class NoiseMeter {
     // Grenzwert-Strich außen am Bogen
     this.markerEl = el('line', { class: 'bogen-marker' });
     // Leuchtpunkt an der Spitze des Pegels
-    this.knopfEl = el('circle', { r: 9, class: 'bogen-knopf' });
+    this.knopfEl = el('circle', { r: 12, class: 'bogen-knopf' });
     svg.append(this.markerEl, this.knopfEl);
     this._punkt = punkt;
     this._r = r;
@@ -122,7 +122,7 @@ class NoiseMeter {
     this._leseFarben();
     for (const p of this.segments) p.setAttribute('stroke', this._farbe(p.dbWert));
     const w = this._winkel(this.threshold);
-    const [x0, y0] = this._punkt(w, this._r - 15), [x1, y1] = this._punkt(w, this._r + 15);
+    const [x0, y0] = this._punkt(w, this._r - 19), [x1, y1] = this._punkt(w, this._r + 19);
     Object.entries({ x1: x0, y1: y0, x2: x1, y2: y1 }).forEach(([k, v]) => this.markerEl.setAttribute(k, v.toFixed(2)));
   }
 
@@ -139,7 +139,7 @@ class NoiseMeter {
     }
   }
 
-  /* Vollbild-Overlay im jeweiligen Fenster (Hauptseite oder schwebendes Fenster) anlegen */
+  /* Vollbild-Overlay im jeweiligen Fenster (Hauptseite, Popup oder schwebendes Fenster) anlegen */
   _buildAlarmOverlay() {
     const doc = this.els.gauge.ownerDocument;
     this.overlay = doc.createElement('div');

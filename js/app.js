@@ -137,14 +137,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Popup: einfaches Fenster, geht in jedem Browser (auch Safari)
+  const popupOeffnen = () => window.open('ampel.html', 'laermampel',
+    'width=380,height=360,menubar=no,toolbar=no,location=no,status=no');
+  document.getElementById('btn-popup').addEventListener('click', popupOeffnen);
+
   // „Immer im Vordergrund“: Document Picture-in-Picture (Chrome/Edge).
+  // Safari kann das nicht – dort öffnet sich stattdessen das Popup.
   document.getElementById('btn-pip').addEventListener('click', async () => {
-    if (!('documentPictureInPicture' in window)) {
-      alert('Dein Browser unterstützt das schwebende Fenster nicht.\nNutze Chrome oder Edge.');
-      return;
-    }
+    if (!('documentPictureInPicture' in window)) { popupOeffnen(); return; }
     try {
-      const pipWin = await documentPictureInPicture.requestWindow({ width: 300, height: 250 });
+      const pipWin = await documentPictureInPicture.requestWindow({ width: 360, height: 270 });
       // Styles übernehmen
       for (const sheet of document.styleSheets) {
         try {
