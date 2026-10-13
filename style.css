@@ -1940,7 +1940,7 @@ body.ex-korrektur-offen { overflow: hidden; }
 .tools-raster > .ampel-card { grid-area: ampel; }
 .tools-raster > .klangschale-card { grid-area: schale; }
 .tools-raster .stimmen-knoepfe { flex-direction: column; align-items: stretch; }
-.tools-raster .stimmen-anzeige { margin-top: 1.2rem; }
+.tools-raster .stimmen-anzeige { margin-top: .4rem; }
 @media (max-width: 1150px) {
   .tools-raster { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "ampel ampel" "stimmen schale"; }
   .tools-raster .stimmen-knoepfe { flex-direction: row; justify-content: center; }
