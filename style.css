@@ -1663,3 +1663,5 @@ body.ex-korrektur-offen { overflow: hidden; }
 .ex-start.nachschreiben { outline: 2px solid var(--accent); outline-offset: -2px; }
 .ex-anwesend li.geschrieben { opacity: .55; }
 .ex-anwesend li.geschrieben .hint { margin-left: .3rem; }
+.ex-start-haken { display: flex; flex-direction: column; gap: .3rem; margin: .7rem 0 .2rem; font-size: .92rem; }
+.ex-start-haken label { display: flex; gap: .5rem; align-items: center; }

@@ -31,6 +31,9 @@ const ExSitzung = {
     document.getElementById('ex-start-klasse').addEventListener('change', () => this.anwesenheitZeichnen());
     document.getElementById('ex-start-ex').addEventListener('change', () => { this.dauerVorbelegen(); this.vorschauText(); });
     document.getElementById('ex-start-dauer').addEventListener('input', () => this.vorschauText());
+    ['ex-start-timer', 'ex-start-ohnelimit'].forEach(id =>
+      document.getElementById(id).addEventListener('change', () => this.zeitOptionenStellen()));
+    this.zeitOptionenLaden();
     document.getElementById('ex-start-nummer').addEventListener('input', () => this.vorschauText());
     document.getElementById('ex-anwesend').addEventListener('change', () => this.anwesenheitZaehlen());
     document.getElementById('btn-ex-warteraum').addEventListener('click', () => this.warteraumOeffnen());
@@ -119,6 +122,28 @@ const ExSitzung = {
     return d >= 1 && d <= 240 ? d : this.dauerVorschlag();
   },
 
+  /* Zeit-Optionen: Timer auf den iPads zeigen? Ganz ohne Zeitlimit? Sie gelten ab
+     dem Start (eine schon laufende Ex kennt kein „Timer ausblenden“). Ohne Limit
+     steht als Dauer ein sehr großer Wert in der Sitzung – die Regeln rechnen
+     weiter damit, nur kommt die Grenze nie. */
+  OHNE_LIMIT_MIN: 600,
+  zeitOptionenLaden() {
+    const o = Classes.data.exZeitOptionen || {};
+    document.getElementById('ex-start-timer').checked = o.anzeigen !== false;
+    document.getElementById('ex-start-ohnelimit').checked = !!o.ohneLimit;
+    this.zeitOptionenStellen();
+  },
+  zeitOptionenStellen() {
+    const ohne = document.getElementById('ex-start-ohnelimit').checked;
+    document.getElementById('ex-start-dauer').disabled = ohne;
+    document.getElementById('ex-start-timer').disabled = ohne;
+    this.vorschauText();
+  },
+  zeitOptionen() {
+    const ohneLimit = document.getElementById('ex-start-ohnelimit').checked;
+    return { ohneLimit, anzeigen: !ohneLimit && document.getElementById('ex-start-timer').checked };
+  },
+
   dauerMerken(exId, d) {
     Classes.data.exDauer = { ...(Classes.data.exDauer || {}), [exId]: d, _zuletzt: d };
   },
@@ -127,7 +152,8 @@ const ExSitzung = {
     const x = Exen.index[document.getElementById('ex-start-ex').value];
     const n = this.exNummer();
     document.getElementById('ex-start-vorschau').textContent = x
-      ? `Kopf auf den iPads: „${n}. ${x.art || 'Ex'} · ${x.fach || ''}“ · ${this.dauer()} Minuten · ${x.punkteGesamt} Punkte`
+      ? `Kopf auf den iPads: „${n}. ${x.art || 'Ex'} · ${x.fach || ''}“ · ${this.zeitOptionen().ohneLimit ? 'ohne Zeitlimit'
+        : `${this.dauer()} Minuten${this.zeitOptionen().anzeigen ? '' : ' (Timer verborgen)'}`} · ${x.punkteGesamt} Punkte`
       : 'Zuerst eine Ex in die Bibliothek ziehen.';
   },
 
@@ -249,12 +275,15 @@ const ExSitzung = {
     try {
       const code = await this.neuerCode();
       const exNummer = nach ? nach.exNummer : this.exNummer();
-      const dauer = this.dauer();
-      this.dauerMerken(exId, dauer);
+      const zeit = this.zeitOptionen();
+      const dauer = zeit.ohneLimit ? this.OHNE_LIMIT_MIN : this.dauer();
+      if (!zeit.ohneLimit) this.dauerMerken(exId, dauer);
+      Classes.data.exZeitOptionen = zeit;
       await FB.set(FB.ref(FB.db, `schoolTool/exsessions/${code}/info`), {
         status: 'warteraum', exId, titel: ex.titel, art: ex.art || '', fach: ex.fach || '',
         klasse: cls.name, exNummer, wiedergabe: 'zentral', dauerMinuten: dauer,
         zuschlagMin: 0, erstellt: FB.serverTimestamp(), erlaubt, fehlt,
+        zeitAnzeigen: zeit.anzeigen, ohneLimit: zeit.ohneLimit,
         ...(nach ? { nachschreiben: true } : {}),
       });
       this.sitzungen()[code] = {
@@ -352,7 +381,7 @@ const ExSitzung = {
     document.getElementById('ex-sitzung-titel').textContent = `${i.exNummer}. ${i.art || 'Ex'}: ${i.titel}${i.nachschreiben ? ' – Nachschreiben' : ''}`;
     const status = { warteraum: 'Warteraum offen', laeuft: 'läuft', beendet: 'beendet' }[i.status] || i.status;
     document.getElementById('ex-sitzung-info').textContent =
-      `Klasse ${i.klasse} · ${i.dauerMinuten} Minuten · ${Object.keys(i.erlaubt || {}).length} erwartet` +
+      `Klasse ${i.klasse} · ${i.ohneLimit ? 'ohne Zeitlimit' : `${i.dauerMinuten} Minuten`}${i.zeitAnzeigen === false && !i.ohneLimit ? ' (Timer verborgen)' : ''} · ${Object.keys(i.erlaubt || {}).length} erwartet` +
       (Object.keys(i.fehlt || {}).length ? `, ${Object.keys(i.fehlt).length} fehlen` : '') + ` · ${status}`;
     document.getElementById('ex-sitzung-code').textContent = this.code;
     const link = this.link();
@@ -479,7 +508,7 @@ const ExSitzung = {
         if (this.kannUebernehmen(z)) k.push(knopf('uebernehmen', 'übernehmen', z));
       }
       if ((z.status === 'entfernt' || z.status === 'fehlt') && i.status !== 'beendet') k.push(knopf('freigeben', 'Wieder freigeben', z));
-      if (laeuft && z.anzeige !== 'abgegeben' && z.status === 'freigegeben') k.push(knopf('zuschlag', 'Zeit +', z));
+      if (laeuft && !i.ohneLimit && z.anzeige !== 'abgegeben' && z.status === 'freigegeben') k.push(knopf('zuschlag', 'Zeit +', z));
       if (aktiv && i.status !== 'beendet' && z.anzeige !== 'abgegeben') k.push(knopf('rauswerfen', 'Rauswerfen', z, 'danger'));
       if (vorher && (z.status === 'wartet' || z.status === 'offen')) k.push(knopf('fehlt', 'Als fehlend markieren', z));
       if (z.status === 'fehlt-vorab' && i.status !== 'beendet') k.push(knopf('doch-da', 'Doch da', z));
@@ -493,7 +522,7 @@ const ExSitzung = {
       const fortschritt = f && f.gesamt
         ? `<span class="ex-balken"><span style="width:${Math.round(100 * f.erledigt / f.gesamt)}%"></span></span> ${f.erledigt}/${f.gesamt}` : '';
       const zuschlag = z.zuschlagMin ? ` <span class="hint">(+${z.zuschlagMin} min)</span>` : '';
-      const zeit = laeuft && z.status === 'freigegeben' && z.anzeige !== 'abgegeben' ? this.zeitText(this.restSek(z)) : '';
+      const zeit = laeuft && !i.ohneLimit && z.status === 'freigegeben' && z.anzeige !== 'abgegeben' ? this.zeitText(this.restSek(z)) : '';
       return `<tr class="st-${z.anzeige}${z.doppelt ? ' doppelt' : ''}">
         <td class="nr">${esc(z.nr)}</td><td>${esc(this.name(z.nr))}</td>
         <td><span class="ex-status st-${z.anzeige}">${STATUS[z.anzeige] || esc(z.anzeige)}</span>${z.doppelt ? ' <span class="ex-warnung">2 Geräte!</span>' : ''}</td>
@@ -507,16 +536,17 @@ const ExSitzung = {
       kopf = `<span>${frei} freigegeben · ${wartend} warten · ${zaehle('offen')} noch nicht da</span>
         <span class="btn-row">
           ${wartend ? '<button data-aktion="alle-freigeben" class="small">Alle freigeben</button>' : ''}
-          <button data-aktion="dauer" class="small" title="Gilt für alle; zählt nicht als Zeitzuschlag">Dauer: ${i.dauerMinuten} min ändern</button>
+          ${i.ohneLimit ? '' : `<button data-aktion="dauer" class="small" title="Gilt für alle; zählt nicht als Zeitzuschlag">Dauer: ${i.dauerMinuten} min ändern</button>`}
           <button data-aktion="starten" class="primary" ${frei ? '' : 'disabled'}>Ex starten</button>
         </span>`;
     } else if (laeuft) {
       const rest = this.restSek(null);
       kopf = `<span>${zaehle('schreibt')} schreiben · ${zaehle('abgegeben')} abgegeben${zaehle('zeit-um') ? ` · ${zaehle('zeit-um')} Zeit um` : ''}${wartend ? ` · ${wartend} warten` : ''}
-          · reguläre Restzeit <strong>${this.zeitText(rest)}</strong>${i.zuschlagMin ? ` (+${i.zuschlagMin} min für alle)` : ''}</span>
+          · ${i.ohneLimit ? '<strong>ohne Zeitlimit</strong> – beenden mit „Ex beenden“'
+            : `reguläre Restzeit <strong>${this.zeitText(rest)}</strong>${i.zuschlagMin ? ` (+${i.zuschlagMin} min für alle)` : ''}${i.zeitAnzeigen === false ? ' · auf den iPads verborgen' : ''}`}</span>
         <span class="btn-row">
           ${wartend ? '<button data-aktion="alle-freigeben" class="small">Alle freigeben</button>' : ''}
-          <button data-aktion="zuschlag-alle" class="small">Zeit + für alle</button>
+          ${i.ohneLimit ? '' : '<button data-aktion="zuschlag-alle" class="small">Zeit + für alle</button>'}
           <button data-aktion="beenden" class="danger">Ex beenden</button>
         </span>`;
     } else {

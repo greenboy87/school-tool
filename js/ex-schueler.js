@@ -366,7 +366,8 @@ const ExSchueler = {
     if (!r || !r.bereit || r.gesperrt) return;
     const rest = this.restSekunden();
     if (rest == null) return;
-    this.senden('zeit', { restSekunden: Math.max(0, rest) });
+    // Restzeit nur zeigen, wenn die Lehrkraft das beim Start so eingestellt hat
+    if (this.info.zeitAnzeigen !== false && !this.info.ohneLimit) this.senden('zeit', { restSekunden: Math.max(0, rest) });
     if (rest <= 0 && !r.abgegeben) this.abgabeAnfordern('zeit');
     else if (rest <= 0) this.sperren('zeit');
   },
