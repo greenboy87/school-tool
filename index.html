@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=207">
+<link rel="stylesheet" href="style.css?v=208">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=207"></script>
-<script src="js/theme.js?v=207"></script>
-<script src="js/auswahl.js?v=207"></script>
-<script src="js/metronom.js?v=207"></script>
-<script src="js/klang.js?v=207"></script>
-<script src="js/auth.js?v=207"></script>
+<script src="js/icons.js?v=208"></script>
+<script src="js/theme.js?v=208"></script>
+<script src="js/auswahl.js?v=208"></script>
+<script src="js/metronom.js?v=208"></script>
+<script src="js/klang.js?v=208"></script>
+<script src="js/auth.js?v=208"></script>
 </head>
 <body>
 
@@ -66,7 +66,7 @@
 
 <!-- ========== LÄRMAMPEL ========== -->
 <main id="tab-ampel" class="tab-page active">
-  <div class="klang-raster">
+  <div class="tools-raster">
     <section class="card stimmen-card" id="stimmen">
       <h2 data-icon="target">Stimmgerät</h2>
       <div class="stimmen-anzeige" id="stimmen-anzeige">
@@ -78,19 +78,9 @@
       </div>
       <div class="btn-row stimmen-knoepfe">
         <button id="stimmen-mikro" data-icon="mic">Stimmgerät starten</button>
-        <button id="stimmen-a" data-icon="volume" title="Dauerton zum Einstimmen – nochmal tippen schaltet ihn aus">Stimmton a' · 440 Hz</button>
+        <button id="stimmen-a" data-icon="volume" title="Stimmton a' als Dauerton – nochmal tippen schaltet ihn aus">Stimmton 440 Hz</button>
       </div>
     </section>
-
-    <section class="card klangschale-card" id="klangschale">
-      <h2 data-icon="sparkles">Klangschale</h2>
-      <button class="klangschale-knopf" id="klangschale-knopf" aria-label="Klangschale anschlagen">
-        <span class="klangschale-welle"></span><span class="klangschale-welle"></span>
-        <span class="klangschale-schale"></span>
-      </button>
-      <p class="hint">Antippen zum Anschlagen – nochmal antippen schlägt erneut an.</p>
-    </section>
-  </div>
 
   <section class="card ampel-card">
     <div class="ampel-layout">
@@ -124,6 +114,18 @@
       </div>
     </div>
   </section>
+
+    <section class="card klangschale-card" id="klangschale">
+      <h2 data-icon="sparkles">Klangschale</h2>
+      <button class="klangschale-knopf" id="klangschale-knopf" aria-label="Klangschale anschlagen">
+        <span class="klangschale-welle"></span><span class="klangschale-welle"></span>
+        <span class="klangschale-schale"></span>
+      </button>
+      <p class="hint">Antippen zum Anschlagen – nochmal antippen schlägt erneut an.</p>
+    </section>
+  </div>
+
+  
 
   <section class="card metronom-card" id="metronom">
     <h2 data-icon="music">Metronom</h2>
@@ -1281,36 +1283,36 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=207"></script>
-<script src="js/firebase-config.js?v=207"></script>
-<script type="module" src="js/live-firebase.js?v=207"></script>
-<script src="js/topics-seed.js?v=207"></script>
-<script src="js/ai-import.js?v=207"></script>
-<script src="js/store.js?v=207"></script>
-<script src="js/noise.js?v=207"></script>
-<script src="js/classes.js?v=207"></script>
-<script src="js/sitzplan.js?v=207"></script>
-<script src="js/schueler.js?v=207"></script>
-<script src="js/tasten.js?v=207"></script>
-<script src="js/lessons.js?v=207"></script>
-<script src="js/band.js?v=207"></script>
-<script src="js/notes.js?v=207"></script>
-<script src="js/tresor.js?v=207"></script>
-<script src="js/erklaerungen.js?v=207"></script>
-<script src="js/setlisten.js?v=207"></script>
-<script src="js/einklappen.js?v=207"></script>
-<script src="js/tinyband-instrumente.js?v=207"></script>
-<script src="js/live-groups.js?v=207"></script>
-<script src="js/tinyband-lehrer.js?v=207"></script>
-<script src="js/tipps.js?v=207"></script>
-<script src="js/sport-tabellen.js?v=207"></script>
-<script src="js/sport.js?v=207"></script>
-<script src="js/ex-import.js?v=207"></script>
-<script src="js/exen.js?v=207"></script>
-<script src="js/ex-sitzung.js?v=207"></script>
-<script src="js/ex-auswertung.js?v=207"></script>
-<script src="js/ex-reiter.js?v=207"></script>
-<script src="js/tools.js?v=207"></script>
-<script src="js/app.js?v=207"></script>
+<script src="js/vendor/qrcode.min.js?v=208"></script>
+<script src="js/firebase-config.js?v=208"></script>
+<script type="module" src="js/live-firebase.js?v=208"></script>
+<script src="js/topics-seed.js?v=208"></script>
+<script src="js/ai-import.js?v=208"></script>
+<script src="js/store.js?v=208"></script>
+<script src="js/noise.js?v=208"></script>
+<script src="js/classes.js?v=208"></script>
+<script src="js/sitzplan.js?v=208"></script>
+<script src="js/schueler.js?v=208"></script>
+<script src="js/tasten.js?v=208"></script>
+<script src="js/lessons.js?v=208"></script>
+<script src="js/band.js?v=208"></script>
+<script src="js/notes.js?v=208"></script>
+<script src="js/tresor.js?v=208"></script>
+<script src="js/erklaerungen.js?v=208"></script>
+<script src="js/setlisten.js?v=208"></script>
+<script src="js/einklappen.js?v=208"></script>
+<script src="js/tinyband-instrumente.js?v=208"></script>
+<script src="js/live-groups.js?v=208"></script>
+<script src="js/tinyband-lehrer.js?v=208"></script>
+<script src="js/tipps.js?v=208"></script>
+<script src="js/sport-tabellen.js?v=208"></script>
+<script src="js/sport.js?v=208"></script>
+<script src="js/ex-import.js?v=208"></script>
+<script src="js/exen.js?v=208"></script>
+<script src="js/ex-sitzung.js?v=208"></script>
+<script src="js/ex-auswertung.js?v=208"></script>
+<script src="js/ex-reiter.js?v=208"></script>
+<script src="js/tools.js?v=208"></script>
+<script src="js/app.js?v=208"></script>
 </body>
 </html>

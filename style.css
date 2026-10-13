@@ -1920,7 +1920,7 @@ body.ex-korrektur-offen { overflow: hidden; }
 
 .klangschale-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .klangschale-card h2 { align-self: flex-start; }
-.klangschale-knopf { display: flex; align-items: center; justify-content: center; position: relative; width: 9rem; height: 9rem; border-radius: 50%; margin: auto 0 .6rem; padding: 0;
+.klangschale-knopf { display: flex; align-items: center; justify-content: center; position: relative; width: 9rem; height: 9rem; border-radius: 50%; margin: auto 0; padding: 0;
   background: radial-gradient(circle at 50% 40%, var(--active-soft), transparent 70%); border: 1px solid var(--border); overflow: visible; }
 .klangschale-schale { display: block; width: 5.4rem; height: 2.8rem; border-radius: 0 0 3rem 3rem; margin-top: 1.4rem;
   background: linear-gradient(180deg, #e8c27a, #a8742c); box-shadow: inset 0 .35rem 0 rgba(255,255,255,.35), 0 .4rem 1rem rgba(0,0,0,.3); }
@@ -1931,3 +1931,20 @@ body.ex-korrektur-offen { overflow: hidden; }
 @keyframes klangwelle { from { transform: scale(.75); opacity: .7; } to { transform: scale(1.45); opacity: 0; } }
 @keyframes klangschale-zittern { 0%, 100% { transform: none; } 25% { transform: rotate(-2deg); } 60% { transform: rotate(1.5deg); } }
 @media (prefers-reduced-motion: reduce) { .klangschale-knopf.klingt .klangschale-welle, .klangschale-knopf.klingt .klangschale-schale { animation: none; } }
+
+/* Tools: links schmal Stimmgerät, in der Mitte die Ampel, rechts schmal die Klangschale */
+.tools-raster { display: grid; grid-template-columns: 14.5rem minmax(0, 1fr) 12.5rem; grid-template-areas: "stimmen ampel schale";
+  gap: 1.2rem; max-width: 1400px; margin: 0 auto; align-items: stretch; }
+.tools-raster > .card { margin: 0; max-width: none; min-width: 0; }
+.tools-raster > .stimmen-card { grid-area: stimmen; }
+.tools-raster > .ampel-card { grid-area: ampel; }
+.tools-raster > .klangschale-card { grid-area: schale; }
+.tools-raster .stimmen-knoepfe { flex-direction: column; align-items: stretch; }
+.tools-raster .stimmen-anzeige { margin-top: 1.2rem; }
+@media (max-width: 1150px) {
+  .tools-raster { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "ampel ampel" "stimmen schale"; }
+  .tools-raster .stimmen-knoepfe { flex-direction: row; justify-content: center; }
+}
+@media (max-width: 620px) {
+  .tools-raster { grid-template-columns: minmax(0, 1fr); grid-template-areas: "ampel" "stimmen" "schale"; }
+}
