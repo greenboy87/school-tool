@@ -650,9 +650,6 @@ const Band = {
     const ul = document.createElement('ul');
     ul.className = 'member-zeilen';
     if (list.length) box.appendChild(ul);
-    // Gesichter nur, wenn mindestens ein Mitglied eins hat – sonst nur Platzhalter
-    Schueler.neuerDurchgang();
-    const mitGesichtern = list.some(m => { const t = this.schuelerVon(m); return t && Schueler.fotoQuelle(t); });
     for (const m of list) {
       const li = document.createElement('li');
       li.dataset.id = m.id;
@@ -684,15 +681,7 @@ const Band = {
       name.title = 'Steckbrief zeigen – nochmal tippen zum Schließen';
       name.addEventListener('click', () => this.mitgliedZeigen(m.id === this.aktivesMitglied ? null : m.id));
 
-      li.append(pick, klasse);
-      if (mitGesichtern) {
-        const foto = document.createElement('span');
-        foto.className = 'mini-gesicht';
-        this.gesichtFuerMitglied(foto, m);
-        foto.addEventListener('click', () => this.mitgliedZeigen(m.id === this.aktivesMitglied ? null : m.id));
-        li.appendChild(foto);
-      }
-      li.appendChild(name);
+      li.append(pick, klasse, name);
       if (m.studentId) {
         const mark = document.createElement('span');
         mark.className = 'link-mark';

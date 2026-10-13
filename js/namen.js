@@ -50,10 +50,39 @@ const Namen = {
       const name = document.createElement('span');
       name.textContent = m.name;
       label.append(box, klasse, name);
+      if (this.mitRolle()) {
+        const rolle = document.createElement('span');
+        rolle.className = 'n-rolle';
+        rolle.textContent = this.rolle(m);
+        label.appendChild(rolle);
+      }
       li.appendChild(label);
       liste.appendChild(li);
     }
     this.status();
+  },
+
+  mitRolle() { return document.getElementById('n-rolle').checked; },
+
+  /* Instrument bzw. Aufgabe; ohne Angabe wenigstens der Bereich */
+  rolle(m) {
+    return m.instrument || (m.area === 'technik' ? 'Technik' : m.area === 'beide' ? 'Band + Technik' : '');
+  },
+
+  /* Dasselbe Druckbild wie im Hauptfenster: Klasse, Name, auf Wunsch die Rolle */
+  drucken() {
+    const leute = this.gewaehlt();
+    if (!leute.length) { this.kurz('Nichts ausgewählt.'); return; }
+    const f = document.getElementById('n-filter').value;
+    const titel = f === 'band' ? 'Schulband' : f === 'technik' ? 'Technikteam' : 'Schulband und Technikteam';
+    const spalten = [{ titel: 'Klasse', cls: 'klasse' }, { titel: 'Name' }];
+    if (this.mitRolle()) spalten.push({ titel: 'Rolle' });
+    const zeilen = leute.map(m => {
+      const z = [Band.esc(m.klasse) || '–', `<strong>${Band.esc(m.name)}</strong>`];
+      if (this.mitRolle()) z.push(Band.esc(this.rolle(m)));
+      return z;
+    });
+    Band.printHtml(titel, Band.printTable(spalten, zeilen), `${leute.length} Schüler`);
   },
 
   status(text) {
@@ -114,6 +143,14 @@ const Namen = {
     });
     document.getElementById('n-copy').addEventListener('click', () => this.kopieren(true));
     document.getElementById('n-copy-namen').addEventListener('click', () => this.kopieren(false));
+    document.getElementById('n-drucken').addEventListener('click', () => this.drucken());
+    // Der Rollen-Schalter bleibt auf diesem Geraet gemerkt
+    const rolle = document.getElementById('n-rolle');
+    try { rolle.checked = localStorage.getItem('schooltool-namen-rolle') === '1'; } catch (e) { /* privates Fenster */ }
+    rolle.addEventListener('change', () => {
+      try { localStorage.setItem('schooltool-namen-rolle', rolle.checked ? '1' : '0'); } catch (e) { /* egal */ }
+      this.zeichnen();
+    });
 
     // Aendert das Hauptfenster die Mitglieder, zieht dieses Fenster von selbst nach
     window.addEventListener('storage', e => { if (e.key === Store.KEY) this.zeichnen(); });

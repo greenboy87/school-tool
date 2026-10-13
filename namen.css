@@ -43,3 +43,6 @@
 
 .namen-fuss { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
 .namen-fuss .hint { margin: 0; }
+.namen-liste .n-rolle { margin-left: auto; color: var(--muted); font-size: .85rem; text-align: right; }
+/* Beim Drucken darf die Seite so lang werden, wie die Liste ist */
+@media print { .namen-body { height: auto; display: block; } }
