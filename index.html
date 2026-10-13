@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=189">
+<link rel="stylesheet" href="style.css?v=190">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=189"></script>
-<script src="js/theme.js?v=189"></script>
-<script src="js/auth.js?v=189"></script>
+<script src="js/icons.js?v=190"></script>
+<script src="js/theme.js?v=190"></script>
+<script src="js/auth.js?v=190"></script>
 </head>
 <body>
 
@@ -566,15 +566,21 @@
     <div class="two-col band-mitglieder">
       <div>
         <h3>Mitglieder (<span id="member-count">0</span>)</h3>
+        <div class="member-schalter">
+          <label class="schalter" title="Mitglieder der Schulband anzeigen (und drucken)">
+            <input type="checkbox" id="member-zeige-band" checked><span class="schalter-bahn"></span>Schulband</label>
+          <label class="schalter" title="Mitglieder des Technikteams anzeigen (und drucken)">
+            <input type="checkbox" id="member-zeige-technik" checked><span class="schalter-bahn"></span>Technik</label>
+          <span class="schalter-trenner"></span>
+          <label class="schalter" title="Instrument bzw. Aufgabe in der Liste zeigen">
+            <input type="checkbox" id="member-zeige-rolle" checked><span class="schalter-bahn"></span>Rolle</label>
+          <label class="schalter" title="Klassenleitung in der Liste zeigen">
+            <input type="checkbox" id="member-zeige-leitung"><span class="schalter-bahn"></span>Klassenleitung</label>
+        </div>
         <div class="btn-row">
-          <select id="member-filter" class="small-select" title="Welche Mitglieder angezeigt (und gedruckt) werden">
-            <option value="alle">Band und Technik</option>
-            <option value="band">nur Schulband</option>
-            <option value="technik">nur Technikteam</option>
-          </select>
-          <button id="btn-print-members" class="small" data-icon="printer" title="Alle angezeigten Mitglieder drucken">Alle drucken</button>
+          <button id="btn-print-members" class="small" data-icon="printer" title="Alle angezeigten Mitglieder drucken">Drucken</button>
           <button id="btn-print-members-sel" class="small" data-icon="printer" title="Nur die angekreuzten Mitglieder drucken – z.&thinsp;B. für eine Befreiung">Ausgewählte drucken</button>
-          <button id="btn-export-members" class="small" data-icon="download" title="Mitgliederliste als CSV speichern">CSV</button>
+          <button id="btn-export-members" class="small" data-icon="download" title="Angezeigte Mitglieder als CSV speichern">CSV</button>
           <button id="btn-namen-fenster" class="small" data-icon="window" title="Kleines Fenster mit Klassen und Namen zum schnellen Kopieren">Namen-Fenster</button>
           <button id="btn-sync-members" class="small" data-icon="users" title="Mitglieder mit den Schülern aus deinen Klassenlisten verknüpfen">Abgleichen</button>
         </div>
@@ -653,44 +659,115 @@
 
   <!-- Songs -->
   <section id="bandtab-songs" class="bandtab-page card">
-    <div class="projekt-header">
-      <h3>Songs (<span id="song-count">0</span>)</h3>
-      <div class="btn-row">
-        <button id="btn-print-songs" data-icon="printer">Alle drucken</button>
-        <button id="btn-print-songs-sel" data-icon="printer">Ausgewählte drucken</button>
+    <div class="two-col band-songs">
+      <div>
+        <h3>Songs (<span id="song-count">0</span>)</h3>
+        <div class="member-schalter">
+          <label class="schalter" title="Anmerkungen unter dem Titel zeigen">
+            <input type="checkbox" id="song-zeige-notizen"><span class="schalter-bahn"></span>Anmerkungen</label>
+        </div>
+        <div class="btn-row">
+          <button id="btn-print-songs" class="small" data-icon="printer" title="Alle drucken">Drucken</button>
+          <button id="btn-print-songs-sel" class="small" data-icon="printer" title="Nur die angekreuzten drucken">Ausgewählte drucken</button>
+        </div>
+        <div class="member-auswahl-zeile">
+          <label class="check-label" title="Alle an- oder abwählen">
+            <input type="checkbox" id="song-pick-all"> alle</label>
+        </div>
+        <div id="song-list" class="member-list"></div>
+        <p class="hint">Ein Klick auf einen Titel öffnet rechts die Details: Tonart, Capo, Tempo und Anmerkungen.</p>
+      </div>
+
+      <div class="schueler-rechts">
+        <div id="song-steckbrief" class="steckbrief member-steckbrief" hidden>
+          <div class="profil-blaettern">
+            <button id="btn-song-vor" class="small" title="Vorheriger (Pfeil hoch)"><kbd>↑</kbd> <span></span></button>
+            <span id="song-position" class="hint"></span>
+            <button id="btn-song-weiter" class="small" title="Nächster (Pfeil runter)"><span></span> <kbd>↓</kbd></button>
+            <button id="btn-song-zu" class="small steckbrief-zu" title="Schließen (Esc)" aria-label="Schließen">×</button>
+          </div>
+          <h2 id="song-profil-titel"></h2>
+          <div class="member-felder">
+            <label>Titel <input type="text" id="song-f-title" autocomplete="off"></label>
+            <label>Interpret <input type="text" id="song-f-artist" autocomplete="off"></label>
+            <label>Tonart <select id="song-f-key"></select></label>
+            <label>Capo <select id="song-f-capo"></select></label>
+            <label>Tempo (BPM) <input type="number" id="song-f-tempo" min="30" max="260" placeholder="BPM"></label>
+            <label class="ganz">Anmerkungen <textarea id="song-f-notes" rows="4"
+              placeholder="z.&thinsp;B. „Intro 2× Gitarre solo, Schluss ritardando“"></textarea></label>
+          </div>
+          <div class="btn-row">
+            <button id="btn-song-loeschen" class="small danger" data-icon="trash">Song löschen</button>
+          </div>
+        </div>
+
+        <div class="member-aufnehmen">
+          <h3>Song hinzufügen</h3>
+          <form id="form-new-song" class="member-felder">
+            <label>Titel <input type="text" id="song-title" required autocomplete="off"></label>
+            <label>Interpret <input type="text" id="song-artist" autocomplete="off"></label>
+            <div class="btn-row"><button type="submit" class="primary" data-icon="plus">Song anlegen</button></div>
+          </form>
+        </div>
       </div>
     </div>
-    <p class="hint">Tonart, Capo und Tempo lassen sich direkt anklicken bzw. eintragen; das Notizfeld ist freier Text (z.&thinsp;B. „Intro 2× Gitarre solo, Schluss ritardando“).</p>
-    <table class="band-table songs-table" id="song-table"></table>
-
-    <hr>
-    <h3>Song hinzufügen</h3>
-    <form id="form-new-song" class="inline-form">
-      <input type="text" id="song-title" placeholder="Titel" required>
-      <input type="text" id="song-artist" placeholder="Interpret">
-      <button type="submit" class="primary" data-icon="plus">Song anlegen</button>
-    </form>
   </section>
 
   <!-- Songvorschläge -->
   <section id="bandtab-ideen" class="bandtab-page card">
-    <div class="projekt-header">
-      <h3>Songvorschläge (<span id="idea-count">0</span>)</h3>
-      <div class="btn-row">
-        <button id="btn-print-ideas" data-icon="printer">Alle drucken</button>
-        <button id="btn-print-ideas-sel" data-icon="printer">Ausgewählte drucken</button>
+    <div class="two-col band-songs">
+      <div>
+        <h3>Songvorschläge (<span id="idea-count">0</span>)</h3>
+        <div class="member-schalter">
+          <label class="schalter" title="Anmerkungen unter dem Titel zeigen">
+            <input type="checkbox" id="idea-zeige-notizen"><span class="schalter-bahn"></span>Anmerkungen</label>
+        </div>
+        <div class="btn-row">
+          <button id="btn-print-ideas" class="small" data-icon="printer" title="Alle drucken">Drucken</button>
+          <button id="btn-print-ideas-sel" class="small" data-icon="printer" title="Nur die angekreuzten drucken">Ausgewählte drucken</button>
+        </div>
+        <div class="member-auswahl-zeile">
+          <label class="check-label" title="Alle an- oder abwählen">
+            <input type="checkbox" id="idea-pick-all"> alle</label>
+        </div>
+        <div id="idea-list" class="member-list"></div>
+        <p class="hint">Sammelstelle für Stücke, die noch nicht im Repertoire sind. Im Steckbrief rechts wanderst du einen Vorschlag mit allen Angaben nach „Songs“.</p>
+      </div>
+
+      <div class="schueler-rechts">
+        <div id="idea-steckbrief" class="steckbrief member-steckbrief" hidden>
+          <div class="profil-blaettern">
+            <button id="btn-idea-vor" class="small" title="Vorheriger (Pfeil hoch)"><kbd>↑</kbd> <span></span></button>
+            <span id="idea-position" class="hint"></span>
+            <button id="btn-idea-weiter" class="small" title="Nächster (Pfeil runter)"><span></span> <kbd>↓</kbd></button>
+            <button id="btn-idea-zu" class="small steckbrief-zu" title="Schließen (Esc)" aria-label="Schließen">×</button>
+          </div>
+          <h2 id="idea-profil-titel"></h2>
+          <div class="member-felder">
+            <label>Titel <input type="text" id="idea-f-title" autocomplete="off"></label>
+            <label>Interpret <input type="text" id="idea-f-artist" autocomplete="off"></label>
+            <label>Tonart <select id="idea-f-key"></select></label>
+            <label>Capo <select id="idea-f-capo"></select></label>
+            <label>Tempo (BPM) <input type="number" id="idea-f-tempo" min="30" max="260" placeholder="BPM"></label>
+            <label class="ganz">Anmerkungen <textarea id="idea-f-notes" rows="4"
+              placeholder="z.&thinsp;B. „Intro 2× Gitarre solo, Schluss ritardando“"></textarea></label>
+          </div>
+          <div class="btn-row">
+            <button id="btn-idea-uebernehmen" class="small" data-icon="check" title="Mit allen Angaben nach „Songs“ kopieren">Nach „Songs“ übernehmen</button>
+            <button id="btn-idea-loeschen" class="small danger" data-icon="trash">Vorschlag löschen</button>
+          </div>
+        </div>
+
+        <div class="member-aufnehmen">
+          <h3>Vorschlag hinzufügen</h3>
+          <form id="form-new-idea" class="member-felder">
+            <label>Titel <input type="text" id="idea-title" required autocomplete="off"></label>
+            <label>Interpret <input type="text" id="idea-artist" autocomplete="off"></label>
+            <div class="btn-row"><button type="submit" class="primary" data-icon="plus">Vorschlag anlegen</button></div>
+          </form>
+        </div>
       </div>
     </div>
-    <p class="hint">Sammelstelle für Stücke, die noch nicht im Repertoire sind – funktioniert genau wie der Song-Bereich. Mit dem Pfeil rechts wanderst du einen Vorschlag mit allen Angaben nach „Songs“.</p>
-    <table class="band-table songs-table" id="idea-table"></table>
-
-    <hr>
-    <h3>Vorschlag hinzufügen</h3>
-    <form id="form-new-idea" class="inline-form">
-      <input type="text" id="idea-title" placeholder="Titel" required>
-      <input type="text" id="idea-artist" placeholder="Interpret">
-      <button type="submit" class="primary" data-icon="plus">Vorschlag anlegen</button>
-    </form>
   </section>
 
   <!-- Setlisten -->
@@ -1098,35 +1175,35 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=189"></script>
-<script src="js/firebase-config.js?v=189"></script>
-<script type="module" src="js/live-firebase.js?v=189"></script>
-<script src="js/topics-seed.js?v=189"></script>
-<script src="js/ai-import.js?v=189"></script>
-<script src="js/store.js?v=189"></script>
-<script src="js/noise.js?v=189"></script>
-<script src="js/classes.js?v=189"></script>
-<script src="js/sitzplan.js?v=189"></script>
-<script src="js/schueler.js?v=189"></script>
-<script src="js/tasten.js?v=189"></script>
-<script src="js/lessons.js?v=189"></script>
-<script src="js/band.js?v=189"></script>
-<script src="js/notes.js?v=189"></script>
-<script src="js/tresor.js?v=189"></script>
-<script src="js/erklaerungen.js?v=189"></script>
-<script src="js/setlisten.js?v=189"></script>
-<script src="js/einklappen.js?v=189"></script>
-<script src="js/tinyband-instrumente.js?v=189"></script>
-<script src="js/live-groups.js?v=189"></script>
-<script src="js/tinyband-lehrer.js?v=189"></script>
-<script src="js/tipps.js?v=189"></script>
-<script src="js/sport-tabellen.js?v=189"></script>
-<script src="js/sport.js?v=189"></script>
-<script src="js/ex-import.js?v=189"></script>
-<script src="js/exen.js?v=189"></script>
-<script src="js/ex-sitzung.js?v=189"></script>
-<script src="js/ex-auswertung.js?v=189"></script>
-<script src="js/tools.js?v=189"></script>
-<script src="js/app.js?v=189"></script>
+<script src="js/vendor/qrcode.min.js?v=190"></script>
+<script src="js/firebase-config.js?v=190"></script>
+<script type="module" src="js/live-firebase.js?v=190"></script>
+<script src="js/topics-seed.js?v=190"></script>
+<script src="js/ai-import.js?v=190"></script>
+<script src="js/store.js?v=190"></script>
+<script src="js/noise.js?v=190"></script>
+<script src="js/classes.js?v=190"></script>
+<script src="js/sitzplan.js?v=190"></script>
+<script src="js/schueler.js?v=190"></script>
+<script src="js/tasten.js?v=190"></script>
+<script src="js/lessons.js?v=190"></script>
+<script src="js/band.js?v=190"></script>
+<script src="js/notes.js?v=190"></script>
+<script src="js/tresor.js?v=190"></script>
+<script src="js/erklaerungen.js?v=190"></script>
+<script src="js/setlisten.js?v=190"></script>
+<script src="js/einklappen.js?v=190"></script>
+<script src="js/tinyband-instrumente.js?v=190"></script>
+<script src="js/live-groups.js?v=190"></script>
+<script src="js/tinyband-lehrer.js?v=190"></script>
+<script src="js/tipps.js?v=190"></script>
+<script src="js/sport-tabellen.js?v=190"></script>
+<script src="js/sport.js?v=190"></script>
+<script src="js/ex-import.js?v=190"></script>
+<script src="js/exen.js?v=190"></script>
+<script src="js/ex-sitzung.js?v=190"></script>
+<script src="js/ex-auswertung.js?v=190"></script>
+<script src="js/tools.js?v=190"></script>
+<script src="js/app.js?v=190"></script>
 </body>
 </html>

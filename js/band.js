@@ -72,7 +72,23 @@ const Band = {
               : 'Es gab nichts Neues zu verknüpfen – entweder sind schon alle zugeordnet, ' +
                 'oder die Namen stehen (noch) in keiner Klassenliste.');
     });
-    document.getElementById('member-filter').addEventListener('change', () => this.renderMembers());
+    // Schalter ueber der Liste; die Einstellung bleibt auf diesem Geraet
+    const ansicht = this.ansichtLesen();
+    ['band', 'technik', 'rolle', 'leitung'].forEach(k => {
+      const box = document.getElementById('member-zeige-' + k);
+      if (typeof ansicht[k] === 'boolean') box.checked = ansicht[k];
+      box.addEventListener('change', () => {
+        /* Band und Technik wie eine Wippe: Wer die eine ausschaltet, waehrend
+           die andere schon aus ist, bekommt die andere – eine leere Liste
+           hilft niemandem. */
+        const anderer = { band: 'technik', technik: 'band' }[k];
+        if (anderer && !box.checked && !document.getElementById('member-zeige-' + anderer).checked) {
+          document.getElementById('member-zeige-' + anderer).checked = true;
+        }
+        this.ansichtMerken();
+        this.renderMembers();
+      });
+    });
     document.getElementById('member-pick-all').addEventListener('change', e => {
       for (const m of this.filteredMembers()) {
         if (e.target.checked) this.gewaehlteMitglieder.add(m.id);
@@ -109,13 +125,25 @@ const Band = {
     // Pfeiltasten und Esc, solange der Mitglieder-Reiter sichtbar ist und
     // niemand in einem Feld tippt
     document.addEventListener('keydown', e => {
-      if (!this.aktivesMitglied) return;
-      const seite = document.getElementById('bandtab-mitglieder');
-      if (!seite.classList.contains('active') || !seite.offsetParent) return;
       if (e.target.closest('input, textarea, select')) return;
-      if (e.key === 'ArrowUp') { e.preventDefault(); this.mitgliedBlaettern(-1); }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); this.mitgliedBlaettern(1); }
-      else if (e.key === 'Escape') this.mitgliedZeigen(null);
+      const sichtbar = id => {
+        const seite = document.getElementById(id);
+        return seite.classList.contains('active') && seite.offsetParent;
+      };
+      let blaettern, schliessen;
+      if (this.aktivesMitglied && sichtbar('bandtab-mitglieder')) {
+        blaettern = d => this.mitgliedBlaettern(d);
+        schliessen = () => this.mitgliedZeigen(null);
+      } else {
+        const pre = [['song', 'bandtab-songs'], ['idea', 'bandtab-ideen']]
+          .find(([p, id]) => this.songAktiv[p] && sichtbar(id));
+        if (!pre) return;
+        blaettern = d => this.songBlaettern(pre[0], d);
+        schliessen = () => this.songZeigen(pre[0], null);
+      }
+      if (e.key === 'ArrowUp') { e.preventDefault(); blaettern(-1); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); blaettern(1); }
+      else if (e.key === 'Escape') schliessen();
     });
     document.getElementById('btn-print-members').addEventListener('click', () => this.printMembers());
     document.getElementById('btn-print-members-sel')
@@ -143,9 +171,9 @@ const Band = {
     });
     document.getElementById('btn-print-songs').addEventListener('click', () => this.printSongs(this.d().songs, 'Songliste'));
     document.getElementById('btn-print-songs-sel').addEventListener('click', () => {
-      const sel = [...document.querySelectorAll('#song-table input.song-pick:checked')].map(c => c.dataset.id);
+      const sel = this.songsGewaehlt('song');
       if (!sel.length) { alert('Keine Songs ausgewählt.'); return; }
-      this.printSongs(this.d().songs.filter(s => sel.includes(s.id)), 'Songs (Auswahl)');
+      this.printSongs(sel, 'Songs (Auswahl)');
     });
 
     /* ---- Songvorschläge ---- */
@@ -165,10 +193,11 @@ const Band = {
     });
     document.getElementById('btn-print-ideas').addEventListener('click', () => this.printSongs(this.d().ideas, 'Songvorschläge'));
     document.getElementById('btn-print-ideas-sel').addEventListener('click', () => {
-      const sel = [...document.querySelectorAll('#idea-table input.song-pick:checked')].map(c => c.dataset.id);
+      const sel = this.songsGewaehlt('idea');
       if (!sel.length) { alert('Keine Vorschläge ausgewählt.'); return; }
-      this.printSongs(this.d().ideas.filter(s => sel.includes(s.id)), 'Songvorschläge (Auswahl)');
+      this.printSongs(sel, 'Songvorschläge (Auswahl)');
     });
+    ['song', 'idea'].forEach(pre => this.songAnsichtBinden(pre));
 
     /* ---- Termine ---- */
     document.getElementById('form-new-gig').addEventListener('submit', e => {
@@ -413,8 +442,24 @@ const Band = {
     return neu;
   },
 
+  ANSICHT_KEY: 'schooltool-band-ansicht',
+  ansichtLesen() {
+    try { return JSON.parse(localStorage.getItem(this.ANSICHT_KEY)) || {}; } catch (e) { return {}; }
+  },
+  ansichtMerken() {
+    const a = {};
+    ['band', 'technik', 'rolle', 'leitung'].forEach(k => { a[k] = document.getElementById('member-zeige-' + k).checked; });
+    try { localStorage.setItem(this.ANSICHT_KEY, JSON.stringify(a)); } catch (e) { /* privates Fenster */ }
+  },
+  /* 'alle', 'band' oder 'technik' – aus den beiden Schaltern */
+  memberFilter() {
+    const band = document.getElementById('member-zeige-band').checked;
+    const technik = document.getElementById('member-zeige-technik').checked;
+    return band && technik ? 'alle' : technik ? 'technik' : 'band';
+  },
+
   filteredMembers() {
-    const f = document.getElementById('member-filter').value;
+    const f = this.memberFilter();
     return this.d().members
       .filter(m => f === 'alle' || m.area === f || m.area === 'beide')
       .sort((a, b) => this.byClass(a, b));
@@ -501,9 +546,8 @@ const Band = {
     return box;
   },
 
-  /* Kompakte Liste wie die Klassenliste: nach Klassen gruppiert, die
-     Klassenleitung steht einmal im Gruppenkopf statt in jeder Zeile.
-     Bearbeitet wird rechts im Steckbrief. */
+  /* Schlichte Liste wie im Namen-Fenster: Klasse, Name, auf Wunsch Rolle und
+     Klassenleitung. Bearbeitet wird rechts im Steckbrief. */
   renderMembers() {
     const box = document.getElementById('member-list');
     if (!box) return;
@@ -511,26 +555,17 @@ const Band = {
     document.getElementById('member-count').textContent = list.length;
     box.innerHTML = '';
     if (!list.length) {
-      box.innerHTML = '<p class="hint">Noch keine Mitglieder aufgenommen – rechts unter „Mitglied aufnehmen“ geht’s los.</p>';
+      box.innerHTML = this.d().members.length
+        ? '<p class="hint">In dieser Gruppe ist niemand.</p>'
+        : '<p class="hint">Noch keine Mitglieder aufgenommen – rechts unter „Mitglied aufnehmen“ geht’s los.</p>';
     }
 
-    let gruppe = null, ul = null;
+    const mitRolle = document.getElementById('member-zeige-rolle').checked;
+    const mitLeitung = document.getElementById('member-zeige-leitung').checked;
+    const ul = document.createElement('ul');
+    ul.className = 'member-zeilen';
+    if (list.length) box.appendChild(ul);
     for (const m of list) {
-      const klasse = (m.klasse || '').trim();
-      if (!ul || klasse !== gruppe) {
-        gruppe = klasse;
-        const kopf = document.createElement('div');
-        kopf.className = 'member-gruppe-kopf';
-        const k = document.createElement('span');
-        k.className = 'member-gruppe-klasse';
-        k.textContent = klasse || 'ohne Klasse';
-        kopf.appendChild(k);
-        if (klasse) kopf.appendChild(this.leitungsMarken(klasse));
-        ul = document.createElement('ul');
-        ul.className = 'member-zeilen';
-        box.append(kopf, ul);
-      }
-
       const li = document.createElement('li');
       li.dataset.id = m.id;
       li.classList.toggle('aktiv', m.id === this.aktivesMitglied);
@@ -550,6 +585,10 @@ const Band = {
       });
       li.classList.toggle('gewaehlt', pick.checked);
 
+      const klasse = document.createElement('span');
+      klasse.className = 'n-klasse';
+      klasse.textContent = m.klasse || '–';
+
       const name = document.createElement('button');
       name.type = 'button';
       name.className = 'mname';
@@ -557,7 +596,7 @@ const Band = {
       name.title = 'Steckbrief zeigen – nochmal tippen zum Schließen';
       name.addEventListener('click', () => this.mitgliedZeigen(m.id === this.aktivesMitglied ? null : m.id));
 
-      li.append(pick, name);
+      li.append(pick, klasse, name);
       if (m.studentId) {
         const mark = document.createElement('span');
         mark.className = 'link-mark';
@@ -566,16 +605,22 @@ const Band = {
         mark.title = 'Mit der Klassenliste verknüpft' + (cls ? ` (${cls.name})` : '');
         li.appendChild(mark);
       }
-      const instr = document.createElement('span');
-      instr.className = 'minstr';
-      instr.textContent = m.instrument || '';
-      li.appendChild(instr);
-      if (m.area !== 'band') {
-        const tag = document.createElement('span');
-        tag.className = 'bereich-tag bereich-' + m.area;
-        tag.textContent = m.area === 'technik' ? 'Technik' : 'Band + Technik';
-        li.appendChild(tag);
+      const rechts = document.createElement('span');
+      rechts.className = 'member-rechts';
+      if (mitRolle) {
+        const instr = document.createElement('span');
+        instr.className = 'minstr';
+        instr.textContent = m.instrument || '';
+        rechts.appendChild(instr);
+        if (m.area !== 'band') {
+          const tag = document.createElement('span');
+          tag.className = 'bereich-tag bereich-' + m.area;
+          tag.textContent = m.area === 'technik' ? 'Technik' : 'Band + Technik';
+          rechts.appendChild(tag);
+        }
       }
+      if (mitLeitung && m.klasse) rechts.appendChild(this.leitungsMarken(m.klasse));
+      li.appendChild(rechts);
       ul.appendChild(li);
     }
     this.auswahlAnzeigen();
@@ -713,7 +758,7 @@ const Band = {
   printMembers() {
     const list = this.filteredMembers();
     if (!list.length) { alert('Die Liste ist leer.'); return; }
-    const f = document.getElementById('member-filter').value;
+    const f = this.memberFilter();
     const titel = f === 'band' ? 'Schulband' : f === 'technik' ? 'Technikteam' : 'Schulband und Technikteam';
     this.druckeMitglieder(list, titel);
   },
@@ -781,127 +826,206 @@ const Band = {
 
   /* ---------- Songs und Songvorschläge ---------- */
   renderSongs() {
-    this.renderSongTable(this.d().songs, 'song-table', 'song-count', false);
+    this.renderSongListe('song');
     this.fillGigSongPicker();
   },
   renderIdeas() {
-    this.renderSongTable(this.d().ideas, 'idea-table', 'idea-count', true);
+    this.renderSongListe('idea');
   },
 
-  /* Beide Listen sehen gleich aus; Vorschläge haben zusätzlich „nach Songs kopieren“ */
-  renderSongTable(songs, tableId, countId, istVorschlag) {
-    const table = document.getElementById(tableId);
-    if (!table) return;
-    document.getElementById(countId).textContent = songs.length;
-    table.innerHTML = '<tr><th></th><th>Titel</th><th>Interpret</th><th>Tonart</th><th>Capo</th>' +
-      '<th>Tempo</th><th>Anmerkungen</th><th></th></tr>';
-    if (!songs.length) {
-      table.innerHTML += `<tr><td colspan="8" class="hint">Noch ${istVorschlag ? 'keine Vorschläge' : 'keine Songs'} angelegt.</td></tr>`;
-      return;
-    }
-    for (const s of songs) {
-      const tr = document.createElement('tr');
+  /* Songs und Vorschlaege sehen gleich aus: links eine schlichte Liste,
+     rechts der Steckbrief zum Bearbeiten. pre = 'song' oder 'idea'. */
+  songAuswahl: { song: new Set(), idea: new Set() },
+  songAktiv: { song: null, idea: null },
+  SONG_ANSICHT_KEY: 'schooltool-band-songansicht',
 
-      const tdPick = document.createElement('td');
-      const pick = document.createElement('input');
-      pick.type = 'checkbox';
-      pick.className = 'song-pick';
-      pick.dataset.id = s.id;
-      pick.title = 'Für „Ausgewählte drucken“ markieren';
-      tdPick.appendChild(pick);
+  songListe(pre) { return pre === 'song' ? this.d().songs : this.d().ideas; },
+  songsGewaehlt(pre) { return this.songListe(pre).filter(s => this.songAuswahl[pre].has(s.id)); },
 
-      const tdT = document.createElement('td');
-      tdT.appendChild(this.editable(s.title, '', v => { if (v) { s.title = v; this.save(); } }, 22));
-      const tdA = document.createElement('td');
-      tdA.appendChild(this.editable(s.artist, '–', v => { s.artist = v; this.save(); }, 16));
+  songAnsichtBinden(pre) {
+    const $ = id => document.getElementById(id);
+    const keySel = $(pre + '-f-key');
+    this.KEYS.forEach(k => keySel.add(new Option(k || '–', k)));
+    const capoSel = $(pre + '-f-capo');
+    ['', '0', '1', '2', '3', '4', '5', '6', '7'].forEach(c =>
+      capoSel.add(new Option(c === '' ? '–' : (c === '0' ? 'ohne' : '+' + c), c)));
 
-      const tdK = document.createElement('td');
-      const key = document.createElement('select');
-      key.className = 'small-select';
-      this.KEYS.forEach(k => {
-        const o = document.createElement('option');
-        o.value = k; o.textContent = k || '–';
-        if (s.key === k) o.selected = true;
-        key.appendChild(o);
-      });
-      key.addEventListener('change', () => { s.key = key.value; this.save(); });
-      tdK.appendChild(key);
+    let ansicht = {};
+    try { ansicht = JSON.parse(localStorage.getItem(this.SONG_ANSICHT_KEY)) || {}; } catch (e) { /* leer */ }
+    const notizSchalter = $(pre + '-zeige-notizen');
+    notizSchalter.checked = !!ansicht[pre];
+    notizSchalter.addEventListener('change', () => {
+      ansicht[pre] = notizSchalter.checked;
+      try { localStorage.setItem(this.SONG_ANSICHT_KEY, JSON.stringify(ansicht)); } catch (e) { /* privates Fenster */ }
+      this.renderSongListe(pre);
+    });
 
-      const tdC = document.createElement('td');
-      const capo = document.createElement('select');
-      capo.className = 'small-select';
-      ['', '0', '1', '2', '3', '4', '5', '6', '7'].forEach(c => {
-        const o = document.createElement('option');
-        o.value = c;
-        o.textContent = c === '' ? '–' : (c === '0' ? 'ohne' : '+' + c);
-        if (String(s.capo) === c) o.selected = true;
-        capo.appendChild(o);
-      });
-      capo.addEventListener('change', () => { s.capo = capo.value; this.save(); });
-      tdC.appendChild(capo);
-
-      const tdTe = document.createElement('td');
-      const tempo = document.createElement('input');
-      tempo.type = 'number';
-      tempo.className = 'cell-input tempo';
-      tempo.min = 30; tempo.max = 260;
-      tempo.placeholder = 'BPM';
-      tempo.value = s.tempo || '';
-      tempo.addEventListener('change', () => { s.tempo = tempo.value; this.save(); });
-      tdTe.appendChild(tempo);
-
-      const tdN = document.createElement('td');
-      const notes = document.createElement('textarea');
-      notes.className = 'cell-input notes';
-      notes.rows = 1;
-      notes.placeholder = 'Anmerkungen …';
-      notes.value = s.notes || '';
-      notes.addEventListener('change', () => { s.notes = notes.value; this.save(); });
-      tdN.appendChild(notes);
-
-      const tdX = document.createElement('td');
-      tdX.className = 'row-actions';
-
-      if (istVorschlag) {
-        const copy = document.createElement('button');
-        copy.className = 'small';
-        copy.innerHTML = Icons.raw('check');
-        copy.title = 'Mit allen Angaben nach „Songs“ kopieren';
-        copy.addEventListener('click', () => {
-          const schonDa = this.d().songs.some(x => x.title.toLowerCase() === s.title.toLowerCase());
-          if (schonDa && !confirm(`„${s.title}“ steht schon in den Songs. Trotzdem noch einmal kopieren?`)) return;
-          this.d().songs.push({ ...s, id: Store.uid() });
-          this.save();
-          this.renderAll();
-          alert(`„${s.title}“ ist jetzt im Song-Bereich.`);
-        });
-        tdX.appendChild(copy);
+    $(pre + '-pick-all').addEventListener('change', e => {
+      for (const s of this.songListe(pre)) {
+        if (e.target.checked) this.songAuswahl[pre].add(s.id); else this.songAuswahl[pre].delete(s.id);
       }
+      this.renderSongListe(pre);
+    });
 
-      const del = document.createElement('button');
-      del.className = 'small danger';
-      del.innerHTML = Icons.raw('x');
-      del.title = istVorschlag ? 'Vorschlag löschen' : 'Song löschen';
-      del.addEventListener('click', () => {
-        const frage = istVorschlag
-          ? `Vorschlag „${s.title}“ löschen?`
-          : `Song „${s.title}“ löschen? Er verschwindet auch aus Setlisten und Probenplänen.`;
-        if (!confirm(frage)) return;
-        if (istVorschlag) {
-          this.d().ideas = this.d().ideas.filter(x => x.id !== s.id);
-        } else {
-          this.d().songs = this.d().songs.filter(x => x.id !== s.id);
-          this.d().gigs.forEach(g => g.songIds = g.songIds.filter(id => id !== s.id));
-          this.d().rehearsals.forEach(r => delete r.songs[s.id]);
-        }
+    const aktiv = () => this.songListe(pre).find(s => s.id === this.songAktiv[pre]);
+    [['title', true], ['artist'], ['key'], ['capo'], ['tempo'], ['notes']].forEach(([k, pflicht]) => {
+      $(`${pre}-f-${k}`).addEventListener('change', e => {
+        const s = aktiv();
+        if (!s) return;
+        const v = k === 'notes' ? e.target.value : e.target.value.trim();
+        if (pflicht && !v) { e.target.value = s[k] || ''; return; }
+        s[k] = v;
+        this.save();
+        if (pre === 'song') this.renderAll(); else this.renderSongListe(pre);
+      });
+    });
+    $(`btn-${pre}-zu`).addEventListener('click', () => this.songZeigen(pre, null));
+    $(`btn-${pre}-vor`).addEventListener('click', () => this.songBlaettern(pre, -1));
+    $(`btn-${pre}-weiter`).addEventListener('click', () => this.songBlaettern(pre, 1));
+    $(`btn-${pre}-loeschen`).addEventListener('click', () => {
+      const s = aktiv();
+      if (!s) return;
+      const frage = pre === 'idea'
+        ? `Vorschlag „${s.title}“ löschen?`
+        : `Song „${s.title}“ löschen? Er verschwindet auch aus Setlisten und Probenplänen.`;
+      if (!confirm(frage)) return;
+      if (pre === 'idea') {
+        this.d().ideas = this.d().ideas.filter(x => x.id !== s.id);
+      } else {
+        this.d().songs = this.d().songs.filter(x => x.id !== s.id);
+        this.d().gigs.forEach(g => g.songIds = g.songIds.filter(id => id !== s.id));
+        this.d().rehearsals.forEach(r => delete r.songs[s.id]);
+      }
+      this.songAktiv[pre] = null;
+      this.save();
+      this.renderAll();
+    });
+    if (pre === 'idea') {
+      $('btn-idea-uebernehmen').addEventListener('click', () => {
+        const s = aktiv();
+        if (!s) return;
+        const schonDa = this.d().songs.some(x => x.title.toLowerCase() === s.title.toLowerCase());
+        if (schonDa && !confirm(`„${s.title}“ steht schon in den Songs. Trotzdem noch einmal kopieren?`)) return;
+        this.d().songs.push({ ...s, id: Store.uid() });
         this.save();
         this.renderAll();
+        alert(`„${s.title}“ ist jetzt im Song-Bereich.`);
       });
-      tdX.appendChild(del);
-
-      tr.append(tdPick, tdT, tdA, tdK, tdC, tdTe, tdN, tdX);
-      table.appendChild(tr);
     }
+  },
+
+  renderSongListe(pre) {
+    const box = document.getElementById(pre + '-list');
+    if (!box) return;
+    const songs = this.songListe(pre);
+    const auswahl = this.songAuswahl[pre];
+    // Geloeschte aus der Auswahl nehmen
+    const ids = new Set(songs.map(s => s.id));
+    for (const id of [...auswahl]) if (!ids.has(id)) auswahl.delete(id);
+
+    document.getElementById(pre + '-count').textContent = songs.length;
+    box.innerHTML = '';
+    if (!songs.length) {
+      box.innerHTML = `<p class="hint">Noch ${pre === 'idea' ? 'keine Vorschläge' : 'keine Songs'} angelegt – rechts geht’s los.</p>`;
+    } else {
+      const mitNotizen = document.getElementById(pre + '-zeige-notizen').checked;
+      const ul = document.createElement('ul');
+      ul.className = 'member-zeilen song-zeilen';
+      for (const s of songs) {
+        const li = document.createElement('li');
+        li.dataset.id = s.id;
+        li.classList.toggle('aktiv', s.id === this.songAktiv[pre]);
+        const pick = document.createElement('input');
+        pick.type = 'checkbox';
+        pick.checked = auswahl.has(s.id);
+        pick.title = 'Für „Ausgewählte drucken“ markieren';
+        pick.addEventListener('change', () => {
+          if (pick.checked) auswahl.add(s.id); else auswahl.delete(s.id);
+          li.classList.toggle('gewaehlt', pick.checked);
+          this.songAuswahlAnzeigen(pre);
+        });
+        li.classList.toggle('gewaehlt', pick.checked);
+
+        const text = document.createElement('div');
+        text.className = 'song-text';
+        const titel = document.createElement('button');
+        titel.type = 'button';
+        titel.className = 'mname';
+        titel.textContent = s.title;
+        titel.title = 'Details zeigen – nochmal tippen zum Schließen';
+        titel.addEventListener('click', () => this.songZeigen(pre, s.id === this.songAktiv[pre] ? null : s.id));
+        text.appendChild(titel);
+        if (s.artist) {
+          const a = document.createElement('span');
+          a.className = 'song-artist';
+          a.textContent = s.artist;
+          text.appendChild(a);
+        }
+        if (mitNotizen && s.notes) {
+          const n = document.createElement('div');
+          n.className = 'song-notiz';
+          n.textContent = s.notes;
+          text.appendChild(n);
+        }
+        const rechts = document.createElement('span');
+        rechts.className = 'member-rechts minstr';
+        rechts.textContent = this.songLine(s);
+        li.append(pick, text, rechts);
+        ul.appendChild(li);
+      }
+      box.appendChild(ul);
+    }
+    this.songAuswahlAnzeigen(pre);
+    this.renderSongProfil(pre);
+  },
+
+  songAuswahlAnzeigen(pre) {
+    const songs = this.songListe(pre);
+    const n = this.songsGewaehlt(pre).length;
+    const knopf = document.getElementById(`btn-print-${pre}s-sel`);
+    knopf.innerHTML = Icons.raw('printer') + 'Ausgewählte drucken' + (n ? ` (${n})` : '');
+    knopf.disabled = !n;
+    const alle = document.getElementById(pre + '-pick-all');
+    alle.checked = songs.length > 0 && n === songs.length;
+    alle.indeterminate = n > 0 && n < songs.length;
+  },
+
+  songZeigen(pre, id) {
+    this.songAktiv[pre] = id;
+    document.querySelectorAll(`#${pre}-list li`).forEach(li =>
+      li.classList.toggle('aktiv', li.dataset.id === id));
+    this.renderSongProfil(pre);
+    if (id && window.matchMedia('(max-width: 800px)').matches) {
+      document.getElementById(pre + '-steckbrief').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  },
+
+  songBlaettern(pre, dir) {
+    const songs = this.songListe(pre);
+    const i = songs.findIndex(s => s.id === this.songAktiv[pre]);
+    if (songs[i + dir]) this.songZeigen(pre, songs[i + dir].id);
+  },
+
+  renderSongProfil(pre) {
+    const box = document.getElementById(pre + '-steckbrief');
+    const songs = this.songListe(pre);
+    const i = songs.findIndex(s => s.id === this.songAktiv[pre]);
+    const s = songs[i];
+    if (!s) { this.songAktiv[pre] = null; box.hidden = true; return; }
+    box.hidden = false;
+    document.getElementById(pre + '-profil-titel').textContent = s.title;
+    document.getElementById(pre + '-position').textContent = `${i + 1} von ${songs.length}`;
+    const vor = document.getElementById(`btn-${pre}-vor`);
+    const weiter = document.getElementById(`btn-${pre}-weiter`);
+    vor.disabled = i === 0;
+    weiter.disabled = i === songs.length - 1;
+    vor.querySelector('span').textContent = songs[i - 1] ? songs[i - 1].title : '';
+    weiter.querySelector('span').textContent = songs[i + 1] ? songs[i + 1].title : '';
+    // Felder nicht ueberschreiben, waehrend jemand darin tippt
+    ['title', 'artist', 'key', 'capo', 'tempo', 'notes'].forEach(k => {
+      const el = document.getElementById(`${pre}-f-${k}`);
+      if (document.activeElement !== el) el.value = s[k] == null ? '' : String(s[k]);
+    });
   },
 
   songLine(s) {
