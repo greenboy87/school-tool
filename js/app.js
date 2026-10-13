@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Exen.init();
   ExSitzung.init();
   ExAuswertung.init();
+  ExReiter.init();
   Tools.init();
   Sport.init();
   Tipps.init();

@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=198">
+<link rel="stylesheet" href="style.css?v=199">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=198"></script>
-<script src="js/theme.js?v=198"></script>
-<script src="js/auth.js?v=198"></script>
+<script src="js/icons.js?v=199"></script>
+<script src="js/theme.js?v=199"></script>
+<script src="js/auth.js?v=199"></script>
 </head>
 <body>
 
@@ -969,54 +969,17 @@
 
 <!-- ========== EXEN ========== -->
 <main id="tab-exen" class="tab-page">
-  <section class="card ex-anmeldung">
-    <h2 data-icon="lock">Lehrer-Anmeldung</h2>
-    <p class="hint">Exen, Lösungen und Abgaben liegen in der Datenbank, geschützt durch Regeln, die nur
-       dein Google-Konto durchlassen. Einmal pro Gerät anmelden, danach bleibt es angemeldet.</p>
-    <p id="ex-anmeldung-status" class="ex-anmeldung-status">Verbinde …</p>
-    <div class="btn-row">
-      <button id="btn-ex-anmelden" class="primary" hidden>Mit Google anmelden</button>
-      <button id="btn-ex-abmelden" class="small" hidden>Abmelden</button>
-      <button id="btn-ex-uid" class="small" hidden title="Diese Kennung gehört in firebase-config.js und in die Datenbank-Regeln">Kennung kopieren</button>
-    </div>
+  <section class="card ex-kopf">
+    <nav class="sub-tabs ex-reiter" id="ex-reiter">
+      <button class="ex-reiter-btn" data-exreiter="schreiben" data-icon="play">Ex schreiben<span class="ex-laeuft-punkt" id="ex-laeuft-punkt" hidden title="Eine Sitzung ist offen"></span></button>
+      <button class="ex-reiter-btn" data-exreiter="korrigieren" data-icon="check">Ex korrigieren</button>
+      <button class="ex-reiter-btn" data-exreiter="bibliothek" data-icon="file">Ex-Bibliothek</button>
+      <button class="ex-reiter-btn" data-exreiter="anmeldung" data-icon="lock">Lehreranmeldung</button>
+    </nav>
+    <label class="ex-klasse-wahl" id="ex-klasse-wahl">Klasse <select id="ex-klasse"></select></label>
   </section>
 
-  <section id="ex-bibliothek" class="card ex-bibliothek" hidden>
-    <h2 data-icon="file">Ex-Bibliothek</h2>
-    <p class="hint">Ex-Datei (Format tom-ex/2) hierher ziehen oder auswählen. Lösungen und Bewertung
-       werden abgetrennt und sind nur für dich lesbar; die Schüler bekommen die Fassung ohne sie.
-       Hörbeispiele werden nicht hochgeladen – die spielst du live vor.</p>
-    <div class="btn-row">
-      <button id="btn-ex-datei" class="primary" data-icon="upload">Ex-Datei auswählen …</button>
-      <input type="file" id="ex-datei" accept=".html,.htm,text/html" hidden>
-    </div>
-    <div id="ex-import-meldung" class="ex-meldung" role="status" hidden></div>
-    <ul id="ex-liste" class="ex-liste"></ul>
-    <p id="ex-liste-leer" class="hint" hidden>Noch keine Ex importiert.</p>
-  </section>
-
-  <section id="ex-start" class="card ex-start" hidden>
-    <h2 data-icon="play" id="ex-start-titel">Ex starten</h2>
-    <div class="ex-start-felder">
-      <label>Klasse <select id="ex-start-klasse"></select></label>
-      <label>Ex <select id="ex-start-ex"></select></label>
-      <label>Nummer der Ex <input type="number" id="ex-start-nummer" min="1" max="9" value="1"></label>
-      <label title="Die Dauer legst du hier fest; vorgeschlagen wird, was zuletzt für diese Ex galt">Dauer (Minuten) <input type="number" id="ex-start-dauer" min="1" max="240" step="1"></label>
-    </div>
-    <div class="ex-start-haken">
-      <label><input type="checkbox" id="ex-start-timer" checked> Restzeit auf den iPads anzeigen</label>
-      <label><input type="checkbox" id="ex-start-ohnelimit"> Ohne Zeitlimit – keine automatische Abgabe, du beendest mit „Ex beenden“</label>
-    </div>
-    <p class="hint" id="ex-start-vorschau"></p>
-    <h3 class="ex-anwesend-kopf">Anwesenheit <span class="hint" id="ex-anwesend-zahl"></span></h3>
-    <p class="hint">Fehlende oder kranke Schüler abwählen – ihre Nummer erscheint auf den iPads nicht.</p>
-    <ul id="ex-anwesend" class="ex-anwesend"></ul>
-    <div class="btn-row">
-      <button id="btn-ex-warteraum" class="primary" data-icon="play">Warteraum öffnen</button>
-      <button id="btn-ex-nach-abbrechen" class="small" hidden>Abbrechen</button>
-    </div>
-  </section>
-
+  <div class="ex-reiter-seite" data-seite="schreiben">
   <section id="ex-sitzung" class="card ex-sitzung" hidden>
     <div class="ex-sitzung-kopf">
       <div>
@@ -1039,16 +1002,71 @@
     <div id="ex-warteraum"></div>
   </section>
 
-  <section id="ex-auswertung" class="card ex-auswertung" hidden>
-    <h2 data-icon="check">Auswertung</h2>
-    <div class="inline-form">
-      <select id="ex-auswertung-wahl"></select>
-      <button id="btn-ex-auswertung-oeffnen" class="primary">Öffnen</button>
-      <label class="ex-archiv-haken"><input type="checkbox" id="ex-auswertung-archiv"> Archivierte zeigen <span id="ex-auswertung-archiv-zahl" class="hint"></span></label>
+  <section id="ex-start" class="card ex-start" hidden>
+    <h2 data-icon="play" id="ex-start-titel">Ex starten</h2>
+    <div class="ex-start-felder">
+      <label class="ex-intern" hidden>Klasse <select id="ex-start-klasse"></select></label>
+      <label>Ex <select id="ex-start-ex"></select></label>
+      <label>Nummer der Ex <input type="number" id="ex-start-nummer" min="1" max="9" value="1"></label>
+      <label title="Die Dauer legst du hier fest; vorgeschlagen wird, was zuletzt für diese Ex galt">Dauer (Minuten) <input type="number" id="ex-start-dauer" min="1" max="240" step="1"></label>
     </div>
-    <p id="ex-auswertung-leer" class="hint" hidden>Noch keine Ex geschrieben.</p>
+    <div class="ex-start-haken">
+      <label><input type="checkbox" id="ex-start-timer" checked> Restzeit auf den iPads anzeigen</label>
+      <label><input type="checkbox" id="ex-start-ohnelimit"> Ohne Zeitlimit – keine automatische Abgabe, du beendest mit „Ex beenden“</label>
+    </div>
+    <p class="hint" id="ex-start-vorschau"></p>
+    <h3 class="ex-anwesend-kopf">Anwesenheit <span class="hint" id="ex-anwesend-zahl"></span></h3>
+    <p class="hint">Fehlende oder kranke Schüler abwählen – ihre Nummer erscheint auf den iPads nicht.</p>
+    <ul id="ex-anwesend" class="ex-anwesend"></ul>
+    <div class="btn-row">
+      <button id="btn-ex-warteraum" class="primary" data-icon="play">Warteraum öffnen</button>
+      <button id="btn-ex-nach-abbrechen" class="small" hidden>Abbrechen</button>
+    </div>
+  </section>
+  </div>
+
+  <div class="ex-reiter-seite" data-seite="korrigieren">
+  <section id="ex-auswertung" class="card ex-auswertung" hidden>
+    <h2 data-icon="check">Geschriebene Exen</h2>
+    <p id="ex-auswertung-leer" class="hint" hidden>In dieser Klasse wurde noch keine Ex geschrieben.</p>
+    <ul id="ex-auswertung-liste" class="ex-auswertung-liste"></ul>
+    <details id="ex-auswertung-archiv" class="ex-auswertung-archiv" hidden>
+      <summary>Archiv <span id="ex-auswertung-archiv-zahl" class="hint"></span></summary>
+      <div id="ex-auswertung-archiv-liste"></div>
+    </details>
     <div id="ex-auswertung-inhalt"></div>
   </section>
+  </div>
+
+  <div class="ex-reiter-seite" data-seite="bibliothek">
+  <section id="ex-bibliothek" class="card ex-bibliothek" hidden>
+    <h2 data-icon="file">Ex-Bibliothek</h2>
+    <p class="hint">Ex-Datei (Format tom-ex/2) hierher ziehen oder auswählen. Lösungen und Bewertung
+       werden abgetrennt und sind nur für dich lesbar; die Schüler bekommen die Fassung ohne sie.
+       Hörbeispiele werden nicht hochgeladen – die spielst du live vor.</p>
+    <div class="btn-row">
+      <button id="btn-ex-datei" class="primary" data-icon="upload">Ex-Datei auswählen …</button>
+      <input type="file" id="ex-datei" accept=".html,.htm,text/html" hidden>
+    </div>
+    <div id="ex-import-meldung" class="ex-meldung" role="status" hidden></div>
+    <ul id="ex-liste" class="ex-liste"></ul>
+    <p id="ex-liste-leer" class="hint" hidden>Noch keine Ex importiert.</p>
+  </section>
+  </div>
+
+  <div class="ex-reiter-seite" data-seite="anmeldung">
+  <section class="card ex-anmeldung">
+    <h2 data-icon="lock">Lehrer-Anmeldung</h2>
+    <p class="hint">Exen, Lösungen und Abgaben liegen in der Datenbank, geschützt durch Regeln, die nur
+       dein Google-Konto durchlassen. Einmal pro Gerät anmelden, danach bleibt es angemeldet.</p>
+    <p id="ex-anmeldung-status" class="ex-anmeldung-status">Verbinde …</p>
+    <div class="btn-row">
+      <button id="btn-ex-anmelden" class="primary" hidden>Mit Google anmelden</button>
+      <button id="btn-ex-abmelden" class="small" hidden>Abmelden</button>
+      <button id="btn-ex-uid" class="small" hidden title="Diese Kennung gehört in firebase-config.js und in die Datenbank-Regeln">Kennung kopieren</button>
+    </div>
+  </section>
+  </div>
 </main>
 
 <main id="tab-notizen" class="tab-page">
@@ -1197,35 +1215,36 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=198"></script>
-<script src="js/firebase-config.js?v=198"></script>
-<script type="module" src="js/live-firebase.js?v=198"></script>
-<script src="js/topics-seed.js?v=198"></script>
-<script src="js/ai-import.js?v=198"></script>
-<script src="js/store.js?v=198"></script>
-<script src="js/noise.js?v=198"></script>
-<script src="js/classes.js?v=198"></script>
-<script src="js/sitzplan.js?v=198"></script>
-<script src="js/schueler.js?v=198"></script>
-<script src="js/tasten.js?v=198"></script>
-<script src="js/lessons.js?v=198"></script>
-<script src="js/band.js?v=198"></script>
-<script src="js/notes.js?v=198"></script>
-<script src="js/tresor.js?v=198"></script>
-<script src="js/erklaerungen.js?v=198"></script>
-<script src="js/setlisten.js?v=198"></script>
-<script src="js/einklappen.js?v=198"></script>
-<script src="js/tinyband-instrumente.js?v=198"></script>
-<script src="js/live-groups.js?v=198"></script>
-<script src="js/tinyband-lehrer.js?v=198"></script>
-<script src="js/tipps.js?v=198"></script>
-<script src="js/sport-tabellen.js?v=198"></script>
-<script src="js/sport.js?v=198"></script>
-<script src="js/ex-import.js?v=198"></script>
-<script src="js/exen.js?v=198"></script>
-<script src="js/ex-sitzung.js?v=198"></script>
-<script src="js/ex-auswertung.js?v=198"></script>
-<script src="js/tools.js?v=198"></script>
-<script src="js/app.js?v=198"></script>
+<script src="js/vendor/qrcode.min.js?v=199"></script>
+<script src="js/firebase-config.js?v=199"></script>
+<script type="module" src="js/live-firebase.js?v=199"></script>
+<script src="js/topics-seed.js?v=199"></script>
+<script src="js/ai-import.js?v=199"></script>
+<script src="js/store.js?v=199"></script>
+<script src="js/noise.js?v=199"></script>
+<script src="js/classes.js?v=199"></script>
+<script src="js/sitzplan.js?v=199"></script>
+<script src="js/schueler.js?v=199"></script>
+<script src="js/tasten.js?v=199"></script>
+<script src="js/lessons.js?v=199"></script>
+<script src="js/band.js?v=199"></script>
+<script src="js/notes.js?v=199"></script>
+<script src="js/tresor.js?v=199"></script>
+<script src="js/erklaerungen.js?v=199"></script>
+<script src="js/setlisten.js?v=199"></script>
+<script src="js/einklappen.js?v=199"></script>
+<script src="js/tinyband-instrumente.js?v=199"></script>
+<script src="js/live-groups.js?v=199"></script>
+<script src="js/tinyband-lehrer.js?v=199"></script>
+<script src="js/tipps.js?v=199"></script>
+<script src="js/sport-tabellen.js?v=199"></script>
+<script src="js/sport.js?v=199"></script>
+<script src="js/ex-import.js?v=199"></script>
+<script src="js/exen.js?v=199"></script>
+<script src="js/ex-sitzung.js?v=199"></script>
+<script src="js/ex-auswertung.js?v=199"></script>
+<script src="js/ex-reiter.js?v=199"></script>
+<script src="js/tools.js?v=199"></script>
+<script src="js/app.js?v=199"></script>
 </body>
 </html>

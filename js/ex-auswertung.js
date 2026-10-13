@@ -23,13 +23,14 @@ const ExAuswertung = {
 
   init() {
     if (!document.getElementById('ex-auswertung')) return;
-    document.getElementById('btn-ex-auswertung-oeffnen').addEventListener('click', () => {
-      const key = document.getElementById('ex-auswertung-wahl').value;
-      if (key) this.oeffnen(key);
-    });
+    const liste = e => {
+      const b = e.target.closest('[data-ex-key]');
+      if (b) this.oeffnen(b.dataset.exKey);
+    };
+    document.getElementById('ex-auswertung-liste').addEventListener('click', liste);
+    document.getElementById('ex-auswertung-archiv-liste').addEventListener('click', liste);
     document.addEventListener('ex-anmeldung', e => this.schalten(e.detail.lehrer));
     document.addEventListener('ex-sitzungen', () => this.listeFuellen());
-    document.getElementById('ex-auswertung-archiv').addEventListener('change', () => this.listeFuellen());
     const sa = document.getElementById('ex-schueleransicht');
     sa.addEventListener('click', e => {
       const b = e.target.closest('[data-aktion]');
@@ -84,30 +85,48 @@ const ExAuswertung = {
     return `${j}/${String(j + 1).slice(2)}`;
   },
 
+  /* Liste der geschriebenen Exen der oben gewählten Klasse; archivierte
+     darunter aufklappbar, nach Schuljahr */
   listeFuellen() {
-    const sel = document.getElementById('ex-auswertung-wahl');
-    const alt = sel.value;
-    const alle = this.gruppen();
+    const kid = typeof ExReiter !== 'undefined' ? ExReiter.klasseId() : '';
+    const gibtKlasse = id => Classes.data.classes.some(c => c.id === id);
+    const alle = this.gruppen().filter(g => !kid || (kid === ExReiter.WEG ? !gibtKlasse(g.klasseId) : g.klasseId === kid));
+    const aktiv = alle.filter(x => !this.istArchiviert(x.key));
     const archiv = alle.filter(x => this.istArchiviert(x.key));
-    const zeigeArchiv = document.getElementById('ex-auswertung-archiv').checked;
-    const option = x => `<option value="${Band.esc(x.key)}">${Band.esc(
-      `${x.klasse} · ${x.exNummer}. ${x.titel} · ${new Date(x.erstellt).toLocaleDateString('de-DE')}` +
-      (x.codes.length > 1 ? ` (${x.codes.length} Sitzungen)` : ''))}</option>`;
-    let html = alle.filter(x => !this.istArchiviert(x.key)).map(option).join('');
-    if (zeigeArchiv) {
-      const jahre = {};
-      archiv.forEach(x => (jahre[this.schuljahr(x.erstellt)] = jahre[this.schuljahr(x.erstellt)] || []).push(x));
-      html += Object.keys(jahre).sort().reverse().map(j =>
-        `<optgroup label="Archiv · Schuljahr ${j}">${jahre[j].map(option).join('')}</optgroup>`).join('');
+    const esc = s => Band.esc(s);
+    const offen = this.a && this.a.key;
+    const eintrag = x => {
+      const d = (Classes.data.exAuswertungen || {})[x.key] || {};
+      const cls = Classes.data.classes.find(c => c.id === x.klasseId);
+      const inListe = d.projektId && cls && cls.projects.some(p => p.id === d.projektId);
+      return `<li><button class="ex-auswertung-eintrag${x.key === offen ? ' active' : ''}" data-ex-key="${esc(x.key)}">
+        <strong>${esc(x.exNummer)}. ${esc(x.titel)}</strong>
+        <span class="hint">${new Date(x.erstellt).toLocaleDateString('de-DE')}${kid === ExReiter.WEG ? ' · ' + esc(x.klasse) : ''}` +
+        `${x.codes.length > 1 ? ` · ${x.codes.length} Sitzungen` : ''}${inListe ? ' · in der Notenliste' : ''}</span></button></li>`;
+    };
+    document.getElementById('ex-auswertung-liste').innerHTML = aktiv.map(eintrag).join('');
+    const leer = document.getElementById('ex-auswertung-leer');
+    leer.hidden = aktiv.length > 0;
+    leer.textContent = archiv.length ? 'Alle Exen dieser Klasse sind archiviert.' : 'In dieser Klasse wurde noch keine Ex geschrieben.';
+    const jahre = {};
+    archiv.forEach(x => (jahre[this.schuljahr(x.erstellt)] = jahre[this.schuljahr(x.erstellt)] || []).push(x));
+    document.getElementById('ex-auswertung-archiv-liste').innerHTML = Object.keys(jahre).sort().reverse().map(j =>
+      `<h4>Schuljahr ${j}</h4><ul class="ex-auswertung-liste">${jahre[j].map(eintrag).join('')}</ul>`).join('');
+    const det = document.getElementById('ex-auswertung-archiv');
+    det.hidden = !archiv.length;
+    document.getElementById('ex-auswertung-archiv-zahl').textContent = `(${archiv.length})`;
+    if (offen && archiv.some(x => x.key === offen)) det.open = true;
+  },
+
+  /* Andere Klasse oben gewählt: eine offene Auswertung einer anderen Klasse schließen */
+  klasseGewechselt() {
+    if (this.a && typeof ExReiter !== 'undefined') {
+      const kid = ExReiter.klasseId();
+      const passt = kid === ExReiter.WEG ? !Classes.data.classes.some(c => c.id === this.a.gruppe.klasseId)
+        : this.a.gruppe.klasseId === kid;
+      if (!passt) { this.a = null; document.getElementById('ex-auswertung-inhalt').innerHTML = ''; }
     }
-    sel.innerHTML = html;
-    if ([...sel.options].some(o => o.value === alt)) sel.value = alt;
-    const leer = !sel.options.length;
-    document.getElementById('btn-ex-auswertung-oeffnen').disabled = leer;
-    const hinweis = document.getElementById('ex-auswertung-leer');
-    hinweis.hidden = !leer;
-    hinweis.textContent = alle.length ? 'Alle Exen sind archiviert – Häkchen bei „Archivierte zeigen“ setzen.' : 'Noch keine Ex geschrieben.';
-    document.getElementById('ex-auswertung-archiv-zahl').textContent = archiv.length ? `(${archiv.length})` : '';
+    this.listeFuellen();
   },
 
   daten(key) {
@@ -122,7 +141,8 @@ const ExAuswertung = {
     const gruppe = this.gruppen().find(g => g.key === key);
     if (!gruppe) return;
     const inhalt = document.getElementById('ex-auswertung-inhalt');
-    document.getElementById('ex-auswertung-wahl').value = key;
+    if (typeof ExReiter !== 'undefined') ExReiter.zeigen('korrigieren', gruppe.klasseId);
+    this.a = null;
     inhalt.innerHTML = '<p class="hint">Lade und bewerte …</p>';
     try {
       const db = FB.db, ref = FB.ref, get = FB.get;
@@ -374,6 +394,7 @@ const ExAuswertung = {
     this.balkenBauen();
     this.notenAktualisieren();
     this.knoepfeAktualisieren();
+    this.listeFuellen();
     Icons.hydrate(inhalt);
   },
 
@@ -401,9 +422,7 @@ const ExAuswertung = {
     else a.d.archiviert = Date.now();
     Classes.persist();
     // Die geöffnete Auswertung bleibt in der Auswahl, auch wenn das Archiv ausgeblendet ist
-    if (a.d.archiviert) document.getElementById('ex-auswertung-archiv').checked = true;
     this.listeFuellen();
-    document.getElementById('ex-auswertung-wahl').value = a.key;
     this.knoepfeAktualisieren();
   },
 
@@ -687,8 +706,8 @@ const ExAuswertung = {
       }
       case 'standard-laden': this.a.d.schluessel = { ...std }; Classes.persist(); this.reglerZeichnen(); this.notenAktualisieren(); break;
       case 'grenzen-weg': { const s = this.schluessel(); delete s.grenzen; this.a.d.schluessel = s; Classes.persist(); this.reglerZeichnen(); this.notenAktualisieren(); break; }
-      case 'export-notenliste': this.exportNotenliste(); this.knoepfeAktualisieren(); break;
-      case 'noten-entfernen': this.notenEntfernen(); break;
+      case 'export-notenliste': this.exportNotenliste(); this.knoepfeAktualisieren(); this.listeFuellen(); break;
+      case 'noten-entfernen': this.notenEntfernen(); this.listeFuellen(); break;
       case 'archivieren': this.archivieren(); break;
       case 'schueleransicht': this.schueleransicht(); break;
       case 'export-csv': this.exportCsv(); break;

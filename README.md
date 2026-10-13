@@ -255,6 +255,9 @@ Instrument-Kürzel (`dr`, `ba`, `sy`, `ge`, `uk`) – nie Namen.
 ### ✏️ Digitale Exen auf iPads (Reiter *Exen*)
 Jede Ex ist eine eigene HTML-Datei mit eigener Oberfläche (Format `tom-ex/2`, siehe
 [`docs/ex/ex-format.md`](docs/ex/ex-format.md)); das School-Tool ist der Rahmen drumherum.
+Vier Reiter: **Ex schreiben · Ex korrigieren · Ex-Bibliothek · Lehreranmeldung**, darüber
+die **Klasse** – sie gilt fürs Schreiben und für die Liste der geschriebenen Exen. Ein grüner
+Punkt an „Ex schreiben“ zeigt eine offene Sitzung.
 
 - **Lehrer-Anmeldung** mit Google, einmal pro Gerät. Nur dieses Konto darf Exen, Lösungen
   und Abgaben lesen – das setzen die Datenbank-Regeln durch, nicht die Seite.
@@ -284,7 +287,12 @@ Jede Ex ist eine eigene HTML-Datei mit eigener Oberfläche (Format `tom-ex/2`, s
   Teilpunktzahl überschreibbar), Selbsteinschätzung, **In die Notenliste übernehmen**,
   CSV und **Alle drucken**: je Schüler die Ex selbst in ihrer Druckfassung mit Antworten,
   Punkten je Aufgabe, Note und Notenschlüssel (Exen ohne Druckfassung: Tabelle), wahlweise
-  mit Lösungen.
+  mit Lösungen. **Schüleransicht**: nur Notenbild (Note, Punktebereich, Anzahl) und
+  Durchschnitt, ohne Namen – für den Beamer. **Noten aus der Notenliste entfernen**
+  löscht nur den Notenlisten-Eintrag, die Auswertung bleibt.
+- **Archiv:** „Archivieren“ nimmt eine Ex aus der Liste; unter „Archiv“ (nach Schuljahr)
+  bleibt sie erreichbar und lässt sich genauso weiter korrigieren. Wer eine Ex aus der
+  Bibliothek löschen will, wird gewarnt, solange es Auswertungen dazu gibt.
 - **Nachschreiben** für alle, die nicht geschrieben haben – landet in derselben Auswertung.
 
 > **Einmalig:** Anmeldung in Firebase einschalten und die Regeln vom 12.10.2026 eintragen

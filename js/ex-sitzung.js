@@ -214,6 +214,7 @@ const ExSitzung = {
     const erste = codes.map(([, l]) => l).sort((a, b) => a.erstellt - b.erstellt)[0];
     if (!Exen.index[erste.exId]) { alert('Die Ex ist nicht mehr in der Bibliothek. Bitte zuerst erneut importieren.'); return; }
     this.nach = { key, exId: erste.exId, klasseId: erste.klasseId, exNummer: erste.exNummer, nummern: erste.nummern, geschrieben };
+    ExReiter.zeigen('schreiben', erste.klasseId);
     document.getElementById('ex-start-klasse').value = erste.klasseId;
     document.getElementById('ex-start-ex').value = erste.exId;
     document.getElementById('ex-start-nummer').value = erste.exNummer;
@@ -326,6 +327,7 @@ const ExSitzung = {
     // Restzeiten laufen weiter, auch wenn sich in der Datenbank nichts ändert
     this.uhr = setInterval(() => { if (this.info && this.info.status === 'laeuft') this.warteraumZeichnen(); }, 5000);
     document.dispatchEvent(new CustomEvent('ex-sitzung', { detail: { code } }));
+    ExReiter.laeuft(true);
   },
 
   schliessen() {
@@ -343,6 +345,7 @@ const ExSitzung = {
     this.schliessen();
     localStorage.removeItem(this.AKTIV_KEY);
     document.getElementById('ex-sitzung').hidden = true;
+    ExReiter.laeuft(false);
     if (this.beamerFenster && !this.beamerFenster.closed) this.beamerFenster.close();
   },
 
@@ -631,7 +634,7 @@ const ExSitzung = {
         case 'zur-auswertung': {
           const l = this.lokal();
           ExAuswertung.oeffnen(ExAuswertung.schluesselVon(l));
-          document.getElementById('ex-auswertung').scrollIntoView({ behavior: 'smooth' });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
           return;
         }
         case 'ausblenden': this.vergessen(); return;
