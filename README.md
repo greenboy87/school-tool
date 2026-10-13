@@ -24,9 +24,8 @@ die Seite ohne Eingabe – diesen Link einmal als Favorit speichern, fertig:
 
 Der Anker (alles ab `#`) wird von Browsern grundsätzlich nicht an einen Server geschickt und
 steht in keinem Zugriffsprotokoll; School-Tool entfernt ihn zusätzlich sofort aus der
-Adresszeile, damit er am Beamer nicht mitzulesen ist. Er funktioniert genauso mit
-`ampel.html`. Wer den Link hat, kommt ohne Passwort hinein – also nicht weitergeben und
-nicht in geteilte Lesezeichen legen.
+Adresszeile, damit er am Beamer nicht mitzulesen ist. Wer den Link hat, kommt ohne
+Passwort hinein – also nicht weitergeben und nicht in geteilte Lesezeichen legen.
 
 Das Passwort steht nur als SHA-256-Prüfsumme im Quelltext (`HASH` in `js/auth.js`). Ändern
 heißt: Prüfsumme des neuen Passworts eintragen, etwa mit
@@ -46,7 +45,7 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
 - Farbverlauf Grün → Gelb (10 dB vor dem Grenzwert) → Rot (Grenzwert überschritten);
   der Grenzwert ist einstellbar und als Strich am Bogen markiert
 - Zähler für Überschreitungen
-- **Als Popup** oder als **schwebendes Mini-Fenster** („Immer im Vordergrund“, Chrome/Edge) – bleibt auch über einer Vollbild-Präsentation sichtbar
+- Als **schwebendes Mini-Fenster** („Immer im Vordergrund“, Chrome/Edge) – bleibt auch über einer Vollbild-Präsentation sichtbar
 
 ### 📚 Klassen & Noten
 - Ist eine Klasse ausgewählt, schalten **Pfeil hoch/runter** zur vorigen bzw. nächsten Klasse –
@@ -404,7 +403,7 @@ Kontrollvorschau.
 
 **Hinweis zum Aktualisieren:** Die eingebundenen Dateien tragen eine Versionsnummer
 (`style.css?v=62`). Nach Änderungen an CSS/JS diese Nummer in allen vier HTML-Dateien auf
-denselben Wert hochzählen – `index.html`, `ampel.html`, `gruppen.html` und `namen.html`.
+denselben Wert hochzählen – `index.html`, `gruppen.html`, `namen.html` und `tinyband.html`.
 Sonst zeigen Browser noch die zwischengespeicherte alte Fassung.
 
 ### 🎲 Extras

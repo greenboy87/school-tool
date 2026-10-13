@@ -139,7 +139,7 @@ class NoiseMeter {
     }
   }
 
-  /* Vollbild-Overlay im jeweiligen Fenster (Hauptseite, Popup oder PiP) anlegen */
+  /* Vollbild-Overlay im jeweiligen Fenster (Hauptseite oder schwebendes Fenster) anlegen */
   _buildAlarmOverlay() {
     const doc = this.els.gauge.ownerDocument;
     this.overlay = doc.createElement('div');

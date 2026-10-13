@@ -137,15 +137,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('btn-popup').addEventListener('click', () => {
-    window.open('ampel.html', 'laermampel',
-      'width=320,height=280,menubar=no,toolbar=no,location=no,status=no');
-  });
-
   // „Immer im Vordergrund“: Document Picture-in-Picture (Chrome/Edge).
   document.getElementById('btn-pip').addEventListener('click', async () => {
     if (!('documentPictureInPicture' in window)) {
-      alert('Dein Browser unterstützt das schwebende Fenster nicht.\nNutze Chrome oder Edge – oder den Popup-Button daneben.');
+      alert('Dein Browser unterstützt das schwebende Fenster nicht.\nNutze Chrome oder Edge.');
       return;
     }
     try {
@@ -165,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="laerm-bogen compact" id="pip-bogen">
             <div class="db-display small"><span id="pip-db">–</span><span class="db-unit">dB</span></div>
           </div>
-          <div class="popup-alarm-count hint">🔴 <strong id="pip-alarm-count">0</strong>×</div>
+          <div class="popup-alarm-count hint">${Icons.raw('alert')}Rotfärbungen:&nbsp;<strong id="pip-alarm-count">0</strong></div>
         </div>`;
       const pipMeter = new NoiseMeter({
         dbEl: pipWin.document.getElementById('pip-db'),

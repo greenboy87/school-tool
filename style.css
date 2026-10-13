@@ -38,7 +38,7 @@
   --housing-off: #3a3060;
   --green: #5eead4;
   --yellow: #fcd34d;
-  --red: #fb7185;
+  --red: #fda4af;                  /* Pastell, passend zum Rest der Seite */
   --radius: 16px;
   --radius-sm: 10px;
   --shadow: 0 10px 36px rgba(8, 4, 24, .5);
@@ -78,7 +78,7 @@
   --housing-off: #4a4170;
   --green: #0d9488;
   --yellow: #ca8a04;
-  --red: #e11d48;
+  --red: #ec7088;
   --shadow: 0 6px 24px rgba(80, 50, 140, .12);
 }
 
@@ -1128,17 +1128,20 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 
 .footer { text-align: center; padding: 1.5rem; }
 
-/* ---------- Popup (ampel.html) ---------- */
-/* Bleibt in beiden Themes dunkel – die Ampel liest sich so am besten. */
-.popup-body { display: flex; align-items: center; justify-content: center; min-height: 100vh;
+/* ---------- Schwebendes Fenster („Immer im Vordergrund“) ---------- */
+/* Bleibt in beiden Themes dunkel – der Bogen liest sich so am besten. */
+.popup-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; overflow: hidden;
   background: radial-gradient(600px 400px at 70% 0%, rgba(168, 85, 247, .35), transparent 70%), #120f26; }
-.popup-ampel { display: flex; flex-direction: column; align-items: center; gap: .8rem; padding: 1rem; }
+.popup-ampel { display: flex; flex-direction: column; align-items: center; gap: .6rem; padding: .8rem; }
+/* Der Bogen wächst und schrumpft mit dem Fenster – Chrome merkt sich die Größe,
+   die man zuletzt gezogen hat, und ein zu großer Bogen fiele sonst oben heraus. */
+.popup-ampel .laerm-bogen.compact { width: min(260px, 88vw, calc((100vh - 4.5rem) * 1.6)); }
 .popup-ampel .db-display { color: #f7f3ff; }
 .popup-ampel .bogen-marker { stroke: #f7f3ff; }
 .popup-ampel .bogen-knopf { stroke: #120f26; }
 
 .alarm-config input[type="number"] { width: 4.2em; padding: .2rem .4rem; }
-.popup-alarm-count { color: #bdb3de; display: flex; align-items: center; }
+.popup-alarm-count { color: #bdb3de; display: flex; align-items: center; white-space: nowrap; }
 
 /* ---------- Sperrbildschirm ---------- */
 html.locked, html.locked body { overflow: hidden; }
@@ -1173,7 +1176,7 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .alarm-overlay {
   position: fixed; inset: 0; z-index: 999;
   display: none; flex-direction: column; align-items: center; justify-content: center;
-  gap: 1.2rem; background: var(--red); color: #fff; text-align: center;
+  gap: 1.2rem; background: #fda4af; color: #3b1424; text-align: center;
   animation: alarm-pulse 1s ease-in-out infinite;
 }
 .alarm-overlay.on { display: flex; }
@@ -1182,13 +1185,14 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .alarm-count { font-size: clamp(1rem, 4vw, 1.6rem); font-weight: 700; opacity: .9; }
 .alarm-reset {
   font-size: clamp(.9rem, 3vw, 1.2rem); font-weight: 700;
-  background: #fff; color: var(--red); border: none; border-radius: var(--radius-sm);
+  background: #fff5f7; color: #3b1424; border: none; border-radius: var(--radius-sm);
   padding: .7em 1.6em; cursor: pointer;
 }
-.alarm-reset:hover { background: #ffe4ea; }
+.alarm-reset:hover { background: #fff; }
+/* Pastell-Rosé statt Signalrot; das Pulsieren bleibt sanft, aber deutlich */
 @keyframes alarm-pulse {
-  0%, 100% { background: var(--red); }
-  50% { background: #be123c; }
+  0%, 100% { background: #fda4af; }
+  50% { background: #f9a8d4; }
 }
 
 /* ---------- Sitzordnung ----------
