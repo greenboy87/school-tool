@@ -319,8 +319,31 @@ const ExSitzung = {
 
   lokal() { return this.code ? this.sitzungen()[this.code] : null; },
 
+  /* Der QR-Code trägt hinter dem # die Namen der zugelassenen Schüler. Den Teil
+     nach # schicken Browser nie an einen Server – die Namen gehen vom Beamer
+     direkt aufs iPad, in die Datenbank kommt weiter nur die Nummer
+     (wie bei der Gruppenbildung). */
   link() {
-    return location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'ex.html?s=' + this.code;
+    const basis = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'ex.html?s=' + this.code;
+    const namen = this.kurznamen();
+    return Object.keys(namen).length ? basis + '#' + LiveGroups.nachBase64(JSON.stringify({ n: namen })) : basis;
+  },
+
+  /* „Mia A.“ – bei gleichem Vornamen und Anfangsbuchstaben der volle Nachname */
+  kurznamen() {
+    const lokal = this.lokal(), i = this.info;
+    const cls = lokal && Classes.data.classes.find(c => c.id === lokal.klasseId);
+    if (!cls || !i) return {};
+    const eintraege = Object.keys(i.erlaubt || {}).map(k => k.slice(1)).map(nr => {
+      const s = cls.students.find(x => x.id === lokal.nummern[nr]);
+      return s && { nr, first: (s.first || '').trim(), last: (s.last || '').trim() };
+    }).filter(Boolean);
+    const kurz = e => e.first ? `${e.first} ${e.last.charAt(0)}.`.trim() : e.last;
+    const zaehler = {};
+    eintraege.forEach(e => { zaehler[kurz(e)] = (zaehler[kurz(e)] || 0) + 1; });
+    const namen = {};
+    eintraege.forEach(e => { namen[e.nr] = zaehler[kurz(e)] > 1 ? [e.first, e.last].filter(Boolean).join(' ') : kurz(e); });
+    return namen;
   },
 
   zeichnen() {
@@ -336,10 +359,14 @@ const ExSitzung = {
     document.getElementById('ex-sitzung-link').textContent = link.replace(/\?s=.*$/, '');
     const qr = document.getElementById('ex-qr');
     if (qr.dataset.link !== link) {
+      const neu = qr.dataset.link != null;
       qr.innerHTML = '';
-      new QRCode(qr, { text: link, width: 200, height: 200, colorDark: '#000000', colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M });
+      // Fehlerkorrektur niedrig: Die Namen brauchen Platz im Code
+      new QRCode(qr, { text: link, width: 220, height: 220, colorDark: '#000000', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.L });
       qr.dataset.link = link;
+      // Anwesenheit geändert („Doch da“, „fehlt“): das offene Beamerfenster mitziehen
+      if (neu && this.beamerFenster && !this.beamerFenster.closed) this.beamer();
     }
     document.getElementById('btn-ex-abbrechen').hidden = i.status !== 'warteraum';
     this.warteraumZeichnen();
@@ -705,7 +732,7 @@ const ExSitzung = {
     skript.onload = () => {
       new w.QRCode(w.document.getElementById('qr'), {
         text: link, width: 460, height: 460,
-        colorDark: '#000000', colorLight: '#ffffff', correctLevel: w.QRCode.CorrectLevel.M,
+        colorDark: '#000000', colorLight: '#ffffff', correctLevel: w.QRCode.CorrectLevel.L,
       });
     };
     w.document.head.appendChild(skript);

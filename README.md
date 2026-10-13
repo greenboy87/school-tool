@@ -267,8 +267,10 @@ Jede Ex ist eine eigene HTML-Datei mit eigener Oberfläche (Format `tom-ex/2`, s
 - **Ex starten:** Klasse, Ex, Nummer der Ex („1.“ → „1. Stegreifaufgabe“), **Dauer** (steckt
   nicht in der Ex; vorgeschlagen wird die zuletzt benutzte), fehlende Schüler abwählen →
   **Warteraum öffnen**. Code und QR-Code, **Groß für den Beamer**.
-- **Schülerseite** `ex.html`: Code (oder QR-Code), Nummer antippen, bei Bedarf
-  „Ich habe Notenschutz“. Danach „Warte auf Freigabe“.
+- **Schülerseite** `ex.html`: QR-Code scannen, **eigenen Namen** antippen, bei Bedarf
+  „Ich habe Notenschutz“. Danach „Warte auf Freigabe“. Die Namen („Mia A.“) stecken im
+  QR-Code hinter dem `#` und gehen nie an den Server – in die Datenbank kommt nur die
+  Nummer. Wer den Code von Hand eintippt, sieht stattdessen Nummern.
 - **Warteraum:** Freigeben (einzeln/alle), Rauswerfen, als fehlend markieren, Notenschutz
   bestätigen, Warnung bei doppelter Nummer, **übernehmen**, wenn ein iPad abgestürzt ist
   und sich neu anmeldet. **Ex starten** – die Zeit läuft nach Serverzeit.

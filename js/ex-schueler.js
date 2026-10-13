@@ -18,6 +18,9 @@ const ExSchueler = {
 
   init() {
     this.code = this.codeAusAdresse();
+    this.namenLesen();
+    // Ein neuer QR-Code ändert evtl. nur den Teil nach # – dann neu laden
+    window.addEventListener('hashchange', () => location.reload());
     document.getElementById('code-form').addEventListener('submit', e => { e.preventDefault(); this.codeEingegeben(); });
     document.getElementById('btn-beitreten').addEventListener('click', () => this.beitreten());
     document.getElementById('btn-andere-nummer').addEventListener('click', () => { this.nummerWaehlen = true; this.zeigen(); });
@@ -38,6 +41,30 @@ const ExSchueler = {
   },
 
   ref(rest) { return FB.ref(FB.db, `schoolTool/exsessions/${this.code}/${rest}`); },
+
+  /* Namen kommen nur über den QR-Code: hinter dem #, das Browser nie an einen
+     Server schicken. Sie bleiben nur in diesem Tab (sessionStorage, übersteht
+     ein Neuladen) und verschwinden sofort aus der Adresszeile. In die Datenbank
+     geht weiter nur die Nummer. */
+  namen: {},
+  namenKey() { return 'ex-namen-' + this.code; },
+  namenLesen() {
+    if (!this.code) return;
+    const roh = location.hash.replace(/^#/, '');
+    if (roh) {
+      try {
+        const b64 = roh.replace(/-/g, '+').replace(/_/g, '/');
+        const bin = atob(b64 + '='.repeat((4 - b64.length % 4) % 4));
+        const daten = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
+        if (daten && daten.n && typeof daten.n === 'object') {
+          try { sessionStorage.setItem(this.namenKey(), JSON.stringify(daten.n)); } catch (e) {}
+        }
+      } catch (e) { /* kaputter Anker – dann eben Nummern */ }
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    try { this.namen = JSON.parse(sessionStorage.getItem(this.namenKey())) || {}; } catch (e) { this.namen = {}; }
+  },
+  name(nr) { return this.namen[nr] ? String(this.namen[nr]) : ''; },
   merkKey() { return 'ex-sitzung-' + this.code; },
 
   /* ---------- Anmelden ---------- */
@@ -134,7 +161,12 @@ const ExSchueler = {
 
   warten(nr, text) {
     this.nummerWaehlen = false;
-    document.getElementById('warten-nr').textContent = nr;
+    const name = this.name(nr);
+    document.getElementById('warten-nr').textContent = name ? '' : nr;
+    document.getElementById('warten-nr').hidden = !!name;
+    document.getElementById('warten-name').textContent = name;
+    document.getElementById('warten-name').hidden = !name;
+    document.getElementById('btn-andere-nummer').textContent = name ? 'Nicht du? Neu wählen' : 'Andere Nummer wählen';
     document.getElementById('warten-text').textContent = text;
     const ich = this.ich;
     document.getElementById('warten-ns').textContent = ich.notenschutz ? 'Notenschutz ist bestätigt.'
@@ -148,9 +180,24 @@ const ExSchueler = {
     const i = this.info;
     const nummern = Object.keys(i.erlaubt || {}).map(k => k.slice(1)).sort((a, b) => a - b);
     const box = document.getElementById('nummern');
-    const signatur = nummern.join(',');
+    const mitNamen = nummern.some(n => this.name(n));
+    box.classList.toggle('namen', mitNamen);
+    document.getElementById('nummer-titel').textContent = mitNamen ? 'Wer bist du?' : 'Welche Nummer hast du?';
+    document.getElementById('nummer-hint').textContent = mitNamen ? 'Tippe deinen Namen an.'
+      : 'Deine Nummer aus der Klassenliste. Tipp: Scanne den QR-Code von der Leinwand, dann siehst du hier die Namen.';
+    const signatur = nummern.join(',') + (mitNamen ? '|n' : '');
     if (box.dataset.signatur !== signatur) {
-      box.innerHTML = nummern.map(n => `<button type="button" data-nr="${n}">${n}</button>`).join('');
+      box.replaceChildren(...nummern.map(n => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.nr = n;
+        if (mitNamen) {
+          const name = document.createElement('span');
+          name.textContent = this.name(n) || `Nr. ${n}`;
+          b.append(name);
+        } else b.textContent = n;
+        return b;
+      }));
       box.dataset.signatur = signatur;
     }
     if (this.gewaehlt == null) {
@@ -162,7 +209,7 @@ const ExSchueler = {
     }
     this.rasterMarkieren();
     document.getElementById('nummer-fehler').textContent = i.status === 'laeuft'
-      ? 'Die Ex läuft schon. Wähle deine Nummer – deine Lehrkraft holt dich dazu.' : '';
+      ? `Die Ex läuft schon. Wähle ${mitNamen ? 'deinen Namen' : 'deine Nummer'} – deine Lehrkraft holt dich dazu.` : '';
     this.zeigeNur('s-nummer');
   },
 
@@ -179,7 +226,7 @@ const ExSchueler = {
   async beitreten() {
     const nr = this.gewaehlt;
     if (!nr) return;
-    if (!confirm(`Du bist Nummer ${nr}?`)) return;
+    if (!confirm(this.name(nr) ? `Du bist ${this.name(nr)}?` : `Du bist Nummer ${nr}?`)) return;
     const notenschutz = document.getElementById('notenschutz-schalter').checked;
     const knopf = document.getElementById('btn-beitreten');
     knopf.disabled = true;
