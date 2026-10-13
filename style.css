@@ -1814,3 +1814,24 @@ body.ex-korrektur-offen { overflow: hidden; }
 .ex-sa-schnitt strong { font-size: 1.5em; margin-left: .4rem; }
 .ex-sa-schnitt span { display: block; font-size: .55em; color: var(--muted); margin-top: .2rem; }
 @media (max-width: 520px) { .ex-sa-punkte { width: auto; } .ex-sa-note { width: 2.2rem; } }
+
+/* Aufgeklappte Auswahllisten (js/auswahl.js) statt der Systemliste */
+.auswahl-liste {
+  position: fixed; z-index: 1000; overflow-y: auto; overscroll-behavior: contain;
+  background: var(--card-solid, var(--bg)); color: var(--text);
+  border: 1px solid var(--card-border, var(--border)); border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .35); padding: .3rem;
+  font-size: .92rem; -webkit-user-select: none; user-select: none;
+}
+.auswahl-eintrag {
+  padding: .45rem .7rem .45rem 1.7rem; border-radius: calc(var(--radius-sm) - 2px); cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative;
+}
+.auswahl-eintrag.eingerueckt { padding-left: 2.2rem; }
+.auswahl-eintrag.markiert { background: var(--active-soft); color: var(--accent-soft, var(--text)); }
+.auswahl-eintrag.gewaehlt { font-weight: 700; }
+.auswahl-eintrag.gewaehlt::before { content: "✓"; position: absolute; left: .55rem; color: var(--accent); }
+.auswahl-eintrag.eingerueckt.gewaehlt::before { left: 1.05rem; }
+.auswahl-eintrag.aus { opacity: .45; cursor: default; }
+.auswahl-gruppe { padding: .5rem .7rem .2rem; font-size: .75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+@media (pointer: coarse) { .auswahl-eintrag { padding-top: .65rem; padding-bottom: .65rem; } }
