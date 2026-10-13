@@ -73,6 +73,50 @@ const Band = {
                 'oder die Namen stehen (noch) in keiner Klassenliste.');
     });
     document.getElementById('member-filter').addEventListener('change', () => this.renderMembers());
+    document.getElementById('member-pick-all').addEventListener('change', e => {
+      for (const m of this.filteredMembers()) {
+        if (e.target.checked) this.gewaehlteMitglieder.add(m.id);
+        else this.gewaehlteMitglieder.delete(m.id);
+      }
+      this.renderMembers();
+    });
+    // Steckbrief: Aenderungen sofort speichern, Liste nachziehen
+    const aktiv = () => this.d().members.find(m => m.id === this.aktivesMitglied);
+    const feld = (id, key, pflicht) => document.getElementById(id).addEventListener('change', e => {
+      const m = aktiv();
+      if (!m) return;
+      const v = e.target.value.trim();
+      if (pflicht && !v) { e.target.value = m[key] || ''; return; }
+      m[key] = v;
+      this.save();
+      this.renderMembers();
+    });
+    feld('mp-name', 'name', true);
+    feld('mp-klasse', 'klasse');
+    feld('mp-bereich', 'area');
+    feld('mp-instrument', 'instrument');
+    document.getElementById('btn-member-zu').addEventListener('click', () => this.mitgliedZeigen(null));
+    document.getElementById('btn-member-vor').addEventListener('click', () => this.mitgliedBlaettern(-1));
+    document.getElementById('btn-member-weiter').addEventListener('click', () => this.mitgliedBlaettern(1));
+    document.getElementById('btn-member-entfernen').addEventListener('click', () => {
+      const m = aktiv();
+      if (!m || !confirm(`${m.name} aus der Band entfernen?`)) return;
+      this.d().members = this.d().members.filter(x => x.id !== m.id);
+      this.aktivesMitglied = null;
+      this.save();
+      this.renderMembers();
+    });
+    // Pfeiltasten und Esc, solange der Mitglieder-Reiter sichtbar ist und
+    // niemand in einem Feld tippt
+    document.addEventListener('keydown', e => {
+      if (!this.aktivesMitglied) return;
+      const seite = document.getElementById('bandtab-mitglieder');
+      if (!seite.classList.contains('active') || !seite.offsetParent) return;
+      if (e.target.closest('input, textarea, select')) return;
+      if (e.key === 'ArrowUp') { e.preventDefault(); this.mitgliedBlaettern(-1); }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); this.mitgliedBlaettern(1); }
+      else if (e.key === 'Escape') this.mitgliedZeigen(null);
+    });
     document.getElementById('btn-print-members').addEventListener('click', () => this.printMembers());
     document.getElementById('btn-print-members-sel')
       .addEventListener('click', () => this.printMembersAuswahl());
@@ -426,38 +470,74 @@ const Band = {
     }
   },
 
+  /* Das Mitglied, dessen Steckbrief rechts offen ist */
+  aktivesMitglied: null,
+
+  /* Klassenleitung als kleine Kuerzel-Marken (1 = KL, 2 = 2. KL) */
+  leitungsMarken(klasse) {
+    const box = document.createElement('span');
+    box.className = 'leitungs-zelle';
+    const personen = Classes.leitungsPersonen(klasse);
+    personen.forEach((pn, idx) => {
+      if (idx) box.append(' ');
+      /* Der Tooltip haengt an jeder Person einzeln: Wer auf „PT“ zeigt, will
+         wissen, wer PT ist – nicht die ganze Klassenleitung auf einmal lesen.
+         data-tip statt title, der eingebaute Tooltip kaeme erst nach etwa
+         einer Sekunde. aria-label bleibt fuer Screenreader. */
+      const person = document.createElement('span');
+      person.className = 'leitungs-person';
+      const text = (pn.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung') +
+        ': ' + (pn.name || pn.kuerzel + ' (nicht in der Lehrerliste)');
+      person.dataset.tip = text;
+      person.setAttribute('aria-label', text);
+      const ziffer = document.createElement('b');
+      ziffer.className = 'rolle-ziffer rolle-' + Classes.rolleZiffer(pn.rolle);
+      ziffer.textContent = Classes.rolleZiffer(pn.rolle);
+      const kz = document.createElement('span');
+      kz.textContent = pn.kuerzel;
+      person.append(ziffer, kz);
+      box.appendChild(person);
+    });
+    return box;
+  },
+
+  /* Kompakte Liste wie die Klassenliste: nach Klassen gruppiert, die
+     Klassenleitung steht einmal im Gruppenkopf statt in jeder Zeile.
+     Bearbeitet wird rechts im Steckbrief. */
   renderMembers() {
-    const table = document.getElementById('member-table');
-    if (!table) return;
+    const box = document.getElementById('member-list');
+    if (!box) return;
     const list = this.filteredMembers();
     document.getElementById('member-count').textContent = list.length;
-    table.innerHTML = '<tr><th class="pick-spalte">' +
-      '<input type="checkbox" id="member-pick-all" title="Alle anzeigten an- oder abwählen">' +
-      '</th><th>Klasse</th><th>Name</th><th>Bereich</th>' +
-      '<th>Instrument / Aufgabe</th><th>Klassenleitung</th><th></th></tr>';
+    box.innerHTML = '';
     if (!list.length) {
-      table.innerHTML += '<tr><td colspan="7" class="hint">Noch keine Mitglieder aufgenommen.</td></tr>';
-      this.auswahlAnzeigen();
-      return;
+      box.innerHTML = '<p class="hint">Noch keine Mitglieder aufgenommen – rechts unter „Mitglied aufnehmen“ geht’s los.</p>';
     }
-    table.querySelector('#member-pick-all').addEventListener('change', e => {
-      for (const m of list) {
-        if (e.target.checked) this.gewaehlteMitglieder.add(m.id);
-        else this.gewaehlteMitglieder.delete(m.id);
-      }
-      table.querySelectorAll('input.member-pick').forEach(c => { c.checked = e.target.checked; });
-      this.auswahlAnzeigen();
-    });
 
+    let gruppe = null, ul = null;
     for (const m of list) {
-      const tr = document.createElement('tr');
+      const klasse = (m.klasse || '').trim();
+      if (!ul || klasse !== gruppe) {
+        gruppe = klasse;
+        const kopf = document.createElement('div');
+        kopf.className = 'member-gruppe-kopf';
+        const k = document.createElement('span');
+        k.className = 'member-gruppe-klasse';
+        k.textContent = klasse || 'ohne Klasse';
+        kopf.appendChild(k);
+        if (klasse) kopf.appendChild(this.leitungsMarken(klasse));
+        ul = document.createElement('ul');
+        ul.className = 'member-zeilen';
+        box.append(kopf, ul);
+      }
 
-      const tdP = document.createElement('td');
-      tdP.className = 'pick-spalte';
+      const li = document.createElement('li');
+      li.dataset.id = m.id;
+      li.classList.toggle('aktiv', m.id === this.aktivesMitglied);
+
       const pick = document.createElement('input');
       pick.type = 'checkbox';
       pick.className = 'member-pick';
-      pick.dataset.id = m.id;
       pick.checked = this.gewaehlteMitglieder.has(m.id);
       pick.title = `${m.name} für den Ausdruck auswählen`;
       // Nur die Menge pflegen, nicht neu zeichnen – sonst springt die Liste
@@ -465,95 +545,157 @@ const Band = {
       pick.addEventListener('change', () => {
         if (pick.checked) this.gewaehlteMitglieder.add(m.id);
         else this.gewaehlteMitglieder.delete(m.id);
-        tr.classList.toggle('gewaehlt', pick.checked);
+        li.classList.toggle('gewaehlt', pick.checked);
         this.auswahlAnzeigen();
       });
-      tdP.appendChild(pick);
-      tr.classList.toggle('gewaehlt', pick.checked);
-      tr.appendChild(tdP);
+      li.classList.toggle('gewaehlt', pick.checked);
 
-      const tdK = document.createElement('td');
-      tdK.appendChild(this.editable(m.klasse, '–', v => { m.klasse = v; this.save(); this.renderMembers(); }, 5));
-      /* Wer die Klasse leitet – bei einer Befreiung ist das die Person, der man
-         Bescheid geben muss. Kuerzel in der Tabelle, Namen im Ausdruck. */
-      const tdL = document.createElement('td');
-      tdL.className = 'leitungs-zelle';
-      const personen = Classes.leitungsPersonen(m.klasse);
-      if (!personen.length) {
-        tdL.textContent = '–';
-        tdL.title = m.klasse
-          ? `Für „${m.klasse}“ steht keine Klassenleitung in der Tabelle (Reiter „Lehrer“).`
-          : 'Ohne Klassenangabe lässt sich keine Klassenleitung zuordnen.';
-      } else {
-        personen.forEach((pn, idx) => {
-          if (idx) tdL.append(' ');
-          /* Der Tooltip haengt an jeder Person einzeln, nicht an der Zelle:
-             Wer auf „PT“ zeigt, will wissen, wer PT ist – nicht die ganze
-             Klassenleitung auf einmal lesen. */
-          const person = document.createElement('span');
-          person.className = 'leitungs-person';
-          const text = (pn.rolle === 'KL' ? '1. Klassenleitung' : '2. Klassenleitung') +
-            ': ' + (pn.name || pn.kuerzel + ' (nicht in der Lehrerliste)');
-          // data-tip statt title: der eingebaute Tooltip kaeme erst nach
-          // etwa einer Sekunde. aria-label bleibt fuer Screenreader.
-          person.dataset.tip = text;
-          person.setAttribute('aria-label', text);
-          const ziffer = document.createElement('b');
-          ziffer.className = 'rolle-ziffer rolle-' + Classes.rolleZiffer(pn.rolle);
-          ziffer.textContent = Classes.rolleZiffer(pn.rolle);
-          const kz = document.createElement('span');
-          kz.textContent = pn.kuerzel;
-          person.append(ziffer, kz);
-          tdL.appendChild(person);
-        });
-      }
+      const name = document.createElement('button');
+      name.type = 'button';
+      name.className = 'mname';
+      name.textContent = m.name;
+      name.title = 'Steckbrief zeigen – nochmal tippen zum Schließen';
+      name.addEventListener('click', () => this.mitgliedZeigen(m.id === this.aktivesMitglied ? null : m.id));
 
-      const tdN = document.createElement('td');
-      const namensZelle = document.createElement('div');
-      namensZelle.className = 'name-cell';
-      namensZelle.appendChild(this.editable(m.name, '', v => { if (v) { m.name = v; this.save(); this.renderMembers(); } }, 20));
+      li.append(pick, name);
       if (m.studentId) {
         const mark = document.createElement('span');
         mark.className = 'link-mark';
         mark.innerHTML = Icons.raw('check');
         const cls = Classes.data.classes.find(c => c.id === m.classId);
         mark.title = 'Mit der Klassenliste verknüpft' + (cls ? ` (${cls.name})` : '');
-        namensZelle.appendChild(mark);
+        li.appendChild(mark);
       }
-      tdN.appendChild(namensZelle);
-
-      const tdA = document.createElement('td');
-      const sel = document.createElement('select');
-      sel.className = 'small-select';
-      Object.entries(this.AREAS).forEach(([v, label]) => {
-        const o = document.createElement('option');
-        o.value = v; o.textContent = label;
-        if (m.area === v) o.selected = true;
-        sel.appendChild(o);
-      });
-      sel.addEventListener('change', () => { m.area = sel.value; this.save(); this.renderMembers(); });
-      tdA.appendChild(sel);
-
-      const tdI = document.createElement('td');
-      tdI.appendChild(this.editable(m.instrument, '–', v => { m.instrument = v; this.save(); }, 18));
-
-      const tdX = document.createElement('td');
-      const del = document.createElement('button');
-      del.className = 'small danger';
-      del.innerHTML = Icons.raw('x');
-      del.title = 'Aus der Band entfernen';
-      del.addEventListener('click', () => {
-        if (!confirm(`${m.name} aus der Liste entfernen?`)) return;
-        this.d().members = this.d().members.filter(x => x.id !== m.id);
-        this.save();
-        this.renderMembers();
-      });
-      tdX.appendChild(del);
-
-      tr.append(tdK, tdN, tdA, tdI, tdL, tdX);
-      table.appendChild(tr);
+      const instr = document.createElement('span');
+      instr.className = 'minstr';
+      instr.textContent = m.instrument || '';
+      li.appendChild(instr);
+      if (m.area !== 'band') {
+        const tag = document.createElement('span');
+        tag.className = 'bereich-tag bereich-' + m.area;
+        tag.textContent = m.area === 'technik' ? 'Technik' : 'Band + Technik';
+        li.appendChild(tag);
+      }
+      ul.appendChild(li);
     }
     this.auswahlAnzeigen();
+    this.renderBesetzung();
+    this.renderMemberProfil();
+  },
+
+  mitgliedZeigen(id) {
+    this.aktivesMitglied = id;
+    document.querySelectorAll('#member-list li').forEach(li =>
+      li.classList.toggle('aktiv', li.dataset.id === id));
+    this.renderMemberProfil();
+    this.renderBesetzung();
+    if (id && window.matchMedia('(max-width: 800px)').matches) {
+      document.getElementById('member-steckbrief').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  },
+
+  /* Pfeil hoch/runter im Steckbrief: innerhalb der angezeigten Liste */
+  mitgliedBlaettern(dir) {
+    const list = this.filteredMembers();
+    const i = list.findIndex(m => m.id === this.aktivesMitglied);
+    const ziel = list[i + dir];
+    if (ziel) this.mitgliedZeigen(ziel.id);
+  },
+
+  renderMemberProfil() {
+    const box = document.getElementById('member-steckbrief');
+    if (!box) return;
+    const list = this.filteredMembers();
+    const i = list.findIndex(m => m.id === this.aktivesMitglied);
+    const m = list[i];
+    if (!m) { this.aktivesMitglied = null; box.hidden = true; return; }
+    box.hidden = false;
+    document.getElementById('member-profil-name').textContent = m.name;
+    document.getElementById('member-position').textContent = `${i + 1} von ${list.length}`;
+    const vor = document.getElementById('btn-member-vor');
+    const weiter = document.getElementById('btn-member-weiter');
+    vor.disabled = i === 0;
+    weiter.disabled = i === list.length - 1;
+    vor.querySelector('span').textContent = list[i - 1] ? list[i - 1].name : '';
+    weiter.querySelector('span').textContent = list[i + 1] ? list[i + 1].name : '';
+
+    // Felder nicht ueberschreiben, waehrend jemand darin tippt
+    const setze = (id, wert) => {
+      const el = document.getElementById(id);
+      if (document.activeElement !== el) el.value = wert || '';
+    };
+    setze('mp-name', m.name);
+    setze('mp-klasse', m.klasse);
+    setze('mp-bereich', m.area);
+    setze('mp-instrument', m.instrument);
+
+    const dl = document.getElementById('member-profil-angaben');
+    dl.innerHTML = '';
+    const zeile = (dt, inhalt) => {
+      const t = document.createElement('dt'); t.textContent = dt;
+      const d = document.createElement('dd');
+      if (typeof inhalt === 'string') d.textContent = inhalt; else d.appendChild(inhalt);
+      dl.append(t, d);
+    };
+    const personen = Classes.leitungsPersonen(m.klasse);
+    zeile('Klassenleitung', personen.length
+      ? personen.map(pn => `${Classes.rolleZiffer(pn.rolle)}. ${pn.name || pn.kuerzel}`).join(', ')
+      : (m.klasse ? `für „${m.klasse}“ nicht eingetragen (Reiter „Lehrer“)` : '–'));
+    const cls = m.studentId && Classes.data.classes.find(c => c.id === m.classId);
+    zeile('Klassenliste', cls ? `verknüpft (${cls.name})` : 'nicht verknüpft');
+  },
+
+  /* Rechts, solange niemand gewaehlt ist: wer spielt was */
+  renderBesetzung() {
+    const box = document.getElementById('member-besetzung');
+    if (!box) return;
+    box.hidden = !!this.aktivesMitglied;
+    const alle = this.d().members;
+    box.innerHTML = '';
+    const h = document.createElement('h3');
+    h.textContent = 'Besetzung';
+    box.appendChild(h);
+    if (!alle.length) {
+      box.insertAdjacentHTML('beforeend', '<p class="hint">Hier erscheint die Übersicht, sobald Mitglieder aufgenommen sind.</p>');
+      return;
+    }
+    const band = alle.filter(m => m.area !== 'technik').length;
+    const technik = alle.filter(m => m.area !== 'band').length;
+    const klassen = new Set(alle.map(m => (m.klasse || '').trim()).filter(Boolean)).size;
+    const zahlen = document.createElement('div');
+    zahlen.className = 'besetzung-zahlen';
+    [[band, 'Band'], [technik, 'Technik'], [klassen, klassen === 1 ? 'Klasse' : 'Klassen']].forEach(([n, t]) => {
+      const d = document.createElement('div');
+      d.innerHTML = `<b>${n}</b><span>${t}</span>`;
+      zahlen.appendChild(d);
+    });
+    box.appendChild(zahlen);
+
+    // Instrumente zaehlen; Schreibweisen wie „e-bass“ und „E-Bass“ zusammenfassen
+    const zaehler = new Map();
+    for (const m of alle) {
+      if (m.area === 'technik') continue;
+      const roh = (m.instrument || '').trim() || 'ohne Angabe';
+      const key = roh.toLowerCase();
+      const e = zaehler.get(key) || { name: roh, n: 0 };
+      e.n++;
+      zaehler.set(key, e);
+    }
+    if (zaehler.size) {
+      const chips = document.createElement('div');
+      chips.className = 'besetzung-chips';
+      [...zaehler.values()].sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, 'de'))
+        .forEach(e => {
+          const c = document.createElement('span');
+          c.className = 'besetzung-chip';
+          c.textContent = e.name;
+          const n = document.createElement('b');
+          n.textContent = e.n;
+          c.appendChild(n);
+          chips.appendChild(c);
+        });
+      box.appendChild(chips);
+    }
   },
 
   /* Textzelle, die beim Klick zum Eingabefeld wird */

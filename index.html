@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=188">
+<link rel="stylesheet" href="style.css?v=189">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=188"></script>
-<script src="js/theme.js?v=188"></script>
-<script src="js/auth.js?v=188"></script>
+<script src="js/icons.js?v=189"></script>
+<script src="js/theme.js?v=189"></script>
+<script src="js/auth.js?v=189"></script>
 </head>
 <body>
 
@@ -563,60 +563,92 @@
 
   <!-- Mitglieder -->
   <section id="bandtab-mitglieder" class="bandtab-page active card">
-    <div class="projekt-header">
-      <h3>Mitglieder (<span id="member-count">0</span>)</h3>
-      <div class="btn-row">
-        <label class="check-label">Anzeigen:
-          <select id="member-filter">
+    <div class="two-col band-mitglieder">
+      <div>
+        <h3>Mitglieder (<span id="member-count">0</span>)</h3>
+        <div class="btn-row">
+          <select id="member-filter" class="small-select" title="Welche Mitglieder angezeigt (und gedruckt) werden">
             <option value="alle">Band und Technik</option>
             <option value="band">nur Schulband</option>
             <option value="technik">nur Technikteam</option>
           </select>
-        </label>
-        <button id="btn-sync-members" data-icon="users" title="Mitglieder mit den Schülern aus deinen Klassenlisten verknüpfen">Mit Klassen abgleichen</button>
-        <button id="btn-print-members" data-icon="printer">Alle drucken</button>
-        <button id="btn-print-members-sel" data-icon="printer">Ausgewählte drucken</button>
-        <input type="text" id="member-anlass" size="18" autocomplete="off"
-               title="Erscheint auf dem Ausdruck unter der Überschrift – z.&thinsp;B. „Probe 14.09., 3.–6. Stunde“"
-               placeholder="Anlass (optional)">
-        <button id="btn-export-members" data-icon="download">CSV</button>
-        <button id="btn-namen-fenster" data-icon="window" title="Kleines Fenster mit Klassen und Namen zum schnellen Kopieren">Namen-Fenster</button>
+          <button id="btn-print-members" class="small" data-icon="printer" title="Alle angezeigten Mitglieder drucken">Alle drucken</button>
+          <button id="btn-print-members-sel" class="small" data-icon="printer" title="Nur die angekreuzten Mitglieder drucken – z.&thinsp;B. für eine Befreiung">Ausgewählte drucken</button>
+          <button id="btn-export-members" class="small" data-icon="download" title="Mitgliederliste als CSV speichern">CSV</button>
+          <button id="btn-namen-fenster" class="small" data-icon="window" title="Kleines Fenster mit Klassen und Namen zum schnellen Kopieren">Namen-Fenster</button>
+          <button id="btn-sync-members" class="small" data-icon="users" title="Mitglieder mit den Schülern aus deinen Klassenlisten verknüpfen">Abgleichen</button>
+        </div>
+        <div class="member-auswahl-zeile">
+          <label class="check-label" title="Alle angezeigten an- oder abwählen">
+            <input type="checkbox" id="member-pick-all"> alle</label>
+          <input type="text" id="member-anlass" autocomplete="off"
+                 title="Erscheint auf dem Ausdruck unter der Überschrift – z.&thinsp;B. „Probe 14.09., 3.–6. Stunde“"
+                 placeholder="Anlass für den Ausdruck (optional)">
+        </div>
+        <div id="member-list" class="member-list"></div>
+        <p class="hint">Kästchen ankreuzen und <strong>Ausgewählte drucken</strong> nehmen, z.&thinsp;B. für eine Befreiung.
+          Ein Klick auf einen Namen öffnet rechts den Steckbrief zum Bearbeiten.</p>
+      </div>
+
+      <div class="schueler-rechts">
+        <div id="member-steckbrief" class="steckbrief member-steckbrief" hidden>
+          <div class="profil-blaettern">
+            <button id="btn-member-vor" class="small" title="Voriges Mitglied (Pfeil hoch)"><kbd>↑</kbd> <span></span></button>
+            <span id="member-position" class="hint"></span>
+            <button id="btn-member-weiter" class="small" title="Nächstes Mitglied (Pfeil runter)"><span></span> <kbd>↓</kbd></button>
+            <button id="btn-member-zu" class="small steckbrief-zu" title="Schließen (Esc)" aria-label="Steckbrief schließen">×</button>
+          </div>
+          <h2 id="member-profil-name"></h2>
+          <div class="member-felder">
+            <label>Name <input type="text" id="mp-name" autocomplete="off"></label>
+            <label>Klasse <input type="text" id="mp-klasse" size="6" autocomplete="off" placeholder="z.&thinsp;B. 7c"></label>
+            <label>Bereich <select id="mp-bereich">
+              <option value="band">Schulband</option>
+              <option value="technik">Technikteam</option>
+              <option value="beide">Band + Technik</option>
+            </select></label>
+            <label>Instrument / Aufgabe <input type="text" id="mp-instrument" autocomplete="off"></label>
+          </div>
+          <dl id="member-profil-angaben" class="profil-angaben"></dl>
+          <div class="btn-row">
+            <button id="btn-member-entfernen" class="small danger" data-icon="trash">Aus der Band entfernen</button>
+          </div>
+        </div>
+
+        <div id="member-besetzung" class="member-besetzung"></div>
+
+        <details class="member-aufnehmen">
+          <summary data-icon="plus">Mitglied aufnehmen</summary>
+          <form id="form-new-member" class="member-felder">
+            <select id="member-from-class" title="Schüler aus einer bereits angelegten Klasse übernehmen">
+              <option value="">aus Klasse übernehmen …</option>
+            </select>
+            <label>Name <input type="text" id="member-name" required autocomplete="off"></label>
+            <label>Klasse <input type="text" id="member-class" placeholder="z.&thinsp;B. 7c" size="6" autocomplete="off"></label>
+            <label>Bereich <select id="member-area">
+              <option value="band">Schulband</option>
+              <option value="technik">Technikteam</option>
+              <option value="beide">beides</option>
+            </select></label>
+            <label>Instrument / Aufgabe <input type="text" id="member-instrument" autocomplete="off"></label>
+            <div class="btn-row"><button type="submit" class="primary" data-icon="plus">Aufnehmen</button></div>
+          </form>
+        </details>
+
+        <details class="member-aufnehmen">
+          <summary data-icon="list">Mehrere auf einmal einfügen</summary>
+          <p class="hint">Eine Zeile pro Person, Felder mit <code>;</code> oder Tabulator getrennt:
+            <code>Name; Klasse; Instrument</code>. Eine führende Nummer wird ignoriert, du kannst
+            also auch direkt aus einer Tabelle kopieren. Steht als Instrument „Tech“, landet die
+            Person automatisch im Technikteam – alle anderen im Bereich, der bei „Mitglied aufnehmen“ eingestellt ist.</p>
+          <textarea id="member-bulk" rows="6" spellcheck="false"
+            placeholder="Timm, Nico; 7a; E-Bass&#10;Kellerer, Alexander; 7b; E-Bass&#10;Lingelbach, Ina; 7e; Tech"></textarea>
+          <div class="btn-row">
+            <button id="btn-bulk-members" class="primary" data-icon="plus">Alle aufnehmen</button>
+          </div>
+        </details>
       </div>
     </div>
-    <p class="hint">Die Liste ist nach Klassen sortiert (5a, 5b, 6a … 10d). Schüler ohne Klassenangabe stehen am Ende.
-      Für eine Befreiung die Kästchen der betroffenen Schüler ankreuzen und <strong>Ausgewählte drucken</strong>
-      nehmen; das Kästchen in der Kopfzeile wählt alle an oder ab.</p>
-    <table class="band-table" id="member-table"></table>
-
-    <hr>
-    <h3>Mitglied aufnehmen</h3>
-    <form id="form-new-member" class="inline-form">
-      <select id="member-from-class" title="Schüler aus einer bereits angelegten Klasse übernehmen">
-        <option value="">aus Klasse übernehmen …</option>
-      </select>
-      <input type="text" id="member-name" placeholder="Name" required>
-      <input type="text" id="member-class" placeholder="Klasse, z.&thinsp;B. 7c" size="8">
-      <select id="member-area">
-        <option value="band">Schulband</option>
-        <option value="technik">Technikteam</option>
-        <option value="beide">beides</option>
-      </select>
-      <input type="text" id="member-instrument" placeholder="Instrument / Aufgabe">
-      <button type="submit" class="primary" data-icon="plus">Aufnehmen</button>
-    </form>
-
-    <details class="ai-settings">
-      <summary class="hint">Mehrere Mitglieder auf einmal einfügen</summary>
-      <p class="hint">Eine Zeile pro Person, Felder mit <code>;</code> oder Tabulator getrennt:
-        <code>Name; Klasse; Instrument</code>. Eine führende Nummer wird ignoriert, du kannst
-        also auch direkt aus einer Tabelle kopieren. Steht als Instrument „Tech“, landet die
-        Person automatisch im Technikteam – alle anderen im Bereich, der oben eingestellt ist.</p>
-      <textarea id="member-bulk" rows="6" spellcheck="false"
-        placeholder="Timm, Nico; 7a; E-Bass&#10;Kellerer, Alexander; 7b; E-Bass&#10;Lingelbach, Ina; 7e; Tech"></textarea>
-      <div class="btn-row">
-        <button id="btn-bulk-members" class="primary" data-icon="plus">Alle aufnehmen</button>
-      </div>
-    </details>
   </section>
 
   <!-- Songs -->
@@ -1066,35 +1098,35 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=188"></script>
-<script src="js/firebase-config.js?v=188"></script>
-<script type="module" src="js/live-firebase.js?v=188"></script>
-<script src="js/topics-seed.js?v=188"></script>
-<script src="js/ai-import.js?v=188"></script>
-<script src="js/store.js?v=188"></script>
-<script src="js/noise.js?v=188"></script>
-<script src="js/classes.js?v=188"></script>
-<script src="js/sitzplan.js?v=188"></script>
-<script src="js/schueler.js?v=188"></script>
-<script src="js/tasten.js?v=188"></script>
-<script src="js/lessons.js?v=188"></script>
-<script src="js/band.js?v=188"></script>
-<script src="js/notes.js?v=188"></script>
-<script src="js/tresor.js?v=188"></script>
-<script src="js/erklaerungen.js?v=188"></script>
-<script src="js/setlisten.js?v=188"></script>
-<script src="js/einklappen.js?v=188"></script>
-<script src="js/tinyband-instrumente.js?v=188"></script>
-<script src="js/live-groups.js?v=188"></script>
-<script src="js/tinyband-lehrer.js?v=188"></script>
-<script src="js/tipps.js?v=188"></script>
-<script src="js/sport-tabellen.js?v=188"></script>
-<script src="js/sport.js?v=188"></script>
-<script src="js/ex-import.js?v=188"></script>
-<script src="js/exen.js?v=188"></script>
-<script src="js/ex-sitzung.js?v=188"></script>
-<script src="js/ex-auswertung.js?v=188"></script>
-<script src="js/tools.js?v=188"></script>
-<script src="js/app.js?v=188"></script>
+<script src="js/vendor/qrcode.min.js?v=189"></script>
+<script src="js/firebase-config.js?v=189"></script>
+<script type="module" src="js/live-firebase.js?v=189"></script>
+<script src="js/topics-seed.js?v=189"></script>
+<script src="js/ai-import.js?v=189"></script>
+<script src="js/store.js?v=189"></script>
+<script src="js/noise.js?v=189"></script>
+<script src="js/classes.js?v=189"></script>
+<script src="js/sitzplan.js?v=189"></script>
+<script src="js/schueler.js?v=189"></script>
+<script src="js/tasten.js?v=189"></script>
+<script src="js/lessons.js?v=189"></script>
+<script src="js/band.js?v=189"></script>
+<script src="js/notes.js?v=189"></script>
+<script src="js/tresor.js?v=189"></script>
+<script src="js/erklaerungen.js?v=189"></script>
+<script src="js/setlisten.js?v=189"></script>
+<script src="js/einklappen.js?v=189"></script>
+<script src="js/tinyband-instrumente.js?v=189"></script>
+<script src="js/live-groups.js?v=189"></script>
+<script src="js/tinyband-lehrer.js?v=189"></script>
+<script src="js/tipps.js?v=189"></script>
+<script src="js/sport-tabellen.js?v=189"></script>
+<script src="js/sport.js?v=189"></script>
+<script src="js/ex-import.js?v=189"></script>
+<script src="js/exen.js?v=189"></script>
+<script src="js/ex-sitzung.js?v=189"></script>
+<script src="js/ex-auswertung.js?v=189"></script>
+<script src="js/tools.js?v=189"></script>
+<script src="js/app.js?v=189"></script>
 </body>
 </html>

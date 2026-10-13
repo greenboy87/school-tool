@@ -644,6 +644,70 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
 }
 #btn-print-members-sel:disabled { opacity: .5; cursor: default; }
+/* Mitglieder: kompakte Liste wie die Klassenliste, Bearbeiten im Steckbrief */
+.band-mitglieder h3 { margin-top: 0; }
+.band-mitglieder .btn-row { flex-wrap: wrap; }
+.member-auswahl-zeile { display: flex; gap: .8rem; align-items: center; margin: .7rem 0 .3rem; }
+.member-auswahl-zeile #member-anlass { flex: 1; min-width: 0; }
+.member-list { margin: .3rem 0 .8rem; }
+.member-gruppe-kopf {
+  display: flex; align-items: baseline; gap: .7rem;
+  margin: .7rem 0 .15rem; padding-bottom: .15rem; border-bottom: 1px solid var(--border);
+}
+.member-gruppe-klasse { font-weight: 700; font-size: .85rem; color: var(--muted); letter-spacing: .02em; }
+.member-zeilen { list-style: none; margin: 0; padding: 0; }
+.member-zeilen li {
+  display: flex; align-items: center; gap: .45rem;
+  padding: .12rem .35rem; border-radius: var(--radius-sm); line-height: 1.6;
+}
+.member-zeilen li:hover { background: var(--hover); }
+.member-zeilen li.gewaehlt { background: var(--active-soft); }
+.member-zeilen li.aktiv { background: var(--active-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.member-zeilen li.aktiv .mname { color: var(--accent); font-weight: 600; }
+.member-zeilen .mname {
+  border: none; background: none; padding: 0; font: inherit; color: var(--text);
+  cursor: pointer; text-align: left;
+}
+.member-zeilen .mname:hover { color: var(--accent); text-decoration: underline; }
+.member-zeilen .minstr { margin-left: auto; color: var(--muted); font-size: .85rem; text-align: right; }
+.bereich-tag {
+  font-size: .7rem; font-weight: 600; padding: .05rem .45rem; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--muted); white-space: nowrap;
+}
+.bereich-tag.bereich-technik { color: var(--green); border-color: color-mix(in srgb, var(--green) 45%, transparent); }
+.bereich-tag.bereich-beide { color: var(--accent-soft); border-color: color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+.member-steckbrief h2 { margin: .4rem 0 .7rem; font-size: 1.35rem; }
+.member-felder { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem .8rem; margin-bottom: .8rem; }
+.member-felder label { display: flex; flex-direction: column; gap: .2rem; font-size: .8rem; color: var(--muted); }
+.member-felder input, .member-felder select {
+  font: inherit; font-size: .92rem; padding: .35rem .5rem; color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg);
+}
+.member-felder > select, .member-felder > .btn-row { grid-column: 1 / -1; }
+.member-besetzung, .member-aufnehmen {
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: .8rem 1rem; margin-bottom: .8rem;
+}
+.member-besetzung h3 { margin: 0 0 .6rem; font-size: 1rem; }
+.besetzung-zahlen { display: flex; gap: 1.4rem; margin-bottom: .8rem; }
+.besetzung-zahlen div { display: flex; flex-direction: column; }
+.besetzung-zahlen b { font-size: 1.6rem; line-height: 1.1; color: var(--accent-soft); }
+.besetzung-zahlen span { font-size: .78rem; color: var(--muted); }
+.besetzung-chips { display: flex; flex-wrap: wrap; gap: .35rem; }
+.besetzung-chip {
+  display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem;
+  padding: .15rem .3rem .15rem .6rem; border-radius: 999px; background: var(--hover);
+}
+.besetzung-chip b {
+  font-size: .75rem; min-width: 1.3rem; text-align: center; padding: .05rem .3rem;
+  border-radius: 999px; background: var(--active-soft); color: var(--accent-soft);
+}
+.member-aufnehmen summary { cursor: pointer; font-weight: 600; }
+.member-aufnehmen[open] summary { margin-bottom: .7rem; }
+.member-aufnehmen textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: .88rem; }
+@media screen and (max-width: 520px) {
+  .member-felder { grid-template-columns: 1fr; }
+}
 .cell-input {
   width: 100%; min-width: 3em; padding: .25rem .4rem; font: inherit; font-size: .88rem;
   border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text);
@@ -654,7 +718,7 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .cell-input.notes { resize: vertical; min-height: 2em; }
 .small-select { padding: .2rem .3rem; font-size: .85rem; }
 .songs-table td:nth-child(7) { min-width: 14rem; }
-#member-table td:nth-child(2), #song-table td:nth-child(2) { min-width: 12rem; }
+#song-table td:nth-child(2) { min-width: 12rem; }
 #project-title { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
 .project-name { font-size: 1rem; font-weight: 600; min-width: 16rem; border-color: var(--border); }
 .project-date { width: 10rem; border-color: var(--border); }
