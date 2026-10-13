@@ -948,7 +948,7 @@ const ExAuswertung = {
       .stdr-tab td.p { width: 15mm; text-align: right; white-space: nowrap; }
       .stdr-tab td.loes { color: #555; font-style: italic; width: 40%; }
       .stdr-tab td.frei { white-space: pre-wrap; }
-      .stdr-schluessel { width: 100%; border-collapse: collapse; margin-top: 12pt; font-size: 8.5pt; text-align: center; break-inside: avoid; }
+      .stdr-schluessel { width: calc(100% - 2px); border-collapse: collapse; margin-top: 12pt; font-size: 8.5pt; text-align: center; break-inside: avoid; }
       .stdr-schluessel td { border: 1px solid #999; padding: 2pt; }
       .stdr-unten { margin-top: 14pt; }
       .stdr-tab h3, .stdr-tab tr { break-inside: avoid; }
