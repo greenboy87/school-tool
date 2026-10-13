@@ -37,8 +37,8 @@ const ExAuswertung = {
       if (!b) return;
       if (b.dataset.aktion === 'zu') this.schueleransichtSchliessen();
       if (b.dataset.aktion === 'vollbild') {
-        if (document.fullscreenElement) document.exitFullscreen();
-        else if (sa.requestFullscreen) sa.requestFullscreen().catch(() => {});
+        if (document.fullscreenElement || document.webkitFullscreenElement) this.vollbildAus();
+        else this.vollbild();
       }
     });
     const inhalt = document.getElementById('ex-auswertung-inhalt');
@@ -368,7 +368,11 @@ const ExAuswertung = {
     const a = this.a, esc = s => Band.esc(s);
     const inhalt = document.getElementById('ex-auswertung-inhalt');
     inhalt.innerHTML = `
-      <h3>${esc(a.gruppe.exNummer)}. ${esc(a.meta.art || 'Ex')}: ${esc(a.meta.titel)} · ${esc(a.gruppe.klasse)}</h3>
+      <div class="ex-auswertung-kopf">
+        <h3>${esc(a.gruppe.exNummer)}. ${esc(a.meta.art || 'Ex')}: ${esc(a.meta.titel)} · ${esc(a.gruppe.klasse)}</h3>
+        <button class="primary" data-aktion="schueleransicht-voll" data-icon="eye"
+          title="Notenbild für die Klasse: Punkte je Note, Anzahl und Durchschnitt – ohne Namen">Schüleransicht im Vollbild</button>
+      </div>
       <div class="ex-notenschluessel">
         <div>
           <h4>Notenschlüssel <span class="hint">(${this.fmt(a.meta.punkteGesamt)} Punkte)</span></h4>
@@ -519,8 +523,20 @@ const ExAuswertung = {
     document.body.classList.add('ex-korrektur-offen');
   },
 
+  /* Vollbild; Safari auf dem iPad kennt nur die webkit-Fassung */
+  vollbild() {
+    const el = document.getElementById('ex-schueleransicht');
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  },
+
+  vollbildAus() {
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    else if (document.webkitFullscreenElement && document.webkitExitFullscreen) document.webkitExitFullscreen();
+  },
+
   schueleransichtSchliessen() {
-    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    this.vollbildAus();
     document.getElementById('ex-schueleransicht').hidden = true;
     document.body.classList.remove('ex-korrektur-offen');
   },
@@ -758,6 +774,7 @@ const ExAuswertung = {
       case 'archivieren': this.archivieren(); break;
       case 'endgueltig-loeschen': this.endgueltigLoeschen(); break;
       case 'schueleransicht': this.schueleransicht(); break;
+      case 'schueleransicht-voll': this.schueleransicht(); this.vollbild(); break;
       case 'export-csv': this.exportCsv(); break;
       case 'drucken': this.drucken(document.getElementById('ex-druck-loesungen').checked); break;
       case 'neu-bewerten': this.oeffnen(this.a.key); break;

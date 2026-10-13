@@ -1863,3 +1863,11 @@ body.ex-korrektur-offen { overflow: hidden; }
 .ex-schnell-eintrag.active { border-color: var(--accent); background: var(--active-soft); }
 .ex-schnell-eintrag:disabled { cursor: default; opacity: .6; }
 .ex-ganze-bib { align-self: flex-start; }
+
+.ex-auswertung-kopf { display: flex; align-items: center; justify-content: space-between; gap: .6rem 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.ex-auswertung-kopf h3 { margin: 0; }
+.ex-schueleransicht:fullscreen { background: var(--page-bg, var(--bg)); background-color: var(--bg); display: flex; flex-direction: column; }
+.ex-schueleransicht:fullscreen .ex-sa-inhalt { max-width: min(70rem, 92vw); margin: auto; width: 100%; }
+.ex-schueleransicht:fullscreen .ex-sa-tabelle { font-size: min(3.4vw, 4.6vh); }
+.ex-schueleransicht:fullscreen h2 { font-size: min(4.2vw, 6vh); }
+.ex-schueleransicht:fullscreen .ex-sa-schnitt { font-size: min(3.6vw, 5vh); }
