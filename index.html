@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=192">
+<link rel="stylesheet" href="style.css?v=194">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=192"></script>
-<script src="js/theme.js?v=192"></script>
-<script src="js/auth.js?v=192"></script>
+<script src="js/icons.js?v=194"></script>
+<script src="js/theme.js?v=194"></script>
+<script src="js/auth.js?v=194"></script>
 </head>
 <body>
 
@@ -197,11 +197,13 @@
                   <button id="btn-steckbrief-zu" class="small steckbrief-zu" title="Schüler abwählen (Esc)" aria-label="Steckbrief schließen">×</button>
                 </div>
                 <div class="profil-kopf">
-                  <div id="profil-foto" class="profil-foto ohne"></div>
+                  <div id="profil-foto" class="profil-foto ohne" title="Foto hochladen – oder ein Bild hierher ziehen"></div>
+                  <input type="file" id="profil-foto-datei" accept="image/*" hidden>
                   <div class="profil-kopf-text">
                     <h2 id="profil-name"></h2>
                     <dl id="profil-angaben" class="profil-angaben"></dl>
-                    <div id="profil-foto-hinweis" class="hint" hidden>Noch kein Foto – im Sitzplan unter „Gesichter zuordnen“ nachtragen.</div>
+                    <div id="profil-foto-hinweis" class="hint" hidden>Noch kein Foto – hier hochladen oder im Sitzplan unter „Gesichter zuordnen“ nachtragen.</div>
+                    <button id="btn-profil-foto" class="small" data-icon="upload" title="Foto hochladen – erscheint auch im Sitzplan">Foto hochladen</button>
                   </div>
                 </div>
                 <h3>Noten</h3>
@@ -606,10 +608,16 @@
           </div>
           <div class="profil-kopf member-kopf">
             <div id="member-foto" class="profil-foto ohne"></div>
+            <input type="file" id="member-foto-datei" accept="image/*" hidden>
             <div class="profil-kopf-text">
               <h2 id="member-profil-name"></h2>
-              <button id="btn-member-zum-schueler" class="small" data-icon="users" hidden
-                      title="Im Reiter „Klassen“ den Steckbrief mit Noten und Notizen öffnen">Schüler-Steckbrief öffnen</button>
+              <div class="btn-row">
+                <button id="btn-member-foto" class="small" data-icon="upload" hidden
+                        title="Foto hochladen – erscheint auch im Sitzplan und im Schüler-Steckbrief">Foto hochladen</button>
+                <button id="btn-member-zum-schueler" class="small" data-icon="users" hidden
+                        title="Im Reiter „Klassen“ den Steckbrief mit Noten und Notizen öffnen">Schüler-Steckbrief öffnen</button>
+              </div>
+              <p id="member-foto-hinweis" class="hint" hidden>Für ein Foto zuerst mit der Klassenliste verknüpfen („Abgleichen“ oder über die Suche aufnehmen).</p>
             </div>
           </div>
           <div class="member-felder">
@@ -1186,35 +1194,35 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=192"></script>
-<script src="js/firebase-config.js?v=192"></script>
-<script type="module" src="js/live-firebase.js?v=192"></script>
-<script src="js/topics-seed.js?v=192"></script>
-<script src="js/ai-import.js?v=192"></script>
-<script src="js/store.js?v=192"></script>
-<script src="js/noise.js?v=192"></script>
-<script src="js/classes.js?v=192"></script>
-<script src="js/sitzplan.js?v=192"></script>
-<script src="js/schueler.js?v=192"></script>
-<script src="js/tasten.js?v=192"></script>
-<script src="js/lessons.js?v=192"></script>
-<script src="js/band.js?v=192"></script>
-<script src="js/notes.js?v=192"></script>
-<script src="js/tresor.js?v=192"></script>
-<script src="js/erklaerungen.js?v=192"></script>
-<script src="js/setlisten.js?v=192"></script>
-<script src="js/einklappen.js?v=192"></script>
-<script src="js/tinyband-instrumente.js?v=192"></script>
-<script src="js/live-groups.js?v=192"></script>
-<script src="js/tinyband-lehrer.js?v=192"></script>
-<script src="js/tipps.js?v=192"></script>
-<script src="js/sport-tabellen.js?v=192"></script>
-<script src="js/sport.js?v=192"></script>
-<script src="js/ex-import.js?v=192"></script>
-<script src="js/exen.js?v=192"></script>
-<script src="js/ex-sitzung.js?v=192"></script>
-<script src="js/ex-auswertung.js?v=192"></script>
-<script src="js/tools.js?v=192"></script>
-<script src="js/app.js?v=192"></script>
+<script src="js/vendor/qrcode.min.js?v=194"></script>
+<script src="js/firebase-config.js?v=194"></script>
+<script type="module" src="js/live-firebase.js?v=194"></script>
+<script src="js/topics-seed.js?v=194"></script>
+<script src="js/ai-import.js?v=194"></script>
+<script src="js/store.js?v=194"></script>
+<script src="js/noise.js?v=194"></script>
+<script src="js/classes.js?v=194"></script>
+<script src="js/sitzplan.js?v=194"></script>
+<script src="js/schueler.js?v=194"></script>
+<script src="js/tasten.js?v=194"></script>
+<script src="js/lessons.js?v=194"></script>
+<script src="js/band.js?v=194"></script>
+<script src="js/notes.js?v=194"></script>
+<script src="js/tresor.js?v=194"></script>
+<script src="js/erklaerungen.js?v=194"></script>
+<script src="js/setlisten.js?v=194"></script>
+<script src="js/einklappen.js?v=194"></script>
+<script src="js/tinyband-instrumente.js?v=194"></script>
+<script src="js/live-groups.js?v=194"></script>
+<script src="js/tinyband-lehrer.js?v=194"></script>
+<script src="js/tipps.js?v=194"></script>
+<script src="js/sport-tabellen.js?v=194"></script>
+<script src="js/sport.js?v=194"></script>
+<script src="js/ex-import.js?v=194"></script>
+<script src="js/exen.js?v=194"></script>
+<script src="js/ex-sitzung.js?v=194"></script>
+<script src="js/ex-auswertung.js?v=194"></script>
+<script src="js/tools.js?v=194"></script>
+<script src="js/app.js?v=194"></script>
 </body>
 </html>

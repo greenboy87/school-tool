@@ -998,6 +998,10 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
   box-shadow: 0 2px 10px rgba(0, 0, 0, .12);
 }
 .profil-foto.ohne { border: 2px dashed var(--border); box-shadow: none; }
+/* Foto im Steckbrief: anklicken oder ein Bild darauf ziehen zum Hochladen */
+#profil-foto, .profil-foto.hochladbar { cursor: pointer; transition: outline-color .15s; outline: 2px solid transparent; outline-offset: 2px; }
+#profil-foto:hover, .profil-foto.hochladbar:hover, .profil-foto.ziel { outline-color: var(--accent); }
+#btn-profil-foto { margin-top: .2rem; }
 .profil-kopf-text { flex: 1; min-width: 10rem; }
 .profil-kopf-text h2 { margin: 0 0 .5rem; font-size: 1.35rem; }
 .profil-angaben { display: grid; grid-template-columns: auto 1fr; gap: .3rem 1rem; margin: 0 0 .8rem; }

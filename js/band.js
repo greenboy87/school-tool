@@ -67,6 +67,11 @@ const Band = {
         zeilen[Math.min(this.suchMarkiert, zeilen.length - 1)].click();
       }
     });
+    Schueler.fotoFeldVerdrahten(document.getElementById('member-foto'),
+      document.getElementById('btn-member-foto'), document.getElementById('member-foto-datei'), () => {
+        const m = this.d().members.find(x => x.id === this.aktivesMitglied);
+        return m ? this.schuelerVon(m) : null;
+      });
     document.getElementById('btn-member-zum-schueler').addEventListener('click', () => {
       const m = this.d().members.find(x => x.id === this.aktivesMitglied);
       if (m && m.studentId) Schueler.oeffne(m.classId, m.studentId);
@@ -747,8 +752,15 @@ const Band = {
     if (!m) { this.aktivesMitglied = null; box.hidden = true; return; }
     box.hidden = false;
     document.getElementById('member-profil-name').textContent = m.name;
-    this.gesichtFuerMitglied(document.getElementById('member-foto'), m, 320);
-    document.getElementById('btn-member-zum-schueler').hidden = !this.schuelerVon(m);
+    const hatFoto = this.gesichtFuerMitglied(document.getElementById('member-foto'), m, 320);
+    const verknuepft = !!this.schuelerVon(m);
+    document.getElementById('btn-member-zum-schueler').hidden = !verknuepft;
+    const fotoKnopf = document.getElementById('btn-member-foto');
+    fotoKnopf.hidden = !verknuepft;
+    fotoKnopf.innerHTML = Icons.raw('upload') + (hatFoto ? 'Foto ersetzen' : 'Foto hochladen');
+    document.getElementById('member-foto').classList.toggle('hochladbar', verknuepft);
+    document.getElementById('member-foto').title = verknuepft ? 'Foto hochladen – oder ein Bild hierher ziehen' : '';
+    document.getElementById('member-foto-hinweis').hidden = verknuepft;
     document.getElementById('member-position').textContent = `${i + 1} von ${list.length}`;
     const vor = document.getElementById('btn-member-vor');
     const weiter = document.getElementById('btn-member-weiter');

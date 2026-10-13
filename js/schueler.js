@@ -10,6 +10,11 @@ const Schueler = {
   _ausschnitte: {},       // Ausschnitt-Schlüssel → dataURL
 
   init() {
+    const foto = document.getElementById('profil-foto');
+    if (foto) {
+      this.fotoFeldVerdrahten(foto, document.getElementById('btn-profil-foto'),
+        document.getElementById('profil-foto-datei'), () => this.gewaehlt());
+    }
     const notiz = document.getElementById('profil-notiz');
     if (notiz) {
       notiz.addEventListener('input', () => {
@@ -272,6 +277,8 @@ const Schueler = {
     const quelle = this.fotoQuelle(t, andere);
     if (quelle) this.gesichtEinsetzen(foto, quelle.cls, quelle.s, 320);
     document.getElementById('profil-foto-hinweis').hidden = !!quelle;
+    document.getElementById('btn-profil-foto').innerHTML =
+      Icons.raw('upload') + (quelle ? 'Foto ersetzen' : 'Foto hochladen');
 
     // Steckbrief-Zeilen
     const angaben = document.getElementById('profil-angaben');
@@ -361,6 +368,50 @@ const Schueler = {
   /* ---------- Gesichter ausschneiden ---------- */
 
   /* Zu Beginn jeder Anzeige: Das Klassenfoto könnte inzwischen ein anderes sein */
+  /* Foto aus einem Steckbrief hochladen (Klassen oder Band). Alles, was
+     Gesichter zeigt, wird danach neu gezeichnet. */
+  async fotoHochladen(cls, s, datei) {
+    if (!datei || !/^image\//.test(datei.type)) { alert('Bitte eine Bilddatei wählen (JPG oder PNG).'); return; }
+    try {
+      await Sitzplan.einzelfotoSetzen(cls, s.id, datei);
+    } catch (e) {
+      alert('Das Foto konnte nicht gespeichert werden.\n\n' + (e.message || e));
+      return;
+    }
+    this._ausschnitte = {};
+    this.neuerDurchgang();
+    if (Classes.currentClass() && Classes.currentClass().id === cls.id) {
+      Classes.renderStudents();
+      Sitzplan.render();
+    }
+    this.zeigeProfil();
+    if (typeof Band !== 'undefined') Band.renderMembers();
+  },
+
+  /* Ein Foto-Feld zum Hochladen machen: Klick oeffnet den Dateidialog,
+     ein Bild darauf ziehen geht auch. wer() liefert { cls, s } oder null. */
+  fotoFeldVerdrahten(feld, knopf, eingabe, wer) {
+    const waehlen = () => { if (wer()) eingabe.click(); };
+    feld.addEventListener('click', waehlen);
+    knopf.addEventListener('click', waehlen);
+    eingabe.addEventListener('change', () => {
+      const t = wer();
+      const datei = eingabe.files[0];
+      eingabe.value = '';
+      if (t && datei) this.fotoHochladen(t.cls, t.s, datei);
+    });
+    feld.addEventListener('dragover', e => { if (wer()) { e.preventDefault(); feld.classList.add('ziel'); } });
+    feld.addEventListener('dragleave', () => feld.classList.remove('ziel'));
+    feld.addEventListener('drop', e => {
+      feld.classList.remove('ziel');
+      const t = wer();
+      const datei = e.dataTransfer && e.dataTransfer.files[0];
+      if (!t || !datei) return;
+      e.preventDefault();
+      this.fotoHochladen(t.cls, t.s, datei);
+    });
+  },
+
   neuerDurchgang() { this._bilder = {}; },
 
   async gesichtEinsetzen(el, cls, s, kante = 96) {

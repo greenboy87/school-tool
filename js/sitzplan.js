@@ -586,6 +586,7 @@ const Sitzplan = {
     if (!this.hatFotos(cls)) return 0;
     const zaehler = {};
     for (const r of Object.values(cls.fotos.bilder)) {
+      if (r.e) continue;            // Einzelfotos aus dem Steckbrief sind kein Klassenfoto
       const q = r.q || 0;
       zaehler[q] = (zaehler[q] || 0) + 1;
     }
@@ -1629,6 +1630,47 @@ const Sitzplan = {
      alten Schluessel ohne Nummer – damit bleiben vorhandene Klassen lesbar. */
   fotoSchluessel(cls, q = 0) {
     return 'klassenfoto-' + cls.id + (q ? '-' + q : '');
+  },
+
+  /* Ein einzelnes Foto fuer einen Schueler – aus dem Steckbrief hochgeladen.
+     Es wird ein eigenes Quellbild mit Vollausschnitt (e: 1 = Einzelfoto),
+     quadratisch zugeschnitten, das Gesicht eher oben vermutet. Danach
+     erscheint es ueberall, wo Gesichter auftauchen: Sitzplan, Steckbriefe,
+     Klassen- und Bandliste. */
+  async einzelfotoSetzen(cls, schuelerId, datei) {
+    const bild = await this.bildAusDatei(datei);
+    try {
+      const img = await new Promise((fertig, schief) => {
+        const i = new Image();
+        i.onload = () => fertig(i);
+        i.onerror = () => schief(new Error('Bildformat wird nicht unterstützt.'));
+        i.src = bild.url;
+      });
+      const seite = Math.min(bild.breite, bild.hoehe);
+      const x = (bild.breite - seite) / 2;
+      const y = (bild.hoehe - seite) * 0.3;   // Hochformat: Kopf sitzt im oberen Drittel
+      const kante = Math.min(600, seite);
+      const c = document.createElement('canvas');
+      c.width = c.height = kante;
+      c.getContext('2d').drawImage(img, x, y, seite, seite, 0, 0, kante, kante);
+      const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+      if (!blob) throw new Error('Das Bild ließ sich nicht umwandeln.');
+
+      const alt = this.bildVon(cls, schuelerId);
+      const q = this.hatFotos(cls) ? this.fotoAnzahl(cls) : 1;   // 0 bleibt dem Klassenfoto
+      await Store.putFoto(this.fotoSchluessel(cls, q),
+        new File([blob], `Foto ${cls.name}.jpg`, { type: 'image/jpeg' }));
+      if (!cls.fotos || !cls.fotos.bilder) cls.fotos = { bilder: {} };
+      cls.fotos.bilder[schuelerId] = { q, x: 0, y: 0, b: 1, h: 1, e: 1 };
+      // Ein ersetztes Einzelfoto braucht niemand mehr
+      if (alt && alt.e && !Object.values(cls.fotos.bilder).some(r => (r.q || 0) === alt.q)) {
+        try { await Store.deleteFoto(this.fotoSchluessel(cls, alt.q)); } catch (e) { console.error(e); }
+      }
+      this.fotosVergessen(null);
+      Classes.persist();
+    } finally {
+      URL.revokeObjectURL(bild.url);
+    }
   },
 
   /* Wie viele Quellbilder die Klasse benutzt */
