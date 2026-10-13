@@ -33,25 +33,43 @@ const Band = {
       e.preventDefault();
       const name = document.getElementById('member-name').value.trim();
       if (!name) return;
-      this.d().members.push({
+      const m = {
         id: Store.uid(), name,
         klasse: document.getElementById('member-class').value.trim(),
         area: document.getElementById('member-area').value,
         instrument: document.getElementById('member-instrument').value.trim(),
-      });
+      };
+      // Aus der Suche uebernommen und der Name nicht veraendert: gleich verknuepfen
+      const v = this.vorgemerkt;
+      if (v && v.name === name) { m.studentId = v.sid; m.classId = v.clsId; }
+      this.vorgemerkt = null;
+      this.d().members.push(m);
       this.save();
       ['member-name', 'member-class', 'member-instrument'].forEach(id => document.getElementById(id).value = '');
-      document.getElementById('member-from-class').value = '';
+      document.getElementById('member-aufnehmen').open = false;
       this.renderMembers();
+      this.mitgliedZeigen(m.id);
     });
-    document.getElementById('member-from-class').addEventListener('change', e => {
-      const [clsId, sid] = e.target.value.split('|');
-      const cls = Classes.data.classes.find(c => c.id === clsId);
-      const s = cls && cls.students.find(x => x.id === sid);
-      if (!s) return;
-      document.getElementById('member-name').value = Classes.studentName(s);
-      document.getElementById('member-class').value = this.shortClass(cls.name);
-      document.getElementById('member-instrument').focus();
+    const suchFeld = document.getElementById('member-suche');
+    suchFeld.addEventListener('input', () => { this.suchMarkiert = 0; this.mitgliedSuchen(); });
+    suchFeld.addEventListener('keydown', e => {
+      const zeilen = [...document.querySelectorAll('#member-suche-treffer li[data-schueler]')];
+      if (e.key === 'Escape') { suchFeld.value = ''; this.mitgliedSuchen(); return; }
+      if (!zeilen.length) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const n = zeilen.length;
+        this.suchMarkiert = (this.suchMarkiert + (e.key === 'ArrowDown' ? 1 : n - 1)) % n;
+        zeilen.forEach((z, i) => z.classList.toggle('markiert', i === this.suchMarkiert));
+        zeilen[this.suchMarkiert].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        zeilen[Math.min(this.suchMarkiert, zeilen.length - 1)].click();
+      }
+    });
+    document.getElementById('btn-member-zum-schueler').addEventListener('click', () => {
+      const m = this.d().members.find(x => x.id === this.aktivesMitglied);
+      if (m && m.studentId) Schueler.oeffne(m.classId, m.studentId);
     });
     document.getElementById('btn-bulk-members').addEventListener('click', () => {
       const ta = document.getElementById('member-bulk');
@@ -349,7 +367,6 @@ const Band = {
     this.renderIdeas();
     this.renderGigs();
     this.renderRehearsals();
-    this.fillClassPicker();
     // Setlisten greifen auf die Songs zu – nach jeder Songänderung neu zeichnen
     if (window.Setlisten) Setlisten.render();
   },
@@ -465,25 +482,88 @@ const Band = {
       .sort((a, b) => this.byClass(a, b));
   },
 
-  fillClassPicker() {
-    const sel = document.getElementById('member-from-class');
-    if (!sel) return;
-    const keep = sel.value;
-    sel.innerHTML = '<option value="">aus Klasse übernehmen …</option>';
-    for (const cls of Classes.data.classes) {
-      if (!cls.students.length) continue;
-      const grp = document.createElement('optgroup');
-      grp.label = cls.name;
-      for (const s of cls.students) {
-        const o = document.createElement('option');
-        o.value = cls.id + '|' + s.id;
-        o.textContent = Classes.studentName(s);
-        grp.appendChild(o);
-      }
-      sel.appendChild(grp);
+  /* Schueler aus allen Klassen suchen – dieselbe Suche wie im Reiter
+     „Klassen“. Ein Treffer fuellt das Formular, das Instrument fehlt dann noch. */
+  suchMarkiert: 0,
+  vorgemerkt: null,
+
+  mitgliedSuchen() {
+    const feld = document.getElementById('member-suche');
+    const box = document.getElementById('member-suche-treffer');
+    const suche = feld.value.trim().toLowerCase();
+    box.innerHTML = '';
+    // Ein einzelner Buchstabe traefe die halbe Schule – erst ab zwei lohnt es
+    if (suche.length < 2) { box.hidden = true; return; }
+    box.hidden = false;
+    const treffer = Schueler.finde(suche);
+    if (!treffer.length) {
+      box.innerHTML = '<li class="hint">Kein Schüler gefunden – unten unter „Mitglied aufnehmen“ von Hand eintragen.</li>';
+      return;
     }
-    sel.value = keep;
+    const dabei = new Map(this.d().members.filter(m => m.studentId).map(m => [m.studentId, m]));
+    Schueler.neuerDurchgang();
+    treffer.slice(0, 25).forEach((t, i) => {
+      const li = document.createElement('li');
+      li.className = 'treffer-mit-bild' + (i === this.suchMarkiert ? ' markiert' : '');
+      li.dataset.schueler = t.s.id;
+      const bild = document.createElement('span');
+      bild.className = 'mini-gesicht ohne';
+      bild.dataset.initialen = ((t.s.first || '')[0] || '') + ((t.s.last || '')[0] || '');
+      const quelle = Schueler.fotoQuelle(t);
+      if (quelle) Schueler.gesichtEinsetzen(bild, quelle.cls, quelle.s);
+      const text = document.createElement('span');
+      text.className = 'treffer-text';
+      const name = document.createElement('span');
+      name.className = 'treffer-name';
+      name.textContent = t.name;
+      const wo = document.createElement('span');
+      wo.className = 'treffer-klasse';
+      const schon = dabei.get(t.s.id);
+      wo.textContent = t.cls.name + (schon ? ' · schon in der Band' : '');
+      text.append(name, wo);
+      li.append(bild, text);
+      li.addEventListener('click', () => {
+        feld.value = '';
+        this.mitgliedSuchen();
+        // Wer schon dabei ist, wird nicht doppelt aufgenommen, sondern gezeigt
+        if (schon) { this.mitgliedZeigen(schon.id); return; }
+        this.vorgemerkt = { name: t.name, sid: t.s.id, clsId: t.cls.id };
+        document.getElementById('member-aufnehmen').open = true;
+        document.getElementById('member-name').value = t.name;
+        document.getElementById('member-class').value = this.shortClass(t.cls.name);
+        document.getElementById('member-instrument').focus();
+      });
+      box.appendChild(li);
+    });
+    if (treffer.length > 25) {
+      box.insertAdjacentHTML('beforeend', `<li class="hint">… und ${treffer.length - 25} weitere – genauer tippen.</li>`);
+    }
   },
+
+  /* Der verknuepfte Schueler samt Klasse – Grundlage fuer Foto und Steckbrief */
+  schuelerVon(m) {
+    if (!m.studentId) return null;
+    const cls = Classes.data.classes.find(c => c.id === m.classId);
+    const s = cls && cls.students.find(x => x.id === m.studentId);
+    return s ? { cls, s, name: Classes.studentName(s) } : null;
+  },
+
+  /* Gesicht aus dem Sitzplan – aus der eigenen Klasse oder vom Namensvetter
+     in einer anderen (wie im Schueler-Steckbrief) */
+  gesichtFuerMitglied(el, m, kante) {
+    el.style.backgroundImage = '';
+    el.dataset.gesichtFuer = '';
+    el.classList.add('ohne');
+    const teile = m.name.includes(',')
+      ? m.name.split(',').map(x => x.trim()).reverse()
+      : m.name.split(/\s+/);
+    el.dataset.initialen = ((teile[0] || '')[0] || '') + ((teile[teile.length - 1] || '')[0] || '');
+    const t = this.schuelerVon(m);
+    const quelle = t && Schueler.fotoQuelle(t);
+    if (quelle) Schueler.gesichtEinsetzen(el, quelle.cls, quelle.s, kante);
+    return !!quelle;
+  },
+
 
   /* ---------- Mitglieder ---------- */
   /* Angekreuzte Mitglieder – als Menge, damit die Auswahl das Neuzeichnen
@@ -565,6 +645,9 @@ const Band = {
     const ul = document.createElement('ul');
     ul.className = 'member-zeilen';
     if (list.length) box.appendChild(ul);
+    // Gesichter nur, wenn mindestens ein Mitglied eins hat – sonst nur Platzhalter
+    Schueler.neuerDurchgang();
+    const mitGesichtern = list.some(m => { const t = this.schuelerVon(m); return t && Schueler.fotoQuelle(t); });
     for (const m of list) {
       const li = document.createElement('li');
       li.dataset.id = m.id;
@@ -596,7 +679,15 @@ const Band = {
       name.title = 'Steckbrief zeigen – nochmal tippen zum Schließen';
       name.addEventListener('click', () => this.mitgliedZeigen(m.id === this.aktivesMitglied ? null : m.id));
 
-      li.append(pick, klasse, name);
+      li.append(pick, klasse);
+      if (mitGesichtern) {
+        const foto = document.createElement('span');
+        foto.className = 'mini-gesicht';
+        this.gesichtFuerMitglied(foto, m);
+        foto.addEventListener('click', () => this.mitgliedZeigen(m.id === this.aktivesMitglied ? null : m.id));
+        li.appendChild(foto);
+      }
+      li.appendChild(name);
       if (m.studentId) {
         const mark = document.createElement('span');
         mark.className = 'link-mark';
@@ -656,6 +747,8 @@ const Band = {
     if (!m) { this.aktivesMitglied = null; box.hidden = true; return; }
     box.hidden = false;
     document.getElementById('member-profil-name').textContent = m.name;
+    this.gesichtFuerMitglied(document.getElementById('member-foto'), m, 320);
+    document.getElementById('btn-member-zum-schueler').hidden = !this.schuelerVon(m);
     document.getElementById('member-position').textContent = `${i + 1} von ${list.length}`;
     const vor = document.getElementById('btn-member-vor');
     const weiter = document.getElementById('btn-member-weiter');

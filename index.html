@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=190">
+<link rel="stylesheet" href="style.css?v=192">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=190"></script>
-<script src="js/theme.js?v=190"></script>
-<script src="js/auth.js?v=190"></script>
+<script src="js/icons.js?v=192"></script>
+<script src="js/theme.js?v=192"></script>
+<script src="js/auth.js?v=192"></script>
 </head>
 <body>
 
@@ -604,7 +604,14 @@
             <button id="btn-member-weiter" class="small" title="Nächstes Mitglied (Pfeil runter)"><span></span> <kbd>↓</kbd></button>
             <button id="btn-member-zu" class="small steckbrief-zu" title="Schließen (Esc)" aria-label="Steckbrief schließen">×</button>
           </div>
-          <h2 id="member-profil-name"></h2>
+          <div class="profil-kopf member-kopf">
+            <div id="member-foto" class="profil-foto ohne"></div>
+            <div class="profil-kopf-text">
+              <h2 id="member-profil-name"></h2>
+              <button id="btn-member-zum-schueler" class="small" data-icon="users" hidden
+                      title="Im Reiter „Klassen“ den Steckbrief mit Noten und Notizen öffnen">Schüler-Steckbrief öffnen</button>
+            </div>
+          </div>
           <div class="member-felder">
             <label>Name <input type="text" id="mp-name" autocomplete="off"></label>
             <label>Klasse <input type="text" id="mp-klasse" size="6" autocomplete="off" placeholder="z.&thinsp;B. 7c"></label>
@@ -623,12 +630,16 @@
 
         <div id="member-besetzung" class="member-besetzung"></div>
 
-        <details class="member-aufnehmen">
+        <div class="member-aufnehmen schueler-suche member-suche">
+          <input type="search" id="member-suche" autocomplete="off"
+                 placeholder="Schüler suchen und aufnehmen …"
+                 title="Name tippen – die Treffer kommen aus allen Klassen. Pfeiltasten wählen, Enter übernimmt.">
+          <ul id="member-suche-treffer" class="suche-treffer" hidden></ul>
+        </div>
+
+        <details class="member-aufnehmen" id="member-aufnehmen">
           <summary data-icon="plus">Mitglied aufnehmen</summary>
           <form id="form-new-member" class="member-felder">
-            <select id="member-from-class" title="Schüler aus einer bereits angelegten Klasse übernehmen">
-              <option value="">aus Klasse übernehmen …</option>
-            </select>
             <label>Name <input type="text" id="member-name" required autocomplete="off"></label>
             <label>Klasse <input type="text" id="member-class" placeholder="z.&thinsp;B. 7c" size="6" autocomplete="off"></label>
             <label>Bereich <select id="member-area">
@@ -1175,35 +1186,35 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=190"></script>
-<script src="js/firebase-config.js?v=190"></script>
-<script type="module" src="js/live-firebase.js?v=190"></script>
-<script src="js/topics-seed.js?v=190"></script>
-<script src="js/ai-import.js?v=190"></script>
-<script src="js/store.js?v=190"></script>
-<script src="js/noise.js?v=190"></script>
-<script src="js/classes.js?v=190"></script>
-<script src="js/sitzplan.js?v=190"></script>
-<script src="js/schueler.js?v=190"></script>
-<script src="js/tasten.js?v=190"></script>
-<script src="js/lessons.js?v=190"></script>
-<script src="js/band.js?v=190"></script>
-<script src="js/notes.js?v=190"></script>
-<script src="js/tresor.js?v=190"></script>
-<script src="js/erklaerungen.js?v=190"></script>
-<script src="js/setlisten.js?v=190"></script>
-<script src="js/einklappen.js?v=190"></script>
-<script src="js/tinyband-instrumente.js?v=190"></script>
-<script src="js/live-groups.js?v=190"></script>
-<script src="js/tinyband-lehrer.js?v=190"></script>
-<script src="js/tipps.js?v=190"></script>
-<script src="js/sport-tabellen.js?v=190"></script>
-<script src="js/sport.js?v=190"></script>
-<script src="js/ex-import.js?v=190"></script>
-<script src="js/exen.js?v=190"></script>
-<script src="js/ex-sitzung.js?v=190"></script>
-<script src="js/ex-auswertung.js?v=190"></script>
-<script src="js/tools.js?v=190"></script>
-<script src="js/app.js?v=190"></script>
+<script src="js/vendor/qrcode.min.js?v=192"></script>
+<script src="js/firebase-config.js?v=192"></script>
+<script type="module" src="js/live-firebase.js?v=192"></script>
+<script src="js/topics-seed.js?v=192"></script>
+<script src="js/ai-import.js?v=192"></script>
+<script src="js/store.js?v=192"></script>
+<script src="js/noise.js?v=192"></script>
+<script src="js/classes.js?v=192"></script>
+<script src="js/sitzplan.js?v=192"></script>
+<script src="js/schueler.js?v=192"></script>
+<script src="js/tasten.js?v=192"></script>
+<script src="js/lessons.js?v=192"></script>
+<script src="js/band.js?v=192"></script>
+<script src="js/notes.js?v=192"></script>
+<script src="js/tresor.js?v=192"></script>
+<script src="js/erklaerungen.js?v=192"></script>
+<script src="js/setlisten.js?v=192"></script>
+<script src="js/einklappen.js?v=192"></script>
+<script src="js/tinyband-instrumente.js?v=192"></script>
+<script src="js/live-groups.js?v=192"></script>
+<script src="js/tinyband-lehrer.js?v=192"></script>
+<script src="js/tipps.js?v=192"></script>
+<script src="js/sport-tabellen.js?v=192"></script>
+<script src="js/sport.js?v=192"></script>
+<script src="js/ex-import.js?v=192"></script>
+<script src="js/exen.js?v=192"></script>
+<script src="js/ex-sitzung.js?v=192"></script>
+<script src="js/ex-auswertung.js?v=192"></script>
+<script src="js/tools.js?v=192"></script>
+<script src="js/app.js?v=192"></script>
 </body>
 </html>

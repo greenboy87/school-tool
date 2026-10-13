@@ -687,6 +687,12 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg);
 }
 .member-aufnehmen > h3 { margin: 0 0 .6rem; font-size: 1rem; }
+.member-suche { padding: .6rem; }
+.member-suche .suche-treffer:not([hidden]) { margin-top: .4rem; }
+.member-kopf { margin: .4rem 0 .8rem; align-items: center; }
+.member-kopf .profil-foto { width: 6.5rem; height: 6.5rem; font-size: 2.2rem; }
+.member-kopf h2 { margin: 0 0 .5rem; }
+.member-zeilen .mini-gesicht { cursor: pointer; }
 .song-text { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: .5rem; }
 .song-artist { color: var(--muted); font-size: .85rem; }
 .song-notiz { flex-basis: 100%; color: var(--muted); font-size: .8rem; white-space: pre-wrap; margin-top: .1rem; }
