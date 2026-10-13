@@ -291,7 +291,9 @@ Punkt an „Ex schreiben“ zeigt eine offene Sitzung.
   Durchschnitt, ohne Namen – für den Beamer. **Noten aus der Notenliste entfernen**
   löscht nur den Notenlisten-Eintrag, die Auswertung bleibt.
 - **Archiv:** „Archivieren“ nimmt eine Ex aus der Liste; unter „Archiv“ (nach Schuljahr)
-  bleibt sie erreichbar und lässt sich genauso weiter korrigieren. Wer eine Ex aus der
+  bleibt sie erreichbar und lässt sich genauso weiter korrigieren. Archivierte Exen lassen
+  sich **endgültig löschen** (Sitzungen, Abgaben, Korrekturen; die Ex in der Bibliothek
+  bleibt, die Noten in der Notenliste auf Wunsch auch). Wer eine Ex aus der
   Bibliothek löschen will, wird gewarnt, solange es Auswertungen dazu gibt.
 - **Nachschreiben** für alle, die nicht geschrieben haben – landet in derselben Auswertung.
 

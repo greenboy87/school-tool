@@ -101,7 +101,7 @@ const ExAuswertung = {
       const inListe = d.projektId && cls && cls.projects.some(p => p.id === d.projektId);
       return `<li><button class="ex-auswertung-eintrag${x.key === offen ? ' active' : ''}" data-ex-key="${esc(x.key)}">
         <strong>${esc(x.exNummer)}. ${esc(x.titel)}</strong>
-        <span class="hint">${new Date(x.erstellt).toLocaleDateString('de-DE')}${kid === ExReiter.WEG ? ' · ' + esc(x.klasse) : ''}` +
+        <span class="hint">Klasse ${esc(x.klasse)} · ${new Date(x.erstellt).toLocaleDateString('de-DE')}` +
         `${x.codes.length > 1 ? ` · ${x.codes.length} Sitzungen` : ''}${inListe ? ' · in der Notenliste' : ''}</span></button></li>`;
     };
     document.getElementById('ex-auswertung-liste').innerHTML = aktiv.map(eintrag).join('');
@@ -388,6 +388,8 @@ const ExAuswertung = {
         <button data-aktion="schueleransicht" data-icon="eye" title="Nur Notenbild, Punkte und Schnitt – ohne Namen, zum Zeigen am Beamer">Schüleransicht</button>
         <button class="small" data-aktion="noten-entfernen" id="ex-noten-entfernen" hidden>Noten aus der Notenliste entfernen</button>
         <button class="small" data-aktion="archivieren" id="ex-archivieren"></button>
+        <button class="small danger" data-aktion="endgueltig-loeschen" id="ex-endgueltig-loeschen" data-icon="trash" hidden
+          title="Sitzungen, Abgaben und Korrekturen dieser Ex für diese Klasse löschen – lässt sich nicht rückgängig machen">Endgültig löschen</button>
         <button class="small" data-aktion="neu-bewerten" data-icon="reset" title="Abgaben neu laden und neu bewerten (etwa nach einem Neu-Import der Ex)">Neu laden</button>
       </div>`;
     this.reglerZeichnen();
@@ -412,6 +414,7 @@ const ExAuswertung = {
     const arch = document.getElementById('ex-archivieren');
     const ist = !!this.a.d.archiviert;
     arch.textContent = ist ? 'Aus dem Archiv holen' : 'Archivieren';
+    document.getElementById('ex-endgueltig-loeschen').hidden = !ist;
     arch.title = ist ? 'Wieder in der normalen Liste zeigen'
       : 'Aus der Liste nehmen – unter „Archivierte zeigen“ bleibt sie erreichbar und lässt sich weiter korrigieren';
   },
@@ -424,6 +427,50 @@ const ExAuswertung = {
     // Die geöffnete Auswertung bleibt in der Auswahl, auch wenn das Archiv ausgeblendet ist
     this.listeFuellen();
     this.knoepfeAktualisieren();
+  },
+
+  /* Nur archivierte Auswertungen: Sitzungen samt Abgaben aus der Datenbank,
+     Zugänge der Schüler-iPads, Korrekturen und Notenschlüssel hier. Die Ex in
+     der Bibliothek bleibt. */
+  async endgueltigLoeschen() {
+    const a = this.a;
+    if (!a || !a.d.archiviert) return;
+    const name = `${a.gruppe.exNummer}. ${a.meta.art || 'Ex'}: ${a.meta.titel} (Klasse ${a.gruppe.klasse})`;
+    if (!confirm(`„${name}“ endgültig löschen?\n\nWeg sind dann: alle Abgaben` +
+      (a.gruppe.codes.length > 1 ? ` aus ${a.gruppe.codes.length} Sitzungen` : '') +
+      ', deine Korrekturen und der Notenschlüssel. Das lässt sich nicht rückgängig machen.\n' +
+      'Die Ex selbst bleibt in der Bibliothek.')) return;
+    const p = this.projekt();
+    const mitNoten = p && confirm(`„${p.name}“ steht noch in der Notenliste von ${a.cls.name}.\n\n` +
+      'OK: Noten dort auch löschen\nAbbrechen: Noten in der Notenliste behalten');
+    const w = {};
+    for (const code of a.gruppe.codes) {
+      w[`exsessions/${code}`] = null;
+      const uids = Object.keys((a.sitzungen[code] || {}).teilnehmer || {});
+      for (const uid of uids) {
+        const z = await FB.get(FB.ref(FB.db, `schoolTool/exzugang/${uid}`)).catch(() => null);
+        if (z && z.val() === code) w[`exzugang/${uid}`] = null;
+      }
+    }
+    try {
+      await FB.update(FB.ref(FB.db, 'schoolTool'), w);
+    } catch (e) {
+      alert('Löschen in der Datenbank fehlgeschlagen: ' + e.message);
+      return;
+    }
+    if (ExSitzung.code && a.gruppe.codes.includes(ExSitzung.code)) ExSitzung.vergessen();
+    a.gruppe.codes.forEach(code => { delete (Classes.data.exSitzungen || {})[code]; });
+    delete Classes.data.exAuswertungen[a.key];
+    if (mitNoten) {
+      a.cls.projects = a.cls.projects.filter(x => x.id !== p.id);
+      if (Classes.currentProjectId === p.id) Classes.currentProjectId = null;
+      if (Classes.currentClassId === a.cls.id) Classes.renderProjects();
+    }
+    Classes.persist();
+    this.a = null;
+    document.getElementById('ex-auswertung-inhalt').innerHTML = '';
+    this.listeFuellen();
+    document.dispatchEvent(new CustomEvent('ex-sitzungen'));
   },
 
   notenEntfernen() {
@@ -709,6 +756,7 @@ const ExAuswertung = {
       case 'export-notenliste': this.exportNotenliste(); this.knoepfeAktualisieren(); this.listeFuellen(); break;
       case 'noten-entfernen': this.notenEntfernen(); this.listeFuellen(); break;
       case 'archivieren': this.archivieren(); break;
+      case 'endgueltig-loeschen': this.endgueltigLoeschen(); break;
       case 'schueleransicht': this.schueleransicht(); break;
       case 'export-csv': this.exportCsv(); break;
       case 'drucken': this.drucken(document.getElementById('ex-druck-loesungen').checked); break;

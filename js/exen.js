@@ -99,6 +99,7 @@ const Exen = {
       eingabe.value = '';
       if (f) this.importieren(f);
     });
+    document.addEventListener('ex-sitzungen', () => { if (FB.istLehrer && FB.istLehrer()) this.listeZeichnen(); });
     Classes.makeDropZone(document.getElementById('ex-bibliothek'),
       f => /\.html?$/i.test(f.name) || f.type === 'text/html',
       'eine Ex-Datei (.html, Format tom-ex/2)',
@@ -143,9 +144,13 @@ const Exen = {
         .filter(Boolean).map(esc).join(' · ');
       const datum = x.importiert ? new Date(x.importiert).toLocaleDateString('de-DE') : '';
       const hatOriginal = lokal.has(id);
+      // Welche Klassen haben die Ex schon geschrieben (nur lokal bekannt)
+      const klassen = typeof ExAuswertung !== 'undefined'
+        ? [...new Set(ExAuswertung.gruppen().filter(g => g.exId === id).map(g => g.klasse))] : [];
       return `<li data-id="${esc(id)}">
         <div><div class="ex-titel">${esc(x.titel)}</div>
-          <div class="hint">${teile}${datum ? ` · importiert am ${datum}` : ''}</div></div>
+          <div class="hint">${teile}${datum ? ` · importiert am ${datum}` : ''}</div>
+          ${klassen.length ? `<div class="hint">Geschrieben von: ${klassen.map(esc).join(', ')}</div>` : ''}</div>
         <div class="btn-row">
           <button class="small" data-aktion="vorschau" ${hatOriginal ? '' : 'disabled'}
             title="${hatOriginal ? 'Originaldatei mit Vorschau-Leiste in neuem Tab öffnen'
