@@ -1893,3 +1893,41 @@ body.ex-korrektur-offen { overflow: hidden; }
 .metronom-takte button.active { background: var(--active-soft); color: var(--accent-soft, var(--text)); }
 .metronom-start { min-width: 10rem; font-size: 1.05rem; padding: .7rem 1.4rem; }
 .metronom-start.laeuft { filter: saturate(.7); }
+
+/* ---------- Stimmgerät und Klangschale (Reiter Tools) ---------- */
+.klang-raster { max-width: 900px; margin: 1.2rem auto 0; display: grid; grid-template-columns: minmax(0, 1fr) 15rem; gap: 1.2rem; align-items: stretch; }
+@media (max-width: 700px) { .klang-raster { grid-template-columns: minmax(0, 1fr); } }
+.klang-raster > .card { margin: 0; }
+.stimmen-anzeige { display: flex; flex-direction: column; align-items: center; gap: .6rem; margin: .4rem 0 .8rem; }
+.stimmen-skala { position: relative; width: 100%; max-width: 26rem; height: 2.4rem; border-radius: 999px;
+  background: linear-gradient(90deg, var(--danger-bg, rgba(255,80,80,.2)), var(--border) 35%, var(--border) 65%, var(--danger-bg, rgba(255,80,80,.2))); }
+.stimmen-mitte { position: absolute; left: 50%; top: 15%; bottom: 15%; width: 2px; margin-left: -1px; background: var(--muted); }
+.stimmen-zeiger { position: absolute; left: 50%; top: 50%; width: 1.3rem; height: 1.3rem; margin: -.65rem 0 0 -.65rem; border-radius: 50%;
+  background: var(--muted); transition: left .12s linear, background .15s; }
+.stimmen-anzeige.nah .stimmen-zeiger { background: var(--yellow, #f5c542); }
+.stimmen-anzeige.passt .stimmen-zeiger { background: var(--green, #2e9e5b); box-shadow: 0 0 16px var(--green, #2e9e5b); }
+.stimmen-ton { display: flex; flex-direction: column; align-items: center; }
+.stimmen-ton #stimmen-name { font-size: 3.2rem; font-weight: 800; line-height: 1; }
+.stimmen-anzeige.passt #stimmen-name { color: var(--green, #2e9e5b); }
+.stimmen-ton small { color: var(--muted); font-weight: 600; margin-top: .3rem; font-variant-numeric: tabular-nums; }
+.stimmen-knoepfe { justify-content: center; }
+.stimmen-unter { margin: 1rem 0 .5rem; font-size: 1rem; }
+.stimmen-toene { display: grid; gap: .5rem; }
+.stimmen-gruppe { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+.stimmen-gruppe .hint { width: 4.6rem; font-weight: 600; }
+.stimmen-gruppe button { min-width: 2.6rem; }
+.stimmen-gruppe button.active { background: var(--accent-grad); color: var(--on-accent); border-color: transparent; }
+
+.klangschale-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.klangschale-card h2 { align-self: flex-start; }
+.klangschale-knopf { display: flex; align-items: center; justify-content: center; position: relative; width: 9rem; height: 9rem; border-radius: 50%; margin: auto 0 .6rem; padding: 0;
+  background: radial-gradient(circle at 50% 40%, var(--active-soft), transparent 70%); border: 1px solid var(--border); overflow: visible; }
+.klangschale-schale { display: block; width: 5.4rem; height: 2.8rem; border-radius: 0 0 3rem 3rem; margin-top: 1.4rem;
+  background: linear-gradient(180deg, #e8c27a, #a8742c); box-shadow: inset 0 .35rem 0 rgba(255,255,255,.35), 0 .4rem 1rem rgba(0,0,0,.3); }
+.klangschale-welle { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; pointer-events: none; }
+.klangschale-knopf.klingt .klangschale-welle { animation: klangwelle 2.4s ease-out infinite; }
+.klangschale-knopf.klingt .klangschale-welle + .klangschale-welle { animation-delay: 1.2s; }
+.klangschale-knopf.klingt .klangschale-schale { animation: klangschale-zittern .5s ease-out; }
+@keyframes klangwelle { from { transform: scale(.75); opacity: .7; } to { transform: scale(1.45); opacity: 0; } }
+@keyframes klangschale-zittern { 0%, 100% { transform: none; } 25% { transform: rotate(-2deg); } 60% { transform: rotate(1.5deg); } }
+@media (prefers-reduced-motion: reduce) { .klangschale-knopf.klingt .klangschale-welle, .klangschale-knopf.klingt .klangschale-schale { animation: none; } }
