@@ -209,7 +209,15 @@ const Exen = {
 
   async loeschen(id) {
     const x = this.index[id];
-    if (!x || !confirm(`Die Ex „${x.titel}“ löschen?\n\nSchülerfassung, Lösung und Bewertung werden aus der ` +
+    if (!x) return;
+    // Hängen noch Auswertungen an der Ex, ausdrücklich darauf hinweisen
+    const geschrieben = typeof ExAuswertung !== 'undefined'
+      ? ExAuswertung.gruppen().filter(g => g.exId === id) : [];
+    if (geschrieben.length && !confirm(`Achtung: Zu „${x.titel}“ gibt es ${geschrieben.length === 1 ? 'eine Auswertung' : geschrieben.length + ' Auswertungen'}:\n` +
+      geschrieben.map(g => `• ${g.klasse} · ${g.exNummer}. Ex vom ${new Date(g.erstellt).toLocaleDateString('de-DE')}`).join('\n') +
+      '\n\nOhne die Ex in der Bibliothek lassen sie sich nicht mehr öffnen oder korrigieren – erst wieder nach ' +
+      'einem Neu-Import derselben Datei. Trotzdem löschen?')) return;
+    if (!confirm(`Die Ex „${x.titel}“ löschen?\n\nSchülerfassung, Lösung und Bewertung werden aus der ` +
       'Datenbank entfernt. Bereits geschriebene Exen und ihre Abgaben bleiben erhalten, lassen sich ' +
       'aber erst wieder auswerten, wenn du die Ex erneut importierst.')) return;
     try {

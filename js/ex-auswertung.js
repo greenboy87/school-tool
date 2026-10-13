@@ -10,7 +10,9 @@
    den Tresor nur verschlüsselt auf die anderen Geräte der Lehrkraft:
      { [key]: { korrektur: { <Nr>: { d: { <Aufgabe>: { <Index>: Punkte } },
                                      m: { <Aufgabe>: Punkte } } },
-                schluessel: { p4, p6, b, grenzen? }, projektId } }
+                schluessel: { p4, p6, b, grenzen? }, projektId, archiviert? } }
+   Archivierte Auswertungen stehen nur unter „Archivierte zeigen“, lassen sich
+   aber genauso öffnen und weiter korrigieren.
    Namen gibt es nur hier – in der Datenbank stehen Nummern. */
 const ExAuswertung = {
   SMILEYS: ['😄', '🙂', '😐', '😕', '😣'],
@@ -27,6 +29,17 @@ const ExAuswertung = {
     });
     document.addEventListener('ex-anmeldung', e => this.schalten(e.detail.lehrer));
     document.addEventListener('ex-sitzungen', () => this.listeFuellen());
+    document.getElementById('ex-auswertung-archiv').addEventListener('change', () => this.listeFuellen());
+    const sa = document.getElementById('ex-schueleransicht');
+    sa.addEventListener('click', e => {
+      const b = e.target.closest('[data-aktion]');
+      if (!b) return;
+      if (b.dataset.aktion === 'zu') this.schueleransichtSchliessen();
+      if (b.dataset.aktion === 'vollbild') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (sa.requestFullscreen) sa.requestFullscreen().catch(() => {});
+      }
+    });
     const inhalt = document.getElementById('ex-auswertung-inhalt');
     inhalt.addEventListener('click', e => this.klick(e));
     inhalt.addEventListener('input', e => this.eingabe(e));
@@ -36,6 +49,7 @@ const ExAuswertung = {
     k.addEventListener('change', e => this.korrekturEingabe(e));
     window.addEventListener('message', e => this.nachricht(e));
     document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && !sa.hidden) { this.schueleransichtSchliessen(); return; }
       if (k.hidden) return;
       if (e.key === 'Escape') this.korrekturSchliessen();
     });
@@ -59,16 +73,41 @@ const ExAuswertung = {
     return Object.values(g).sort((a, b) => b.erstellt - a.erstellt);
   },
 
+  istArchiviert(key) {
+    const d = (Classes.data.exAuswertungen || {})[key];
+    return !!(d && d.archiviert);
+  },
+
+  /* Schuljahr beginnt im August: „2026/27“ */
+  schuljahr(zeit) {
+    const d = new Date(zeit), j = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1;
+    return `${j}/${String(j + 1).slice(2)}`;
+  },
+
   listeFuellen() {
     const sel = document.getElementById('ex-auswertung-wahl');
     const alt = sel.value;
-    const g = this.gruppen();
-    sel.innerHTML = g.map(x => `<option value="${Band.esc(x.key)}">${Band.esc(
+    const alle = this.gruppen();
+    const archiv = alle.filter(x => this.istArchiviert(x.key));
+    const zeigeArchiv = document.getElementById('ex-auswertung-archiv').checked;
+    const option = x => `<option value="${Band.esc(x.key)}">${Band.esc(
       `${x.klasse} · ${x.exNummer}. ${x.titel} · ${new Date(x.erstellt).toLocaleDateString('de-DE')}` +
-      (x.codes.length > 1 ? ` (${x.codes.length} Sitzungen)` : ''))}</option>`).join('');
-    if (g.some(x => x.key === alt)) sel.value = alt;
-    document.getElementById('btn-ex-auswertung-oeffnen').disabled = !g.length;
-    document.getElementById('ex-auswertung-leer').hidden = g.length > 0;
+      (x.codes.length > 1 ? ` (${x.codes.length} Sitzungen)` : ''))}</option>`;
+    let html = alle.filter(x => !this.istArchiviert(x.key)).map(option).join('');
+    if (zeigeArchiv) {
+      const jahre = {};
+      archiv.forEach(x => (jahre[this.schuljahr(x.erstellt)] = jahre[this.schuljahr(x.erstellt)] || []).push(x));
+      html += Object.keys(jahre).sort().reverse().map(j =>
+        `<optgroup label="Archiv · Schuljahr ${j}">${jahre[j].map(option).join('')}</optgroup>`).join('');
+    }
+    sel.innerHTML = html;
+    if ([...sel.options].some(o => o.value === alt)) sel.value = alt;
+    const leer = !sel.options.length;
+    document.getElementById('btn-ex-auswertung-oeffnen').disabled = leer;
+    const hinweis = document.getElementById('ex-auswertung-leer');
+    hinweis.hidden = !leer;
+    hinweis.textContent = alle.length ? 'Alle Exen sind archiviert – Häkchen bei „Archivierte zeigen“ setzen.' : 'Noch keine Ex geschrieben.';
+    document.getElementById('ex-auswertung-archiv-zahl').textContent = archiv.length ? `(${archiv.length})` : '';
   },
 
   daten(key) {
@@ -326,12 +365,98 @@ const ExAuswertung = {
         <button data-aktion="drucken" data-icon="printer">Alle drucken</button>
         <button data-aktion="nachschreiben" class="small">Nachschreiben vorbereiten</button>
         <label class="ex-mit-loesungen"><input type="checkbox" id="ex-druck-loesungen" checked> mit Lösungen</label>
+        <button data-aktion="schueleransicht" data-icon="eye" title="Nur Notenbild, Punkte und Schnitt – ohne Namen, zum Zeigen am Beamer">Schüleransicht</button>
+        <button class="small" data-aktion="noten-entfernen" id="ex-noten-entfernen" hidden>Noten aus der Notenliste entfernen</button>
+        <button class="small" data-aktion="archivieren" id="ex-archivieren"></button>
         <button class="small" data-aktion="neu-bewerten" data-icon="reset" title="Abgaben neu laden und neu bewerten (etwa nach einem Neu-Import der Ex)">Neu laden</button>
       </div>`;
     this.reglerZeichnen();
     this.balkenBauen();
     this.notenAktualisieren();
+    this.knoepfeAktualisieren();
     Icons.hydrate(inhalt);
+  },
+
+  /* Notenliste-Eintrag dieser Auswertung, falls es ihn (noch) gibt */
+  projekt() {
+    const a = this.a;
+    return (a.d.projektId && a.cls && a.cls.projects.find(x => x.id === a.d.projektId)) || null;
+  },
+
+  knoepfeAktualisieren() {
+    const p = this.projekt();
+    const ent = document.getElementById('ex-noten-entfernen');
+    ent.hidden = !p;
+    if (p) ent.title = `Löscht „${p.name}“ aus der Notenliste von ${this.a.cls.name}. Die Auswertung bleibt.`;
+    const arch = document.getElementById('ex-archivieren');
+    const ist = !!this.a.d.archiviert;
+    arch.textContent = ist ? 'Aus dem Archiv holen' : 'Archivieren';
+    arch.title = ist ? 'Wieder in der normalen Liste zeigen'
+      : 'Aus der Liste nehmen – unter „Archivierte zeigen“ bleibt sie erreichbar und lässt sich weiter korrigieren';
+  },
+
+  archivieren() {
+    const a = this.a;
+    if (a.d.archiviert) delete a.d.archiviert;
+    else a.d.archiviert = Date.now();
+    Classes.persist();
+    // Die geöffnete Auswertung bleibt in der Auswahl, auch wenn das Archiv ausgeblendet ist
+    if (a.d.archiviert) document.getElementById('ex-auswertung-archiv').checked = true;
+    this.listeFuellen();
+    document.getElementById('ex-auswertung-wahl').value = a.key;
+    this.knoepfeAktualisieren();
+  },
+
+  notenEntfernen() {
+    const a = this.a, p = this.projekt();
+    if (!p || !confirm(`„${p.name}“ samt allen Noten aus der Notenliste von ${a.cls.name} löschen?\n\n` +
+      'Die Ex-Auswertung mit deinen Korrekturen bleibt erhalten; du kannst die Noten später wieder übernehmen.')) return;
+    a.cls.projects = a.cls.projects.filter(x => x.id !== p.id);
+    a.d.projektId = null;
+    if (Classes.currentProjectId === p.id) Classes.currentProjectId = null;
+    Classes.persist();
+    if (Classes.currentClassId === a.cls.id) Classes.renderProjects();
+    this.knoepfeAktualisieren();
+  },
+
+  /* ---------- Schüleransicht: nur Notenbild, ohne Namen ---------- */
+  schueleransicht() {
+    const a = this.a, esc = s => Band.esc(s), fmt = x => this.fmt(x);
+    const liste = this.ergebnisse();
+    const zahl = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+    liste.forEach(x => { zahl[x.e.note]++; });
+    const hoechst = Math.max(1, ...Object.values(zahl));
+    const schnitt = liste.length ? fmt((liste.reduce((n, x) => n + x.e.note, 0) / liste.length).toFixed(2)) : '–';
+    const vorlaeufig = liste.some(x => x.e.vorlaeufig);
+    const el = document.getElementById('ex-schueleransicht');
+    el.innerHTML = `
+      <div class="ex-sa-leiste">
+        <button class="small" data-aktion="vollbild" data-icon="window">Vollbild</button>
+        <button class="small" data-aktion="zu" data-icon="x">Schließen</button>
+      </div>
+      <div class="ex-sa-inhalt">
+        <h2>${esc(a.gruppe.exNummer)}. ${esc(a.meta.art || 'Ex')}: ${esc(a.meta.titel)}</h2>
+        <p class="ex-sa-unter">${esc(a.gruppe.klasse)} · ${fmt(a.meta.punkteGesamt)} Punkte${vorlaeufig ? ' · vorläufig' : ''}</p>
+        <table class="ex-sa-tabelle">
+          <thead><tr><th>Note</th><th>Punkte</th><th colspan="2">Anzahl</th></tr></thead>
+          <tbody>${[1, 2, 3, 4, 5, 6].map(n => `
+            <tr><td class="ex-sa-note">${n}</td><td class="ex-sa-punkte">${this.bereichText(n)}</td>
+              <td class="ex-sa-balken"><span class="n${n}" style="width:${Math.round(100 * zahl[n] / hoechst)}%"></span></td>
+              <td class="ex-sa-zahl">${zahl[n]}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        <p class="ex-sa-schnitt">Notendurchschnitt <strong>${schnitt}</strong>
+          <span>${liste.length} ${liste.length === 1 ? 'Arbeit' : 'Arbeiten'}</span></p>
+      </div>`;
+    Icons.hydrate(el);
+    el.hidden = false;
+    document.body.classList.add('ex-korrektur-offen');
+  },
+
+  schueleransichtSchliessen() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    document.getElementById('ex-schueleransicht').hidden = true;
+    document.body.classList.remove('ex-korrektur-offen');
   },
 
   /* Was sich mit jeder Grenze oder Korrektur ändert */
@@ -562,7 +687,10 @@ const ExAuswertung = {
       }
       case 'standard-laden': this.a.d.schluessel = { ...std }; Classes.persist(); this.reglerZeichnen(); this.notenAktualisieren(); break;
       case 'grenzen-weg': { const s = this.schluessel(); delete s.grenzen; this.a.d.schluessel = s; Classes.persist(); this.reglerZeichnen(); this.notenAktualisieren(); break; }
-      case 'export-notenliste': this.exportNotenliste(); break;
+      case 'export-notenliste': this.exportNotenliste(); this.knoepfeAktualisieren(); break;
+      case 'noten-entfernen': this.notenEntfernen(); break;
+      case 'archivieren': this.archivieren(); break;
+      case 'schueleransicht': this.schueleransicht(); break;
       case 'export-csv': this.exportCsv(); break;
       case 'drucken': this.drucken(document.getElementById('ex-druck-loesungen').checked); break;
       case 'neu-bewerten': this.oeffnen(this.a.key); break;
@@ -777,7 +905,7 @@ const ExAuswertung = {
     }
     if (vorlaeufig && !confirm(`${vorlaeufig} Noten sind noch vorläufig (offene Prüfstellen oder manuelle Aufgaben). Trotzdem übernehmen?`)) return;
     const name = `${a.gruppe.exNummer}. ${a.meta.art || 'Ex'}: ${a.meta.titel}`;
-    let p = a.d.projektId && a.cls.projects.find(x => x.id === a.d.projektId);
+    let p = this.projekt();
     if (p) {
       if (!confirm(`„${p.name}“ steht schon in der Notenliste von ${a.cls.name}. Die Noten dort durch die aktuellen ersetzen?`)) return;
       Object.keys(noten).forEach(sid => { p.grades[sid] = noten[sid]; });
