@@ -21,24 +21,14 @@ const Noten = {
 };
 
 const Stimmton = {
-  TOENE: [
-    ['Stimmton', [[69, "a' · 440 Hz"]]],
-    ['Gitarre', [[40, 'E'], [45, 'A'], [50, 'D'], [55, 'G'], [59, 'H'], [64, 'E']]],
-    ['Ukulele', [[67, 'G'], [60, 'C'], [64, 'E'], [69, 'A']]],
-  ],
   ton: null,      // { midi, osc, gain, knopf }
 
   init() {
-    const el = document.getElementById('stimmen-toene');
-    if (!el) return;
-    el.innerHTML = this.TOENE.map(([gruppe, toene]) => `<div class="stimmen-gruppe"><span class="hint">${gruppe}</span>${
-      toene.map(([m, text]) => `<button data-midi="${m}">${text}</button>`).join('')}</div>`).join('');
-    el.addEventListener('click', e => {
-      const b = e.target.closest('[data-midi]');
-      if (b) this.umschalten(Number(b.dataset.midi), b);
-    });
-    document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
-      if (b.dataset.tab !== 'ampel') this.aus();
+    const b = document.getElementById('stimmen-a');
+    if (!b) return;
+    b.addEventListener('click', () => this.umschalten(69, b));
+    document.querySelectorAll('.tab-btn').forEach(t => t.addEventListener('click', () => {
+      if (t.dataset.tab !== 'ampel') this.aus();
     }));
   },
 

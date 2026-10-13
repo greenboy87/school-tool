@@ -1895,7 +1895,7 @@ body.ex-korrektur-offen { overflow: hidden; }
 .metronom-start.laeuft { filter: saturate(.7); }
 
 /* ---------- Stimmgerät und Klangschale (Reiter Tools) ---------- */
-.klang-raster { max-width: 900px; margin: 1.2rem auto 0; display: grid; grid-template-columns: minmax(0, 1fr) 15rem; gap: 1.2rem; align-items: stretch; }
+.klang-raster { max-width: 900px; margin: 0 auto 1.2rem; display: grid; grid-template-columns: minmax(0, 1fr) 15rem; gap: 1.2rem; align-items: stretch; }
 @media (max-width: 700px) { .klang-raster { grid-template-columns: minmax(0, 1fr); } }
 .klang-raster > .card { margin: 0; }
 .stimmen-anzeige { display: flex; flex-direction: column; align-items: center; gap: .6rem; margin: .4rem 0 .8rem; }
@@ -1916,7 +1916,7 @@ body.ex-korrektur-offen { overflow: hidden; }
 .stimmen-gruppe { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
 .stimmen-gruppe .hint { width: 4.6rem; font-weight: 600; }
 .stimmen-gruppe button { min-width: 2.6rem; }
-.stimmen-gruppe button.active { background: var(--accent-grad); color: var(--on-accent); border-color: transparent; }
+.stimmen-gruppe button.active, #stimmen-a.active { background: var(--accent-grad); color: var(--on-accent); border-color: transparent; }
 
 .klangschale-card { display: flex; flex-direction: column; align-items: center; text-align: center; }
 .klangschale-card h2 { align-self: flex-start; }
