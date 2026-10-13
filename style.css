@@ -1871,3 +1871,25 @@ body.ex-korrektur-offen { overflow: hidden; }
 .ex-schueleransicht:fullscreen .ex-sa-tabelle { font-size: min(3.4vw, 4.6vh); }
 .ex-schueleransicht:fullscreen h2 { font-size: min(4.2vw, 6vh); }
 .ex-schueleransicht:fullscreen .ex-sa-schnitt { font-size: min(3.6vw, 5vh); }
+
+/* ---------- Metronom (Reiter Tools, unter der Ampel) ---------- */
+.metronom-card { max-width: 900px; margin: 1.2rem auto 0; }
+.metronom { display: flex; flex-direction: column; align-items: center; gap: 1.1rem; max-width: 30rem; margin: 0 auto; }
+.metronom-punkte { display: flex; gap: .8rem; justify-content: center; min-height: 1.4rem; }
+.metronom-punkt { width: 1.1rem; height: 1.1rem; border-radius: 50%; background: var(--border); transition: background .08s, transform .08s, box-shadow .08s; }
+.metronom-punkt.eins { width: 1.4rem; height: 1.4rem; }
+.metronom-punkt.an { background: var(--accent); transform: scale(1.25); box-shadow: 0 0 18px var(--accent); }
+.metronom-punkt.eins.an { background: var(--yellow, #f5c542); box-shadow: 0 0 22px var(--yellow, #f5c542); }
+.metronom-tempo { display: flex; align-items: center; gap: 1.2rem; }
+.metronom-zahl { display: flex; flex-direction: column; align-items: center; min-width: 8rem; }
+.metronom-zahl span#metronom-bpm { font-size: 4rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.metronom-zahl small { color: var(--muted); font-weight: 600; margin-top: .3rem; }
+.metronom-schritt { width: 3rem; height: 3rem; border-radius: 50%; font-size: 1.6rem; padding: 0; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+#metronom-regler { width: 100%; }
+.metronom-leiste { display: flex; gap: .6rem; align-items: center; justify-content: center; flex-wrap: wrap; }
+.metronom-takte { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.metronom-takte button { border: 0; border-radius: 0; background: transparent; padding: .4rem .7rem; font-size: .85rem; color: var(--muted); }
+.metronom-takte button + button { border-left: 1px solid var(--border); }
+.metronom-takte button.active { background: var(--active-soft); color: var(--accent-soft, var(--text)); }
+.metronom-start { min-width: 10rem; font-size: 1.05rem; padding: .7rem 1.4rem; }
+.metronom-start.laeuft { filter: saturate(.7); }
