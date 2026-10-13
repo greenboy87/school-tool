@@ -650,7 +650,7 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .member-auswahl-zeile { display: flex; gap: .8rem; align-items: center; margin: .7rem 0 .3rem; }
 .member-auswahl-zeile #member-anlass { flex: 1; min-width: 0; }
 .member-list { margin: .3rem 0 .8rem; }
-/* Aufgebaut wie das Namen-Fenster: ein Kasten, eine Zeile pro Person */
+/* Ein Kasten, eine Zeile pro Person */
 .member-zeilen {
   list-style: none; margin: 0; padding: 0;
   border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); overflow: hidden;
@@ -852,6 +852,19 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
     border-left: 2.5pt solid #6d28d9; background: #f7f5fc;
     font-size: 10pt; white-space: pre-wrap;
   }
+
+  /* Schwarz-weiß-Liste (Mitglieder): klein, eng, feine Linien – so knapp
+     wie die Liste im Browser, damit die ganze Band auf eine Seite passt */
+  .band-print.sw { font-size: 10pt; color: #000; }
+  .band-print.sw h1 { font-size: 15pt; padding-bottom: 3pt; border-bottom: 1pt solid #000; }
+  .band-print.sw .termin { font-size: 11pt; color: #000; margin-top: 4pt; }
+  .band-print.sw .meta { margin: 3pt 0 8pt; font-size: 7.5pt; color: #555; }
+  .band-print table.sw-liste { font-size: 10pt; line-height: 1.25; }
+  .band-print table.sw-liste th { color: #000; font-size: 7.5pt; padding: 0 8pt 2pt 0; border-bottom: .8pt solid #000; }
+  .band-print table.sw-liste td { padding: 1.8pt 8pt 1.8pt 0; border-bottom: .4pt solid #bbb; }
+  .band-print table.sw-liste tbody tr:nth-child(even) td { background: none; }
+  .band-print table.sw-liste .klasse { width: 9%; font-weight: 400; color: #444; }
+  .band-print.sw .fuss { margin-top: 8pt; color: #777; }
 
   .band-print .fuss {
     margin-top: 12pt; padding-top: 5pt; border-top: .5pt solid #d8d5cc;

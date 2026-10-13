@@ -362,13 +362,11 @@ die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene T
   oder ab, der Knopf zeigt die Anzahl. Ins Feld **Anlass** kommt, was auf dem Ausdruck groß
   unter der Überschrift stehen soll (`Probe 14.09., 3.–6. Stunde`). Die Auswahl übersteht das
   Umschalten des Filters und das Bearbeiten der Liste.
-- **Namen-Fenster** (Knopf über der Mitgliederliste): ein kleines eigenes Fenster mit nur
-  Klasse und Name, nach Klassen sortiert (niedrigste zuerst). Oben stellst du ein, ob alle,
-  nur die Schulband oder nur das Technikteam erscheinen; einzelne Namen hakst du ab oder an.
-  **Klasse + Name** legt die Auswahl in die Zwischenablage (durch einen Tabulator getrennt,
-  landet in einer Tabelle also gleich in zwei Spalten), **nur Namen** entsprechend ohne
-  Klasse. Das Fenster kann offen bleiben und zieht automatisch nach, wenn du im Hauptfenster
-  Mitglieder änderst.
+- **Kopieren** und **Nur Namen** (über der Mitgliederliste): legen die angekreuzten Mitglieder –
+  oder, wenn keiner angekreuzt ist, alle angezeigten – in die Zwischenablage. „Kopieren“ nimmt
+  die Spalten, die gerade zu sehen sind (Klasse, Name, je nach Schalter Rolle und
+  Klassenleitung), durch Tabulator getrennt; in einer Tabelle landen sie also gleich in eigenen
+  Spalten. Der Ausdruck ist eine schlichte Schwarz-Weiß-Liste mit denselben Spalten.
 - **Songs** mit Tonart, Capo, Tempo (BPM) und freien Anmerkungen. Drucken lassen sich
   alle Songs, eine Auswahl oder die Setlist eines Auftritts – immer samt Anmerkungen.
 - **Setlisten** nach Kategorien (Gottesdienste, Schulfest, Bunter Abend …). Die Kategorien
@@ -402,8 +400,8 @@ Kontrollvorschau.
   Textfarbe des jeweiligen Themes.
 
 **Hinweis zum Aktualisieren:** Die eingebundenen Dateien tragen eine Versionsnummer
-(`style.css?v=62`). Nach Änderungen an CSS/JS diese Nummer in allen vier HTML-Dateien auf
-denselben Wert hochzählen – `index.html`, `ampel.html`, `gruppen.html`, `namen.html` und `tinyband.html`.
+(`style.css?v=62`). Nach Änderungen an CSS/JS diese Nummer in allen fünf HTML-Dateien auf
+denselben Wert hochzählen – `index.html`, `ampel.html`, `gruppen.html`, `tinyband.html` und `ex.html`.
 Sonst zeigen Browser noch die zwischengespeicherte alte Fassung.
 
 ### 🎲 Extras

@@ -172,10 +172,8 @@ const Band = {
     document.getElementById('btn-print-members-sel')
       .addEventListener('click', () => this.printMembersAuswahl());
     document.getElementById('btn-export-members').addEventListener('click', () => this.exportMembers());
-    document.getElementById('btn-namen-fenster').addEventListener('click', () => {
-      window.open('namen.html', 'bandnamen',
-        'width=380,height=620,menubar=no,toolbar=no,location=no,status=no');
-    });
+    document.getElementById('btn-copy-members').addEventListener('click', e => this.mitgliederKopieren(e.currentTarget, false));
+    document.getElementById('btn-copy-member-namen').addEventListener('click', e => this.mitgliederKopieren(e.currentTarget, true));
 
     /* ---- Songs ---- */
     document.getElementById('form-new-song').addEventListener('submit', e => {
@@ -631,7 +629,7 @@ const Band = {
     return box;
   },
 
-  /* Schlichte Liste wie im Namen-Fenster: Klasse, Name, auf Wunsch Rolle und
+  /* Schlichte Liste: Klasse, Name, auf Wunsch Rolle und
      Klassenleitung. Bearbeitet wird rechts im Steckbrief. */
   renderMembers() {
     const box = document.getElementById('member-list');
@@ -873,18 +871,70 @@ const Band = {
     return p.map(x => `${Classes.rolleZiffer(x.rolle)}. ${x.name || x.kuerzel}`).join(', ');
   },
 
+  /* Rolle wie in der Liste: Instrument bzw. Aufgabe, dazu der Bereich,
+     wenn jemand (auch) im Technikteam ist */
+  rolleText(m) {
+    const instrument = (m.instrument || '').trim();
+    if (m.area === 'technik') return instrument && !/^tech/i.test(instrument) ? `${instrument} · Technik` : 'Technik';
+    if (m.area === 'beide') return [instrument, 'Band + Technik'].filter(Boolean).join(' · ');
+    return instrument;
+  },
+
+  /* Spalten wie auf dem Bildschirm: Klasse und Name immer, Rolle und
+     Klassenleitung je nach Schalter */
+  mitgliederSpalten() {
+    const sp = [
+      { titel: 'Klasse', cls: 'klasse', wert: m => m.klasse || '–' },
+      { titel: 'Name', wert: m => m.name },
+    ];
+    if (document.getElementById('member-zeige-rolle').checked) sp.push({ titel: 'Rolle', wert: m => this.rolleText(m) });
+    if (document.getElementById('member-zeige-leitung').checked) sp.push({ titel: 'Klassenleitung', wert: m => this.leitungText(m.klasse) || '–' });
+    return sp;
+  },
+
+  /* Schwarz-weiß und eng wie die Liste im Browser – ohne Steckbrief und Besetzung */
   druckeMitglieder(list, titel) {
-    const tabelle = this.printTable(
-      [{ titel: 'Klasse', cls: 'klasse' }, { titel: 'Name' },
-       { titel: 'Bereich' }, { titel: 'Instrument / Aufgabe' }, { titel: 'Klassenleitung' }],
-      list.map(m => [this.esc(m.klasse) || '–', `<strong>${this.esc(m.name)}</strong>`,
-                     this.AREAS[m.area] || '', this.esc(m.instrument) || '',
-                     this.esc(this.leitungText(m.klasse)) || '–']));
+    const sp = this.mitgliederSpalten();
+    const tabelle = this.printTable(sp.map(({ titel: t, cls }) => ({ titel: t, cls })),
+      list.map(m => sp.map(x => this.esc(x.wert(m)))), 'kompakt sw-liste');
     const feld = document.getElementById('member-anlass');
     const anlass = feld ? feld.value.trim() : '';
-    // Der Anlass steht gross unter dem Titel, die Zahl klein darunter – auf
+    // Der Anlass steht unter dem Titel, die Zahl klein darunter – auf
     // einer Befreiung ist der Anlass das, was das Sekretariat sucht.
-    this.printHtml(titel, tabelle, `${list.length} Schüler`, anlass);
+    this.printHtml(titel, tabelle, `${list.length} Schüler`, anlass, 'sw');
+  },
+
+  /* Angekreuzte – oder, wenn keiner angekreuzt ist, alle angezeigten – in die
+     Zwischenablage. Spalten durch Tabulator getrennt: In einer Tabelle landen
+     sie gleich in eigenen Spalten, im Text stehen sie sauber untereinander. */
+  async mitgliederKopieren(knopf, nurNamen) {
+    const gewaehlt = this.gewaehlte();
+    const list = (gewaehlt.length ? gewaehlt : this.filteredMembers())
+      .sort((a, b) => this.byClass(a, b));
+    if (!list.length) { alert('Die Liste ist leer.'); return; }
+    const sp = this.mitgliederSpalten();
+    const text = list.map(m => nurNamen ? m.name : sp.map(x => x.wert(m)).join('\t')).join('\n');
+    let ok = true;
+    try { await navigator.clipboard.writeText(text); } catch (e) { ok = this.kopierenAlt(text); }
+    const alt = knopf.innerHTML;
+    knopf.textContent = ok ? `✓ ${list.length} kopiert` : 'Kopieren ging nicht';
+    knopf.disabled = true;
+    setTimeout(() => { knopf.innerHTML = alt; knopf.disabled = false; }, 1800);
+  },
+
+  /* Rueckfalltuer fuer Browser, die die Zwischenablage nicht direkt freigeben */
+  kopierenAlt(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    ta.remove();
+    return ok;
   },
 
   exportMembers() {
@@ -1601,12 +1651,12 @@ const Band = {
 
   /* Einheitliches Druckbild: Titel, Eckdaten-Zeile, Inhalt, Fußzeile.
      `links`/`rechts` sind die kleinen Angaben unter dem Titel. */
-  printHtml(titel, inhalt, links, rechts) {
+  printHtml(titel, inhalt, links, rechts, stil) {
     document.querySelectorAll('.print-area').forEach(el => el.remove());
     const heute = new Date().toLocaleDateString('de-DE',
       { day: '2-digit', month: 'long', year: 'numeric' });
     const box = document.createElement('div');
-    box.className = 'print-area band-print';
+    box.className = 'print-area band-print' + (stil ? ' ' + stil : '');
     // Der Termin des Ereignisses steht groß unter dem Titel; das Druckdatum
     // gehört klein in die Fußzeile – nicht umgekehrt.
     box.innerHTML =

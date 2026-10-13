@@ -4,11 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=195">
+<link rel="stylesheet" href="style.css?v=197">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=195"></script>
-<script src="js/theme.js?v=195"></script>
-<script src="js/auth.js?v=195"></script>
+<script src="js/icons.js?v=197"></script>
+<script src="js/theme.js?v=197"></script>
+<script src="js/auth.js?v=197"></script>
 </head>
 <body>
 
@@ -583,7 +583,8 @@
           <button id="btn-print-members" class="small" data-icon="printer" title="Alle angezeigten Mitglieder drucken">Drucken</button>
           <button id="btn-print-members-sel" class="small" data-icon="printer" title="Nur die angekreuzten Mitglieder drucken – z.&thinsp;B. für eine Befreiung">Ausgewählte drucken</button>
           <button id="btn-export-members" class="small" data-icon="download" title="Angezeigte Mitglieder als CSV speichern">CSV</button>
-          <button id="btn-namen-fenster" class="small" data-icon="window" title="Kleines Fenster mit Klassen und Namen zum schnellen Kopieren">Namen-Fenster</button>
+          <button id="btn-copy-members" class="small" data-icon="clipboard" title="In die Zwischenablage – mit den Spalten, die gerade angezeigt werden. Sind Kästchen angekreuzt, nur diese.">Kopieren</button>
+          <button id="btn-copy-member-namen" class="small" title="Nur die Namen in die Zwischenablage – angekreuzte oder alle angezeigten">Nur Namen</button>
           <button id="btn-sync-members" class="small" data-icon="users" title="Mitglieder mit den Schülern aus deinen Klassenlisten verknüpfen">Abgleichen</button>
         </div>
         <div class="member-auswahl-zeile">
@@ -1194,35 +1195,35 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=195"></script>
-<script src="js/firebase-config.js?v=195"></script>
-<script type="module" src="js/live-firebase.js?v=195"></script>
-<script src="js/topics-seed.js?v=195"></script>
-<script src="js/ai-import.js?v=195"></script>
-<script src="js/store.js?v=195"></script>
-<script src="js/noise.js?v=195"></script>
-<script src="js/classes.js?v=195"></script>
-<script src="js/sitzplan.js?v=195"></script>
-<script src="js/schueler.js?v=195"></script>
-<script src="js/tasten.js?v=195"></script>
-<script src="js/lessons.js?v=195"></script>
-<script src="js/band.js?v=195"></script>
-<script src="js/notes.js?v=195"></script>
-<script src="js/tresor.js?v=195"></script>
-<script src="js/erklaerungen.js?v=195"></script>
-<script src="js/setlisten.js?v=195"></script>
-<script src="js/einklappen.js?v=195"></script>
-<script src="js/tinyband-instrumente.js?v=195"></script>
-<script src="js/live-groups.js?v=195"></script>
-<script src="js/tinyband-lehrer.js?v=195"></script>
-<script src="js/tipps.js?v=195"></script>
-<script src="js/sport-tabellen.js?v=195"></script>
-<script src="js/sport.js?v=195"></script>
-<script src="js/ex-import.js?v=195"></script>
-<script src="js/exen.js?v=195"></script>
-<script src="js/ex-sitzung.js?v=195"></script>
-<script src="js/ex-auswertung.js?v=195"></script>
-<script src="js/tools.js?v=195"></script>
-<script src="js/app.js?v=195"></script>
+<script src="js/vendor/qrcode.min.js?v=197"></script>
+<script src="js/firebase-config.js?v=197"></script>
+<script type="module" src="js/live-firebase.js?v=197"></script>
+<script src="js/topics-seed.js?v=197"></script>
+<script src="js/ai-import.js?v=197"></script>
+<script src="js/store.js?v=197"></script>
+<script src="js/noise.js?v=197"></script>
+<script src="js/classes.js?v=197"></script>
+<script src="js/sitzplan.js?v=197"></script>
+<script src="js/schueler.js?v=197"></script>
+<script src="js/tasten.js?v=197"></script>
+<script src="js/lessons.js?v=197"></script>
+<script src="js/band.js?v=197"></script>
+<script src="js/notes.js?v=197"></script>
+<script src="js/tresor.js?v=197"></script>
+<script src="js/erklaerungen.js?v=197"></script>
+<script src="js/setlisten.js?v=197"></script>
+<script src="js/einklappen.js?v=197"></script>
+<script src="js/tinyband-instrumente.js?v=197"></script>
+<script src="js/live-groups.js?v=197"></script>
+<script src="js/tinyband-lehrer.js?v=197"></script>
+<script src="js/tipps.js?v=197"></script>
+<script src="js/sport-tabellen.js?v=197"></script>
+<script src="js/sport.js?v=197"></script>
+<script src="js/ex-import.js?v=197"></script>
+<script src="js/exen.js?v=197"></script>
+<script src="js/ex-sitzung.js?v=197"></script>
+<script src="js/ex-auswertung.js?v=197"></script>
+<script src="js/tools.js?v=197"></script>
+<script src="js/app.js?v=197"></script>
 </body>
 </html>
