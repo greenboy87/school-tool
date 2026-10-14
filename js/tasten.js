@@ -4,7 +4,8 @@
    - unten:         voriger / nächster Unterreiter des offenen Reiters
                     (Klassen mit gewählter Klasse, Band, Exen)
 
-   ↓ springt von oben in die Unterreiter, Esc wieder hinauf. Ist unten etwas
+   ↓ springt von oben in die Unterreiter, Esc wieder hinauf. Ist bei Klassen
+   noch keine Klasse offen, öffnet ↓ dabei gleich die erste der Liste. Ist unten etwas
    gewählt (Schüler, Bandmitglied, Song), wählt Esc zuerst das ab. Unten
    behalten ↑/↓ ihre Aufgabe: Klasse bzw. Schüler wechseln (classes.js),
    Mitglieder und Songs blättern (band.js). Oben gehören ↑/↓ niemandem, damit
@@ -58,6 +59,13 @@ const Tasten = {
 
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       if (this.ebene === 'unten') return;          // classes.js / band.js übernehmen
+      // Klassen ohne gewählte Klasse: ↓ öffnet gleich die erste (meist 5a)
+      if (e.key === 'ArrowDown' && !unter && this.ersteKlasseOeffnen()) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+        this.setzen('unten', true);
+        return;
+      }
       if (!unter) return;                          // nichts darunter: Seite scrollt normal
       e.stopImmediatePropagation();
       if (e.key === 'ArrowDown') { e.preventDefault(); this.setzen('unten', true); }
@@ -85,6 +93,18 @@ const Tasten = {
     }[reiter.dataset.tab];
     if (!auswahl) return null;
     return [...document.querySelectorAll(auswahl)].some(k => !k.hidden && !k.disabled && k.offsetParent) ? auswahl : null;
+  },
+
+  /* Erste Klasse der Liste wählen – dieselbe Reihenfolge und derselbe
+     Jahrgangsfilter wie beim Blättern mit ↑/↓ in classes.js */
+  ersteKlasseOeffnen() {
+    const reiter = document.querySelector('.tab-btn.active');
+    if (!reiter || reiter.dataset.tab !== 'klassen' || Classes.currentClassId) return false;
+    const erste = Classes.data.classes.find(c =>
+      Classes.yearFilter === 'all' || (c.year || '') === Classes.yearFilter);
+    if (!erste) return false;
+    Classes.selectClass(erste.id);
+    return true;
   },
 
   /* Hat Esc unten noch etwas anderes abzuwählen? Dann bleibt die Ebene. */

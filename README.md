@@ -102,7 +102,7 @@ oder Unterreiter setzt die Ebene passend mit.
 
 | Wo | ↑ / ↓ | ← / → | sonst |
 |---|---|---|---|
-| oben (Hauptreiter) | ↓ in die Unterreiter | voriger / nächster Hauptreiter | |
+| oben (Hauptreiter) | ↓ in die Unterreiter (bei Klassen ohne offene Klasse öffnet ↓ gleich die erste, etwa 5a) | voriger / nächster Hauptreiter | |
 | unten, Klassen, kein Schüler gewählt | vorige / nächste Klasse (der Unterreiter bleibt) | voriger / nächster Unterreiter | **Esc** nach oben |
 | unten, Klassen, Schüler gewählt | voriger / nächster Schüler | voriger / nächster Unterreiter | **Esc** wählt ab, ein zweites Mal nach oben |
 | unten, Band | Mitglied / Song blättern, sonst Seite scrollen | voriger / nächster Band-Unterreiter | **Esc** schließt, dann nach oben |
