@@ -400,8 +400,8 @@ const ExAuswertung = {
         <button class="primary" data-aktion="export-notenliste" data-icon="book">In die Notenliste übernehmen</button>
         <button data-aktion="export-csv" data-icon="download">CSV</button>
         <button data-aktion="drucken" data-icon="printer">Alle drucken</button>
-        <button data-aktion="nachschreiben" class="small">Nachschreiben vorbereiten</button>
         <label class="ex-mit-loesungen"><input type="checkbox" id="ex-druck-loesungen" checked> mit Lösungen</label>
+        <button data-aktion="nachschreiben" class="small">Nachschreiben vorbereiten</button>
         <button data-aktion="schueleransicht" data-icon="eye" title="Nur Notenbild, Punkte und Schnitt – ohne Namen, zum Zeigen am Beamer">Schüleransicht</button>
         <button class="small" data-aktion="noten-entfernen" id="ex-noten-entfernen" hidden>Noten aus der Notenliste entfernen</button>
         <button class="small" data-aktion="archivieren" id="ex-archivieren"></button>
