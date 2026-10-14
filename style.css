@@ -1931,6 +1931,13 @@ body.ex-korrektur-offen { overflow: hidden; }
 .metronom-takte button.active { background: var(--active-soft); color: var(--accent-soft, var(--text)); }
 .metronom-start { min-width: 10rem; font-size: 1.05rem; padding: .7rem 1.4rem; }
 .metronom-start.laeuft { filter: saturate(.7); }
+/* Weiter zur Rhythmus-Werkstatt (eigenes Repo) – leise unter dem Start-Knopf */
+.metronom-link {
+  display: inline-flex; align-items: center; gap: .35rem; margin-top: -.3rem;
+  font-size: .85rem; font-weight: 600; color: var(--muted); text-decoration: none;
+  padding: .3rem .7rem; border-radius: var(--radius-sm); transition: color .15s, background .15s;
+}
+.metronom-link:hover { color: var(--accent-soft); background: var(--hover); }
 
 /* ---------- Stimmgerät und Klangschale (Reiter Tools) ---------- */
 .stimmen-anzeige { display: flex; flex-direction: column; align-items: center; gap: .6rem; margin: .4rem 0 .8rem; }
