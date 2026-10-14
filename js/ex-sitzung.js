@@ -327,7 +327,6 @@ const ExSitzung = {
     // Restzeiten laufen weiter, auch wenn sich in der Datenbank nichts ändert
     this.uhr = setInterval(() => { if (this.info && this.info.status === 'laeuft') this.warteraumZeichnen(); }, 5000);
     document.dispatchEvent(new CustomEvent('ex-sitzung', { detail: { code } }));
-    ExReiter.laeuft(true);
   },
 
   schliessen() {
@@ -381,6 +380,8 @@ const ExSitzung = {
   zeichnen() {
     const i = this.info, lokal = this.lokal();
     document.getElementById('ex-sitzung').hidden = false;
+    // Grüner Punkt am Reiter nur, solange Warteraum offen ist oder die Ex läuft
+    ExReiter.laeuft(i.status === 'warteraum' || i.status === 'laeuft');
     document.getElementById('ex-sitzung-titel').textContent = `${i.exNummer}. ${i.art || 'Ex'}: ${i.titel}${i.nachschreiben ? ' – Nachschreiben' : ''}`;
     const status = { warteraum: 'Warteraum offen', laeuft: 'läuft', beendet: 'beendet' }[i.status] || i.status;
     document.getElementById('ex-sitzung-info').textContent =
