@@ -239,15 +239,15 @@ const Classes = {
         if (e.key === 'Escape') { lsuche.value = ''; this.renderLehrer(); }
       });
     }
-    const lsort = document.getElementById('lehrer-sortierung');
-    if (lsort) lsort.addEventListener('change', () => {
-      localStorage.setItem('lehrer-sortierung', lsort.value);
-      this.renderLehrer();
-    });
-    const lrolle = document.getElementById('lehrer-rolle');
-    if (lrolle) lrolle.addEventListener('change', () => {
-      localStorage.setItem('lehrer-rolle', lrolle.value);
-      this.renderLehrer();
+    // Zeigen und Sortieren sind Segment-Schieber: Knopf antippen, Wert merken
+    ['lehrer-sortierung', 'lehrer-rolle'].forEach(id => {
+      const seg = document.getElementById(id);
+      if (seg) seg.addEventListener('click', e => {
+        const b = e.target.closest('button[data-wert]');
+        if (!b) return;
+        localStorage.setItem(id, b.dataset.wert);
+        this.renderLehrer();
+      });
     });
     const lband = document.getElementById('lehrer-nur-band');
     if (lband) lband.addEventListener('change', () => {
@@ -827,6 +827,21 @@ const Classes = {
 
   lehrerNurBand() { return localStorage.getItem('lehrer-nur-band') === '1'; },
 
+  /* Markiert im Segment-Schieber den gewählten Knopf; --i und --n schieben
+     den Hintergrund (style.css, .segment::before) an seine Stelle */
+  segmentSetzen(id, wert) {
+    const seg = document.getElementById(id);
+    if (!seg) return;
+    const knoepfe = [...seg.querySelectorAll('button[data-wert]')];
+    const i = Math.max(0, knoepfe.findIndex(b => b.dataset.wert === wert));
+    knoepfe.forEach((b, j) => {
+      b.classList.toggle('active', j === i);
+      b.setAttribute('aria-checked', j === i ? 'true' : 'false');
+    });
+    seg.style.setProperty('--n', knoepfe.length);
+    seg.style.setProperty('--i', i);
+  },
+
   renderLehrer() {
     const box = document.getElementById('lehrer-liste');
     if (!box) return;
@@ -835,13 +850,10 @@ const Classes = {
 
     const feld = document.getElementById('lehrer-suche');
     const suche = (feld ? feld.value : '').trim().toLowerCase();
-    const wahl = document.getElementById('lehrer-sortierung');
-    if (wahl && wahl.value !== this.lehrerSortierung()) wahl.value = this.lehrerSortierung();
     const sortierung = this.lehrerSortierung();
-
-    const rollenWahl = document.getElementById('lehrer-rolle');
-    if (rollenWahl && rollenWahl.value !== this.lehrerRolle()) rollenWahl.value = this.lehrerRolle();
+    this.segmentSetzen('lehrer-sortierung', sortierung);
     const rollenFilter = this.lehrerRolle();
+    this.segmentSetzen('lehrer-rolle', rollenFilter);
 
     const bandHaken = document.getElementById('lehrer-nur-band');
     if (bandHaken) bandHaken.checked = this.lehrerNurBand();

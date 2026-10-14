@@ -94,12 +94,19 @@ verlinkt diese Klassen.
 **Esc**. Wer links eine andere Klasse wählt, lässt die Wahl ebenfalls hinter sich.
 
 ### ⌨️ Tastatur
+**← / →** blättern in zwei Ebenen. Oben (so startet die Seite) wechseln sie die Hauptreiter
+Tools … Extras. **↓** springt in die Unterreiter des offenen Reiters (Klassen mit gewählter
+Klasse, Band, Exen), dort wechseln ← / → die Unterreiter. **Esc** geht wieder nach oben. Die
+aktive Ebene ist umrandet, solange per Tastatur geblättert wird. Ein Klick auf einen Haupt-
+oder Unterreiter setzt die Ebene passend mit.
+
 | Wo | ↑ / ↓ | ← / → | sonst |
 |---|---|---|---|
-| Klassen, kein Schüler gewählt | vorige / nächste Klasse (der Unterreiter bleibt) | voriger / nächster Unterreiter | |
-| Klassen, Schüler gewählt | voriger / nächster Schüler | voriger / nächster Unterreiter | **Esc** wählt ab |
-| Band | Seite scrollen | voriger / nächster Band-Unterreiter | |
-| Tools (Startseite), Klassen ohne gewählte Klasse, Exen, Notes, Sport, Lehrer, Extras | | voriger / nächster Hauptreiter | |
+| oben (Hauptreiter) | ↓ in die Unterreiter | voriger / nächster Hauptreiter | |
+| unten, Klassen, kein Schüler gewählt | vorige / nächste Klasse (der Unterreiter bleibt) | voriger / nächster Unterreiter | **Esc** nach oben |
+| unten, Klassen, Schüler gewählt | voriger / nächster Schüler | voriger / nächster Unterreiter | **Esc** wählt ab, ein zweites Mal nach oben |
+| unten, Band | Mitglied / Song blättern, sonst Seite scrollen | voriger / nächster Band-Unterreiter | **Esc** schließt, dann nach oben |
+| unten, Exen | Seite scrollen | Schreiben / Korrigieren / Bibliothek | **Esc** nach oben |
 | Suchfeld | Treffer wählen | Cursor im Feld | **Enter** wählt, **Esc** leert |
 | überall | | | **V** blendet Gesichter ein/aus, **K** schlägt die Klangschale an |
 
@@ -141,8 +148,10 @@ Klassenleitung, auch für Klassen, die man selbst nicht unterrichtet. Ein Abzeic
 jemand **1.** (gefüllte Ziffer) oder **2. Klassenleitung** (umrandete Ziffer) ist:
 `BU  Baumann, Sandra ① 5a`. Angezeigt wird nur die Klasse selbst – aus `7d_IIIa` wird `7d`,
 aus `10f_I/IIIb` wird `10f`; der Zweig dahinter steht in jeder zweiten Zeile und macht die
-Liste unruhig. Gesucht werden kann trotzdem nach beiden Schreibweisen. Über *Zeigen* lässt sich auf **nur 1.** oder **nur 2.
-Klassenleitung** einschränken, mit **nur Schulband & Technik** zusätzlich auf die
+Liste unruhig. Gesucht werden kann trotzdem nach beiden Schreibweisen. Neben dem Suchfeld stehen, alle gleich
+hoch, zwei Schieber und ein Schalter: **Alle / 1. KL / 2. KL** schränkt auf 1. oder 2.
+Klassenleitung ein, **A–Z / Klasse** sortiert nach Name oder Klassenleitung, und der Schalter
+**Band & Technik** grenzt zusätzlich auf die
 Klassenleitungen der Klassen, aus denen Band- oder Technikmitglieder kommen – also genau die
 Kollegen, mit denen man wegen Proben und Auftritten zu tun hat. In dieser Ansicht steht unter
 jeder Lehrkraft auch, **um wen es geht**: die Namen ihrer Band- und Technikmitglieder,

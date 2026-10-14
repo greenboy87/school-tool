@@ -257,6 +257,9 @@ input[type="checkbox"] { accent-color: var(--accent); }
 }
 .subtab-btn:hover, .ex-reiter-btn:hover:not(:disabled) { background: var(--hover); }
 .subtab-btn.active, .ex-reiter-btn.active { background: var(--active-soft); color: var(--accent-soft); }
+/* Tastatur-Ebene (tasten.js): aktiver Knopf der Ebene, in der ← / → gerade blättern */
+.tasten-oben .main-tabs .tab-btn.active,
+.tasten-unten .sub-tabs .active { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
 
 .subtab-page { display: none; }
 .subtab-page.active { display: block; }
@@ -1081,12 +1084,47 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 .kl-name.unbekannt { color: var(--danger); }
 
 /* Suche und Sortierung ueber der Liste */
-.lehrer-werkzeuge { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin-top: .7rem; }
-.lehrer-werkzeuge input[type="search"] {
-  flex: 1 1 14rem; min-width: 10rem; padding: .45rem .6rem; font: inherit; font-size: .88rem;
-  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
+.lehrer-werkzeuge {
+  --werkzeug-hoehe: 2.3rem;
+  display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin-top: .7rem;
 }
-.lehrer-werkzeuge label { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--muted); }
+/* Suchfeld, Schieber und Schalter: gleiche Höhe, gleicher Rahmen, gleiche Ecken */
+.lehrer-werkzeuge input[type="search"],
+.lehrer-werkzeuge .segment,
+.lehrer-werkzeuge .lehrer-schalter {
+  box-sizing: border-box; height: var(--werkzeug-hoehe); font-size: .85rem;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg);
+}
+.lehrer-werkzeuge input[type="search"] {
+  flex: 1 1 14rem; min-width: 10rem; padding: 0 .7rem; font: inherit; font-size: .85rem; color: var(--text);
+}
+.lehrer-werkzeuge .lehrer-schalter { padding: 0 .75rem; color: var(--text); font-weight: 600; white-space: nowrap; }
+
+/* Segment-Schieber: Knöpfe gleich breit, darunter gleitet die Markierung */
+.segment {
+  position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  padding: 3px; flex: none;
+}
+.segment::before {
+  content: ''; position: absolute; top: 3px; bottom: 3px; left: 3px;
+  width: calc((100% - 6px) / var(--n, 1));
+  transform: translateX(calc(100% * var(--i, 0)));
+  background: var(--accent-grad); border-radius: calc(var(--radius-sm) - 2px);
+  transition: transform .2s ease;
+}
+.segment button {
+  position: relative; z-index: 1; border: none; background: transparent; cursor: pointer;
+  font: inherit; font-weight: 600; color: var(--muted); padding: 0 .8rem; white-space: nowrap;
+  border-radius: calc(var(--radius-sm) - 2px); transition: color .2s;
+}
+.segment button:hover:not(.active) { color: var(--text); }
+.segment button.active { color: var(--on-accent); }
+.segment button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* Schmal: jedes Element eine volle Zeile, damit alles gleich breit steht */
+@media (max-width: 600px) {
+  .lehrer-werkzeuge > * { flex: 1 1 100%; }
+  .lehrer-werkzeuge .segment { display: grid; }
+}
 
 /* Keine eigene Scrollflaeche: Der Reiter gehoert der Liste allein, und in
    einem hohen Fenster soll sie ihn auch ausfuellen duerfen. */
