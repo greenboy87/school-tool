@@ -307,6 +307,10 @@ Lehrer-Anmeldung da; danach liegt sie unten in der Bibliothek.
   sich **endgültig löschen** (Sitzungen, Abgaben, Korrekturen; die Ex in der Bibliothek
   bleibt, die Noten in der Notenliste auf Wunsch auch). Wer eine Ex aus der
   Bibliothek löschen will, wird gewarnt, solange es Auswertungen dazu gibt.
+- **Testraum** (in der Klassenauswahl ganz unten): Anzahl Schüler eingeben, sie bekommen
+  Nummern. Auf dem iPad tippen sie nach der Nummer einen Namen ein; der wird auf dem iPad
+  mit einem Schlüssel aus dem QR-Code verschlüsselt – in der Datenbank steht nur
+  Zeichensalat, lesbar ist er nur auf dem Lehrergerät („Nr. 3 · Mia“). Keine Notenliste.
 - **Nachschreiben** für alle, die nicht geschrieben haben – landet in derselben Auswertung.
 
 > **Einmalig:** Anmeldung in Firebase einschalten und die Regeln vom 12.10.2026 eintragen

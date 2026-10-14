@@ -77,7 +77,8 @@ const ExReiter = {
     const jahre = new Set(klassen.map(c => c.year));
     const esc = s => Band.esc(s);
     let html = klassen.map(c => `<option value="${esc(c.id)}">${esc(c.name + (jahre.size > 1 && c.year ? ` (${c.year})` : ''))}</option>`).join('');
-    if (gruppen.some(g => !Classes.data.classes.some(c => c.id === g.klasseId))) {
+    html += `<option value="${ExSitzung.TESTRAUM}">Testraum</option>`;
+    if (gruppen.some(g => g.klasseId !== ExSitzung.TESTRAUM && !Classes.data.classes.some(c => c.id === g.klasseId))) {
       html += `<option value="${this.WEG}">Gelöschte Klassen</option>`;
     }
     sel.innerHTML = html;

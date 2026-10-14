@@ -59,12 +59,23 @@ const ExSchueler = {
         if (daten && daten.n && typeof daten.n === 'object') {
           try { sessionStorage.setItem(this.namenKey(), JSON.stringify(daten.n)); } catch (e) {}
         }
+        // Testraum: Schlüssel, mit dem der selbst gewählte Name verschlüsselt wird
+        if (daten && typeof daten.k === 'string' && /^[A-Za-z0-9_-]{16,40}$/.test(daten.k)) {
+          try { sessionStorage.setItem(this.namenKey() + '-k', daten.k); } catch (e) {}
+        }
       } catch (e) { /* kaputter Anker – dann eben Nummern */ }
       history.replaceState(null, '', location.pathname + location.search);
     }
     try { this.namen = JSON.parse(sessionStorage.getItem(this.namenKey())) || {}; } catch (e) { this.namen = {}; }
+    try { this.namensSchluessel = sessionStorage.getItem(this.namenKey() + '-k') || null; } catch (e) { this.namensSchluessel = null; }
   },
-  name(nr) { return this.namen[nr] ? String(this.namen[nr]) : ''; },
+  namensSchluessel: null,
+  name(nr) {
+    if (this.namen[nr]) return String(this.namen[nr]);
+    // Testraum: der eigene, selbst gewählte Name
+    const g = this.gemerkt();
+    return g.testName && g.nummer === nr ? `Nr. ${nr} · ${g.testName}` : '';
+  },
   merkKey() { return 'ex-sitzung-' + this.code; },
 
   /* ---------- Anmelden ---------- */
@@ -216,6 +227,11 @@ const ExSchueler = {
     this.rasterMarkieren();
     document.getElementById('nummer-fehler').textContent = i.status === 'laeuft'
       ? `Die Ex läuft schon. Wähle ${mitNamen ? 'deinen Namen' : 'deine Nummer'} – deine Lehrkraft holt dich dazu.` : '';
+    const feld = document.getElementById('test-name-feld');
+    feld.hidden = !this.namensSchluessel;
+    if (this.namensSchluessel && !document.getElementById('test-name').value) {
+      document.getElementById('test-name').value = this.gemerkt().testName || '';
+    }
     this.zeigeNur('s-nummer');
   },
 
@@ -232,16 +248,18 @@ const ExSchueler = {
   async beitreten() {
     const nr = this.gewaehlt;
     if (!nr) return;
-    if (!confirm(this.name(nr) ? `Du bist ${this.name(nr)}?` : `Du bist Nummer ${nr}?`)) return;
+    const testName = this.namensSchluessel ? ExNamen.saeubern(document.getElementById('test-name').value) : '';
+    if (!confirm(this.namen[nr] ? `Du bist ${this.namen[nr]}?` : `Du bist Nummer ${nr}${testName ? ` (${testName})` : ''}?`)) return;
     const notenschutz = document.getElementById('notenschutz-schalter').checked;
     const knopf = document.getElementById('btn-beitreten');
     knopf.disabled = true;
     try {
       // update statt set: Ein von der Lehrkraft schon bestätigter Notenschutz bleibt stehen
-      await FB.update(this.ref('teilnehmer/' + this.uid), {
-        nummer: nr, status: 'wartet', notenschutzAngefragt: notenschutz, ts: FB.serverTimestamp(),
-      });
-      try { localStorage.setItem(this.merkKey(), JSON.stringify({ nummer: nr, notenschutz })); } catch (e) {}
+      const eintrag = { nummer: nr, status: 'wartet', notenschutzAngefragt: notenschutz, ts: FB.serverTimestamp() };
+      // Im Testraum geht der Name nur verschlüsselt in die Datenbank
+      if (testName) eintrag.nameV = await ExNamen.verschluesseln(this.namensSchluessel, testName);
+      await FB.update(this.ref('teilnehmer/' + this.uid), eintrag);
+      try { localStorage.setItem(this.merkKey(), JSON.stringify({ nummer: nr, notenschutz, testName })); } catch (e) {}
       this.nummerWaehlen = false;
     } catch (e) {
       document.getElementById('nummer-fehler').textContent =

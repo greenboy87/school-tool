@@ -57,3 +57,8 @@
 .ex-nummern.namen { grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); }
 .ex-nummern.namen button { font-size: 1.1rem; font-weight: 600; height: 3.6rem; padding: 0 .6rem; }
 .ex-warten-name { font-size: 2.2rem; font-weight: 800; color: var(--accent); margin-bottom: .6rem; }
+
+/* Testraum: selbst gewählter Name nach der Nummer */
+.ex-test-name { display: flex; flex-direction: column; gap: .35rem; font-weight: 600; margin: 1rem 0 .4rem; }
+.ex-test-name input { font: inherit; font-size: 1.1rem; padding: .7rem .9rem; border-radius: var(--radius-sm, 10px);
+  border: 1px solid var(--border); background: var(--input-bg, transparent); color: var(--text); }

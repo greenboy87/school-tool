@@ -46,7 +46,11 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
 
 **R2.** **Veröffentlichen**. Fertig – im School-Tool einmal Strg+Shift+R.
 
-> **Zuletzt geändert am 12.10.2026 (zweite Änderung) – Ex-Sitzungen:** Neu sind
+> **Zuletzt geändert am 14.10.2026 – Ex-Testraum:** Unter `teilnehmer` ist `nameV`
+> neu – der selbst gewählte Name im Testraum, auf dem iPad verschlüsselt (nur in
+> Sitzungen mit `info/test`). **Den kompletten Block erneut kopieren** (R1 und R2).
+>
+> **Geändert am 12.10.2026 (zweite Änderung) – Ex-Sitzungen:** Neu sind
 > `exsessions` (Warteraum, Teilnehmer, Abgaben) und `exzugang`; unter `exen` dürfen
 > freigegebene Schüler einer laufenden Ex jetzt die Schülerfassung lesen. Schüler
 > schreiben nur ihren eigenen Eintrag, nur solange die Ex läuft und ihre Zeit nicht
@@ -173,6 +177,7 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
               "nummer":  { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{1,3}$/)" },
               "status":  { ".validate": "newData.isString() && (newData.val() === 'wartet' || (auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2' && newData.val().matches(/^(freigegeben|fehlt|entfernt|ersetzt)$/)))" },
               "notenschutzAngefragt": { ".validate": "newData.isBoolean()" },
+              "nameV":   { ".validate": "newData.isString() && newData.val().length <= 200 && root.child('schoolTool/exsessions/' + $code + '/info/test').val() === true" },
               "notenschutz": { ".validate": "newData.isBoolean() && auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'" },
               "zuschlagMin": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120 && auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'" },
               "ts":      { ".validate": "newData.isNumber()" },
@@ -382,6 +387,7 @@ fügst nur einen Block hinzu:
               "nummer":  { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{1,3}$/)" },
               "status":  { ".validate": "newData.isString() && (newData.val() === 'wartet' || (auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2' && newData.val().matches(/^(freigegeben|fehlt|entfernt|ersetzt)$/)))" },
               "notenschutzAngefragt": { ".validate": "newData.isBoolean()" },
+              "nameV":   { ".validate": "newData.isString() && newData.val().length <= 200 && root.child('schoolTool/exsessions/' + $code + '/info/test').val() === true" },
               "notenschutz": { ".validate": "newData.isBoolean() && auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'" },
               "zuschlagMin": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 120 && auth != null && auth.uid === 'QywuB8eYlOPmTjXCI5I9itdLhsq2'" },
               "ts":      { ".validate": "newData.isNumber()" },

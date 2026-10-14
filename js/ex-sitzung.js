@@ -29,6 +29,12 @@ const ExSitzung = {
   init() {
     if (!document.getElementById('ex-start')) return;
     document.getElementById('ex-start-klasse').addEventListener('change', () => this.anwesenheitZeichnen());
+    const anzahl = document.getElementById('ex-test-anzahl');
+    try { if (localStorage.getItem('ex-test-anzahl')) anzahl.value = localStorage.getItem('ex-test-anzahl'); } catch (e) { /* egal */ }
+    anzahl.addEventListener('input', () => {
+      try { localStorage.setItem('ex-test-anzahl', String(this.testAnzahl())); } catch (e) { /* egal */ }
+      this.anwesenheitZeichnen();
+    });
     document.getElementById('ex-start-ex').addEventListener('change', () => { this.dauerVorbelegen(); this.vorschauText(); });
     document.getElementById('ex-start-dauer').addEventListener('input', () => this.vorschauText());
     ['ex-start-timer', 'ex-start-ohnelimit'].forEach(id =>
@@ -79,7 +85,11 @@ const ExSitzung = {
       o.textContent = c.name + (jahre.size > 1 && c.year ? ` (${c.year})` : '');
       sel.append(o);
     }
-    if (klassen.some(c => c.id === alt)) sel.value = alt;
+    const t = document.createElement('option');
+    t.value = this.TESTRAUM;
+    t.textContent = 'Testraum';
+    sel.append(t);
+    if (klassen.some(c => c.id === alt) || alt === this.TESTRAUM) sel.value = alt;
     this.anwesenheitZeichnen();
   },
 
@@ -162,20 +172,36 @@ const ExSitzung = {
     return n >= 1 && n <= 9 ? n : 1;
   },
 
-  klasse() {
-    return Classes.data.classes.find(c => c.id === document.getElementById('ex-start-klasse').value) || null;
+  klasse() { return this.klasseVon(document.getElementById('ex-start-klasse').value); },
+
+  /* Testraum: eine gedachte Klasse ohne Namen, nur Nummern. Sie steht nicht in
+     der Klassenliste und hat keine Notenliste. Die Schüler geben sich auf dem
+     iPad selbst einen Namen – verschlüsselt, siehe js/ex-namen.js. */
+  TESTRAUM: 'testraum',
+  testAnzahl() {
+    const n = parseInt(document.getElementById('ex-test-anzahl').value, 10);
+    return n >= 1 && n <= 60 ? n : 10;
+  },
+  testraum() {
+    return { id: this.TESTRAUM, name: 'Testraum', test: true, projects: [],
+      students: Array.from({ length: 99 }, (_, i) => ({ id: 't' + (i + 1), first: '', last: 'Nr. ' + (i + 1) })) };
+  },
+  klasseVon(id) {
+    if (id === this.TESTRAUM) return this.testraum();
+    return Classes.data.classes.find(c => c.id === id) || null;
   },
 
   anwesenheitZeichnen() {
     const ul = document.getElementById('ex-anwesend');
     const cls = this.klasse();
     ul.innerHTML = '';
+    document.getElementById('ex-test-feld').hidden = !(cls && cls.test);
     if (!cls) { this.anwesenheitZaehlen(); return; }
     // Beim Nachschreiben gilt die Nummernzuordnung der ursprünglichen Ex, nicht die heutige Klassenliste
     const eintraege = this.nach
       ? Object.entries(this.nach.nummern).sort((a, b) => a[0] - b[0])
         .map(([nr, sid]) => [nr, cls.students.find(x => x.id === sid)])
-      : cls.students.map((s, i) => [String(i + 1), s]);
+      : (cls.test ? cls.students.slice(0, this.testAnzahl()) : cls.students).map((s, i) => [String(i + 1), s]);
     for (const [nr, s] of eintraege) {
       const geschrieben = this.nach && this.nach.geschrieben.has(nr);
       const li = document.createElement('li');
@@ -286,10 +312,15 @@ const ExSitzung = {
         zuschlagMin: 0, erstellt: FB.serverTimestamp(), erlaubt, fehlt,
         zeitAnzeigen: zeit.anzeigen, ohneLimit: zeit.ohneLimit,
         ...(nach ? { nachschreiben: true } : {}),
+        ...(cls.test ? { test: true } : {}),
       });
+      // Beim Nachschreiben im Testraum gilt der Schlüssel der ersten Sitzung weiter
+      const alterSchluessel = nach && Object.values(this.sitzungen())
+        .find(x => `${x.exId}|${x.klasseId}|${x.exNummer}` === nach.key && x.namensSchluessel);
       this.sitzungen()[code] = {
         exId, titel: ex.titel, klasseId: cls.id, klasse: cls.name, exNummer,
         nummern, erstellt: Date.now(),
+        ...(cls.test ? { namensSchluessel: alterSchluessel ? alterSchluessel.namensSchluessel : ExNamen.neuerSchluessel() } : {}),
       };
       Classes.persist();
       document.dispatchEvent(new CustomEvent('ex-sitzungen'));
@@ -315,8 +346,10 @@ const ExSitzung = {
       if (!this.info) { this.vergessen(); return; }
       this.zeichnen();
     }, e => alert('Die Sitzung lässt sich nicht lesen: ' + e.message)));
+    this.testNamen = {};
     this.abmelden.push(FB.onValue(this.ref('teilnehmer'), snap => {
       this.teilnehmer = snap.val() || {};
+      this.testNamenLesen();
       if (this.info) this.warteraumZeichnen();
     }));
     this.abmelden.push(FB.onValue(this.ref('abgaben'), snap => {
@@ -356,6 +389,8 @@ const ExSitzung = {
      (wie bei der Gruppenbildung). */
   link() {
     const basis = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'ex.html?s=' + this.code;
+    const lokal = this.lokal();
+    if (lokal && lokal.namensSchluessel) return basis + '#' + LiveGroups.nachBase64(JSON.stringify({ k: lokal.namensSchluessel }));
     const namen = this.kurznamen();
     return Object.keys(namen).length ? basis + '#' + LiveGroups.nachBase64(JSON.stringify({ n: namen })) : basis;
   },
@@ -363,8 +398,8 @@ const ExSitzung = {
   /* „Mia A.“ – bei gleichem Vornamen und Anfangsbuchstaben der volle Nachname */
   kurznamen() {
     const lokal = this.lokal(), i = this.info;
-    const cls = lokal && Classes.data.classes.find(c => c.id === lokal.klasseId);
-    if (!cls || !i) return {};
+    const cls = lokal && this.klasseVon(lokal.klasseId);
+    if (!cls || !i || cls.test) return {};
     const eintraege = Object.keys(i.erlaubt || {}).map(k => k.slice(1)).map(nr => {
       const s = cls.students.find(x => x.id === lokal.nummern[nr]);
       return s && { nr, first: (s.first || '').trim(), last: (s.last || '').trim() };
@@ -409,9 +444,27 @@ const ExSitzung = {
   name(nr) {
     const lokal = this.lokal();
     const sid = lokal && lokal.nummern[nr];
-    const cls = lokal && Classes.data.classes.find(c => c.id === lokal.klasseId);
+    const cls = lokal && this.klasseVon(lokal.klasseId);
     const s = cls && cls.students.find(x => x.id === sid);
+    if (cls && cls.test) {
+      const eigen = this.testNamen[nr];
+      return eigen ? `Nr. ${nr} · ${eigen}` : `Nr. ${nr}`;
+    }
     return s ? Classes.studentName(s) : '(unbekannt)';
+  },
+
+  /* Testraum: selbst gewählte Namen entschlüsseln (nur hier, mit dem lokalen Schlüssel) */
+  testNamen: {},
+  async testNamenLesen() {
+    const lokal = this.lokal();
+    if (!lokal || !lokal.namensSchluessel) return;
+    let neu = false;
+    for (const t of Object.values(this.teilnehmer)) {
+      if (!t.nameV || t.status === 'ersetzt') continue;
+      const name = await ExNamen.entschluesseln(lokal.namensSchluessel, t.nameV);
+      if (name && this.testNamen[t.nummer] !== name) { this.testNamen[t.nummer] = name; neu = true; }
+    }
+    if (neu && this.info) this.warteraumZeichnen();
   },
 
   /* Einträge, die gerade zählen – „ersetzt“ ist eine abgelöste Anmeldung */
@@ -712,7 +765,7 @@ const ExSitzung = {
      beziehen sich auf die Dauer dieser Sitzung, aufgerundet auf ganze Minuten. */
   steckbriefAusgleich(nr) {
     const lokal = this.lokal();
-    const cls = lokal && Classes.data.classes.find(c => c.id === lokal.klasseId);
+    const cls = lokal && this.klasseVon(lokal.klasseId);
     const s = cls && cls.students.find(x => x.id === lokal.nummern[nr]);
     if (!s) return {};
     let zuschlagMin = 0;

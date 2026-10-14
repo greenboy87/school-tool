@@ -89,7 +89,7 @@ const ExAuswertung = {
      darunter aufklappbar, nach Schuljahr */
   listeFuellen() {
     const kid = typeof ExReiter !== 'undefined' ? ExReiter.klasseId() : '';
-    const gibtKlasse = id => Classes.data.classes.some(c => c.id === id);
+    const gibtKlasse = id => id === ExSitzung.TESTRAUM || Classes.data.classes.some(c => c.id === id);
     const alle = this.gruppen().filter(g => !kid || (kid === ExReiter.WEG ? !gibtKlasse(g.klasseId) : g.klasseId === kid));
     const aktiv = alle.filter(x => !this.istArchiviert(x.key));
     const archiv = alle.filter(x => this.istArchiviert(x.key));
@@ -122,7 +122,7 @@ const ExAuswertung = {
   klasseGewechselt() {
     if (this.a && typeof ExReiter !== 'undefined') {
       const kid = ExReiter.klasseId();
-      const passt = kid === ExReiter.WEG ? !Classes.data.classes.some(c => c.id === this.a.gruppe.klasseId)
+      const passt = kid === ExReiter.WEG ? !ExSitzung.klasseVon(this.a.gruppe.klasseId)
         : this.a.gruppe.klasseId === kid;
       if (!passt) { this.a = null; document.getElementById('ex-auswertung-inhalt').innerHTML = ''; }
     }
@@ -163,7 +163,7 @@ const ExAuswertung = {
         const s = (await get(ref(db, `schoolTool/exsessions/${code}`))).val();
         if (s) sitzungen[code] = s;
       }
-      const cls = Classes.data.classes.find(c => c.id === gruppe.klasseId);
+      const cls = ExSitzung.klasseVon(gruppe.klasseId);
       this.a = {
         key, gruppe, cls, sitzungen, html,
         meta: JSON.parse(metaSnap.val()),
@@ -173,6 +173,7 @@ const ExAuswertung = {
         schueler: [],
       };
       this.schuelerSammeln();
+      await this.testNamen();
       await this.bewerteAlle();
       this.zeichnen();
     } catch (e) {
@@ -212,6 +213,18 @@ const ExAuswertung = {
     }
     a.schueler = Object.values(nachNr).sort((x, y) => x.nr - y.nr);
     for (const s of a.schueler) s.name = this.name(s.sid);
+  },
+
+  /* Testraum: die selbst gewählten Namen entschlüsseln – „Nr. 3 · Mia“ */
+  async testNamen() {
+    const a = this.a;
+    if (!a.cls || !a.cls.test) return;
+    for (const s of a.schueler) {
+      const lokal = (Classes.data.exSitzungen || {})[s.code] || {};
+      if (!s.t || !s.t.nameV || !lokal.namensSchluessel) continue;
+      const name = await ExNamen.entschluesseln(lokal.namensSchluessel, s.t.nameV);
+      if (name) s.name = `Nr. ${s.nr} · ${name}`;
+    }
   },
 
   name(sid) {
@@ -411,6 +424,9 @@ const ExAuswertung = {
   },
 
   knoepfeAktualisieren() {
+    const test = !!(this.a.cls && this.a.cls.test);
+    const exp = document.querySelector('#ex-auswertung-inhalt [data-aktion="export-notenliste"]');
+    if (exp) exp.hidden = test;
     const p = this.projekt();
     const ent = document.getElementById('ex-noten-entfernen');
     ent.hidden = !p;
@@ -977,6 +993,7 @@ const ExAuswertung = {
 
   exportNotenliste() {
     const a = this.a;
+    if (a.cls && a.cls.test) { alert('Der Testraum hat keine Notenliste – die Noten siehst du hier, in der CSV und im Ausdruck.'); return; }
     if (!a.cls) { alert('Die Klasse gibt es auf diesem Gerät nicht mehr.'); return; }
     const noten = {};
     let vorlaeufig = 0, ohneSchueler = 0;
