@@ -88,7 +88,7 @@ const ExSitzung = {
     const t = document.createElement('option');
     t.value = this.TESTRAUM;
     t.textContent = 'Testraum';
-    sel.append(t);
+    sel.prepend(t);
     if (klassen.some(c => c.id === alt) || alt === this.TESTRAUM) sel.value = alt;
     this.anwesenheitZeichnen();
   },
