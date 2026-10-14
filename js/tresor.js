@@ -22,6 +22,18 @@ const Tresor = {
   timer: null,
   amLaufen: false,
   letzterStand: 0,
+  /* Schutz vor gegenseitigem Überschreiben (Chrome und Safari, Mac und iPad):
+     BASIS = der Serverstand, auf dem dieser Browser aufbaut. Liegt auf dem
+     Server etwas Neueres, hat ein anderes Gerät inzwischen gespeichert – dann
+     wird nicht blind hochgeladen, sondern gefragt. GEAENDERT = hier gibt es
+     Änderungen, die noch nicht oben sind. */
+  BASIS_KEY: 'tresor-basis',
+  GEAENDERT_KEY: 'tresor-geaendert',
+  eigenerStand: 0,        // gerade selbst hochgeladen – das eigene Echo ignorieren
+  fremd: null,            // { stand, geraet } – neuerer Stand eines anderen Geräts
+  pausiert: false,        // nach „nichts tun“ im Konflikt: kein automatisches Hochladen
+  aenderungen: 0,         // zählt Speichervorgänge – was während des Hochladens dazukommt, bleibt „geändert“
+  abmeldenStand: null,
 
   aktiv() { return !!this.schluessel; },
 
@@ -41,8 +53,24 @@ const Tresor = {
     const originalSave = Store.save.bind(Store);
     Store.save = (data) => {
       originalSave(data);
-      if (this.aktiv()) this.geplantHochladen();
+      if (this.aktiv()) {
+        this.aenderungen++;
+        this.geaendert(true);
+        this.geplantHochladen();
+      }
     };
+    // Zurück im Tab: ausstehenden fremden Stand zeigen
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && this.fremd) this.hinweisZeigen();
+    });
+  },
+
+  basis() { return Number(localStorage.getItem(this.BASIS_KEY)) || 0; },
+  basisSetzen(stand) { localStorage.setItem(this.BASIS_KEY, String(stand || 0)); },
+  istGeaendert() { return localStorage.getItem(this.GEAENDERT_KEY) === '1'; },
+  geaendert(an) {
+    if (an) localStorage.setItem(this.GEAENDERT_KEY, '1');
+    else localStorage.removeItem(this.GEAENDERT_KEY);
   },
 
   /* ---------- Bedienung ---------- */
@@ -88,6 +116,7 @@ const Tresor = {
       'dieses Gerät gleicht nur nicht mehr ab.')) return;
     localStorage.removeItem(this.PASS_KEY);
     this.passwort = this.id = this.salz = this.schluessel = null;
+    this.nichtMehrMithoeren();
     this.knopfAktualisieren();
     this.status('Sync beendet.');
   },
@@ -140,8 +169,10 @@ const Tresor = {
       }
       localStorage.setItem(this.PASS_KEY, pw);
       const lokal = Store.load();
-      const lokalStand = lokal.standAt || 0;
+      const lokalStand = Math.max(lokal.standAt || 0, this.basis());
       const fernStand = vorhanden.stand || 0;
+      // Still übernehmen nur, wenn hier nichts Ungesichertes liegt
+      if (fernStand > lokalStand && still && this.istGeaendert()) still = false;
       if (fernStand > lokalStand) {
         // Beide Seiten benennen: Sonst weiß man nicht, was man gerade ersetzt.
         const zaehle = d => {
@@ -186,7 +217,9 @@ const Tresor = {
       }
       this.knopfAktualisieren();
       this.status('verbunden');
-      await this.hochladen(false);
+      // Hier angekommen, gilt der Stand dieses Geräts (ggf. ausdrücklich gewählt)
+      await this.hochladen(false, true);
+      this.mithoeren();
     } else {
       // Unter diesem Passwort liegt nichts. Das heißt entweder „erstes Gerät“ –
       // oder es ist ein Tippfehler. Weil der Speicherort am Passwort hängt, würde
@@ -208,7 +241,8 @@ const Tresor = {
       this.schluessel = await this.schluesselAus(pw, this.salz);
       localStorage.setItem(this.PASS_KEY, pw);
       this.knopfAktualisieren();
-      await this.hochladen(false);
+      await this.hochladen(false, true);
+      this.mithoeren();
       if (!still) alert('Sync eingerichtet.\n\nAuf einem weiteren Gerät dieselbe Seite öffnen, ' +
         'auf „Sync“ klicken und dasselbe Passwort eingeben – dann sind die Daten dort.');
     }
@@ -217,11 +251,94 @@ const Tresor = {
   async uebernehmen(daten, stand) {
     daten.standAt = stand;
     Store.save(daten);
+    clearTimeout(this.timer);     // das eben Übernommene nicht gleich wieder hochladen
+    this.basisSetzen(stand);
+    this.geaendert(false);
+    this.fremd = null;
     this.letzterStand = stand;
     // Sitzpläne liegen in eigenen Knoten – vor dem Neuladen mitholen
     this.status('hole Sitzpläne und Fotos …');
     try { await this.dateienHolen(); } catch (e) { console.error('Dateien:', e); }
     location.reload();
+  },
+
+  /* ---------- Schutz vor gegenseitigem Überschreiben ---------- */
+
+  /* Beim Hochladen gemerkt: Ein anderes Gerät hat inzwischen gespeichert */
+  async konflikt(stand, geraet) {
+    const wer = `${geraet || 'einem anderen Gerät'}, ${this.zeit(stand)}`;
+    if (confirm(`Auf dem Server liegt ein neuerer Stand (${wer}).\n\n` +
+      'OK: diesen Stand übernehmen – was du hier seitdem geändert hast, geht verloren.\n' +
+      'Abbrechen: weitere Möglichkeiten')) {
+      await this.herunterladen(false);
+      return;
+    }
+    if (confirm('Stattdessen den Stand dieses Browsers hochladen?\n\n' +
+      `Der neuere Stand (${wer}) wird dabei ersetzt.\n\n` +
+      'Abbrechen: nichts tun – dieser Browser sichert vorerst nicht, bis du über „Sync“ entscheidest.')) {
+      await this.hochladen(false, true);
+      return;
+    }
+    this.pausiert = true;
+    this.fremd = { stand, geraet };
+    this.status('Nicht gesichert – neuerer Stand auf dem Server', true);
+    this.hinweisZeigen();
+  },
+
+  /* Live: Speichert ein anderes Gerät, erfährt dieser Browser es sofort */
+  mithoeren() {
+    this.nichtMehrMithoeren();
+    if (!window.FB || !window.FB.onValue) return;
+    const { db, ref, onValue } = window.FB;
+    this.abmeldenStand = onValue(ref(db, `schoolTool/tresor/${this.id}/stand`), snap => {
+      const stand = snap.val() || 0;
+      if (!stand || stand <= this.basis() || stand === this.eigenerStand) return;
+      window.FB.get(ref(db, `schoolTool/tresor/${this.id}/geraet`)).then(g => {
+        this.fremd = { stand, geraet: g.val() };
+        // Nichts Eigenes offen und der Tab liegt im Hintergrund: still übernehmen
+        if (!this.istGeaendert() && document.hidden) this.herunterladen(false);
+        else this.hinweisZeigen();
+      }).catch(() => {});
+    });
+  },
+
+  nichtMehrMithoeren() {
+    if (this.abmeldenStand) { this.abmeldenStand(); this.abmeldenStand = null; }
+    this.fremd = null;
+    this.hinweisWeg();
+  },
+
+  hinweisZeigen() {
+    if (!this.fremd) return;
+    let el = document.getElementById('tresor-hinweis');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'tresor-hinweis';
+      el.className = 'tresor-hinweis';
+      el.setAttribute('role', 'status');
+      document.body.append(el);
+      el.addEventListener('click', e => {
+        const b = e.target.closest('[data-tresor]');
+        if (!b) return;
+        if (b.dataset.tresor === 'holen') this.fremdUebernehmen();
+        else this.hinweisWeg();
+      });
+    }
+    el.innerHTML = `<span>Neuerer Stand von ${Band.esc(this.fremd.geraet || 'einem anderen Gerät')} ` +
+      `(${this.zeit(this.fremd.stand)})${this.istGeaendert() ? ' – hier gibt es ungesicherte Änderungen' : ''}</span>` +
+      '<button class="primary small" data-tresor="holen">Übernehmen</button>' +
+      '<button class="small" data-tresor="spaeter">Später</button>';
+  },
+
+  hinweisWeg() {
+    const el = document.getElementById('tresor-hinweis');
+    if (el) el.remove();
+  },
+
+  fremdUebernehmen() {
+    if (this.istGeaendert() && !confirm('Den neueren Stand übernehmen?\n\n' +
+      'Was du in diesem Browser seitdem geändert hast, geht dabei verloren.')) return;
+    this.herunterladen(false);
   },
 
   /* ---------- Übertragen ---------- */
@@ -230,22 +347,40 @@ const Tresor = {
     this.timer = setTimeout(() => this.hochladen(false), 1500);
   },
 
-  async hochladen(laut) {
+  /* erzwingen: ohne Blick auf den Serverstand (nach ausdrücklicher Wahl) */
+  async hochladen(laut, erzwingen) {
     if (!this.aktiv() || this.amLaufen) return;
+    if (this.pausiert && !laut && !erzwingen) return;
     this.amLaufen = true;
     try {
+      const { db, ref, get, update } = window.FB;
+      if (!erzwingen) {
+        const fern = (await get(ref(db, `schoolTool/tresor/${this.id}`))).val() || {};
+        if ((fern.stand || 0) > this.basis()) {
+          this.amLaufen = false;
+          await this.konflikt(fern.stand, fern.geraet);
+          return;
+        }
+      }
+      this.pausiert = false;
+      const aenderungenVorher = this.aenderungen;
       const daten = Store.load();
       const stand = Date.now();
       daten.standAt = stand;
       localStorage.setItem(Store.KEY, JSON.stringify(daten));   // ohne erneuten Sync-Anstoß
 
       const paket = await this.verschluesseln(daten);
-      const { db, ref, update } = window.FB;
+      this.eigenerStand = stand;
       // update statt set: ein set würde den Sitzplan-Ast „plaene“ mitlöschen
       await update(ref(db, `schoolTool/tresor/${this.id}`), {
         ...paket, stand, geraet: this.geraetName(),
       });
       this.letzterStand = stand;
+      this.basisSetzen(stand);
+      // Was seit Beginn des Hochladens geändert wurde, ist schon wieder neu angestoßen
+      if (this.aenderungen === aenderungenVorher) this.geaendert(false);
+      this.fremd = null;
+      this.hinweisWeg();
       this.status('gesichert ' + this.zeit(stand));
 
       // Sitzpläne getrennt behandeln: Wenn hier etwas klemmt, sind die
@@ -553,11 +688,12 @@ const Tresor = {
 
   /* ---------- Kleinkram ---------- */
   geraetName() {
-    const p = navigator.platform || '';
-    if (/iPad|iPhone/i.test(navigator.userAgent)) return 'iPad/iPhone';
-    if (/Mac/i.test(p)) return 'Mac';
-    if (/Win/i.test(p)) return 'Windows';
-    return 'Gerät';
+    const p = navigator.platform || '', ua = navigator.userAgent;
+    const browser = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox'
+      : /Chrome\/|CriOS\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : '';
+    const geraet = /iPad|iPhone/i.test(ua) || (/Mac/i.test(p) && navigator.maxTouchPoints > 1) ? 'iPad'
+      : /Mac/i.test(p) ? 'Mac' : /Win/i.test(p) ? 'Windows' : 'Gerät';
+    return browser ? `${geraet} · ${browser}` : geraet;
   },
 
   zeit(ms) {

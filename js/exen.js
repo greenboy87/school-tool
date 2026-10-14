@@ -158,9 +158,9 @@ const Exen = {
           <div class="hint">${teile}${datum ? ` · importiert am ${datum}` : ''}</div>
           ${klassen.length ? `<div class="hint">Geschrieben von: ${klassen.map(esc).join(', ')}</div>` : ''}</div>
         <div class="btn-row">
-          <button class="small" data-aktion="vorschau" ${hatOriginal ? '' : 'disabled'}
+          <button class="small${hatOriginal ? '' : ' ex-ohne-original'}" data-aktion="vorschau"
             title="${hatOriginal ? 'Originaldatei mit Vorschau-Leiste in neuem Tab öffnen'
-              : 'Die Originaldatei liegt nicht auf diesem Gerät – zum Ansehen die Datei hier noch einmal hineinziehen'}">Vorschau</button>
+              : 'Die Originaldatei liegt nicht in diesem Browser – antippen, um sie hier einmal auszuwählen'}">Vorschau</button>
           <button class="small danger" data-aktion="loeschen" data-icon="trash">Löschen</button>
         </div></li>`;
     }).join('');
@@ -252,10 +252,43 @@ const Exen = {
      Gerät – sie geht nie in die Datenbank */
   async vorschau(id) {
     const o = await this.originalLaden(id).catch(() => null);
-    if (!o) { alert('Die Originaldatei liegt nicht auf diesem Gerät.'); return; }
-    const url = URL.createObjectURL(new Blob([o.text], { type: 'text/html' }));
-    window.open(url, '_blank');
+    if (!o) { this.originalNachreichen(id); return; }
+    this.oeffnen(o.text);
+  },
+
+  oeffnen(text) {
+    const url = URL.createObjectURL(new Blob([text], { type: 'text/html' }));
+    const fenster = window.open(url, '_blank');
     setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return !!fenster;
+  },
+
+  /* Das Original (mit Lösungen) liegt nur in dem Browser, in dem importiert
+     wurde – nie in der Datenbank. In einem anderen Browser lässt es sich hier
+     einmal auswählen; es bleibt dann auch dort nur lokal. */
+  originalNachreichen(id) {
+    const x = this.index[id];
+    if (!confirm(`Die Originaldatei von „${x ? x.titel : id}“ liegt nicht in diesem Browser – ` +
+      'sie bleibt immer nur dort, wo sie importiert wurde, weil die Lösungen darin stehen.\n\n' +
+      'Jetzt die Datei auswählen? Sie wird nur in diesem Browser gespeichert, nichts wird neu hochgeladen.')) return;
+    const ein = document.createElement('input');
+    ein.type = 'file';
+    ein.accept = '.html,.htm,text/html';
+    ein.addEventListener('change', async () => {
+      const f = ein.files[0];
+      if (!f) return;
+      const text = await f.text();
+      let meta;
+      try { meta = ExImport.zerlegen(text).meta; } catch (e) { alert('Das ist keine passende Ex-Datei.\n' + e.message); return; }
+      if (meta.id !== id) {
+        alert(`Das ist eine andere Ex („${meta.titel}“). Bitte die Datei von „${x ? x.titel : id}“ wählen.`);
+        return;
+      }
+      try { await this.originalSpeichern(id, f); } catch (e) { alert('Speichern im Browser fehlgeschlagen: ' + e.message); return; }
+      this.listeZeichnen();
+      if (!this.oeffnen(text)) alert('Gespeichert. Tippe noch einmal auf „Vorschau“.');
+    });
+    ein.click();
   },
 
   _idb: null,
