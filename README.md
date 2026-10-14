@@ -99,8 +99,9 @@ verlinkt diese Klassen.
 | Klassen, kein Schüler gewählt | vorige / nächste Klasse (der Unterreiter bleibt) | voriger / nächster Unterreiter | |
 | Klassen, Schüler gewählt | voriger / nächster Schüler | voriger / nächster Unterreiter | **Esc** wählt ab |
 | Band | Seite scrollen | voriger / nächster Band-Unterreiter | |
+| Tools (Startseite), Klassen ohne gewählte Klasse, Exen, Notes, Sport, Lehrer, Extras | | voriger / nächster Hauptreiter | |
 | Suchfeld | Treffer wählen | Cursor im Feld | **Enter** wählt, **Esc** leert |
-| überall | | | **V** blendet Gesichter ein/aus |
+| überall | | | **V** blendet Gesichter ein/aus, **K** schlägt die Klangschale an |
 
 Die Tasten wirken nur, solange kein Eingabefeld den Fokus hat. Beim Gesichterzuordnen
 gehören die Pfeile dem Rahmen, im Vollbild bleibt alles, wie es ist. Am Anfang und Ende einer

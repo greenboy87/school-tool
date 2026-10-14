@@ -4,11 +4,23 @@
 
    - Reiter „Klassen“: voriger / nächster Unterreiter (Schüler … Notizen)
    - Reiter „Band“:    voriger / nächster Band-Unterreiter
+   - sonst (Startseite, Klassenübersicht, Exen …): voriger / nächster Hauptreiter
+
+   K schlägt auf jedem Reiter die Klangschale an.
 
    Nie, solange getippt wird, ein Rahmen beim Gesichterzuordnen bewegt wird
    oder etwas im Vollbild läuft – dort gehören die Pfeile jemand anderem. */
 const Tasten = {
   init() {
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'k' && e.key !== 'K') return;
+      if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+      const ziel = e.target;
+      if (ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (typeof Klangschale === 'undefined') return;
+      e.preventDefault();
+      Klangschale.anschlagen();
+    });
     document.addEventListener('keydown', e => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
       if (!this.frei(e)) return;
@@ -20,6 +32,8 @@ const Tasten = {
         erledigt = this.reiterWeiter('#class-detail .subtab-btn', schritt);
       } else if (reiter.dataset.tab === 'band') {
         erledigt = this.reiterWeiter('.bandtab-btn', schritt);
+      } else {
+        erledigt = this.reiterWeiter('.main-tabs .tab-btn', schritt);
       }
       if (erledigt) e.preventDefault();
     });
