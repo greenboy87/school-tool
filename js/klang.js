@@ -28,7 +28,7 @@ const Stimmton = {
     if (!b) return;
     b.addEventListener('click', () => this.umschalten(69, b));
     document.querySelectorAll('.tab-btn').forEach(t => t.addEventListener('click', () => {
-      if (t.dataset.tab !== 'ampel') this.aus();
+      if (t.dataset.tab !== 'ampel' && b.ownerDocument === document) this.aus();
     }));
   },
 
@@ -69,14 +69,27 @@ const Stimmgeraet = {
   puffer: null,
   verlauf: [],
   raf: null,
+  rafWin: null,
+  el: null,
 
   init() {
+    this.el = document.getElementById('stimmen');
     const b = document.getElementById('stimmen-mikro');
-    if (!b) return;
+    if (!b || !this.el) return;
     b.addEventListener('click', () => (this.stream ? this.stopp() : this.start()));
     document.querySelectorAll('.tab-btn').forEach(t => t.addEventListener('click', () => {
-      if (t.dataset.tab !== 'ampel') this.stopp();
+      if (t.dataset.tab !== 'ampel' && this.el.ownerDocument === document) this.stopp();
     }));
+    // Ins kleine Fenster umgezogen oder zurück: dort weiterzeichnen
+    this.el.addEventListener('umgezogen', () => { if (this.stream) { this.bildStoppen(); this.schleife(); } });
+  },
+
+  /* Elemente über die Karte suchen – sie kann in einem anderen Fenster liegen */
+  $(id) { return this.el.querySelector('#' + id); },
+
+  bildStoppen() {
+    if (this.rafWin) try { this.rafWin.cancelAnimationFrame(this.raf); } catch (e) { /* Fenster schon zu */ }
+    this.raf = this.rafWin = null;
   },
 
   async start() {
@@ -105,19 +118,19 @@ const Stimmgeraet = {
     if (!this.stream) return;
     this.stream.getTracks().forEach(t => t.stop());
     this.stream = null;
-    cancelAnimationFrame(this.raf);
+    this.bildStoppen();
     this.knopf(false);
     this.anzeigen(null);
     this.info('Mikrofon aus');
   },
 
   knopf(an) {
-    const b = document.getElementById('stimmen-mikro');
+    const b = this.$('stimmen-mikro');
     b.innerHTML = Icons.raw(an ? 'stop' : 'mic') + (an ? 'Stimmgerät stoppen' : 'Stimmgerät starten');
     b.classList.toggle('primary', an);
   },
 
-  info(t) { document.getElementById('stimmen-info').textContent = t; },
+  info(t) { this.$('stimmen-info').textContent = t; },
 
   schleife() {
     if (!this.stream) return;
@@ -132,7 +145,9 @@ const Stimmgeraet = {
     } else if (this.verlauf.length) {
       this.verlauf = [];
     }
-    this.raf = requestAnimationFrame(() => this.schleife());
+    // Bilder vom Fenster der Karte – das Hauptfenster liegt im Popup-Betrieb meist verdeckt
+    this.rafWin = Schwebe.fenster(this.el);
+    this.raf = this.rafWin.requestAnimationFrame(() => this.schleife());
   },
 
   /* Autokorrelation mit Parabel-Feinjustierung; null bei Stille */
@@ -167,10 +182,10 @@ const Stimmgeraet = {
   },
 
   anzeigen(f) {
-    const zeiger = document.getElementById('stimmen-zeiger');
-    const anz = document.getElementById('stimmen-anzeige');
+    const zeiger = this.$('stimmen-zeiger');
+    const anz = this.$('stimmen-anzeige');
     if (!f) {
-      document.getElementById('stimmen-name').textContent = '–';
+      this.$('stimmen-name').textContent = '–';
       zeiger.style.left = '50%';
       anz.classList.remove('passt', 'nah');
       return;
@@ -178,7 +193,7 @@ const Stimmgeraet = {
     const midiGenau = 69 + 12 * Math.log2(f / Noten.kammerton());
     const midi = Math.round(midiGenau);
     const cent = Math.round((midiGenau - midi) * 100);
-    document.getElementById('stimmen-name').textContent = Noten.name(midi);
+    this.$('stimmen-name').textContent = Noten.name(midi);
     this.info(`${f.toFixed(1).replace('.', ',')} Hz · ${cent > 0 ? '+' : ''}${cent} Cent` +
       (Math.abs(cent) <= 5 ? ' · passt' : cent < 0 ? ' · zu tief' : ' · zu hoch'));
     zeiger.style.left = (50 + cent) + '%';

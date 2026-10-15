@@ -1995,3 +1995,18 @@ body.ex-korrektur-offen { overflow: hidden; }
   max-width: calc(100vw - 32px); padding: .6rem .8rem .6rem 1rem; border-radius: var(--radius);
   background: var(--card-solid, var(--bg)); border: 1px solid var(--accent); box-shadow: var(--shadow); font-size: .9rem; }
 .ex-ohne-original { opacity: .6; }
+
+/* Kleine Fensterknöpfe: Ampel, Metronom und Stimmgerät als Popup / im Vordergrund */
+.schwebe-knoepfe { display: inline-flex; gap: .15rem; }
+.metronom-card, .stimmen-card { position: relative; }
+.metronom-card > .schwebe-knoepfe, .stimmen-card > .schwebe-knoepfe { position: absolute; top: .5rem; right: .5rem; z-index: 1; }
+.schwebe-knoepfe.inline { margin-left: auto; align-self: center; }
+button.schwebe-knopf { width: 1.9rem; height: 1.9rem; padding: 0; border-color: transparent; background: transparent; color: var(--muted); opacity: .6; }
+button.schwebe-knopf:hover { opacity: 1; background: var(--hover); color: var(--text); }
+button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
+.schwebe-platzhalter { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; min-height: 6rem; }
+.schwebe-platzhalter .hint { margin: 0; }
+/* Im kleinen Fenster: Karte füllt das Fenster, Fensterknöpfe weg */
+.schwebe-body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); display: flex; }
+.schwebe-body > .card { flex: 1; margin: 0; max-width: none; border-radius: 0; border: 0; display: flex; flex-direction: column; justify-content: center; }
+.schwebe-body .schwebe-knoepfe, .schwebe-body .metronom-link { display: none; }

@@ -4,14 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=219">
+<link rel="stylesheet" href="style.css?v=220">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=219"></script>
-<script src="js/theme.js?v=219"></script>
-<script src="js/auswahl.js?v=219"></script>
-<script src="js/metronom.js?v=219"></script>
-<script src="js/klang.js?v=219"></script>
-<script src="js/auth.js?v=219"></script>
+<script src="js/icons.js?v=220"></script>
+<script src="js/theme.js?v=220"></script>
+<script src="js/auswahl.js?v=220"></script>
+<script src="js/metronom.js?v=220"></script>
+<script src="js/klang.js?v=220"></script>
+<script src="js/schwebe.js?v=220"></script>
+<script src="js/auth.js?v=220"></script>
 </head>
 <body>
 
@@ -95,10 +96,11 @@
         </div>
         <div class="btn-row">
           <button id="btn-mic" class="primary" data-icon="mic">Mikrofon starten</button>
-          <button id="btn-popup" data-icon="window" title="Kleines Fenster, das du neben eine Präsentation legen kannst – geht auch in Safari">Als Popup öffnen</button>
-          <button id="btn-pip" data-icon="pip" title="Schwebendes Mini-Fenster, bleibt immer im Vordergrund (Chrome/Edge)">Immer im Vordergrund</button>
+          <span class="schwebe-knoepfe inline">
+            <button id="btn-popup" class="schwebe-knopf" data-icon="window" aria-label="Lärmampel als Popup öffnen" title="Lärmampel als Popup öffnen – geht auch in Safari"></button>
+            <button id="btn-pip" class="schwebe-knopf" data-icon="pip" aria-label="Lärmampel immer im Vordergrund" title="Lärmampel immer im Vordergrund – schwebt auch über einer Vollbild-Präsentation (Chrome/Edge)"></button>
+          </span>
         </div>
-        <p class="hint">Tipp: „Immer im Vordergrund“ öffnet ein schwebendes Mini-Fenster, das auch über einer Vollbild-Präsentation sichtbar bleibt (funktioniert in Chrome &amp; Edge).</p>
       </div>
     </div>
   </section>
@@ -107,6 +109,10 @@
 
   <div class="tools-unten">
   <section class="card metronom-card" id="metronom" aria-label="Metronom">
+    <div class="schwebe-knoepfe">
+      <button class="schwebe-knopf" data-schwebe="metronom" data-art="popup" data-icon="window" aria-label="Metronom als Popup öffnen" title="Metronom als Popup öffnen – geht auch in Safari"></button>
+      <button class="schwebe-knopf" data-schwebe="metronom" data-art="pip" data-icon="pip" aria-label="Metronom immer im Vordergrund" title="Metronom immer im Vordergrund – schwebt auch über einer Vollbild-Präsentation (Chrome/Edge)"></button>
+    </div>
     <div class="metronom">
       <div class="metronom-punkte" id="metronom-punkte" aria-hidden="true"></div>
       <div class="metronom-tempo">
@@ -132,6 +138,10 @@
   </section>
 
   <section class="card stimmen-card stimmen-unten" id="stimmen" aria-label="Stimmgerät">
+    <div class="schwebe-knoepfe">
+      <button class="schwebe-knopf" data-schwebe="stimmen" data-art="popup" data-icon="window" aria-label="Stimmgerät als Popup öffnen" title="Stimmgerät als Popup öffnen – geht auch in Safari"></button>
+      <button class="schwebe-knopf" data-schwebe="stimmen" data-art="pip" data-icon="pip" aria-label="Stimmgerät immer im Vordergrund" title="Stimmgerät immer im Vordergrund – schwebt auch über einer Vollbild-Präsentation (Chrome/Edge)"></button>
+    </div>
       <div class="stimmen-anzeige" id="stimmen-anzeige">
         <div class="stimmen-skala" aria-hidden="true">
           <span class="stimmen-mitte"></span>
@@ -1276,37 +1286,37 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=219"></script>
-<script src="js/firebase-config.js?v=219"></script>
-<script type="module" src="js/live-firebase.js?v=219"></script>
-<script src="js/topics-seed.js?v=219"></script>
-<script src="js/ai-import.js?v=219"></script>
-<script src="js/store.js?v=219"></script>
-<script src="js/noise.js?v=219"></script>
-<script src="js/classes.js?v=219"></script>
-<script src="js/sitzplan.js?v=219"></script>
-<script src="js/schueler.js?v=219"></script>
-<script src="js/tasten.js?v=219"></script>
-<script src="js/lessons.js?v=219"></script>
-<script src="js/band.js?v=219"></script>
-<script src="js/notes.js?v=219"></script>
-<script src="js/tresor.js?v=219"></script>
-<script src="js/erklaerungen.js?v=219"></script>
-<script src="js/setlisten.js?v=219"></script>
-<script src="js/einklappen.js?v=219"></script>
-<script src="js/tinyband-instrumente.js?v=219"></script>
-<script src="js/live-groups.js?v=219"></script>
-<script src="js/tinyband-lehrer.js?v=219"></script>
-<script src="js/tipps.js?v=219"></script>
-<script src="js/sport-tabellen.js?v=219"></script>
-<script src="js/sport.js?v=219"></script>
-<script src="js/ex-import.js?v=219"></script>
-<script src="js/exen.js?v=219"></script>
-<script src="js/ex-namen.js?v=219"></script>
-<script src="js/ex-sitzung.js?v=219"></script>
-<script src="js/ex-auswertung.js?v=219"></script>
-<script src="js/ex-reiter.js?v=219"></script>
-<script src="js/tools.js?v=219"></script>
-<script src="js/app.js?v=219"></script>
+<script src="js/vendor/qrcode.min.js?v=220"></script>
+<script src="js/firebase-config.js?v=220"></script>
+<script type="module" src="js/live-firebase.js?v=220"></script>
+<script src="js/topics-seed.js?v=220"></script>
+<script src="js/ai-import.js?v=220"></script>
+<script src="js/store.js?v=220"></script>
+<script src="js/noise.js?v=220"></script>
+<script src="js/classes.js?v=220"></script>
+<script src="js/sitzplan.js?v=220"></script>
+<script src="js/schueler.js?v=220"></script>
+<script src="js/tasten.js?v=220"></script>
+<script src="js/lessons.js?v=220"></script>
+<script src="js/band.js?v=220"></script>
+<script src="js/notes.js?v=220"></script>
+<script src="js/tresor.js?v=220"></script>
+<script src="js/erklaerungen.js?v=220"></script>
+<script src="js/setlisten.js?v=220"></script>
+<script src="js/einklappen.js?v=220"></script>
+<script src="js/tinyband-instrumente.js?v=220"></script>
+<script src="js/live-groups.js?v=220"></script>
+<script src="js/tinyband-lehrer.js?v=220"></script>
+<script src="js/tipps.js?v=220"></script>
+<script src="js/sport-tabellen.js?v=220"></script>
+<script src="js/sport.js?v=220"></script>
+<script src="js/ex-import.js?v=220"></script>
+<script src="js/exen.js?v=220"></script>
+<script src="js/ex-namen.js?v=220"></script>
+<script src="js/ex-sitzung.js?v=220"></script>
+<script src="js/ex-auswertung.js?v=220"></script>
+<script src="js/ex-reiter.js?v=220"></script>
+<script src="js/tools.js?v=220"></script>
+<script src="js/app.js?v=220"></script>
 </body>
 </html>

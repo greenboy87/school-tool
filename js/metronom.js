@@ -18,20 +18,22 @@ const Metronom = {
   schlag: 0,              // Zählzeit des nächsten Schlags im Takt
   geplant: [],            // [{ zeit, schlag }] für die Anzeige
   timer: null,
+  timerWin: null,
+  el: null,
   tipps: [],
 
   NAMEN: [[40, 'Grave'], [60, 'Largo'], [66, 'Larghetto'], [76, 'Adagio'], [108, 'Andante'],
     [120, 'Moderato'], [156, 'Allegro'], [176, 'Vivace'], [200, 'Presto'], [999, 'Prestissimo']],
 
   init() {
-    const el = document.getElementById('metronom');
+    const el = this.el = document.getElementById('metronom');
     if (!el) return;
     try { Object.assign(this, JSON.parse(localStorage.getItem(this.KEY)) || {}); } catch (e) { /* egal */ }
     this.bpm = this.grenzen(this.bpm);
     if (![1, 2, 3, 4, 6].includes(this.takt)) this.takt = 4;
     this.laeuft = false;
 
-    document.getElementById('metronom-regler').addEventListener('input', e => this.tempo(Number(e.target.value)));
+    this.$('metronom-regler').addEventListener('input', e => this.tempo(Number(e.target.value)));
     el.querySelectorAll('[data-schritt]').forEach(b => {
       // Gedrückt halten zählt weiter
       let wdh = null;
@@ -49,8 +51,8 @@ const Metronom = {
       this.zeichnen();
       this.merken();
     }));
-    document.getElementById('metronom-tap').addEventListener('click', () => this.tap());
-    document.getElementById('metronom-start').addEventListener('click', () => (this.laeuft ? this.stopp() : this.start()));
+    this.$('metronom-tap').addEventListener('click', () => this.tap());
+    this.$('metronom-start').addEventListener('click', () => (this.laeuft ? this.stopp() : this.start()));
     // Leertaste startet/stoppt, solange der Reiter offen ist und kein Feld den Fokus hat
     document.addEventListener('keydown', e => {
       if (e.key !== ' ' || e.repeat || !el.offsetParent) return;
@@ -58,11 +60,34 @@ const Metronom = {
       e.preventDefault();
       this.laeuft ? this.stopp() : this.start();
     });
-    // Anderer Reiter: Metronom aus
+    // Anderer Reiter: Metronom aus – außer es schwebt gerade im eigenen Fenster
     document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => {
-      if (b.dataset.tab !== 'ampel' && this.laeuft) this.stopp();
+      if (b.dataset.tab !== 'ampel' && this.laeuft && el.ownerDocument === document) this.stopp();
     }));
+    // Ins kleine Fenster umgezogen oder zurück: Planer und Anzeige dort weiterlaufen lassen
+    el.addEventListener('umgezogen', () => { if (this.laeuft) this.uhrStarten(); });
     this.zeichnen();
+  },
+
+  /* Elemente über die Karte suchen – sie kann in einem anderen Fenster liegen */
+  $(id) { return this.el.querySelector('#' + id); },
+
+  /* Planer und Anzeige laufen im Fenster, in dem die Karte gerade liegt:
+     ein verdecktes Fenster bremst Timer und Bilder aus. */
+  uhrStarten() {
+    this.uhrStoppen();
+    const win = this.timerWin = Schwebe.fenster(this.el);
+    this.timer = win.setInterval(() => this.planen(), this.TAKT);
+    const runde = ++this.runde;
+    const bild = () => { if (this.laeuft && runde === this.runde) { this.anzeigen(); win.requestAnimationFrame(bild); } };
+    win.requestAnimationFrame(bild);
+  },
+
+  uhrStoppen() {
+    if (this.timerWin) try { this.timerWin.clearInterval(this.timer); } catch (e) { /* Fenster schon zu */ }
+    this.timer = null;
+    this.timerWin = null;
+    this.runde = (this.runde || 0) + 1;
   },
 
   grenzen(x) { return Math.max(this.MIN, Math.min(this.MAX, Math.round(Number(x) || 100))); },
@@ -96,17 +121,15 @@ const Metronom = {
     this.geplant = [];
     this.naechster = this.ctx.currentTime + 0.06;
     this.planen();
-    this.timer = setInterval(() => this.planen(), this.TAKT);
-    requestAnimationFrame(() => this.anzeigen());
+    this.uhrStarten();
     this.knopf();
   },
 
   stopp() {
     this.laeuft = false;
-    clearInterval(this.timer);
-    this.timer = null;
+    this.uhrStoppen();
     this.geplant = [];
-    document.querySelectorAll('.metronom-punkt').forEach(p => p.classList.remove('an'));
+    this.el.querySelectorAll('.metronom-punkt').forEach(p => p.classList.remove('an'));
     this.knopf();
   },
 
@@ -134,28 +157,26 @@ const Metronom = {
   },
 
   anzeigen() {
-    if (!this.laeuft) return;
     const jetzt = this.ctx.currentTime;
     let zuletzt = null;
     while (this.geplant.length && this.geplant[0].zeit <= jetzt) zuletzt = this.geplant.shift();
     if (zuletzt) {
-      document.querySelectorAll('.metronom-punkt').forEach((p, i) => p.classList.toggle('an', i === zuletzt.schlag));
+      this.el.querySelectorAll('.metronom-punkt').forEach((p, i) => p.classList.toggle('an', i === zuletzt.schlag));
     }
-    requestAnimationFrame(() => this.anzeigen());
   },
 
   knopf() {
-    const b = document.getElementById('metronom-start');
+    const b = this.$('metronom-start');
     b.innerHTML = Icons.raw(this.laeuft ? 'stop' : 'play') + (this.laeuft ? 'Stopp' : 'Start');
     b.classList.toggle('laeuft', this.laeuft);
   },
 
   zeichnen() {
-    document.getElementById('metronom-bpm').textContent = this.bpm;
-    document.getElementById('metronom-regler').value = this.bpm;
-    document.getElementById('metronom-name').textContent = this.NAMEN.find(([g]) => this.bpm < g)[1];
-    document.querySelectorAll('#metronom [data-takt]').forEach(b => b.classList.toggle('active', Number(b.dataset.takt) === this.takt));
-    const punkte = document.getElementById('metronom-punkte');
+    this.$('metronom-bpm').textContent = this.bpm;
+    this.$('metronom-regler').value = this.bpm;
+    this.$('metronom-name').textContent = this.NAMEN.find(([g]) => this.bpm < g)[1];
+    this.el.querySelectorAll('[data-takt]').forEach(b => b.classList.toggle('active', Number(b.dataset.takt) === this.takt));
+    const punkte = this.$('metronom-punkte');
     if (punkte.children.length !== this.takt) {
       punkte.innerHTML = Array.from({ length: this.takt }, (_, i) =>
         `<span class="metronom-punkt${i === 0 && this.takt > 1 ? ' eins' : ''}"></span>`).join('');
