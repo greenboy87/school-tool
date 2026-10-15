@@ -151,19 +151,25 @@ const ExAuswertung = {
         get(ref(db, `schoolTool/exen/${gruppe.exId}/meta`)),
         get(ref(db, `schoolTool/exen/${gruppe.exId}/schueler`)),
       ]);
-      if (!geheim.exists() || !metaSnap.exists()) {
-        throw new Error('Die Ex ist nicht mehr in der Bibliothek. Bitte die Ex-Datei erneut importieren – ' +
-          'die Abgaben sind noch da.');
-      }
-      const t = teile.val() || {};
-      let html = '';
-      for (let n = 0; n < (t.teile || 0); n++) html += t['t' + n] || '';
       const sitzungen = {};
       for (const code of gruppe.codes) {
         const s = (await get(ref(db, `schoolTool/exsessions/${code}`))).val();
         if (s) sitzungen[code] = s;
       }
       const cls = ExSitzung.klasseVon(gruppe.klasseId);
+      // Ex aus der Bibliothek gelöscht: Bewerten geht nicht, Archivieren und Löschen schon
+      if (!geheim.exists() || !metaSnap.exists()) {
+        const info = (Object.values(sitzungen)[0] || {}).info || {};
+        this.a = {
+          key, gruppe, cls, sitzungen, ohneEx: true, schueler: [], d: this.daten(key),
+          meta: { titel: gruppe.titel || info.titel || 'Ex', art: info.art || 'Ex', aufgaben: [] },
+        };
+        this.ohneExZeichnen();
+        return;
+      }
+      const t = teile.val() || {};
+      let html = '';
+      for (let n = 0; n < (t.teile || 0); n++) html += t['t' + n] || '';
       this.a = {
         key, gruppe, cls, sitzungen, html,
         meta: JSON.parse(metaSnap.val()),
@@ -437,6 +443,27 @@ const ExAuswertung = {
     Icons.hydrate(inhalt);
   },
 
+  /* Ex nicht mehr in der Bibliothek: Hinweis und nur die Knöpfe, die ohne sie gehen */
+  ohneExZeichnen() {
+    const a = this.a, esc = s => Band.esc(s);
+    const abgaben = Object.values(a.sitzungen).reduce((n, s) => n + Object.keys(s.abgaben || {}).length, 0);
+    const inhalt = document.getElementById('ex-auswertung-inhalt');
+    inhalt.innerHTML = `
+      <div class="ex-auswertung-kopf"><h3>${esc(a.gruppe.exNummer)}. ${esc(a.meta.art)}: ${esc(a.meta.titel)} · ${esc(a.gruppe.klasse)}</h3></div>
+      <p class="ex-warnung-box">Diese Ex ist nicht mehr in der Bibliothek. ${abgaben} ${abgaben === 1 ? 'Abgabe ist' : 'Abgaben sind'} noch da,
+        lassen sich aber erst wieder bewerten, wenn du dieselbe Ex-Datei erneut importierst.
+        Brauchst du sie nicht mehr: archivieren und dann endgültig löschen.</p>
+      <div class="btn-row ex-auswertung-aktionen">
+        <button class="small" data-aktion="noten-entfernen" id="ex-noten-entfernen" hidden>Noten aus der Notenliste entfernen</button>
+        <button class="small" data-aktion="archivieren" id="ex-archivieren"></button>
+        <button class="small danger" data-aktion="endgueltig-loeschen" id="ex-endgueltig-loeschen" data-icon="trash" hidden>Endgültig löschen</button>
+        <button class="small" data-aktion="neu-bewerten" data-icon="reset" title="Nach einem Neu-Import der Ex">Neu laden</button>
+      </div>`;
+    this.knoepfeAktualisieren();
+    this.listeFuellen();
+    Icons.hydrate(inhalt);
+  },
+
   /* Notenliste-Eintrag dieser Auswertung, falls es ihn (noch) gibt */
   projekt() {
     const a = this.a;
@@ -478,8 +505,8 @@ const ExAuswertung = {
     const name = `${a.gruppe.exNummer}. ${a.meta.art || 'Ex'}: ${a.meta.titel} (Klasse ${a.gruppe.klasse})`;
     if (!confirm(`„${name}“ endgültig löschen?\n\nWeg sind dann: alle Abgaben` +
       (a.gruppe.codes.length > 1 ? ` aus ${a.gruppe.codes.length} Sitzungen` : '') +
-      ', deine Korrekturen und der Notenschlüssel. Das lässt sich nicht rückgängig machen.\n' +
-      'Die Ex selbst bleibt in der Bibliothek.')) return;
+      ', deine Korrekturen und der Notenschlüssel. Das lässt sich nicht rückgängig machen.' +
+      (a.ohneEx ? '' : '\nDie Ex selbst bleibt in der Bibliothek.'))) return;
     const p = this.projekt();
     const mitNoten = p && confirm(`„${p.name}“ steht noch in der Notenliste von ${a.cls.name}.\n\n` +
       'OK: Noten dort auch löschen\nAbbrechen: Noten in der Notenliste behalten');
