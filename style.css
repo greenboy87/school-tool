@@ -1716,7 +1716,7 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .ex-sitzung-code strong { font-size: 2rem; letter-spacing: .12em; color: var(--accent); margin-left: .3rem; }
 .ex-sitzung-qr { display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap; margin: .8rem 0; }
 #ex-qr { background: #fff; padding: .6rem; border-radius: 10px; line-height: 0; }
-.ex-warteraum-kopf { display: flex; justify-content: space-between; align-items: center; gap: .8rem; flex-wrap: wrap; margin: 1rem 0 .4rem; }
+.ex-warteraum-kopf { display: flex; flex-direction: column; align-items: flex-start; gap: .5rem; margin: .8rem 0 0; }
 .ex-warteraum-kopf .btn-row { margin: 0; }
 .ex-tabelle { width: 100%; border-collapse: collapse; font-size: .92rem; }
 .ex-tabelle th { text-align: left; font-weight: 600; color: var(--muted); padding: .35rem .5rem; border-bottom: 1px solid var(--border); }
@@ -2013,3 +2013,19 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 /* Platz für die Fensterknöpfe, damit die Stimmskala nicht darunter läuft */
 .stimmen-card { padding-top: 2.6rem; }
 .schwebe-body > .stimmen-card { padding-top: 1.2rem; }
+
+/* Schreiben kompakt: Zahlen und Knöpfe neben dem QR-Code, Liste zweispaltig */
+.ex-sitzung-qr { align-items: flex-start; }
+.ex-sitzung-rechts { flex: 1 1 18rem; min-width: 0; }
+.ex-sitzung-rechts > p { margin: 0 0 .4rem; }
+.ex-warteraum-kopf:empty { display: none; }
+.ex-warteraum-kopf > span:first-child { font-weight: 600; }
+.ex-warteraum-spalten { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 0 1.4rem; align-items: start; }
+.ex-warteraum-spalten .ex-tabelle td, .ex-warteraum-spalten .ex-tabelle th { padding: .25rem .4rem; }
+.ex-start.zu > :not(h2):not(.ex-start-auf) { display: none; }
+.ex-start.zu { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: .8rem; padding-bottom: .8rem; }
+.ex-start.zu h2 { margin: 0; font-size: 1rem; color: var(--muted); }
+.ex-schreiben-raster.ohne-seite { grid-template-columns: minmax(0, 1fr); }
+.ex-schreiben-raster.ohne-seite > .ex-schnellwahl { display: none; }
+.ex-warteraum-spalten .ex-tabelle td.aktionen .small { padding: .2rem .45rem; }
+.ex-schreiben-haupt > .card { max-width: none; }

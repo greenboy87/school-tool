@@ -44,6 +44,11 @@ const ExSitzung = {
     document.getElementById('ex-anwesend').addEventListener('change', () => this.anwesenheitZaehlen());
     document.getElementById('btn-ex-warteraum').addEventListener('click', () => this.warteraumOeffnen());
     document.getElementById('btn-ex-nach-abbrechen').addEventListener('click', () => this.nachschreibenAbbrechen());
+    document.getElementById('btn-ex-start-auf').addEventListener('click', () => { this.startOffen = true; this.startKarte(); });
+    document.getElementById('ex-warteraum-kopf').addEventListener('click', e => {
+      const b = e.target.closest('button[data-aktion]');
+      if (b) this.aktion(b.dataset.aktion, b.dataset.uid, b.dataset.nr);
+    });
     document.getElementById('btn-ex-beamer').addEventListener('click', () => this.beamer());
     document.getElementById('btn-ex-abbrechen').addEventListener('click', () => this.abbrechen());
     document.getElementById('ex-warteraum').addEventListener('click', e => {
@@ -263,6 +268,7 @@ const ExSitzung = {
     ['ex-start-klasse', 'ex-start-ex', 'ex-start-nummer'].forEach(id => { document.getElementById(id).disabled = an; });
     document.getElementById('btn-ex-warteraum').lastChild.textContent = an ? 'Warteraum fürs Nachschreiben öffnen' : 'Warteraum öffnen';
     document.getElementById('btn-ex-nach-abbrechen').hidden = !an;
+    this.startKarte();
     this.vorschauText();
     this.anwesenheitZeichnen();
   },
@@ -378,6 +384,9 @@ const ExSitzung = {
     localStorage.removeItem(this.AKTIV_KEY);
     document.getElementById('ex-sitzung').hidden = true;
     ExReiter.laeuft(false);
+    this.startOffen = false;
+    document.getElementById('ex-start').classList.remove('zu');
+    document.getElementById('btn-ex-start-auf').hidden = true;
     if (this.beamerFenster && !this.beamerFenster.closed) this.beamerFenster.close();
   },
 
@@ -542,7 +551,7 @@ const ExSitzung = {
   warteraumZeichnen() {
     const box = document.getElementById('ex-warteraum');
     const i = this.info;
-    if (!i) { box.innerHTML = ''; return; }
+    if (!i) { box.innerHTML = ''; document.getElementById('ex-warteraum-kopf').innerHTML = ''; this.startKarte(); return; }
     const esc = s => Band.esc(s);
     const laeuft = i.status === 'laeuft', vorher = i.status === 'warteraum';
     const zeilen = this.zeilen();
@@ -557,7 +566,7 @@ const ExSitzung = {
     const knopf = (aktion, text, z, extra = '') =>
       `<button class="small ${extra}" data-aktion="${aktion}" data-uid="${esc(z.uid || '')}" data-nr="${esc(z.nr)}">${text}</button>`;
 
-    const zeilenHtml = zeilen.map(z => {
+    const zeileHtml = z => {
       const k = [];
       const aktiv = z.status === 'wartet' || z.status === 'freigegeben';
       if (z.status === 'wartet') {
@@ -566,11 +575,11 @@ const ExSitzung = {
       }
       if ((z.status === 'entfernt' || z.status === 'fehlt') && i.status !== 'beendet') k.push(knopf('freigeben', 'Wieder freigeben', z));
       if (laeuft && !i.ohneLimit && z.anzeige !== 'abgegeben' && z.status === 'freigegeben') k.push(knopf('zuschlag', 'Zeit +', z));
-      if (aktiv && i.status !== 'beendet' && z.anzeige !== 'abgegeben') k.push(knopf('rauswerfen', 'Rauswerfen', z, 'danger'));
-      if (vorher && (z.status === 'wartet' || z.status === 'offen')) k.push(knopf('fehlt', 'Als fehlend markieren', z));
+      if (aktiv && i.status !== 'beendet' && z.anzeige !== 'abgegeben') k.push(knopf('rauswerfen', 'Raus', z, 'danger'));
+      if (vorher && (z.status === 'wartet' || z.status === 'offen')) k.push(knopf('fehlt', 'fehlt', z));
       if (z.status === 'fehlt-vorab' && i.status !== 'beendet') k.push(knopf('doch-da', 'Doch da', z));
       // Falschen Namen erwischt: vor dem Start zurück zur Namensauswahl, ohne das Gerät zu sperren
-      if (vorher && z.uid && (z.status === 'freigegeben' || z.status === 'entfernt')) k.push(knopf('neu-waehlen', 'Neu wählen lassen', z));
+      if (vorher && z.uid && (z.status === 'freigegeben' || z.status === 'entfernt')) k.push(knopf('neu-waehlen', 'Neu wählen', z));
       let ns = '';
       if (z.uid && z.notenschutz) ns = `<span class="ex-ns an">Notenschutz ✓</span> ${i.status === 'beendet' ? '' : knopf('ns-aus', 'zurücknehmen', z)}`;
       else if (z.uid && z.notenschutzAngefragt) ns = `<span class="ex-ns">angefragt</span> ${knopf('ns-an', 'bestätigen', z, 'primary')} ${knopf('ns-ab', 'ablehnen', z)}`;
@@ -589,7 +598,15 @@ const ExSitzung = {
         <td><span class="ex-status st-${z.anzeige}">${STATUS[z.anzeige] || esc(z.anzeige)}</span>${z.doppelt ? ' <span class="ex-warnung">2 Geräte!</span>' : ''}</td>
         ${vorher ? '' : `<td class="ex-fortschritt">${fortschritt}</td><td class="ex-zeit">${zeit}${zuschlag}</td><td class="ex-auffaellig">${esc(this.auffaelliges(ab))}</td>`}
         <td>${ns}</td><td class="aktionen">${k.join(' ')}</td></tr>`;
-    }).join('');
+    };
+    // Lange Listen in zwei Spalten (nebeneinander, wenn Platz ist)
+    const tabelle = liste => `<table class="ex-tabelle"><thead><tr><th>Nr.</th><th>Name</th><th>Status</th>
+        ${vorher ? '' : '<th>Fortschritt</th><th>Zeit</th><th>Auffälliges</th>'}
+        <th>${zeilen.some(z => z.uid && (z.notenschutz || z.notenschutzAngefragt)) ? 'Notenschutz' : ''}</th><th></th></tr></thead>
+        <tbody>${liste.map(zeileHtml).join('')}</tbody></table>`;
+    const haelfte = Math.ceil(zeilen.length / 2);
+    const tabellen = zeilen.length > 8
+      ? tabelle(zeilen.slice(0, haelfte)) + tabelle(zeilen.slice(haelfte)) : tabelle(zeilen);
 
     const wartend = zaehle('wartet'), frei = zaehle('freigegeben');
     let kopf;
@@ -623,11 +640,22 @@ const ExSitzung = {
       ${doppelt.length && i.status !== 'beendet' ? `<p class="ex-warnung-box">Achtung: Nummer ${doppelt.join(', ')} ist auf mehreren Geräten angemeldet.
         Prüfe, wer sich vertippt hat, und wirf das falsche Gerät raus.</p>` : ''}
       ${i.einsammeln && laeuft ? '<p class="ex-warnung-box">Die Abgaben werden eingesammelt …</p>' : ''}
-      <div class="ex-warteraum-kopf">${kopf}</div>
-      <table class="ex-tabelle"><thead><tr><th>Nr.</th><th>Name</th><th>Status</th>
-        ${vorher ? '' : '<th>Fortschritt</th><th>Zeit</th><th>Auffälliges</th>'}
-        <th>Notenschutz</th><th></th></tr></thead>
-        <tbody>${zeilenHtml}</tbody></table>`;
+      <div class="ex-warteraum-spalten">${tabellen}</div>`;
+    // Zahlen und Hauptknöpfe stehen rechts neben dem QR-Code
+    document.getElementById('ex-warteraum-kopf').innerHTML = kopf;
+    this.startKarte();
+  },
+
+  /* Solange Warteraum offen ist oder die Ex läuft, ist „Ex starten“ eingeklappt */
+  startOffen: false,
+  startKarte() {
+    const aktiv = !!(this.info && (this.info.status === 'warteraum' || this.info.status === 'laeuft'));
+    const zu = aktiv && !this.startOffen && !this.nach;
+    document.getElementById('ex-start').classList.toggle('zu', zu);
+    // Während der Sitzung braucht die Liste die Breite – die Ex-Spalte rechts verschwindet
+    const raster = document.querySelector('.ex-schreiben-raster');
+    if (raster) raster.classList.toggle('ohne-seite', aktiv);
+    document.getElementById('btn-ex-start-auf').hidden = !zu;
   },
 
   /* Wiederanmeldung: Gibt es zu dieser Nummer schon einen freigegebenen oder
