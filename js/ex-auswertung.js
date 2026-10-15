@@ -53,6 +53,12 @@ const ExAuswertung = {
       if (e.key === 'Escape' && !sa.hidden) { this.schueleransichtSchliessen(); return; }
       if (k.hidden) return;
       if (e.key === 'Escape') this.korrekturSchliessen();
+      // ← → blättern, außer beim Tippen in einem Feld
+      if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.metaKey && !e.ctrlKey && !e.altKey &&
+          !(e.target.closest && e.target.closest('input, textarea, select, [contenteditable]'))) {
+        e.preventDefault();
+        this.blaettern(e.key === 'ArrowRight' ? 1 : -1);
+      }
     });
   },
 
@@ -778,7 +784,7 @@ const ExAuswertung = {
       return `<tr><td class="nr">${esc(s.nr)}</td><td class="ex-name-zelle">${this.gesichtHtml(s)}${esc(s.name)}${s.t.status === 'entfernt' ? ' <span class="hint">(entfernt)</span>' : ''}</td>${zellen}
         <td><strong>${fmt(e.summe)}</strong></td><td><strong class="ex-note">${e.note}</strong>${e.vorlaeufig ? '<span class="hint">*</span>' : ''}</td>
         <td class="hint">${esc(this.zuschlagText(s))}</td><td>${s.t.notenschutz ? 'ja' : ''}</td>
-        <td class="aktionen"><button class="small" data-korrektur="${esc(s.nr)}">${e.offen ? `Korrigieren (${e.offen} offen)` : 'Korrigieren'}</button></td></tr>`;
+        <td class="aktionen">${this.istKorrigiert(s.nr) ? '<span class="ex-korrigiert-haken" title="Als korrigiert abgehakt">✓</span>' : ''}<button class="small" data-korrektur="${esc(s.nr)}">${e.offen ? `Korrigieren (${e.offen} offen)` : 'Korrigieren'}</button></td></tr>`;
     }).join('');
     document.getElementById('ex-uebersicht').innerHTML = `
       <div class="ex-tabelle-huelle">
@@ -944,6 +950,13 @@ const ExAuswertung = {
         <span class="hint">${s.t.notenschutz ? 'Notenschutz · ' : ''}Zeitzuschlag: ${esc(this.zuschlagText(s))}</span></div>
       <div class="ex-korrektur-stand"><strong>${fmt(e.summe)}</strong> / ${fmt(a.meta.punkteGesamt)} P · Note <strong class="ex-note">${e.note}</strong>${e.vorlaeufig ? ' <span class="hint">(vorläufig)</span>' : ''}</div>
       <button class="small" data-k="weiter" ${pos < liste.length - 1 ? '' : 'disabled'}>›</button>
+      <button class="small ex-haken-knopf${this.istKorrigiert(s.nr) ? ' an' : ''}" data-k="haken"
+        title="Als korrigiert abhaken – nochmal tippen nimmt den Haken weg">${this.istKorrigiert(s.nr) ? '✓ korrigiert' : '○ nicht abgehakt'}</button>
+      <button class="primary small" data-k="fertig-weiter">${pos < liste.length - 1 ? 'Korrigiert &amp; weiter ›' : 'Korrigiert &amp; schließen'}</button>
+      <label class="schalter ex-auto-haken" title="Beim Weiterblättern (›, Pfeiltaste →) den gerade angezeigten Schüler abhaken">
+        <input type="checkbox" id="ex-auto-haken" role="switch" ${this.autoHaken() ? 'checked' : ''}>
+        <span class="schalter-bahn" aria-hidden="true"></span> Beim Weiterblättern abhaken</label>
+      <span class="hint ex-korrigiert-zahl">${liste.filter(x => this.istKorrigiert(x.nr)).length} von ${liste.length} korrigiert</span>
       <button class="small" data-k="drucken" data-icon="printer">Drucken</button>
       <button class="small" data-k="zu">Schließen</button>`;
     this.gesichterEinsetzen(document.getElementById('ex-korrektur-kopf'));
@@ -981,6 +994,27 @@ const ExAuswertung = {
     Icons.hydrate(document.getElementById('ex-korrektur-kopf'));
   },
 
+  /* ---------- Abhaken: wen habe ich schon durchgesehen ----------
+     Nur lokal (Classes.data.exAuswertungen[key].korrigiert), reist mit dem Sync */
+  istKorrigiert(nr) { return !!((this.a.d.korrigiert || {})[nr]); },
+  abhaken(nr, an) {
+    const d = this.a.d;
+    d.korrigiert = d.korrigiert || {};
+    if (an) d.korrigiert[nr] = true; else delete d.korrigiert[nr];
+    Classes.persist();
+  },
+  autoHaken() { try { return localStorage.getItem('ex-auto-haken') === '1'; } catch (e) { return false; } },
+
+  blaettern(richtung) {
+    if (document.getElementById('ex-korrektur').hidden) return;
+    const s = this.a.schueler.find(x => x.nr === this.korrekturNr);
+    const liste = this.schuelerMitAbgabe(), pos = liste.indexOf(s);
+    const ziel = liste[pos + richtung];
+    if (richtung > 0 && this.autoHaken()) this.abhaken(s.nr, true);
+    if (ziel) this.korrekturOeffnen(ziel.nr);
+    else this.korrekturZeichnen();
+  },
+
   korrekturKlick(e) {
     const b = e.target.closest('[data-k]');
     if (!b) return;
@@ -994,8 +1028,14 @@ const ExAuswertung = {
     };
     switch (b.dataset.k) {
       case 'zu': this.korrekturSchliessen(); return;
-      case 'zurueck': if (pos > 0) this.korrekturOeffnen(liste[pos - 1].nr); return;
-      case 'weiter': if (pos < liste.length - 1) this.korrekturOeffnen(liste[pos + 1].nr); return;
+      case 'zurueck': this.blaettern(-1); return;
+      case 'weiter': this.blaettern(1); return;
+      case 'haken': this.abhaken(s.nr, !this.istKorrigiert(s.nr)); this.korrekturZeichnen(); return;
+      case 'fertig-weiter':
+        this.abhaken(s.nr, true);
+        if (pos < liste.length - 1) this.korrekturOeffnen(liste[pos + 1].nr);
+        else this.korrekturSchliessen();
+        return;
       case 'drucken': this.drucken(document.getElementById('ex-druck-loesungen').checked, [s.nr]); return;
       case 'vorschlag': k.m[b.dataset.aufgabe] = Number(b.dataset.wert); break;
       case 'passt': { const { aufgabe, i } = detail(); k.d[aufgabe][i] = Number(this.a.schueler.find(x => x.nr === s.nr).r.aufgaben[aufgabe].details[i].punkte) || 0; break; }
@@ -1009,6 +1049,10 @@ const ExAuswertung = {
 
   korrekturEingabe(e) {
     const el = e.target;
+    if (el.id === 'ex-auto-haken') {
+      try { localStorage.setItem('ex-auto-haken', el.checked ? '1' : '0'); } catch (err) { /* egal */ }
+      return;
+    }
     const s = this.a.schueler.find(x => x.nr === this.korrekturNr);
     const k = this.korr(s.nr);
     const roh = String(el.value).replace(',', '.').trim();
@@ -1032,6 +1076,8 @@ const ExAuswertung = {
     document.getElementById('ex-korrektur-ex').innerHTML = '';
     this.korrekturIframe = null;
     this.korrekturNr = null;
+    // Haken in der Übersicht nachziehen
+    if (this.a && !this.a.ohneEx && document.getElementById('ex-uebersicht')) this.uebersichtZeichnen();
   },
 
   /* ---------- Export ---------- */
