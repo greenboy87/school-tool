@@ -47,10 +47,34 @@ try {
   FB.db = getDatabase(app);
   FB.auth = getAuth(app);
   FB.bereit = true;
+  // Verbindungsstand mitführen – hält nebenbei die Leitung offen
+  onValue(ref(FB.db, '.info/connected'), s => { FB.online = !!s.val(); });
 } catch (e) {
   FB.fehler = e.message || String(e);
   console.error('Firebase konnte nicht gestartet werden:', e);
 }
+
+/* get() bricht mit „Client is offline“ ab, wenn die Leitung gerade erst
+   aufgebaut wird oder kurz weg war (WLAN-Wechsel, Rechner aus dem Ruhezustand,
+   Schulnetz). Dann bis zu 20 s auf die Verbindung warten und noch einmal fragen. */
+FB.offline = e => /offline/i.test((e && (e.message || e.code)) || '');
+FB.warteAufVerbindung = (ms = 20000) => new Promise(fertig => {
+  const start = Date.now();
+  const schauen = () => {
+    if (FB.online) fertig(true);
+    else if (Date.now() - start > ms) fertig(false);
+    else setTimeout(schauen, 250);
+  };
+  schauen();
+});
+FB.get = async r => {
+  try { return await get(r); }
+  catch (e) {
+    if (!FB.offline(e)) throw e;
+    await FB.warteAufVerbindung();
+    return get(r);
+  }
+};
 
 window.FB = FB;
 window.dispatchEvent(new CustomEvent('fb-bereit', { detail: FB }));

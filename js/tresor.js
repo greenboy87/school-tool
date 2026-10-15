@@ -128,6 +128,10 @@ const Tresor = {
       return 'Die Firebase-Regeln geben den Pfad „schoolTool/tresor“ noch nicht frei. ' +
         'Der Block dafür steht in firebase-regeln.md.';
     }
+    if (code.includes('OFFLINE')) {
+      return 'Keine Verbindung zur Datenbank (Firebase meldet „offline“) – ' +
+        'neuer Versuch läuft von selbst, sobald das Netz da ist.';
+    }
     return (e && e.message) ? e.message : String(e);
   },
 
@@ -140,7 +144,20 @@ const Tresor = {
       this.status(this.fehlertext(e), true);
       this.knopfAktualisieren();
       if (!still) alert('Sync fehlgeschlagen.\n\n' + this.fehlertext(e));
+      // Keine Verbindung: still weiterprobieren, sobald das Netz wieder da ist
+      if (window.FB && window.FB.offline && window.FB.offline(e)) this.spaeterVerbinden(pw);
     }
+  },
+
+  spaeterVerbinden(pw) {
+    clearTimeout(this.neuVersuch);
+    const nochmal = () => {
+      clearTimeout(this.neuVersuch);
+      window.removeEventListener('online', nochmal);
+      if (!this.aktiv() && localStorage.getItem(this.PASS_KEY) === pw) this.verbinden(pw, true);
+    };
+    window.addEventListener('online', nochmal);
+    this.neuVersuch = setTimeout(nochmal, 30000);
   },
 
   async _verbinden(pw, still) {
