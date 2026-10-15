@@ -227,6 +227,26 @@ const ExAuswertung = {
     }
   },
 
+  /* Gesichter aus Sitzplan/Steckbrief – dieselben wie in der Klassenliste,
+     der Schalter „Gesichter“ oben blendet sie mit aus */
+  gesichtHtml(s, gross) {
+    const cls = this.a.cls;
+    if (!cls || cls.test || typeof Sitzplan === 'undefined' || !Sitzplan.hatFotos(cls)) return '';
+    const st = cls.students.find(x => x.id === s.sid);
+    if (!st) return '';
+    const ini = ((st.first || '')[0] || '') + ((st.last || '')[0] || '');
+    return `<span class="mini-gesicht ohne${gross ? ' ex-gesicht-gross' : ''}" data-ex-gesicht="${Band.esc(st.id)}" data-initialen="${Band.esc(ini)}"></span>`;
+  },
+
+  gesichterEinsetzen(root) {
+    const cls = this.a && this.a.cls;
+    if (!cls) return;
+    root.querySelectorAll('[data-ex-gesicht]').forEach(el => {
+      const st = cls.students.find(x => x.id === el.dataset.exGesicht);
+      if (st) Schueler.gesichtEinsetzen(el, cls, st, el.classList.contains('ex-gesicht-gross') ? 160 : 96);
+    });
+  },
+
   name(sid) {
     const s = this.a.cls && this.a.cls.students.find(x => x.id === sid);
     return s ? Classes.studentName(s) : '(nicht mehr in der Klassenliste)';
@@ -728,7 +748,7 @@ const ExAuswertung = {
         const p = e.je[x.id];
         return `<td class="${p.offen ? 'ex-offen' : ''}">${fmt(p.punkte)}${p.vorschlag ? '?' : ''}</td>`;
       }).join('');
-      return `<tr><td class="nr">${esc(s.nr)}</td><td>${esc(s.name)}${s.t.status === 'entfernt' ? ' <span class="hint">(entfernt)</span>' : ''}</td>${zellen}
+      return `<tr><td class="nr">${esc(s.nr)}</td><td class="ex-name-zelle">${this.gesichtHtml(s)}${esc(s.name)}${s.t.status === 'entfernt' ? ' <span class="hint">(entfernt)</span>' : ''}</td>${zellen}
         <td><strong>${fmt(e.summe)}</strong></td><td><strong class="ex-note">${e.note}</strong>${e.vorlaeufig ? '<span class="hint">*</span>' : ''}</td>
         <td class="hint">${esc(this.zuschlagText(s))}</td><td>${s.t.notenschutz ? 'ja' : ''}</td>
         <td class="aktionen"><button class="small" data-korrektur="${esc(s.nr)}">${e.offen ? `Korrigieren (${e.offen} offen)` : 'Korrigieren'}</button></td></tr>`;
@@ -738,6 +758,7 @@ const ExAuswertung = {
       <table class="ex-tabelle ex-uebersicht"><thead><tr><th>Nr.</th><th>Name</th>${kopfAufgaben}<th>Summe</th><th>Note</th>
         <th>Zeitzuschlag</th><th>Notenschutz</th><th></th></tr></thead><tbody>${zeilen}</tbody></table>
       </div>`;
+    this.gesichterEinsetzen(document.getElementById('ex-uebersicht'));
   },
 
   /* Selbsteinschätzung: Zahlen 1–5 als Smiley-Verteilung, Listen als Häufigkeit */
@@ -891,12 +912,14 @@ const ExAuswertung = {
     const liste = this.schuelerMitAbgabe(), pos = liste.indexOf(s);
     document.getElementById('ex-korrektur-kopf').innerHTML = `
       <button class="small" data-k="zurueck" ${pos > 0 ? '' : 'disabled'}>‹</button>
+      ${this.gesichtHtml(s, true)}
       <div class="ex-korrektur-wer"><strong>${esc(s.nr)} · ${esc(s.name)}</strong>
         <span class="hint">${s.t.notenschutz ? 'Notenschutz · ' : ''}Zeitzuschlag: ${esc(this.zuschlagText(s))}</span></div>
       <div class="ex-korrektur-stand"><strong>${fmt(e.summe)}</strong> / ${fmt(a.meta.punkteGesamt)} P · Note <strong class="ex-note">${e.note}</strong>${e.vorlaeufig ? ' <span class="hint">(vorläufig)</span>' : ''}</div>
       <button class="small" data-k="weiter" ${pos < liste.length - 1 ? '' : 'disabled'}>›</button>
       <button class="small" data-k="drucken" data-icon="printer">Drucken</button>
       <button class="small" data-k="zu">Schließen</button>`;
+    this.gesichterEinsetzen(document.getElementById('ex-korrektur-kopf'));
     const aufgaben = a.meta.aufgaben.map(aufgabe => {
       const x = s.r.aufgaben[aufgabe.id];
       const p = e.je[aufgabe.id];
