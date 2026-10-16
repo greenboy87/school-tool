@@ -33,7 +33,9 @@ const Store = {
     a.href = URL.createObjectURL(blob);
     a.download = name;
     a.click();
-    URL.revokeObjectURL(a.href);
+    // Safari (iPad) liest die Datei erst nach dem Klick – sofortiges Freigeben
+    // liefert dort einen leeren oder abgebrochenen Download
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
   },
 
   importBackup(file, onDone) {

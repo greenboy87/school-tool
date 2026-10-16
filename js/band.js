@@ -1700,6 +1700,7 @@ const Band = {
     a.href = URL.createObjectURL(blob);
     a.download = filename;
     a.click();
-    URL.revokeObjectURL(a.href);
+    // nicht sofort freigeben: Safari (iPad) holt die Datei erst nach dem Klick
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
   },
 };

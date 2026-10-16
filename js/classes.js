@@ -1375,19 +1375,33 @@ const Classes = {
   addStudents(text, append = false) {
     const cls = this.currentClass();
     if (!cls) return;
+    // Wer schon in der Klasse steht, kommt nicht ein zweites Mal dazu – sonst
+    // verdoppelt ein erneut eingefuegter oder aktualisierter Klassenlisten-PDF
+    // die ganze Klasse.
+    const schluessel = s => `${s.last}\u0000${s.first}`.toLocaleLowerCase('de');
+    const vorhanden = new Set(cls.students.map(schluessel));
+    const doppelt = [];
     for (const line of text.split(/\r?\n/)) {
       const n = this.parseName(line);
-      if (n) cls.students.push({ id: Store.uid(), first: n.first, last: n.last });
+      if (!n) continue;
+      if (vorhanden.has(schluessel(n))) { doppelt.push(this.studentName(n)); continue; }
+      vorhanden.add(schluessel(n));
+      cls.students.push({ id: Store.uid(), first: n.first, last: n.last });
     }
     if (!append) this.sortStudents(cls);
     this.persist();
     this.renderClassList();
     this.renderStudents();
+    if (doppelt.length) {
+      alert(`${doppelt.length === 1 ? 'Ein Name stand' : doppelt.length + ' Namen standen'} schon in der Liste und wurde${doppelt.length === 1 ? '' : 'n'} übersprungen:\n\n` +
+        doppelt.slice(0, 15).join('\n') + (doppelt.length > 15 ? '\n…' : ''));
+    }
   },
 
   sortStudents(cls) {
-    cls.students.sort((a, b) =>
-      (a.last + a.first).localeCompare(b.last + b.first, 'de', { sensitivity: 'base' }));
+    // erst Nachname, dann Vorname – zusammengehaengt kaeme „Otto, Anna“ vor „Ott, Zoe“
+    const cmp = (x, y) => (x || '').localeCompare(y || '', 'de', { sensitivity: 'base' });
+    cls.students.sort((a, b) => cmp(a.last, b.last) || cmp(a.first, b.first));
   },
 
   studentName(s) { return s.first ? `${s.last}, ${s.first}` : s.last; },
@@ -1889,12 +1903,8 @@ const Classes = {
     cls.students.forEach((s, i) => {
       csv += `${i + 1};${this.studentName(s)};${p.grades[s.id] || ''}\n`;
     });
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${cls.name}-${p.name}.csv`.replace(/[^\wäöüÄÖÜß.-]+/g, '_');
-    a.click();
-    URL.revokeObjectURL(a.href);
+    Band.download(csv, `${cls.name}-${p.name}.csv`.replace(/[^\wäöüÄÖÜß.-]+/g, '_'),
+      'text/csv;charset=utf-8');
   },
 
   /* ---------- Gruppen ---------- */

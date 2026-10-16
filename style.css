@@ -189,7 +189,7 @@ input[type="checkbox"] { accent-color: var(--accent); }
 /* ---------- Lärmampel ---------- */
 .ampel-card { max-width: 900px; margin: 0 auto; }
 .ampel-layout { display: flex; gap: 2.5rem; align-items: center; flex-wrap: wrap; }
-.ampel-visual { flex: 0 0 auto; }
+.ampel-visual { flex: 0 1 auto; min-width: 0; max-width: 100%; }
 .ampel-controls { flex: 1; min-width: 260px; }
 
 /* Halbkreis-Spektrum: Bogen aus Segmenten, Zahl in der Mitte */
@@ -1195,6 +1195,7 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 .picker-result .icon { color: var(--accent); }
 .timer-display { font-size: 3.2rem; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: .8rem; display: flex; align-items: center; }
 .timer-display.warning { color: var(--red); }
+#timer-custom { width: 5.5rem; }
 
 /* ---------- Sport ---------- */
 .sport-layout { display: grid; gap: 1rem; }
