@@ -1206,6 +1206,10 @@ const ExAuswertung = {
     w.document.write('<!DOCTYPE html><meta charset="UTF-8"><title>Druck wird vorbereitet …</title><p style="font:16px system-ui;padding:2rem">Druck wird vorbereitet …</p>');
     w.document.close();
 
+    const vorlaeufig = liste.filter(s => this.ergebnis(s).vorlaeufig).length;
+    if (vorlaeufig && !confirm(`Bei ${vorlaeufig} von ${liste.length} Schülern sind noch Punkte vorläufig (mit „?“ markiert).\n\n` +
+      'Fürs Archiv erst fertig korrigieren. Trotzdem drucken?')) { w.close(); return; }
+
     const fassungen = [];
     for (let n = 0; n < liste.length; n++) {
       try { w.document.title = `Druck wird vorbereitet … ${n + 1}/${liste.length}`; } catch (e) {}
@@ -1224,7 +1228,8 @@ const ExAuswertung = {
       const kopf = `<header class="stdr-kopf"><div>
           <div class="stdr-klein">${esc(a.gruppe.exNummer)}. ${esc(a.meta.art || 'Ex')} · ${esc(a.meta.fach || '')} · Klasse ${esc(a.gruppe.klasse)} · ${datum}</div>
           <div class="stdr-titel">${esc(a.meta.titel)}</div>
-          <div class="stdr-name">${esc(s.name)} <span class="stdr-klein">(Nr. ${esc(s.nr)})</span></div></div>
+          <div class="stdr-name">${esc(s.name)} <span class="stdr-klein">(Nr. ${esc(s.nr)})</span></div>
+          <div class="stdr-klein">${esc(this.abgabeText(s))}</div></div>
         <div class="stdr-ergebnis"><div class="stdr-note">${e.note}</div><div>${fmt(e.summe)} / ${fmt(max)} Punkte</div></div></header>
         ${s.t.notenschutz ? '<p class="stdr-klein">Notenschutz: Die Rechtschreibung wurde nicht gewertet.</p>' : ''}`;
       let rumpf;
@@ -1285,7 +1290,37 @@ const ExAuswertung = {
     } else if (ohne) {
       alert(`${ohne} von ${fassungen.length} Druckfassungen kamen nicht rechtzeitig – dort steht die Tabelle.`);
     }
+    // Nach dem Druck der ganzen Klasse: Papier ist das Archiv, die Abgaben sollen aus der Datenbank
+    if (!nurNummern && !vorlaeufig) {
+      const a = this.a;
+      w.addEventListener('afterprint', () => setTimeout(() => this.nachDruck(a), 300), { once: true });
+    }
     setTimeout(() => w.print(), 400);
+  },
+
+  /* Abgabezeit (Serverzeit), wie abgegeben, Zeitzuschlag – für den Kopf der Druckfassung */
+  abgabeText(s) {
+    const ab = s.abgabe;
+    if (!ab || !ab.abgegebenUm) return 'Abgabe: nicht erfasst';
+    const um = new Date(ab.abgegebenUm).toLocaleString('de-DE',
+      { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return `Abgabe: ${um} Uhr (Serverzeit) · ${ab.erzwungen ? 'eingesammelt zum Zeitende' : 'selbst abgegeben'}` +
+      ` · Zeitzuschlag: ${this.zuschlagText(s)}`;
+  },
+
+  /* Nach dem Druck anbieten, die Ex zu archivieren und Abgaben samt Korrekturen
+     aus der Datenbank zu löschen – die Blätter sind dann die einzige Aufbewahrung */
+  nachDruck(a) {
+    if (this.a !== a || !a.d) return;
+    if (!confirm('Sind alle Blätter vollständig ausgedruckt?\n\n' +
+      'Dann ist das Papier die Aufbewahrung (2 Jahre, danach vernichten). Die digitalen Abgaben sollten jetzt ' +
+      'aus der Datenbank gelöscht werden.\n\nOK: archivieren und löschen\nAbbrechen: später')) return;
+    const warArchiviert = !!a.d.archiviert;
+    if (!warArchiviert) this.archivieren();
+    this.endgueltigLoeschen().then(() => {
+      // Beim Löschen abgebrochen: so lassen, wie es vorher war
+      if (!warArchiviert && this.a === a && a.d.archiviert) this.archivieren();
+    });
   },
 
   /* Die Tabelle: je Aufgabe Antwort, ✓/✗, Punkte – wahlweise mit Lösung */
