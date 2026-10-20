@@ -160,15 +160,25 @@ const Tresor = {
     this.neuVersuch = setTimeout(nochmal, 30000);
   },
 
+  /* Nur die Hauptdaten des Tresors, ohne die Äste „plaene“ und „fotos“:
+     Ein get auf den ganzen Tresor zieht jedes Mal alle Sitzpläne und Fotos mit
+     herunter – das hat das Download-Kontingent der Datenbank aufgebraucht. */
+  KOPF: ['chiffre', 'iv', 'salz', 'stand', 'geraet'],
+  async kopfHolen(id = this.id, felder = this.KOPF) {
+    const { db, ref, get } = window.FB;
+    const werte = await Promise.all(felder.map(f => get(ref(db, `schoolTool/tresor/${id}/${f}`))));
+    const kopf = {};
+    felder.forEach((f, i) => { const v = werte[i].val(); if (v !== null) kopf[f] = v; });
+    return Object.keys(kopf).length ? kopf : null;
+  },
+
   async _verbinden(pw, still) {
     if (!window.FB || !window.FB.bereit) throw new Error('Datenbank nicht erreichbar');
     this.passwort = pw;
     this.id = await this.tresorId(pw);
     this.status('verbinde …');
 
-    const { db, ref, get } = window.FB;
-    const snap = await get(ref(db, `schoolTool/tresor/${this.id}`));
-    const vorhanden = snap.val();
+    const vorhanden = await this.kopfHolen();
 
     if (vorhanden && vorhanden.salz) {
       // Bestehender Tresor: Schlüssel aus dem gespeicherten Salz ableiten
@@ -370,9 +380,9 @@ const Tresor = {
     if (this.pausiert && !laut && !erzwingen) return;
     this.amLaufen = true;
     try {
-      const { db, ref, get, update } = window.FB;
+      const { db, ref, update } = window.FB;
       if (!erzwingen) {
-        const fern = (await get(ref(db, `schoolTool/tresor/${this.id}`))).val() || {};
+        const fern = (await this.kopfHolen(this.id, ['stand', 'geraet'])) || {};
         if ((fern.stand || 0) > this.basis()) {
           this.amLaufen = false;
           await this.konflikt(fern.stand, fern.geraet);
@@ -427,9 +437,7 @@ const Tresor = {
   async herunterladen(laut) {
     if (!this.aktiv()) return;
     try {
-      const { db, ref, get } = window.FB;
-      const snap = await get(ref(db, `schoolTool/tresor/${this.id}`));
-      const paket = snap.val();
+      const paket = await this.kopfHolen();
       if (!paket) { alert('Auf dem Server liegt noch nichts.'); return; }
       const daten = await this.entschluesseln(paket);
       if (laut && !confirm(
@@ -571,7 +579,7 @@ const Tresor = {
       this.status('hole Serverstand …');
       const id = await this.tresorId(pw);
       const { db, ref, get } = window.FB;
-      const paket = (await get(ref(db, `schoolTool/tresor/${id}`))).val();
+      const paket = await this.kopfHolen(id);
       if (!paket || !paket.salz) {
         this.status('Unter diesem Passwort liegt nichts.', true);
         alert('Unter diesem Sync-Passwort liegt auf dem Server nichts.\n\n' +
