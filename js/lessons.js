@@ -27,6 +27,55 @@ const Lessons = {
     document.getElementById('lesson-filter').addEventListener('input', () => this.render());
     document.getElementById('lesson-only-grade').addEventListener('input', () => this.fillTopicOptions());
     document.getElementById('lesson-tag').addEventListener('input', () => this.fillTopicOptions());
+    document.getElementById('btn-katalog').addEventListener('click', () => this.katalogFenster());
+    window.addEventListener('message', e => this.katalogNachricht(e));
+  },
+
+  /* ----- Katalogseite als Fenster: alle Filter von dort, „+ zur Klasse“ landet hier ----- */
+  katalogFenster() {
+    const cls = Classes.currentClass();
+    if (!cls) return;
+    let f = document.getElementById('katalog-fenster');
+    if (!f) {
+      f = document.createElement('div');
+      f.id = 'katalog-fenster';
+      f.className = 'katalog-fenster';
+      f.innerHTML = `
+        <div class="katalog-kopf">
+          <h3 id="katalog-titel"></h3>
+          <button class="primary" id="katalog-zu">${Icons.raw('check')}Fertig</button>
+        </div>
+        <iframe src="${this.KATALOG_SEITE}?schooltool" title="Stundenkatalog" allow="clipboard-write"></iframe>`;
+      document.body.appendChild(f);
+      f.querySelector('#katalog-zu').addEventListener('click', () => { f.hidden = true; this.render(); });
+    }
+    f.hidden = false;
+    document.getElementById('katalog-titel').textContent = 'Stundenkatalog – ' + cls.name;
+    this.katalogMelden();
+  },
+
+  /* Der Katalogseite sagen, was die Klasse schon hat */
+  katalogMelden() {
+    const f = document.getElementById('katalog-fenster');
+    const cls = Classes.currentClass();
+    if (!f || f.hidden || !cls) return;
+    const ids = Object.keys(this.lessonsOf(cls)).filter(id => id.startsWith('kat:')).map(id => id.slice(4));
+    f.querySelector('iframe').contentWindow.postMessage({ typ: 'katalog-da', ids, klasse: cls.name }, new URL(this.KATALOG_SEITE).origin);
+  },
+
+  katalogNachricht(e) {
+    if (e.origin !== new URL(this.KATALOG_SEITE).origin || !e.data) return;
+    if (e.data.typ === 'katalog-bereit') { this.katalogMelden(); return; }
+    if (e.data.typ !== 'katalog-add' || typeof e.data.id !== 'string') return;
+    const cls = Classes.currentClass();
+    if (!cls) return;
+    const l = this.lessonsOf(cls);
+    const id = 'kat:' + e.data.id;
+    if (l[id]) return;
+    const s = this.katalogIds.get(e.data.id);
+    l[id] = { s: 'open', added: Date.now(), t: s ? s.titel : String(e.data.titel || e.data.id).slice(0, 200) };
+    Classes.persist();
+    this.render();
   },
 
   /* ----- Stundenkatalog ----- */
