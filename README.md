@@ -350,8 +350,12 @@ JSON-Datei; die liegt dann lokal und geht der mitgelieferten vor. **Mitgeliefert
 verwenden** nimmt sie wieder zurück.
 
 ### Stunden (Themen-Fortschritt)
-- Katalog mit 211 Stundenthemen, erzeugt aus den Ordnern in iCloud unter
-  `3_Unterrichtsstunden/Musikseminarsave` (siehe `js/topics-seed.js`)
+- Vorschläge aus dem [Stundenkatalog](https://greenboy87.github.io/stundenkatalog/):
+  Das School-Tool lädt beim Öffnen dessen `katalog.json` (Titel, Klassenstufen, Tags)
+  und merkt sie sich lokal. Sie gehört nicht zu den Klassendaten und läuft nicht durch
+  den Tresor. Aktuell wird sie über „Katalog veröffentlichen“ im iCloud-Ordner `_Katalog`.
+- Filter nach Jahrgangsstufe und Tag; Knopf **Material öffnen** startet dieselben
+  Kurzbefehle wie die Katalogseite („Katalog öffnen“ am Mac, „Katalog öffnen iOS“)
 - Pro Klasse je Thema **Offen / Läuft / Fertig** – mit Datum, für Projekte über mehrere Wochen
 - Fortschrittsbalken, Suche und Filter; Themen werden nach Jahrgangsstufe vorgefiltert
 - Eigene Themen anlegen: gelten **global** und bleiben dauerhaft erhalten
@@ -369,8 +373,9 @@ Knopf **Nächstes Schuljahr**. Der legt eine Kopie der Klasse an (Stufe +1, Name
 hochgezählt, Schüler übernommen, Stunden und Noten starten neu); die alte Klasse bleibt
 als Rückblick erhalten.
 
-Kommen neue Ordner in die Stundensammlung, lässt sich `js/topics-seed.js` neu erzeugen;
-die App übernimmt dann nur die neuen Themen und lässt Fortschritt und eigene Themen in Ruhe.
+Kommen neue Ordner in die Stundensammlung, genügt „Katalog veröffentlichen“. Wird ein
+Ordner umbenannt, bleibt der Stand in der Klasse unter dem alten Titel stehen
+(„nicht mehr im Stundenkatalog“).
 
 ### Schulband
 - **Mitglieder** aus verschiedenen Klassen, jeweils mit Klasse, Bereich (Schulband /
