@@ -147,7 +147,7 @@ const Lessons = {
   topicById(id, eintrag) {
     if (id.startsWith('kat:')) {
       const s = this.katalogIds.get(id.slice(4));
-      if (s) return { id, name: s.titel, grades: s.klassen, tags: s.tags, ordner: s.id };
+      if (s) return { id, name: s.titel, grades: s.klassen, tags: s.tags, ordner: s.id, haupt: s.haupt, ab: s.ab };
       // Ordner umbenannt oder Katalog noch nicht geladen: mit dem gemerkten Titel weiter
       return { id, name: (eintrag && eintrag.t) || id.slice(4).split('/').pop(), grades: [], fehlt: !!this.katalog };
     }
@@ -175,18 +175,19 @@ const Lessons = {
     sel.value = wert;
   },
 
-  /* Material im iCloud-Ordner öffnen – über dieselben Kurzbefehle wie die Katalogseite */
-  oeffnen(ordner) {
+  /* Ordner oder Datei im iCloud-Ordner öffnen – über dieselben Kurzbefehle wie die Katalogseite.
+     pfad ist relativ zu Musikseminarsave, z. B. „Klasse 7 - Wellerman/Wellerman.pptx“ */
+  oeffnen(pfad) {
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
       (/Mac/.test(navigator.platform) && navigator.maxTouchPoints > 1);
     const mac = !ios && /Mac/i.test(navigator.platform || navigator.userAgent);
     if (ios) {
-      try { navigator.clipboard.writeText(ordner); } catch (e) { /* Kurzbefehl bekommt den Pfad trotzdem */ }
+      try { navigator.clipboard.writeText(pfad); } catch (e) { /* Kurzbefehl bekommt den Pfad trotzdem */ }
       location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Katalog öffnen iOS') +
-        '&input=text&text=' + encodeURIComponent(ordner);
+        '&input=text&text=' + encodeURIComponent(pfad);
     } else if (mac && this.katalog) {
       location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Katalog öffnen') +
-        '&input=text&text=' + encodeURIComponent(this.katalog.macBasis + '/' + ordner);
+        '&input=text&text=' + encodeURIComponent(this.katalog.macBasis + '/' + pfad);
     } else {
       window.open(this.KATALOG_SEITE, '_blank', 'noopener');
     }
@@ -359,13 +360,21 @@ const Lessons = {
         b.addEventListener('click', () => this.setState(cls, t.id, key));
         btns.appendChild(b);
       }
+      let mat = null;
       if (t.ordner) {
-        const auf = document.createElement('button');
-        auf.className = 'small';
-        auf.innerHTML = Icons.raw('file');
-        auf.title = 'Material öffnen (iCloud-Ordner)';
-        auf.addEventListener('click', () => this.oeffnen(t.ordner));
-        btns.appendChild(auf);
+        mat = document.createElement('div');
+        mat.className = 'lesson-material';
+        const knopf = (icon, text, pfad, titel) => {
+          const b = document.createElement('button');
+          b.className = 'small';
+          b.innerHTML = Icons.raw(icon) + text;
+          b.title = titel + ': ' + pfad;
+          b.addEventListener('click', () => this.oeffnen(pfad));
+          mat.appendChild(b);
+        };
+        if (t.haupt) knopf('play', /\.pdf$/i.test(t.haupt) ? 'PDF' : 'Präsentation', t.haupt, 'Öffnen');
+        if (t.ab) knopf('file', 'Arbeitsblatt', t.ab, 'Öffnen');
+        knopf('folder', '', t.ordner, 'Ordner öffnen');
       }
       const weg = document.createElement('button');
       weg.className = 'small danger';
@@ -378,7 +387,7 @@ const Lessons = {
       });
       btns.appendChild(weg);
 
-      li.append(main, btns);
+      li.append(main, ...(mat ? [mat] : []), btns);
       list.appendChild(li);
     }
   },
