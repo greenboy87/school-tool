@@ -314,8 +314,8 @@ const Stundenplan = {
 
   /* Laufende Themen einer Stunde: Schlagwort (Schalter „Themen“), dazu der
      eigene Stand und die Knöpfe zu Material und Zwischenablage (Schalter
-     „Stand“). Die Knöpfe nur in der Tagesansicht – im Wochenraster wäre dafür
-     kein Platz. */
+     „Stand“). Alle Knöpfe nur in der Tagesansicht; im Wochenraster ist nur
+     Platz für den Start der Präsentation (mitKnoepfen = 'start'). */
   themenHtml(t, cls, mitKnoepfen) {
     const zeigeWort = this.themenSchalter.checked, zeigeStand = this.standSchalter.checked;
     const zeigeKnoepfe = mitKnoepfen && zeigeStand;
@@ -339,6 +339,10 @@ const Stundenplan = {
         const oeffnen = (icon, text, pfad, titel) =>
           knopf(icon, text, `data-oeffnen="${this.esc(pfad)}"`, titel + ': ' + pfad);
         const alles = eintrag.stand ? `${wort} – ${eintrag.stand}` : wort;
+        if (mitKnoepfen === 'start') {
+          if (topic.haupt) teile.push(`<span class="plan-material">${oeffnen('play', 'Start', topic.haupt, 'Präsentation starten')}</span>`);
+          return `<span class="plan-thema">${teile.join('')}</span>`;
+        }
         teile.push(`<span class="plan-material">${[
           topic.haupt ? oeffnen('play', /\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation', topic.haupt, 'Starten') : '',
           topic.ab ? oeffnen('file', 'AB', topic.ab, 'Öffnen') : '',
@@ -529,7 +533,7 @@ const Stundenplan = {
         const tag = this.tagSchluessel(d);
         const hier = woche.filter(t => this.tagSchluessel(t.beginn) === tag && this.uhr(t.beginn) === z);
         return `<div class="plan-zelle${tag === heute ? ' heute' : ''}">${hier.map(t => {
-          const b = this.baustein(t, jetzt);
+          const b = this.baustein(t, jetzt, 'start');
           return `<div class="${b.klassenName}"><span class="plan-wer">${b.wer}</span>${b.raum}${b.marken}</div>`;
         }).join('')}</div>`;
       }).join('');
