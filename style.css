@@ -2267,3 +2267,14 @@ button.plan-tagkopf.heute { background: var(--accent-grad); color: var(--on-acce
 .plan-liste .plan-info { padding-left: 11.7rem; }
 @media (max-width: 600px) { .plan-liste .plan-info { padding-left: 0; } }
 .plan-zelle .plan-info { font-size: .75rem; }
+
+/* Klassenbuch (Klassen → Klassenbuch) */
+.klassenbuch-huelle { overflow-x: auto; }
+table.klassenbuch { width: 100%; border-collapse: collapse; font-size: .9rem; }
+table.klassenbuch th, table.klassenbuch td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+table.klassenbuch th { color: var(--muted); font-weight: 600; font-size: .8rem; }
+table.klassenbuch td.num, table.klassenbuch th.num { text-align: right; width: 2.5rem; font-variant-numeric: tabular-nums; }
+table.klassenbuch tbody tr { cursor: pointer; }
+table.klassenbuch tbody tr:hover { background: var(--hover); }
+table.klassenbuch tr.entfallen { color: var(--muted); cursor: default; }
+table.klassenbuch tr.entfallen:hover { background: none; }

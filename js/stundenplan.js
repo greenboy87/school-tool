@@ -73,8 +73,13 @@ const Stundenplan = {
       this.ansicht(k === 'w' ? 'woche' : 'heute');
     });
     document.getElementById('btn-plan-voll').addEventListener('click', () => this.vollbild());
-    const druck = document.getElementById('btn-stundenbuch-druck');
-    if (druck) druck.addEventListener('click', () => this.buchDrucken(Classes.currentClass()));
+    // Klassenbuch unter Klassen: drucken, Zeile anklicken zum Bearbeiten
+    document.getElementById('btn-klassenbuch-druck').addEventListener('click', () => this.buchDrucken(Classes.currentClass()));
+    document.getElementById('klassenbuch-tabelle').addEventListener('click', e => {
+      const zeile = e.target.closest('[data-buch]');
+      if (zeile && !zeile.classList.contains('entfallen')) this.themaBearbeiten(zeile.dataset.buch);
+    });
+    document.querySelector('.subtab-btn[data-subtab="klassenbuch"]').addEventListener('click', () => this.klassenbuchZeigen());
     document.getElementById('btn-plan-neu').addEventListener('click', () => this.holen());
     document.getElementById('btn-plan-abo').addEventListener('click', () => this.aboFragen());
     document.getElementById('plan-inhalt').addEventListener('click', e => {
@@ -756,6 +761,7 @@ const Stundenplan = {
       Classes.persist();
       this.buchFuehren();
       this.render();
+      this.klassenbuchZeigen();
     };
     dlg.showModal();
     (wahlThema.disabled ? wahlKlasse : wahlThema).focus();
@@ -1029,39 +1035,70 @@ const Stundenplan = {
     if (p && p.catch) p.catch(err => alert('Vollbild nicht möglich: ' + err.message));
   },
 
-  /* ---------- Übersicht je Klasse zum Drucken (als PDF speichern) ---------- */
-  buchDrucken(cls) {
-    if (!cls) return;
+  /* ---------- Klassenbuch: jede erfasste Stunde einer Klasse ----------
+     Unter Klassen → Klassenbuch als Tabelle, dort auch zum Drucken bzw. als PDF. */
+  buchZeilen(cls) {
     this.buchFuehren();
     this._cache = null;
     const jetzt = new Date();
-    const eintraege = Object.entries(cls.stundenbuch || {})
-      .filter(([, r]) => r.e).sort((a, b) => (a[0] < b[0] ? -1 : 1));
-    if (!eintraege.length) {
-      alert('Für diese Klasse sind noch keine Stunden erfasst.\n\n' +
-        'Das Stundenbuch füllt sich aus dem Stundenplan (Reiter Plan) – mit jeder Stunde, die vorbei ist.');
+    let gehalten = 0, entfallen = 0;
+    const zeilen = Object.entries(cls.stundenbuch || {})
+      .filter(([, r]) => r.e).sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([key, r]) => {
+        const [tag, zeit] = key.split(' ');
+        const datum = new Date(tag + 'T' + zeit);
+        const t = { beginn: datum, ende: new Date(tag + 'T' + r.e), entfaellt: !!r.x };
+        const themen = r.th ? r.th.map(x => x.w) : this.themenDerStunde(cls, t, jetzt).themen.map(x => x.wort);
+        if (r.x) entfallen++; else gehalten++;
+        const nr = this.STUNDEN[zeit];
+        return {
+          key, entfallen: !!r.x, nr: r.x ? '' : gehalten,
+          datum: datum.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }),
+          stunde: nr && nr !== 'Pause' ? nr : zeit,
+          thema: themen.join(' · '), stand: r.s || '', info: r.i || '', raum: r.r || '',
+        };
+      });
+    return { zeilen, gehalten, entfallen };
+  },
+
+  klassenbuchZeigen() {
+    const ziel = document.getElementById('klassenbuch-tabelle');
+    const cls = Classes.currentClass();
+    if (!ziel || !cls) return;
+    const { zeilen, gehalten, entfallen } = this.buchZeilen(cls);
+    document.getElementById('klassenbuch-summe').textContent = zeilen.length
+      ? `${gehalten} Stunden gehalten` + (entfallen ? ` · ${entfallen} entfallen` : '') : '';
+    document.getElementById('btn-klassenbuch-druck').disabled = !zeilen.length;
+    if (!zeilen.length) {
+      ziel.innerHTML = `<p class="hint">Noch keine Stunden erfasst. Das Klassenbuch füllt sich aus dem
+        Stundenplan (Reiter Plan): Jede vergangene Stunde dieser Klasse kommt von selbst hinein.</p>`;
       return;
     }
-    let gehalten = 0, entfallen = 0;
-    const zeilen = eintraege.map(([key, r]) => {
-      const [tag, zeit] = key.split(' ');
-      const datum = new Date(tag + 'T' + zeit);
-      const t = { beginn: datum, ende: new Date(tag + 'T' + r.e), entfaellt: !!r.x };
-      const themen = r.th ? r.th.map(x => x.w) : this.themenDerStunde(cls, t, jetzt).themen.map(x => x.wort);
-      if (r.x) entfallen++; else gehalten++;
-      const nr = this.STUNDEN[zeit];
-      return [
-        r.x ? '' : gehalten,
-        Band.esc(datum.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })),
-        Band.esc(nr && nr !== 'Pause' ? nr : zeit),
-        r.x ? '<em>entfallen</em>' : Band.esc(themen.join(' · ')),
-        r.x ? '' : Band.esc(r.s || ''),
-        Band.esc(r.r || ''),
-      ];
-    });
-    Band.printHtml(`${cls.name} – gehaltene Stunden`, Band.printTable(
-      [{ titel: 'Nr.', cls: 'num' }, { titel: 'Datum' }, { titel: 'Std.' }, { titel: 'Thema' }, { titel: 'Stand' }, { titel: 'Raum' }],
-      zeilen, 'kompakt'),
+    const mitInfo = zeilen.some(z => z.info);
+    ziel.innerHTML = `<table class="klassenbuch">
+      <thead><tr><th class="num">Nr.</th><th>Datum</th><th>Std.</th><th>Thema</th><th>Stand</th>${mitInfo ? '<th>Info</th>' : ''}<th>Raum</th></tr></thead>
+      <tbody>${zeilen.map(z => `<tr class="${z.entfallen ? 'entfallen' : ''}" data-buch="${this.esc(z.key)}" title="Klicken zum Bearbeiten">
+        <td class="num">${z.nr}</td><td>${this.esc(z.datum)}</td><td>${this.esc(z.stunde)}</td>
+        <td>${z.entfallen ? '<em>entfallen</em>' : this.esc(z.thema) || '<span class="hint">–</span>'}</td>
+        <td>${z.entfallen ? '' : this.esc(z.stand)}</td>${mitInfo ? `<td>${this.esc(z.info)}</td>` : ''}<td>${this.esc(z.raum)}</td>
+      </tr>`).join('')}</tbody></table>`;
+  },
+
+  buchDrucken(cls) {
+    if (!cls) return;
+    const { zeilen, gehalten, entfallen } = this.buchZeilen(cls);
+    if (!zeilen.length) { alert('Für diese Klasse sind noch keine Stunden erfasst.'); return; }
+    const mitInfo = zeilen.some(z => z.info);
+    const spalten = [{ titel: 'Nr.', cls: 'num' }, { titel: 'Datum' }, { titel: 'Std.' }, { titel: 'Thema' }, { titel: 'Stand' }];
+    if (mitInfo) spalten.push({ titel: 'Info' });
+    spalten.push({ titel: 'Raum' });
+    Band.printHtml(`Klassenbuch ${cls.name}`, Band.printTable(spalten, zeilen.map(z => [
+      z.nr, Band.esc(z.datum), Band.esc(z.stunde),
+      z.entfallen ? '<em>entfallen</em>' : Band.esc(z.thema),
+      z.entfallen ? '' : Band.esc(z.stand),
+      ...(mitInfo ? [Band.esc(z.info)] : []),
+      Band.esc(z.raum),
+    ]), 'kompakt'),
       `${gehalten} Stunden gehalten` + (entfallen ? ` · ${entfallen} entfallen` : '') +
       (cls.year ? ` · Schuljahr ${cls.year}` : ''));
   },

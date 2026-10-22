@@ -1283,6 +1283,7 @@ const Classes = {
     this.renderSeatplan();
     if (typeof Sitzplan !== 'undefined') Sitzplan.render();
     if (typeof Lessons !== 'undefined') Lessons.render();
+    if (typeof Stundenplan !== 'undefined') Stundenplan.klassenbuchZeigen();
   },
 
   /* ---------- Schüler ---------- */
