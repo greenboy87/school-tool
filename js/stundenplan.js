@@ -11,7 +11,15 @@
    specialLesson, supervision, cancelledSupervision). Die Zahl bezeichnet den
    festen Platz im Plan. Ein Raumtausch ist nicht eigens gekennzeichnet – er
    fällt erst auf, wenn derselbe Platz sonst in einem anderen Raum liegt. Deshalb
-   merkt sich das Tool die Räume der vergangenen Wochen. */
+   merkt sich das Tool die Räume der vergangenen Wochen.
+
+   Das Abo reicht nur gut zwei Wochen zurück. Damit gehaltene Stunden nicht mit
+   ihm verschwinden, schreibt das Tool jede vergangene Stunde einer School-Tool-
+   Klasse ins Stundenbuch der Klasse (cls.stundenbuch), Schlüssel „2026-10-22 09:30“:
+     { e: '10:15', f: 'Mu', k: '5a', r: 'H311', x: 1 (entfallen),
+       th: [{ id, w }] (Themen mit Schlagwort), s: 'bis Folie 15' (eigener Stand) }
+   Die Themen werden am Tag nach der Stunde festgeschrieben; bis dahin folgen sie
+   dem Fortschritt im Reiter Stunden. Der Stand gehört zu genau einer Stunde. */
 const Stundenplan = {
   WORKER: 'https://stundenplan.tomgruenig87.workers.dev/',
   CACHE_KEY: 'stundenplan-cache',
@@ -49,19 +57,23 @@ const Stundenplan = {
     };
     this.themenSchalter = schalter('plan-themen', this.THEMEN_KEY);
     this.standSchalter = schalter('plan-stand-zeigen', this.STAND_KEY);
+    this.karte = this.el.querySelector('.plan-card');
+    document.getElementById('btn-plan-voll').addEventListener('click', () => this.vollbild());
+    const druck = document.getElementById('btn-stundenbuch-druck');
+    if (druck) druck.addEventListener('click', () => this.buchDrucken(Classes.currentClass()));
     document.getElementById('btn-plan-neu').addEventListener('click', () => this.holen());
     document.getElementById('btn-plan-abo').addEventListener('click', () => this.aboFragen());
     document.getElementById('plan-inhalt').addEventListener('click', e => {
       const link = e.target.closest('[data-klasse]');
       if (link) { this.klasseOeffnen(link.dataset.klasse); return; }
       const stand = e.target.closest('[data-stand]');
-      if (stand) { this.standAendern(...stand.dataset.stand.split('|')); return; }
+      if (stand) { this.standAendern(stand.dataset.stand.split('|')[0], stand.dataset.stand.split('|')[1]); return; }
       const datei = e.target.closest('[data-oeffnen]');
       if (datei) { Lessons.oeffnen(datei.dataset.oeffnen); return; }
       const kopie = e.target.closest('[data-kopieren]');
       if (kopie) Lessons.schlagwortKopieren(kopie, kopie.dataset.kopieren);
       const nav = e.target.closest('[data-woche]');
-      if (nav) { this.wochenVersatz += parseInt(nav.dataset.woche, 10); this.render(); }
+      if (nav) this.woche(parseInt(nav.dataset.woche, 10));
     });
 
     this.ausCacheLaden();
@@ -139,6 +151,7 @@ const Stundenplan = {
       this.geholt = Date.now();
       localStorage.setItem(this.CACHE_KEY, JSON.stringify({ text, geholt: this.geholt }));
       this.raeumeMerken();
+      this.buchFuehren();
     } catch (e) {
       this.fehler = e.message || String(e);
     } finally {
@@ -254,6 +267,7 @@ const Stundenplan = {
   ],
 
   klasseZu(t) {
+    if (t.klasseId) return Classes.data.classes.find(c => c.id === t.klasseId) || null;
     if (!t.klassen.length || !Classes.data) return null;
     const gesucht = new Set(t.klassen.map(k => this.klassenSchluessel(k)).filter(Boolean));
     if (!gesucht.size) return null;
@@ -285,74 +299,199 @@ const Stundenplan = {
     Classes.selectClass(id);
   },
 
-  /* Schlagwörter der Themen, die in der Klasse gerade auf „Läuft“ stehen –
-     dasselbe, was der Kopierknopf im Reiter Stunden ins Klassenbuch legt */
-  laufendeThemen(cls) {
-    if (!cls || typeof Lessons === 'undefined') return [];
-    return Object.entries(Lessons.lessonsOf(cls))
-      .filter(([, e]) => e && e.s === 'progress')
-      .map(([id, e]) => ({ topic: Lessons.topicById(id, e), eintrag: e }))
-      .filter(x => x.topic)
-      .map(x => ({ ...x, wort: Lessons.schlagwort(x.topic) }));
+  /* ---------- Stundenbuch: Themen und Stand je Stunde ---------- */
+  buchSchluessel(t) {
+    return this.tagSchluessel(t.beginn) + ' ' + this.uhr(t.beginn);
   },
 
-  /* Eigener Vermerk, wo es weitergeht („bis Folie 15“) – je Klasse und Thema,
-     liegt beim Fortschritt der Klasse und reist damit im Sync mit */
-  standAendern(klasseId, topicId) {
+  themaAus(cls, id, w) {
+    const e = (cls.lessons || {})[id];
+    const topic = Lessons.topicById(id, e || { t: w }) || { id, name: w || id };
+    return { topic, wort: w || Lessons.schlagwort(topic) };
+  },
+
+  /* Welche Themen gehören zu dieser Stunde?
+     - festgeschrieben im Stundenbuch: genau die
+     - noch nicht vorbei: was gerade läuft; läuft nichts, als Vorschlag das
+       nächste offene Thema der Klasse (oder nichts)
+     - vorbei, aber noch nicht festgeschrieben: was an dem Tag lief (d1/d2) */
+  themenDerStunde(cls, t, jetzt = new Date()) {
+    if (!cls || t.entfaellt || typeof Lessons === 'undefined') return { themen: [], vorschlag: false };
+    const rec = (cls.stundenbuch || {})[this.buchSchluessel(t)];
+    if (rec && rec.th) return { themen: rec.th.map(x => this.themaAus(cls, x.id, x.w)), vorschlag: false };
+    const eintraege = Object.entries(Lessons.lessonsOf(cls)).filter(([, e]) => e);
+    let ids;
+    if (t.ende > jetzt) {
+      ids = eintraege.filter(([, e]) => e.s === 'progress').map(([id]) => id);
+      if (!ids.length) {
+        const offen = Lessons.assignedTopics(cls).find(tp => Lessons.stateOf(cls, tp.id) === 'open');
+        return { themen: offen ? [this.themaAus(cls, offen.id)] : [], vorschlag: !!offen };
+      }
+    } else {
+      const tag = this.tagSchluessel(t.beginn);
+      ids = eintraege.filter(([, e]) => e.d1 && e.d1 <= tag &&
+        (e.s === 'progress' || (e.s === 'done' && e.d2 && e.d2 >= tag))).map(([id]) => id);
+    }
+    return { themen: ids.map(id => this.themaAus(cls, id)), vorschlag: false };
+  },
+
+  /* Vergangene Stunden ins Stundenbuch schreiben. Läuft nach jedem Holen und
+     Zeichnen; was sich nicht geändert hat, wird nicht gespeichert. Gibt es zur
+     selben Zeit Entfall und Ersatzstunde derselben Klasse, zählt die Ersatzstunde. */
+  buchFuehren() {
+    if (!Classes.data || typeof Lessons === 'undefined') return;
+    const jetzt = new Date(), heute = this.tagSchluessel(jetzt);
+    let geaendert = false;
+    const jeStunde = new Map();
+    for (const t of this.termine) {
+      if (t.aufsicht || t.ende > jetzt) continue;
+      const cls = this.klasseZu(t);
+      if (!cls) continue;
+      const id = cls.id + '|' + this.buchSchluessel(t);
+      const vorher = jeStunde.get(id);
+      if (!vorher || (vorher.t.entfaellt && !t.entfaellt)) jeStunde.set(id, { t, cls });
+    }
+    for (const { t, cls } of jeStunde.values()) {
+      const buch = cls.stundenbuch || (cls.stundenbuch = {});
+      const key = this.buchSchluessel(t);
+      const rec = buch[key] || (buch[key] = {});
+      const soll = { e: this.uhr(t.ende), f: t.fach, k: this.klassenText(t), r: t.raum, x: t.entfaellt ? 1 : 0 };
+      for (const [feld, wert] of Object.entries(soll)) {
+        if (wert && rec[feld] !== wert) { rec[feld] = wert; geaendert = true; }
+        if (!wert && rec[feld] !== undefined) { delete rec[feld]; geaendert = true; }
+      }
+      if (!t.entfaellt && !rec.th && this.tagSchluessel(t.beginn) < heute) {
+        rec.th = this.themenDerStunde(cls, t, jetzt).themen.map(x => ({ id: x.topic.id, w: x.wort }));
+        geaendert = true;
+      }
+    }
+    // Stand aus der früheren Fassung (je Thema statt je Stunde): zur letzten
+    // begonnenen Stunde der Klasse legen, dort wurde er eingetragen
+    for (const cls of Classes.data.classes) {
+      for (const e of Object.values(cls.lessons || {})) {
+        if (!e || !e.stand) continue;
+        const letzte = this.termine.filter(t => !t.entfaellt && !t.aufsicht && t.beginn <= jetzt &&
+          this.klasseZu(t) === cls).pop();
+        if (!letzte) continue;
+        const buch = cls.stundenbuch || (cls.stundenbuch = {});
+        const rec = buch[this.buchSchluessel(letzte)] || (buch[this.buchSchluessel(letzte)] = {});
+        if (!rec.s) rec.s = e.stand;
+        delete e.stand;
+        geaendert = true;
+      }
+    }
+    if (geaendert) Classes.persist();
+  },
+
+  /* Der zuletzt notierte Stand vor dieser Stunde – als Hinweis, wo es
+     weitergeht. Nur wenn jene Stunde dasselbe Thema hatte; nach einem
+     Themenwechsel führte der alte Stand in die Irre. */
+  letzterStand(cls, key, themen) {
+    const ids = new Set(themen.map(x => x.topic.id));
+    if (!ids.size) return '';
+    const frueher = Object.entries(cls.stundenbuch || {})
+      .filter(([k, r]) => k < key && r.s && r.e).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+    if (!frueher.length) return '';
+    const [k, r] = frueher[0];
+    const [tag, zeit] = k.split(' ');
+    const t = { beginn: new Date(tag + 'T' + zeit), ende: new Date(tag + 'T' + r.e), entfaellt: !!r.x };
+    const damals = this.themenDerStunde(cls, t).themen;
+    return damals.some(x => ids.has(x.topic.id)) ? r.s : '';
+  },
+
+  standAendern(klasseId, key) {
     const cls = Classes.data.classes.find(c => c.id === klasseId);
-    const e = cls && cls.lessons && cls.lessons[topicId];
-    if (!e) return;
-    const topic = Lessons.topicById(topicId, e);
-    const neu = prompt(`Stand in ${cls.name} – ${topic ? Lessons.schlagwort(topic) : 'Thema'}\n` +
-      '(z. B. „bis Folie 15, AB S. 2 offen“):', e.stand || '');
+    if (!cls) return;
+    const buch = cls.stundenbuch || (cls.stundenbuch = {});
+    const rec = buch[key] || {};
+    const [tag, zeit] = key.split(' ');
+    const datum = new Date(tag + 'T' + zeit);
+    const [tag0, zeit0] = key.split(' ');
+    const zuletzt = this.letzterStand(cls, key, this.themenDerStunde(cls,
+      { beginn: new Date(tag0 + 'T' + zeit0), ende: new Date(tag0 + 'T' + (rec.e || zeit0)) }).themen);
+    const neu = prompt(`Stand in ${cls.name}, ${this.tagName(datum)} ${zeit}\n` +
+      '(z. B. „bis Folie 15, AB S. 2 offen“)' + (zuletzt ? `\n\nZuletzt: ${zuletzt}` : ''), rec.s || '');
     if (neu === null) return;
     const text = neu.trim().slice(0, 200);
-    if (text) e.stand = text; else delete e.stand;
+    if (text) rec.s = text; else delete rec.s;
+    if (Object.keys(rec).length) buch[key] = rec; else delete buch[key];
     Classes.persist();
     this.render();
   },
 
-  /* Laufende Themen einer Stunde: Schlagwort (Schalter „Themen“), dazu der
-     eigene Stand und die Knöpfe zu Material und Zwischenablage (Schalter
+  /* Stunden aus dem Stundenbuch, die das Abo nicht mehr liefert – damit auch
+     ältere Wochen im Plan stehen */
+  buchTermine() {
+    if (!Classes.data) return [];
+    const erster = this.termine.length ? this.tagSchluessel(this.termine[0].beginn) : '9999';
+    const liste = [];
+    for (const cls of Classes.data.classes) {
+      for (const [key, rec] of Object.entries(cls.stundenbuch || {})) {
+        const [tag, zeit] = key.split(' ');
+        if (tag >= erster || !rec.e) continue;
+        liste.push({
+          beginn: new Date(tag + 'T' + zeit), ende: new Date(tag + 'T' + rec.e),
+          fach: rec.f || '', klassen: rec.k ? rec.k.split(' · ') : [], raum: rec.r || '',
+          entfaellt: !!rec.x, aufsicht: false, sonder: false, platz: '', klasseId: cls.id,
+        });
+      }
+    }
+    return liste.sort((a, b) => a.beginn - b.beginn);
+  },
+
+  alleTermine() {
+    return this.buchTermine().concat(this.termine);
+  },
+
+  /* Themen einer Stunde: Schlagwort (Schalter „Themen“), dazu der eigene
+     Stand dieser Stunde und die Knöpfe zu Material und Zwischenablage (Schalter
      „Stand“). Alle Knöpfe nur in der Tagesansicht; im Wochenraster ist nur
      Platz für den Start der Präsentation (mitKnoepfen = 'start'). */
   themenHtml(t, cls, mitKnoepfen) {
     const zeigeWort = this.themenSchalter.checked, zeigeStand = this.standSchalter.checked;
-    const zeigeKnoepfe = mitKnoepfen && zeigeStand;
     if (t.entfaellt || !cls || (!zeigeWort && !zeigeStand)) return '';
-    const themen = this.laufendeThemen(cls);
-    if (!themen.length) return '';
-    return themen.map(({ topic, eintrag, wort }) => {
-      const teile = [];
-      if (zeigeWort || themen.length > 1) {
-        teile.push(`<span class="plan-thema-wort" title="Läuft gerade in dieser Klasse">${this.esc(wort)}</span>`);
-      }
-      if (zeigeStand) {
-        const ziel = this.esc(cls.id + '|' + topic.id);
-        teile.push(eintrag.stand
-          ? `<button type="button" class="plan-stand-text" data-stand="${ziel}" title="Stand ändern">${Icons.raw('pen')}${this.esc(eintrag.stand)}</button>`
-          : `<button type="button" class="plan-stand-text leer" data-stand="${ziel}" title="Notieren, wo es weitergeht">${Icons.raw('pen')}Stand notieren</button>`);
-      }
-      if (zeigeKnoepfe) {
-        const knopf = (icon, text, attr, titel) =>
-          `<button type="button" class="small" ${attr} title="${this.esc(titel)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
-        const oeffnen = (icon, text, pfad, titel) =>
-          knopf(icon, text, `data-oeffnen="${this.esc(pfad)}"`, titel + ': ' + pfad);
-        const alles = eintrag.stand ? `${wort} – ${eintrag.stand}` : wort;
-        if (mitKnoepfen === 'start') {
-          if (topic.haupt) teile.push(`<span class="plan-material">${oeffnen('play', 'Start', topic.haupt, 'Präsentation starten')}</span>`);
-          return `<span class="plan-thema">${teile.join('')}</span>`;
-        }
-        teile.push(`<span class="plan-material">${[
-          topic.haupt ? oeffnen('play', /\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation', topic.haupt, 'Starten') : '',
+    const key = this.buchSchluessel(t);
+    const rec = (cls.stundenbuch || {})[key] || {};
+    const { themen, vorschlag } = this.themenDerStunde(cls, t);
+    if (!themen.length && !rec.s) return '';
+    const worte = themen.map(x => x.wort).join(' · ');
+    const teile = [];
+    if (themen.length && (zeigeWort || zeigeStand)) {
+      teile.push(vorschlag
+        ? `<span class="plan-thema-wort vorschlag" title="Nächstes offenes Thema der Klasse">Vorschlag: ${this.esc(worte)}</span>`
+        : `<span class="plan-thema-wort" title="Thema dieser Stunde">${this.esc(worte)}</span>`);
+    }
+    if (zeigeStand) {
+      const ziel = this.esc(cls.id + '|' + key);
+      const zuletzt = rec.s || vorschlag ? '' : this.letzterStand(cls, key, themen);
+      teile.push(rec.s
+        ? `<button type="button" class="plan-stand-text" data-stand="${ziel}" title="Stand dieser Stunde ändern">${Icons.raw('pen')}${this.esc(rec.s)}</button>`
+        : `<button type="button" class="plan-stand-text leer" data-stand="${ziel}" title="Notieren, wie weit du in dieser Stunde gekommen bist">${Icons.raw('pen')}Stand notieren${zuletzt ? ` <span class="plan-zuletzt">· zuletzt ${this.esc(zuletzt)}</span>` : ''}</button>`);
+    }
+    if (mitKnoepfen && zeigeStand && themen.length) {
+      const knopf = (icon, text, attr, titel) =>
+        `<button type="button" class="small" ${attr} title="${this.esc(titel)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
+      const oeffnen = (icon, text, pfad, titel) =>
+        knopf(icon, text, `data-oeffnen="${this.esc(pfad)}"`, titel + ': ' + pfad);
+      const mehrere = themen.length > 1;
+      let knoepfe;
+      if (mitKnoepfen === 'start') {
+        knoepfe = themen.filter(x => x.topic.haupt)
+          .map(x => oeffnen('play', mehrere ? x.wort : 'Start', x.topic.haupt, 'Präsentation starten'));
+      } else {
+        const alles = rec.s ? `${worte} – ${rec.s}` : worte;
+        knoepfe = themen.flatMap(({ topic, wort }) => [
+          topic.haupt ? oeffnen('play', (/\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation') + (mehrere ? ' ' + wort : ''), topic.haupt, 'Starten') : '',
           topic.ab ? oeffnen('file', 'AB', topic.ab, 'Öffnen') : '',
           topic.ordner ? oeffnen('folder', 'Ordner', topic.ordner, 'Ordner öffnen') : '',
-          knopf('clipboard', 'Thema', `data-kopieren="${this.esc(wort)}"`, 'Schlagwort kopieren: ' + wort),
-          eintrag.stand ? knopf('clipboard', 'Alles', `data-kopieren="${this.esc(alles)}"`, 'Thema und Stand kopieren: ' + alles) : '',
-        ].join('')}</span>`);
+        ]).concat([
+          knopf('clipboard', 'Thema', `data-kopieren="${this.esc(worte)}"`, 'Schlagwort kopieren: ' + worte),
+          rec.s ? knopf('clipboard', 'Alles', `data-kopieren="${this.esc(alles)}"`, 'Thema und Stand kopieren: ' + alles) : '',
+        ]);
       }
-      return `<span class="plan-thema">${teile.join('')}</span>`;
-    }).join('');
+      if (knoepfe.join('')) teile.push(`<span class="plan-material">${knoepfe.join('')}</span>`);
+    }
+    return teile.length ? `<span class="plan-thema">${teile.join('')}</span>` : '';
   },
 
   /* ---------- Darstellung ---------- */
@@ -441,7 +580,90 @@ const Stundenplan = {
       inhalt.innerHTML = `<p class="hint">${this.laedt ? 'Stundenplan wird geholt …' : 'Keine Termine im Abo.'}</p>`;
       return;
     }
+    this.buchFuehren();
     inhalt.innerHTML = this.schalter.checked ? this.wocheHtml() : this.heuteHtml();
+  },
+
+  woche(schritt) {
+    const g = this.wochenGrenzen || {};
+    if (schritt < 0 && !g.zurueck) return;
+    if (schritt > 0 && !g.vor) return;
+    this.wochenVersatz += schritt;
+    this.render();
+  },
+
+  /* ←/→ blättern in der Wochenansicht – auch im Vollbild. Ist man gerade oben
+     mit den Pfeilen über die Reiter unterwegs (Markierung sichtbar), geht es
+     dort weiter; ↓ holt die Pfeile in den Plan, Esc gibt sie zurück. */
+  pfeilTaste(e) {
+    if (!['ArrowLeft', 'ArrowRight', 'ArrowDown'].includes(e.key)) return false;
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return false;
+    if (!this.el || !this.el.classList.contains('active') || !this.schalter.checked) return false;
+    const ziel = e.target;
+    if (ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]')) return false;
+    const html = document.documentElement;
+    if (html.classList.contains('locked')) return false;
+    const voll = document.fullscreenElement || document.webkitFullscreenElement;
+    if (voll && voll !== this.karte) return false;
+    const obenUnterwegs = !voll && typeof Tasten !== 'undefined' && Tasten.ebene === 'oben' &&
+      html.classList.contains('tasten-oben');
+    if (e.key === 'ArrowDown') {
+      if (!obenUnterwegs) return false;
+      Tasten.setzen('unten', false);
+    } else {
+      if (obenUnterwegs) return false;
+      this.woche(e.key === 'ArrowRight' ? 1 : -1);
+    }
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return true;
+  },
+
+  vollbild() {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      return;
+    }
+    const rein = this.karte.requestFullscreen || this.karte.webkitRequestFullscreen;
+    if (!rein) { alert('Dieser Browser kann den Vollbildmodus hier nicht anzeigen.'); return; }
+    const p = rein.call(this.karte);
+    if (p && p.catch) p.catch(err => alert('Vollbild nicht möglich: ' + err.message));
+  },
+
+  /* ---------- Übersicht je Klasse zum Drucken (als PDF speichern) ---------- */
+  buchDrucken(cls) {
+    if (!cls) return;
+    this.buchFuehren();
+    const jetzt = new Date();
+    const eintraege = Object.entries(cls.stundenbuch || {})
+      .filter(([, r]) => r.e).sort((a, b) => (a[0] < b[0] ? -1 : 1));
+    if (!eintraege.length) {
+      alert('Für diese Klasse sind noch keine Stunden erfasst.\n\n' +
+        'Das Stundenbuch füllt sich aus dem Stundenplan (Reiter Plan) – mit jeder Stunde, die vorbei ist.');
+      return;
+    }
+    let gehalten = 0, entfallen = 0;
+    const zeilen = eintraege.map(([key, r]) => {
+      const [tag, zeit] = key.split(' ');
+      const datum = new Date(tag + 'T' + zeit);
+      const t = { beginn: datum, ende: new Date(tag + 'T' + r.e), entfaellt: !!r.x };
+      const themen = r.th ? r.th.map(x => x.w) : this.themenDerStunde(cls, t, jetzt).themen.map(x => x.wort);
+      if (r.x) entfallen++; else gehalten++;
+      const nr = this.STUNDEN[zeit];
+      return [
+        r.x ? '' : gehalten,
+        Band.esc(datum.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })),
+        Band.esc(nr && nr !== 'Pause' ? nr : zeit),
+        r.x ? '<em>entfallen</em>' : Band.esc(themen.join(' · ')),
+        r.x ? '' : Band.esc(r.s || ''),
+        Band.esc(r.r || ''),
+      ];
+    });
+    Band.printHtml(`${cls.name} – gehaltene Stunden`, Band.printTable(
+      [{ titel: 'Nr.', cls: 'num' }, { titel: 'Datum' }, { titel: 'Std.' }, { titel: 'Thema' }, { titel: 'Stand' }, { titel: 'Raum' }],
+      zeilen, 'kompakt'),
+      `${gehalten} Stunden gehalten` + (entfallen ? ` · ${entfallen} entfallen` : '') +
+      (cls.year ? ` · Schuljahr ${cls.year}` : ''));
   },
 
   heuteHtml() {
@@ -506,11 +728,13 @@ const Stundenplan = {
     mo.setDate(mo.getDate() + 7 * this.wochenVersatz);
     const sa = new Date(mo);
     sa.setDate(sa.getDate() + 5);
-    const woche = this.termine.filter(t => t.beginn >= mo && t.beginn < sa);
+    const alle = this.alleTermine();
+    const woche = alle.filter(t => t.beginn >= mo && t.beginn < sa);
 
-    const erster = this.montag(this.termine[0].beginn);
-    const letzter = this.montag(this.termine[this.termine.length - 1].beginn);
+    const erster = this.montag(alle[0].beginn);
+    const letzter = this.montag(alle[alle.length - 1].beginn);
     const zurueck = mo > erster, vor = mo < letzter;
+    this.wochenGrenzen = { zurueck, vor };
     const fr = new Date(mo);
     fr.setDate(fr.getDate() + 4);
     const titel = this.wochenVersatz === 0 ? 'Diese Woche'

@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=244">
+<link rel="stylesheet" href="style.css?v=245">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=244"></script>
-<script src="js/theme.js?v=244"></script>
-<script src="js/auswahl.js?v=244"></script>
-<script src="js/metronom.js?v=244"></script>
-<script src="js/klang.js?v=244"></script>
-<script src="js/schwebe.js?v=244"></script>
-<script src="js/auth.js?v=244"></script>
+<script src="js/icons.js?v=245"></script>
+<script src="js/theme.js?v=245"></script>
+<script src="js/auswahl.js?v=245"></script>
+<script src="js/metronom.js?v=245"></script>
+<script src="js/klang.js?v=245"></script>
+<script src="js/schwebe.js?v=245"></script>
+<script src="js/auth.js?v=245"></script>
 </head>
 <body>
 
@@ -184,6 +184,7 @@
       </label>
       <span class="hint plan-stand" id="plan-stand"></span>
       <button id="btn-plan-neu" class="small" data-icon="reset" title="Jetzt neu vom Schulmanager holen">Aktualisieren</button>
+      <button id="btn-plan-voll" class="small" data-icon="expand" title="Stundenplan im Vollbild (nochmal klicken oder Esc beendet) – ←/→ blättern die Wochen">Vollbild</button>
       <button id="btn-plan-abo" class="small" title="Adresse des iCal-Abos aus dem Schulmanager">Abo-Adresse</button>
     </div>
     <div id="plan-inhalt"></div>
@@ -513,6 +514,8 @@
                 <option value="done">nur fertige</option>
               </select>
             </label>
+            <button type="button" id="btn-stundenbuch-druck" class="small" data-icon="printer"
+                    title="Alle gehaltenen Stunden dieser Klasse mit Datum, Thema und Stand – zum Drucken oder als PDF speichern">Gehaltene Stunden drucken</button>
           </div>
           <ul id="lesson-list" class="lesson-list"></ul>
         </section>
@@ -1321,37 +1324,37 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=244"></script>
-<script src="js/firebase-config.js?v=244"></script>
-<script type="module" src="js/live-firebase.js?v=244"></script>
-<script src="js/ai-import.js?v=244"></script>
-<script src="js/store.js?v=244"></script>
-<script src="js/noise.js?v=244"></script>
-<script src="js/classes.js?v=244"></script>
-<script src="js/sitzplan.js?v=244"></script>
-<script src="js/schueler.js?v=244"></script>
-<script src="js/tasten.js?v=244"></script>
-<script src="js/lessons.js?v=244"></script>
-<script src="js/band.js?v=244"></script>
-<script src="js/notes.js?v=244"></script>
-<script src="js/tresor.js?v=244"></script>
-<script src="js/erklaerungen.js?v=244"></script>
-<script src="js/setlisten.js?v=244"></script>
-<script src="js/einklappen.js?v=244"></script>
-<script src="js/tinyband-instrumente.js?v=244"></script>
-<script src="js/live-groups.js?v=244"></script>
-<script src="js/tinyband-lehrer.js?v=244"></script>
-<script src="js/tipps.js?v=244"></script>
-<script src="js/sport-tabellen.js?v=244"></script>
-<script src="js/sport.js?v=244"></script>
-<script src="js/ex-import.js?v=244"></script>
-<script src="js/exen.js?v=244"></script>
-<script src="js/ex-namen.js?v=244"></script>
-<script src="js/ex-sitzung.js?v=244"></script>
-<script src="js/ex-auswertung.js?v=244"></script>
-<script src="js/ex-reiter.js?v=244"></script>
-<script src="js/tools.js?v=244"></script>
-<script src="js/stundenplan.js?v=244"></script>
-<script src="js/app.js?v=244"></script>
+<script src="js/vendor/qrcode.min.js?v=245"></script>
+<script src="js/firebase-config.js?v=245"></script>
+<script type="module" src="js/live-firebase.js?v=245"></script>
+<script src="js/ai-import.js?v=245"></script>
+<script src="js/store.js?v=245"></script>
+<script src="js/noise.js?v=245"></script>
+<script src="js/classes.js?v=245"></script>
+<script src="js/sitzplan.js?v=245"></script>
+<script src="js/schueler.js?v=245"></script>
+<script src="js/tasten.js?v=245"></script>
+<script src="js/lessons.js?v=245"></script>
+<script src="js/band.js?v=245"></script>
+<script src="js/notes.js?v=245"></script>
+<script src="js/tresor.js?v=245"></script>
+<script src="js/erklaerungen.js?v=245"></script>
+<script src="js/setlisten.js?v=245"></script>
+<script src="js/einklappen.js?v=245"></script>
+<script src="js/tinyband-instrumente.js?v=245"></script>
+<script src="js/live-groups.js?v=245"></script>
+<script src="js/tinyband-lehrer.js?v=245"></script>
+<script src="js/tipps.js?v=245"></script>
+<script src="js/sport-tabellen.js?v=245"></script>
+<script src="js/sport.js?v=245"></script>
+<script src="js/ex-import.js?v=245"></script>
+<script src="js/exen.js?v=245"></script>
+<script src="js/ex-namen.js?v=245"></script>
+<script src="js/ex-sitzung.js?v=245"></script>
+<script src="js/ex-auswertung.js?v=245"></script>
+<script src="js/ex-reiter.js?v=245"></script>
+<script src="js/tools.js?v=245"></script>
+<script src="js/stundenplan.js?v=245"></script>
+<script src="js/app.js?v=245"></script>
 </body>
 </html>

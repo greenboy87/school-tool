@@ -48,6 +48,8 @@ const Tasten = {
 
   taste(e) {
     if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Escape'].includes(e.key)) return;
+    // Wochenansicht im Plan: ←/→ blättern Wochen (Stundenplan entscheidet selbst)
+    if (typeof Stundenplan !== 'undefined' && Stundenplan.pfeilTaste(e)) return;
     if (!this.frei(e)) return;
     const unter = this.unterreiter();
     if (!unter) this.ebene = 'oben';
