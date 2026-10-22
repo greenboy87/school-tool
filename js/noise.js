@@ -14,6 +14,38 @@ class NoiseMeter {
     this.reloadThreshold();
     this._buildGauge();
     this._buildAlarmOverlay();
+    // Stumm gilt für alle Ampeln gleichzeitig: Hauptseite, Popup, schwebendes Fenster
+    NoiseMeter.alle.add(this);
+    this.els.gauge.ownerDocument.defaultView.addEventListener('storage', e => {
+      if (e.key === NoiseMeter.STUMM_KEY) this._stummZeigen();
+    });
+    this._stummZeigen();
+  }
+
+  /* ----- Stumm -----
+     Solange die Lehrkraft spricht, misst die Ampel nicht mit: kein Pegel, keine
+     Überschreitung, kein Alarm. Über localStorage erfahren es auch die anderen
+     Fenster; Ampeln im selben Fenster (schwebendes Fenster) über die Liste. */
+  static STUMM_KEY = 'ampel-stumm';
+  static alle = new Set();
+  static istStumm() { return localStorage.getItem(NoiseMeter.STUMM_KEY) === '1'; }
+  static setzeStumm(an) {
+    if (an) localStorage.setItem(NoiseMeter.STUMM_KEY, '1');
+    else localStorage.removeItem(NoiseMeter.STUMM_KEY);
+    NoiseMeter.alle.forEach(m => m._stummZeigen());
+  }
+  static umschalten() { NoiseMeter.setzeStumm(!NoiseMeter.istStumm()); }
+
+  _stummZeigen() {
+    this.stumm = NoiseMeter.istStumm();
+    this.els.gauge.classList.toggle('stumm', this.stumm);
+    if (this.stumm) {
+      this.redSince = null;
+      this.redHoldUntil = 0;
+      this.yellowHoldUntil = 0;
+      this.smoothed = 0;
+    }
+    this.els.gauge.ownerDocument.dispatchEvent(new CustomEvent('ampel-stumm', { detail: this.stumm }));
   }
 
   reloadThreshold() {
@@ -243,6 +275,14 @@ class NoiseMeter {
   }
 
   _render(db) {
+    if (this.stumm) {
+      this.smoothed = 0;
+      this._setState(null);
+      this._setLevel(null);
+      if (this.els.dbEl) this.els.dbEl.textContent = '–';
+      if (this.els.barEl) this.els.barEl.style.width = '0%';
+      return;
+    }
     const now = performance.now();
     if (db >= this.threshold && now > this.redHoldUntil) {
       this.violations++;

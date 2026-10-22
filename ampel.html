@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lärmampel</title>
-<link rel="stylesheet" href="style.css?v=239">
-<script src="js/icons.js?v=239"></script>
-<script src="js/theme.js?v=239"></script>
-<script src="js/auth.js?v=239"></script>
+<link rel="stylesheet" href="style.css?v=240">
+<script src="js/icons.js?v=240"></script>
+<script src="js/theme.js?v=240"></script>
+<script src="js/auth.js?v=240"></script>
 </head>
 <body class="popup-body">
   <div class="popup-ampel mit-knopf">
@@ -17,10 +17,11 @@
     <div class="popup-alarm-count hint" data-icon="alert">Rotfärbungen:&nbsp;<strong id="alarm-count">0</strong></div>
     <div class="popup-knoepfe">
       <button id="btn-mic" class="primary small" data-icon="mic">Start</button>
+      <button id="btn-stumm" class="small stumm-knopf" data-icon="micOff" title="Stumm, solange du sprichst (Taste M)">Stumm</button>
       <button id="btn-voll" class="small" data-icon="expand" title="Vollbild ein/aus (Esc beendet)">Vollbild</button>
     </div>
   </div>
-<script src="js/noise.js?v=239"></script>
+<script src="js/noise.js?v=240"></script>
 <script>
   const meter = new NoiseMeter({
     dbEl: document.getElementById('db-value'),
@@ -43,6 +44,19 @@
     if (meter.running && meter.ctx.state !== 'suspended') { meter.stop(); btn.innerHTML = Icons.raw('mic') + 'Start'; }
     else if (!meter.running) await starten();
   });
+  // Stumm: Knopf oder Taste M – gilt auch fürs Hauptfenster
+  const btnStumm = document.getElementById('btn-stumm');
+  const stummKnopf = () => btnStumm.classList.toggle('an', NoiseMeter.istStumm());
+  stummKnopf();
+  btnStumm.addEventListener('click', () => NoiseMeter.umschalten());
+  document.addEventListener('ampel-stumm', stummKnopf);
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'm' || e.key === 'M') && !e.repeat && !e.altKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      NoiseMeter.umschalten();
+    }
+  });
+
   // Aus dem Hauptfenster mit laufender Messung geöffnet: gleich mitmessen
   if (new URLSearchParams(location.search).has('start')) starten();
 

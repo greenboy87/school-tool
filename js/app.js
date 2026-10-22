@@ -165,6 +165,27 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('fullscreenchange', alarmMitnehmen);
   document.addEventListener('webkitfullscreenchange', alarmMitnehmen);
 
+  /* Stumm, solange die Lehrkraft spricht – Knopf oder Taste M, auf jedem Reiter.
+     Beim Laden aus: Ein vergessenes Stumm vom letzten Mal soll nicht still weitergelten. */
+  const btnStumm = document.getElementById('btn-stumm');
+  const stummKnopf = () => {
+    const an = NoiseMeter.istStumm();
+    btnStumm.classList.toggle('an', an);
+    btnStumm.setAttribute('aria-pressed', an);
+  };
+  NoiseMeter.setzeStumm(false);
+  stummKnopf();
+  btnStumm.addEventListener('click', () => NoiseMeter.umschalten());
+  document.addEventListener('ampel-stumm', stummKnopf);
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'm' && e.key !== 'M') return;
+    if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+    const ziel = e.target;
+    if (ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]')) return;
+    e.preventDefault();
+    NoiseMeter.umschalten();
+  });
+
   // Popup: einfaches Fenster, geht in jedem Browser (auch Safari).
   // Läuft die Messung hier schon, misst das Popup gleich von selbst mit.
   const popupOeffnen = () => window.open('ampel.html' + (meter.running ? '?start=1' : ''), 'laermampel',
