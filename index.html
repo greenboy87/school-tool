@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=248">
+<link rel="stylesheet" href="style.css?v=249">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=248"></script>
-<script src="js/theme.js?v=248"></script>
-<script src="js/auswahl.js?v=248"></script>
-<script src="js/metronom.js?v=248"></script>
-<script src="js/klang.js?v=248"></script>
-<script src="js/schwebe.js?v=248"></script>
-<script src="js/auth.js?v=248"></script>
+<script src="js/icons.js?v=249"></script>
+<script src="js/theme.js?v=249"></script>
+<script src="js/auswahl.js?v=249"></script>
+<script src="js/metronom.js?v=249"></script>
+<script src="js/klang.js?v=249"></script>
+<script src="js/schwebe.js?v=249"></script>
+<script src="js/auth.js?v=249"></script>
 </head>
 <body>
 
@@ -197,6 +197,11 @@
         <label>Thema
           <select id="plan-dialog-wahl" data-nativ></select>
         </label>
+        <label id="plan-dialog-katalog-zeile" hidden>Thema aus dem Stundenkatalog
+          <input type="search" id="plan-dialog-katalog" list="plan-dialog-katalog-liste" autocomplete="off"
+                 placeholder="Thema tippen – Vorschläge aus deinem Stundenkatalog …">
+        </label>
+        <datalist id="plan-dialog-katalog-liste"></datalist>
         <label id="plan-dialog-eigen" hidden>Eigener Eintrag
           <input type="text" id="plan-dialog-thema" autocomplete="off" maxlength="120" placeholder="z. B. Schulaufgabe – nur Aufsicht">
         </label>
@@ -204,6 +209,7 @@
           <input type="text" id="plan-dialog-stand" autocomplete="off" maxlength="200" placeholder="z. B. bis Folie 15">
         </label>
         <p class="plan-dialog-hinweis">„Automatisch“ führt die vorige Stunde fort – oder schlägt das nächste offene Thema vor.
+          Ein Thema aus dem Katalog kommt dabei zur Klasse dazu, wie unter Klassen → Stunden.
           Ein gewähltes Thema läuft in den folgenden Stunden weiter. Entfällt die Stunde später im Schulmanager,
           bleibt das Geplante sichtbar und lässt sich auf die nächste Stunde schieben.</p>
         <div class="btn-row">
@@ -1346,37 +1352,37 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=248"></script>
-<script src="js/firebase-config.js?v=248"></script>
-<script type="module" src="js/live-firebase.js?v=248"></script>
-<script src="js/ai-import.js?v=248"></script>
-<script src="js/store.js?v=248"></script>
-<script src="js/noise.js?v=248"></script>
-<script src="js/classes.js?v=248"></script>
-<script src="js/sitzplan.js?v=248"></script>
-<script src="js/schueler.js?v=248"></script>
-<script src="js/tasten.js?v=248"></script>
-<script src="js/lessons.js?v=248"></script>
-<script src="js/band.js?v=248"></script>
-<script src="js/notes.js?v=248"></script>
-<script src="js/tresor.js?v=248"></script>
-<script src="js/erklaerungen.js?v=248"></script>
-<script src="js/setlisten.js?v=248"></script>
-<script src="js/einklappen.js?v=248"></script>
-<script src="js/tinyband-instrumente.js?v=248"></script>
-<script src="js/live-groups.js?v=248"></script>
-<script src="js/tinyband-lehrer.js?v=248"></script>
-<script src="js/tipps.js?v=248"></script>
-<script src="js/sport-tabellen.js?v=248"></script>
-<script src="js/sport.js?v=248"></script>
-<script src="js/ex-import.js?v=248"></script>
-<script src="js/exen.js?v=248"></script>
-<script src="js/ex-namen.js?v=248"></script>
-<script src="js/ex-sitzung.js?v=248"></script>
-<script src="js/ex-auswertung.js?v=248"></script>
-<script src="js/ex-reiter.js?v=248"></script>
-<script src="js/tools.js?v=248"></script>
-<script src="js/stundenplan.js?v=248"></script>
-<script src="js/app.js?v=248"></script>
+<script src="js/vendor/qrcode.min.js?v=249"></script>
+<script src="js/firebase-config.js?v=249"></script>
+<script type="module" src="js/live-firebase.js?v=249"></script>
+<script src="js/ai-import.js?v=249"></script>
+<script src="js/store.js?v=249"></script>
+<script src="js/noise.js?v=249"></script>
+<script src="js/classes.js?v=249"></script>
+<script src="js/sitzplan.js?v=249"></script>
+<script src="js/schueler.js?v=249"></script>
+<script src="js/tasten.js?v=249"></script>
+<script src="js/lessons.js?v=249"></script>
+<script src="js/band.js?v=249"></script>
+<script src="js/notes.js?v=249"></script>
+<script src="js/tresor.js?v=249"></script>
+<script src="js/erklaerungen.js?v=249"></script>
+<script src="js/setlisten.js?v=249"></script>
+<script src="js/einklappen.js?v=249"></script>
+<script src="js/tinyband-instrumente.js?v=249"></script>
+<script src="js/live-groups.js?v=249"></script>
+<script src="js/tinyband-lehrer.js?v=249"></script>
+<script src="js/tipps.js?v=249"></script>
+<script src="js/sport-tabellen.js?v=249"></script>
+<script src="js/sport.js?v=249"></script>
+<script src="js/ex-import.js?v=249"></script>
+<script src="js/exen.js?v=249"></script>
+<script src="js/ex-namen.js?v=249"></script>
+<script src="js/ex-sitzung.js?v=249"></script>
+<script src="js/ex-auswertung.js?v=249"></script>
+<script src="js/ex-reiter.js?v=249"></script>
+<script src="js/tools.js?v=249"></script>
+<script src="js/stundenplan.js?v=249"></script>
+<script src="js/app.js?v=249"></script>
 </body>
 </html>

@@ -615,6 +615,8 @@ const Stundenplan = {
     const immer = document.getElementById('plan-dialog-immer');
     const wahlThema = document.getElementById('plan-dialog-wahl');
     const eigenZeile = document.getElementById('plan-dialog-eigen');
+    const katalogZeile = document.getElementById('plan-dialog-katalog-zeile');
+    const katalogFeld = document.getElementById('plan-dialog-katalog');
     const feld = document.getElementById('plan-dialog-thema');
     const standFeld = document.getElementById('plan-dialog-stand');
     const nr = this.STUNDEN[this.uhr(t.beginn)];
@@ -630,8 +632,15 @@ const Stundenplan = {
     immer.checked = false;
     immer.closest('label').hidden = !t.platz;
 
-    const zeigeEigen = () => { eigenZeile.hidden = wahlThema.value !== 'eigen'; };
-    wahlThema.onchange = () => { zeigeEigen(); if (!eigenZeile.hidden) feld.focus(); };
+    const zeigeEigen = () => {
+      eigenZeile.hidden = wahlThema.value !== 'eigen';
+      katalogZeile.hidden = wahlThema.value !== 'katalog';
+    };
+    wahlThema.onchange = () => {
+      zeigeEigen();
+      if (!eigenZeile.hidden) feld.focus();
+      if (!katalogZeile.hidden) katalogFeld.focus();
+    };
 
     // Themenauswahl der gerade gewählten Klasse
     const fuellen = () => {
@@ -654,7 +663,16 @@ const Stundenplan = {
         `<option value="auto">Automatisch${auto ? ': ' + this.esc(auto) : ' (nichts)'}</option>` +
         (themen.length ? `<optgroup label="Themen der Klasse">${themen.map(tp =>
           `<option value="id:${this.esc(tp.id)}">${this.esc(Lessons.schlagwort(tp))} · ${stufe[Lessons.stateOf(cls, tp.id)] || ''}</option>`).join('')}</optgroup>` : '') +
+        '<option value="katalog">Aus dem Stundenkatalog …</option>' +
         '<option value="eigen">Eigener Eintrag …</option><option value="kein">Kein Thema</option>';
+      // Vorschläge wie unter Klassen → Stunden: erst die eigene Jahrgangsstufe
+      const passt = tp => cls && cls.grade && tp.grades && tp.grades.includes(cls.grade);
+      const gesehen = new Set();
+      document.getElementById('plan-dialog-katalog-liste').innerHTML = cls ? Lessons.allTopics()
+        .sort((a, b) => passt(b) - passt(a))
+        .filter(tp => !gesehen.has(tp.name.toLowerCase()) && gesehen.add(tp.name.toLowerCase()))
+        .map(tp => `<option value="${this.esc(tp.name)}"${tp.grades && tp.grades.length ? ` label="Kl. ${this.esc(Lessons.gradeLabel(tp.grades))}"` : ''}>`).join('') : '';
+      katalogFeld.value = '';
       feld.value = '';
       if (!rec.m || !rec.th) wahlThema.value = 'auto';
       else if (!rec.th.length) wahlThema.value = 'kein';
@@ -694,6 +712,24 @@ const Stundenplan = {
         const text = feld.value.trim().slice(0, 120);
         if (thema === 'auto' || (thema === 'eigen' && !text)) { delete rec.th; delete rec.m; }
         else if (thema === 'kein') { rec.th = []; rec.m = 1; }
+        else if (thema === 'katalog') {
+          // Wie „Zur Klasse hinzufügen“: gleicher Titel in mehreren Ordnern –
+          // den für die Jahrgangsstufe; ohne Treffer bleibt es ein eigener Eintrag
+          const name = katalogFeld.value.trim();
+          const passend = Lessons.allTopics().filter(tp => tp.name.toLowerCase() === name.toLowerCase());
+          const tp = passend.find(x => cls.grade && x.grades && x.grades.includes(cls.grade)) || passend[0];
+          if (tp) {
+            const l = Lessons.lessonsOf(cls);
+            if (!l[tp.id]) {
+              l[tp.id] = { s: 'open', added: Date.now() };
+              if (tp.ordner) l[tp.id].t = tp.name;
+            }
+            rec.th = [{ id: tp.id, w: Lessons.schlagwort(tp) }];
+          } else if (name) {
+            rec.th = [{ w: name.slice(0, 120) }];
+          }
+          if (tp || name) rec.m = 1;
+        }
         else if (thema.startsWith('id:')) {
           const tp = Lessons.topicById(thema.slice(3), (cls.lessons || {})[thema.slice(3)]);
           rec.th = [{ id: thema.slice(3), w: tp ? Lessons.schlagwort(tp) : thema.slice(3) }];
