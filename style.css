@@ -2049,3 +2049,80 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 .ex-haken-knopf.an { color: var(--green, #2e9e5b); border-color: var(--green, #2e9e5b); }
 .ex-auto-haken { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--muted); cursor: pointer; white-space: nowrap; }
 .ex-korrigiert-zahl { white-space: nowrap; }
+
+/* ---------- Stundenplan (Schulmanager-Abo) ---------- */
+.plan-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1rem; margin-bottom: 1rem; }
+.plan-kopf h2 { margin: 0; }
+.plan-schalter { gap: .5rem; }
+.plan-schalter > span:not(.schalter-bahn) { color: var(--muted); }
+#tab-plan:not(.plan-woche) .plan-schalter > span:first-child,
+#tab-plan.plan-woche .plan-schalter > span:last-child { color: var(--text); font-weight: 600; }
+.plan-stand { margin-left: auto; }
+.plan-stand.fehler { color: var(--danger); }
+.plan-zwischen { font-size: 1rem; margin: 1.2rem 0 .5rem; }
+
+.plan-klasse {
+  border: none; background: none; padding: 0; font: inherit; font-weight: 700;
+  color: var(--accent); cursor: pointer; text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent); text-underline-offset: 2px;
+}
+.plan-klasse:hover { background: none; text-decoration-color: currentColor; }
+.plan-raum { color: var(--muted); font-variant-numeric: tabular-nums; }
+.plan-raum.getauscht { color: var(--yellow); font-weight: 700; }
+.plan-ort { color: var(--muted); font-weight: 400; }
+.plan-marke {
+  font-size: .72rem; font-weight: 700; padding: .05rem .45rem; border-radius: 999px;
+  border: 1px solid currentColor; white-space: nowrap;
+}
+.plan-marke.entfall { color: var(--danger); }
+.plan-marke.sonder { color: var(--highlight); }
+.plan-marke.raum { color: var(--yellow); }
+.plan-termin.entfaellt .plan-wer, .plan-termin.entfaellt .plan-raum { text-decoration: line-through; opacity: .6; }
+.plan-termin.aufsicht .plan-wer { font-style: italic; }
+
+/* Kasten „Jetzt / Als Nächstes“ */
+.plan-naechste {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .3rem .8rem;
+  padding: .9rem 1.1rem; border-radius: var(--radius-sm);
+  background: var(--active-soft); border: 1px solid var(--border); font-size: 1.15rem;
+}
+.plan-naechste-label { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); width: 100%; }
+.plan-naechste-wer { font-weight: 700; }
+.plan-naechste-wann { margin-left: auto; color: var(--muted); font-size: .95rem; }
+
+/* Tagesliste */
+.plan-liste { list-style: none; margin: 0; padding: 0; }
+.plan-liste li {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .2rem .8rem;
+  padding: .55rem .7rem; border-bottom: 1px solid var(--border);
+}
+.plan-liste li:last-child { border-bottom: none; }
+.plan-liste .plan-zeit { min-width: 7.5rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.plan-liste .plan-wer { font-weight: 600; }
+.plan-liste li.vorbei { opacity: .5; }
+.plan-liste li.laeuft { background: var(--active-soft); border-radius: var(--radius-sm); }
+.plan-liste li.sonder, .plan-liste li.getauscht { background: var(--panel); border-radius: var(--radius-sm); }
+
+/* Wochenraster */
+.plan-wochen-nav { display: flex; align-items: center; gap: .6rem; margin-bottom: .8rem; }
+.plan-wochen-nav button { min-width: 2.2rem; }
+.plan-raster-huelle { overflow-x: auto; }
+.plan-raster {
+  display: grid; grid-template-columns: 3.4rem repeat(5, minmax(7.5rem, 1fr));
+  gap: 3px; min-width: 42rem;
+}
+.plan-tagkopf { font-weight: 700; padding: .3rem .4rem; text-align: center; border-radius: 6px; }
+.plan-tagkopf.heute { background: var(--accent-grad); color: var(--on-accent); }
+.plan-uhr { color: var(--muted); font-size: .8rem; padding-top: .4rem; font-variant-numeric: tabular-nums; }
+.plan-zelle { background: var(--panel); border-radius: 6px; padding: .25rem; display: flex; flex-direction: column; gap: 3px; min-height: 2.4rem; }
+.plan-zelle.heute { background: var(--active-soft); }
+.plan-zelle .plan-termin {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .4rem;
+  padding: .3rem .4rem; border-radius: 5px; font-size: .85rem; background: var(--input-bg);
+}
+.plan-zelle .plan-termin.sonder { box-shadow: inset 3px 0 var(--highlight); }
+.plan-zelle .plan-termin.getauscht { box-shadow: inset 3px 0 var(--yellow); }
+.plan-zelle .plan-termin.entfaellt { box-shadow: inset 3px 0 var(--danger); }
+.plan-zelle .plan-termin.laeuft { outline: 2px solid var(--accent); }
+.plan-zelle .plan-wer { font-weight: 600; }
+.plan-zelle .plan-marke { font-size: .65rem; }

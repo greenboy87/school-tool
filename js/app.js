@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Sport.init();
   Tipps.init();
   Erklaerungen.init();
+  Stundenplan.init();
 
   /* ----- Haupttabs ----- */
   document.querySelectorAll('.tab-btn').forEach(btn => {
