@@ -58,6 +58,8 @@ const Stundenplan = {
       if (stand) { this.standAendern(...stand.dataset.stand.split('|')); return; }
       const datei = e.target.closest('[data-oeffnen]');
       if (datei) { Lessons.oeffnen(datei.dataset.oeffnen); return; }
+      const kopie = e.target.closest('[data-kopieren]');
+      if (kopie) Lessons.schlagwortKopieren(kopie, kopie.dataset.kopieren);
       const nav = e.target.closest('[data-woche]');
       if (nav) { this.wochenVersatz += parseInt(nav.dataset.woche, 10); this.render(); }
     });
@@ -311,10 +313,12 @@ const Stundenplan = {
   },
 
   /* Laufende Themen einer Stunde: Schlagwort (Schalter „Themen“), dazu der
-     eigene Stand und die Knöpfe zum Material (Schalter „Stand“). Die Knöpfe nur
-     in der Tagesansicht – im Wochenraster wäre dafür kein Platz. */
+     eigene Stand und die Knöpfe zu Material und Zwischenablage (Schalter
+     „Stand“). Die Knöpfe nur in der Tagesansicht – im Wochenraster wäre dafür
+     kein Platz. */
   themenHtml(t, cls, mitKnoepfen) {
     const zeigeWort = this.themenSchalter.checked, zeigeStand = this.standSchalter.checked;
+    const zeigeKnoepfe = mitKnoepfen && zeigeStand;
     if (t.entfaellt || !cls || (!zeigeWort && !zeigeStand)) return '';
     const themen = this.laufendeThemen(cls);
     if (!themen.length) return '';
@@ -328,15 +332,20 @@ const Stundenplan = {
         teile.push(eintrag.stand
           ? `<button type="button" class="plan-stand-text" data-stand="${ziel}" title="Stand ändern">${Icons.raw('pen')}${this.esc(eintrag.stand)}</button>`
           : `<button type="button" class="plan-stand-text leer" data-stand="${ziel}" title="Notieren, wo es weitergeht">${Icons.raw('pen')}Stand notieren</button>`);
-        if (mitKnoepfen && topic.ordner) {
-          const knopf = (icon, text, pfad, titel) =>
-            `<button type="button" class="small" data-oeffnen="${this.esc(pfad)}" title="${this.esc(titel + ': ' + pfad)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
-          teile.push(`<span class="plan-material">${[
-            topic.haupt ? knopf('play', /\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation', topic.haupt, 'Öffnen') : '',
-            topic.ab ? knopf('file', 'AB', topic.ab, 'Öffnen') : '',
-            knopf('folder', '', topic.ordner, 'Ordner öffnen'),
-          ].join('')}</span>`);
-        }
+      }
+      if (zeigeKnoepfe) {
+        const knopf = (icon, text, attr, titel) =>
+          `<button type="button" class="small" ${attr} title="${this.esc(titel)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
+        const oeffnen = (icon, text, pfad, titel) =>
+          knopf(icon, text, `data-oeffnen="${this.esc(pfad)}"`, titel + ': ' + pfad);
+        const alles = eintrag.stand ? `${wort} – ${eintrag.stand}` : wort;
+        teile.push(`<span class="plan-material">${[
+          topic.haupt ? oeffnen('play', /\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation', topic.haupt, 'Starten') : '',
+          topic.ab ? oeffnen('file', 'AB', topic.ab, 'Öffnen') : '',
+          topic.ordner ? oeffnen('folder', 'Ordner', topic.ordner, 'Ordner öffnen') : '',
+          knopf('clipboard', 'Thema', `data-kopieren="${this.esc(wort)}"`, 'Schlagwort kopieren: ' + wort),
+          eintrag.stand ? knopf('clipboard', 'Alles', `data-kopieren="${this.esc(alles)}"`, 'Thema und Stand kopieren: ' + alles) : '',
+        ].join('')}</span>`);
       }
       return `<span class="plan-thema">${teile.join('')}</span>`;
     }).join('');

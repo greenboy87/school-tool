@@ -2177,7 +2177,6 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 .plan-stand-text .icon { width: .85em; height: .85em; opacity: .6; }
 .plan-material { display: inline-flex; gap: .3rem; flex-wrap: wrap; }
 .plan-material button { padding: .2rem .55rem; font-size: .8rem; }
-.plan-material button:last-child .icon { margin: 0; }
 .plan-zelle .plan-stand-text { font-size: .75rem; padding: 0; }
 .plan-liste .plan-thema { padding-left: 8.3rem; }
 .plan-naechste .plan-thema { font-size: .95rem; }
