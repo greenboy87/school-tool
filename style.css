@@ -2258,3 +2258,12 @@ button.plan-tagkopf.heute { background: var(--accent-grad); color: var(--on-acce
 
 /* Notizen stehen unter Extras, unter den Werkzeugen */
 .notes-karte { margin-top: 1.2rem; }
+/* Info zu einer Stunde („Geld einsammeln“) – immer sichtbar, gelb */
+.plan-info {
+  flex-basis: 100%; display: inline-flex; align-items: center; gap: .3rem;
+  color: var(--yellow); font-weight: 700; font-size: .85rem;
+}
+.plan-info .icon { width: .95em; height: .95em; margin: 0; }
+.plan-liste .plan-info { padding-left: 11.7rem; }
+@media (max-width: 600px) { .plan-liste .plan-info { padding-left: 0; } }
+.plan-zelle .plan-info { font-size: .75rem; }

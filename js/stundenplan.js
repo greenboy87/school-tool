@@ -18,7 +18,8 @@
    Klasse ins Stundenbuch der Klasse (cls.stundenbuch), Schlüssel „2026-10-22 09:30“:
      { e: '10:15', f: 'Mu', k: '5a', r: 'H311', x: 1 (entfallen),
        th: [{ id, w }] (Themen mit Schlagwort; ohne id ein eigener Eintrag wie
-       „Schulaufgabe“), m: 1 (Thema von Hand gesetzt), s: 'bis Folie 15' (eigener Stand) }
+       „Schulaufgabe“), m: 1 (Thema von Hand gesetzt), s: 'bis Folie 15' (eigener Stand),
+       i: 'Geld einsammeln' (Info zu dieser Stunde) }
    Die Themen werden am Tag nach der Stunde festgeschrieben; bis dahin folgen sie
    dem Fortschritt im Reiter Stunden. Der Stand gehört zu genau einer Stunde.
 
@@ -440,12 +441,12 @@ const Stundenplan = {
     const ziel = this.klassenStunden(cls).find(t => {
       const k = this.buchSchluessel(t);
       const r = buch[k];
-      return k > key && t.ende > new Date() && !(r && (r.m || r.s));
+      return k > key && t.ende > new Date() && !(r && (r.m || r.s || r.i));
     });
     if (!ziel) { alert('Keine freie Stunde dieser Klasse mehr im Plan.'); return; }
     const k = this.buchSchluessel(ziel);
     const neu = buch[k] || (buch[k] = {});
-    for (const feld of ['th', 'm', 's']) if (rec[feld] !== undefined) { neu[feld] = rec[feld]; delete rec[feld]; }
+    for (const feld of ['th', 'm', 's', 'i']) if (rec[feld] !== undefined) { neu[feld] = rec[feld]; delete rec[feld]; }
     if (!Object.keys(rec).length) delete buch[key];
     Classes.persist();
     this.render();
@@ -619,6 +620,7 @@ const Stundenplan = {
     const katalogFeld = document.getElementById('plan-dialog-katalog');
     const feld = document.getElementById('plan-dialog-thema');
     const standFeld = document.getElementById('plan-dialog-stand');
+    const infoFeld = document.getElementById('plan-dialog-info');
     const nr = this.STUNDEN[this.uhr(t.beginn)];
     document.getElementById('plan-dialog-titel').textContent =
       `${t.fach} ${this.klassenText(t)} · ${this.tagName(t.beginn)} · ${nr && nr !== 'Pause' ? nr + ' Stunde' : this.uhr(t.beginn)}` +
@@ -679,7 +681,8 @@ const Stundenplan = {
       else if (rec.th.length === 1 && rec.th[0].id && themen.some(tp => tp.id === rec.th[0].id)) wahlThema.value = 'id:' + rec.th[0].id;
       else { wahlThema.value = 'eigen'; feld.value = rec.th.map(x => x.w).join(' · '); }
       standFeld.value = rec.s || '';
-      wahlThema.disabled = feld.disabled = standFeld.disabled = !cls;
+      infoFeld.value = rec.i || '';
+      wahlThema.disabled = feld.disabled = standFeld.disabled = infoFeld.disabled = !cls;
       zeigeEigen();
     };
     wahlKlasse.onchange = fuellen;
@@ -746,6 +749,8 @@ const Stundenplan = {
         }
         const stand = standFeld.value.trim().slice(0, 200);
         if (stand) rec.s = stand; else delete rec.s;
+        const info = infoFeld.value.trim().slice(0, 200);
+        if (info) rec.i = info; else delete rec.i;
         if (Object.keys(rec).length) buch[key] = rec; else delete buch[key];
       }
       Classes.persist();
@@ -793,8 +798,8 @@ const Stundenplan = {
     if (t.entfaellt) {
       // Entfallen, aber schon von Hand geplant: zeigen und verschieben lassen
       const rec = cls && (cls.stundenbuch || {})[key];
-      if (!rec || !(rec.m || rec.s)) return '';
-      const geplant = [rec.m && rec.th ? (rec.th.map(x => x.w).join(' · ') || 'kein Thema') : '', rec.s].filter(Boolean).join(' – ');
+      if (!rec || !(rec.m || rec.s || rec.i)) return '';
+      const geplant = [rec.m && rec.th ? (rec.th.map(x => x.w).join(' · ') || 'kein Thema') : '', rec.s, rec.i].filter(Boolean).join(' – ');
       return `<span class="plan-thema"><span class="plan-geplant" title="War für diese Stunde geplant">geplant: ${this.esc(geplant)}</span>` +
         `<button type="button" class="small" data-verschieben="${this.esc(cls.id + '|' + key)}" title="Auf die nächste Stunde der Klasse legen, die noch nichts Eigenes hat">→ nächste Stunde</button></span>`;
     }
@@ -902,6 +907,8 @@ const Stundenplan = {
     if (t.sonder) marken.push('<span class="plan-marke sonder">Sonderstunde</span>');
     if (getauscht) marken.push('<span class="plan-marke raum">Raum geändert</span>');
     marken.push(this.themenHtml(t, cls, mitKnoepfen));
+    const info = cls && !t.entfaellt && ((cls.stundenbuch || {})[this.buchSchluessel(t)] || {}).i;
+    if (info) marken.push(`<span class="plan-info" title="Info zu dieser Stunde – klicken zum Ändern">${Icons.raw('alert')}${this.esc(info)}</span>`);
     const klassenName = ['plan-termin',
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',
       t.vorschau && 'vorschau', !t.entfaellt && !t.aufsicht && 'klickbar',
