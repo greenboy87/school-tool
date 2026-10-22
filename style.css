@@ -2126,3 +2126,9 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 .plan-zelle .plan-termin.laeuft { outline: 2px solid var(--accent); }
 .plan-zelle .plan-wer { font-weight: 600; }
 .plan-zelle .plan-marke { font-size: .65rem; }
+/* Laufende Themen der Klasse, nur zum Nachsehen */
+.plan-thema { flex-basis: 100%; color: var(--muted); font-size: .85rem; font-style: italic; opacity: .8; }
+.plan-liste .plan-thema { padding-left: 8.3rem; }
+.plan-naechste .plan-thema { font-size: .95rem; }
+.plan-zelle .plan-thema { font-size: .75rem; line-height: 1.25; }
+@media (max-width: 600px) { .plan-liste .plan-thema { padding-left: 0; } }

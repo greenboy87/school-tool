@@ -17,6 +17,7 @@ const Stundenplan = {
   CACHE_KEY: 'stundenplan-cache',
   RAEUME_KEY: 'stundenplan-raeume',
   ANSICHT_KEY: 'stundenplan-ansicht',
+  THEMEN_KEY: 'stundenplan-themen',
   NEU_HOLEN_MS: 15 * 60 * 1000,
   RAEUME_TAGE: 120,
 
@@ -34,6 +35,12 @@ const Stundenplan = {
     this.schalter.addEventListener('change', () => {
       localStorage.setItem(this.ANSICHT_KEY, this.schalter.checked ? 'woche' : 'heute');
       this.wochenVersatz = 0;
+      this.render();
+    });
+    this.themenSchalter = document.getElementById('plan-themen');
+    this.themenSchalter.checked = localStorage.getItem(this.THEMEN_KEY) !== 'aus';
+    this.themenSchalter.addEventListener('change', () => {
+      localStorage.setItem(this.THEMEN_KEY, this.themenSchalter.checked ? 'an' : 'aus');
       this.render();
     });
     document.getElementById('btn-plan-neu').addEventListener('click', () => this.holen());
@@ -266,6 +273,17 @@ const Stundenplan = {
     Classes.selectClass(id);
   },
 
+  /* Schlagwörter der Themen, die in der Klasse gerade auf „Läuft“ stehen –
+     dasselbe, was der Kopierknopf im Reiter Stunden ins Klassenbuch legt */
+  laufendeThemen(cls) {
+    if (!cls || typeof Lessons === 'undefined') return [];
+    return Object.entries(Lessons.lessonsOf(cls))
+      .filter(([, e]) => e && e.s === 'progress')
+      .map(([id, e]) => Lessons.topicById(id, e))
+      .filter(Boolean)
+      .map(t => Lessons.schlagwort(t));
+  },
+
   /* ---------- Darstellung ---------- */
   esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -311,6 +329,10 @@ const Stundenplan = {
     if (t.entfaellt) marken.push('<span class="plan-marke entfall">entfällt</span>');
     if (t.sonder) marken.push('<span class="plan-marke sonder">Sonderstunde</span>');
     if (getauscht) marken.push('<span class="plan-marke raum">Raum geändert</span>');
+    const themen = this.themenSchalter.checked && !t.entfaellt ? this.laufendeThemen(cls) : [];
+    if (themen.length) {
+      marken.push(`<span class="plan-thema" title="Läuft gerade in dieser Klasse">${themen.map(w => this.esc(w)).join(' · ')}</span>`);
+    }
     const klassenName = ['plan-termin',
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',
       jetzt && t.beginn <= jetzt && jetzt < t.ende && !t.entfaellt && 'laeuft'].filter(Boolean).join(' ');
