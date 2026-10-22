@@ -2242,3 +2242,12 @@ button.plan-tagkopf.heute { background: var(--accent-grad); color: var(--on-acce
 .plan-zelle .plan-thema-plus { opacity: .25; }
 .plan-zelle .plan-termin:hover .plan-thema-plus { opacity: .7; }
 @media (hover: none) { .plan-zelle .plan-thema-plus { opacity: .45; } }
+/* Ganze Stunde anklickbar, Vorschau aus der Regelwoche, Geplantes bei Entfall */
+.plan-termin.klickbar { cursor: pointer; }
+.plan-zelle .plan-termin.klickbar:hover { background: var(--hover); }
+.plan-liste li.klickbar:hover { background: var(--hover); border-radius: var(--radius-sm); }
+.plan-zelle .plan-termin.vorschau { background: transparent; border: 1px dashed var(--border); }
+.plan-vorschau-hinweis { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); border: 1px dashed var(--border); border-radius: 999px; padding: .05rem .5rem; }
+.plan-frei { font-size: .7rem; font-weight: 600; opacity: .7; }
+.plan-geplant { color: var(--muted); font-style: italic; text-decoration: line-through; }
+.plan-termin.entfaellt .plan-thema { opacity: 1; }
