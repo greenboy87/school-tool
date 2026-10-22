@@ -32,6 +32,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  /* Direkt auf einen Reiter, etwa als Kurzbefehl vom Handy:
+     .../school-tool/#plan – mit Passwort: #plan&auf=PASSWORT */
+  const reiterAusAnker = () => {
+    const name = location.hash.replace(/^#/, '').split('&')[0];
+    const btn = name && document.querySelector(`.tab-btn[data-tab="${CSS.escape(name)}"]`);
+    if (btn) btn.click();
+  };
+  reiterAusAnker();
+  window.addEventListener('hashchange', reiterAusAnker);
+
   /* ----- Lärmampel ----- */
   const meter = new NoiseMeter({
     dbEl: document.getElementById('db-value'),

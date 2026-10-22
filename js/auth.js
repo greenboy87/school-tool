@@ -107,21 +107,32 @@ const Auth = {
   },
 
   /* Direktzugang per Lesezeichen:  .../school-tool/#auf=PASSWORT
-     Der Anker (alles ab #) bleibt im Browser - er wird nie an einen Server
-     geschickt und steht in keinem Zugriffsprotokoll. Gleich nach der Pruefung
-     fliegt er aus der Adresszeile, damit er nicht am Beamer mitgelesen wird. */
+     (mit Reiter: #plan&auf=PASSWORT). Der Anker (alles ab #) bleibt im Browser -
+     er wird nie an einen Server geschickt und steht in keinem Zugriffsprotokoll.
+     Gleich nach der Pruefung fliegt das Passwort aus der Adresszeile, damit es
+     nicht am Beamer mitgelesen wird; der Reiter bleibt stehen. */
   async _vomLink() {
     const treffer = /(?:^|[#&])auf=([^&]*)/.exec(location.hash);
     if (!treffer) return false;
     let pw = treffer[1];
     try { pw = decodeURIComponent(pw); } catch (e) { /* unsauber kodierte Adresse */ }
-    history.replaceState(null, '', location.pathname + location.search);
+    this._passwortAusAnker();
     return this.check(pw);
+  },
+
+  _passwortAusAnker() {
+    const rest = location.hash.replace(/^#/, '').split('&').filter(t => t && !/^auf=/.test(t)).join('&');
+    history.replaceState(null, '', location.pathname + location.search + (rest ? '#' + rest : ''));
   },
 
   init() {
     localStorage.removeItem('schooltool-unlocked'); // Altlast aus frueherer Version
-    if (this.isUnlocked()) { this._watch(); return; }
+    if (this.isUnlocked()) {
+      // Schon offen: das Passwort trotzdem nicht in der Adresszeile stehen lassen
+      if (/(?:^|[#&])auf=/.test(location.hash)) this._passwortAusAnker();
+      this._watch();
+      return;
+    }
     // Erst sperren, dann den Link pruefen - sonst blitzt der Inhalt kurz auf.
     document.documentElement.classList.add('locked');
     this._vomLink().then(ok => {
