@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=245">
+<link rel="stylesheet" href="style.css?v=246">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=245"></script>
-<script src="js/theme.js?v=245"></script>
-<script src="js/auswahl.js?v=245"></script>
-<script src="js/metronom.js?v=245"></script>
-<script src="js/klang.js?v=245"></script>
-<script src="js/schwebe.js?v=245"></script>
-<script src="js/auth.js?v=245"></script>
+<script src="js/icons.js?v=246"></script>
+<script src="js/theme.js?v=246"></script>
+<script src="js/auswahl.js?v=246"></script>
+<script src="js/metronom.js?v=246"></script>
+<script src="js/klang.js?v=246"></script>
+<script src="js/schwebe.js?v=246"></script>
+<script src="js/auth.js?v=246"></script>
 </head>
 <body>
 
@@ -166,7 +166,7 @@
   <section class="card plan-card">
     <div class="plan-kopf">
       <h2>Stundenplan</h2>
-      <label class="schalter plan-schalter">
+      <label class="schalter plan-schalter" title="Heute oder Woche – Tasten H und W; ←/→ blättern Tage bzw. Wochen">
         <span>Heute</span>
         <input type="checkbox" id="plan-ansicht" role="switch" aria-label="Wochenansicht">
         <span class="schalter-bahn" aria-hidden="true"></span>
@@ -188,6 +188,30 @@
       <button id="btn-plan-abo" class="small" title="Adresse des iCal-Abos aus dem Schulmanager">Abo-Adresse</button>
     </div>
     <div id="plan-inhalt"></div>
+    <dialog id="plan-dialog" class="plan-dialog">
+      <form method="dialog">
+        <h3 id="plan-dialog-titel"></h3>
+        <label>Klasse
+          <select id="plan-dialog-klasse" data-nativ></select>
+        </label>
+        <label class="check-label plan-dialog-immer"><input type="checkbox" id="plan-dialog-immer"> Klasse für diese Stunde in allen Wochen</label>
+        <label>Thema dieser Stunde
+          <input type="text" id="plan-dialog-thema" list="plan-dialog-themen" autocomplete="off" maxlength="120">
+        </label>
+        <datalist id="plan-dialog-themen"></datalist>
+        <label>Stand
+          <input type="text" id="plan-dialog-stand" autocomplete="off" maxlength="200" placeholder="z. B. bis Folie 15">
+        </label>
+        <p class="plan-dialog-hinweis">Eigener Eintrag (etwa „Schulaufgabe – nur Aufsicht“) oder ein Thema der Klasse wählen.
+          Das laufende Thema rückt dann in die nächste Stunde. Mehrere Themen mit „ · “ trennen.</p>
+        <div class="btn-row">
+          <button value="speichern" class="primary">Speichern</button>
+          <button value="kein" title="In dieser Stunde kein Thema">Kein Thema</button>
+          <button value="auto" id="plan-dialog-auto" title="Wieder das Thema aus der Stundenliste">Automatisch</button>
+          <button value="abbrechen" formnovalidate>Abbrechen</button>
+        </div>
+      </form>
+    </dialog>
   </section>
 </main>
 
@@ -1324,37 +1348,37 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=245"></script>
-<script src="js/firebase-config.js?v=245"></script>
-<script type="module" src="js/live-firebase.js?v=245"></script>
-<script src="js/ai-import.js?v=245"></script>
-<script src="js/store.js?v=245"></script>
-<script src="js/noise.js?v=245"></script>
-<script src="js/classes.js?v=245"></script>
-<script src="js/sitzplan.js?v=245"></script>
-<script src="js/schueler.js?v=245"></script>
-<script src="js/tasten.js?v=245"></script>
-<script src="js/lessons.js?v=245"></script>
-<script src="js/band.js?v=245"></script>
-<script src="js/notes.js?v=245"></script>
-<script src="js/tresor.js?v=245"></script>
-<script src="js/erklaerungen.js?v=245"></script>
-<script src="js/setlisten.js?v=245"></script>
-<script src="js/einklappen.js?v=245"></script>
-<script src="js/tinyband-instrumente.js?v=245"></script>
-<script src="js/live-groups.js?v=245"></script>
-<script src="js/tinyband-lehrer.js?v=245"></script>
-<script src="js/tipps.js?v=245"></script>
-<script src="js/sport-tabellen.js?v=245"></script>
-<script src="js/sport.js?v=245"></script>
-<script src="js/ex-import.js?v=245"></script>
-<script src="js/exen.js?v=245"></script>
-<script src="js/ex-namen.js?v=245"></script>
-<script src="js/ex-sitzung.js?v=245"></script>
-<script src="js/ex-auswertung.js?v=245"></script>
-<script src="js/ex-reiter.js?v=245"></script>
-<script src="js/tools.js?v=245"></script>
-<script src="js/stundenplan.js?v=245"></script>
-<script src="js/app.js?v=245"></script>
+<script src="js/vendor/qrcode.min.js?v=246"></script>
+<script src="js/firebase-config.js?v=246"></script>
+<script type="module" src="js/live-firebase.js?v=246"></script>
+<script src="js/ai-import.js?v=246"></script>
+<script src="js/store.js?v=246"></script>
+<script src="js/noise.js?v=246"></script>
+<script src="js/classes.js?v=246"></script>
+<script src="js/sitzplan.js?v=246"></script>
+<script src="js/schueler.js?v=246"></script>
+<script src="js/tasten.js?v=246"></script>
+<script src="js/lessons.js?v=246"></script>
+<script src="js/band.js?v=246"></script>
+<script src="js/notes.js?v=246"></script>
+<script src="js/tresor.js?v=246"></script>
+<script src="js/erklaerungen.js?v=246"></script>
+<script src="js/setlisten.js?v=246"></script>
+<script src="js/einklappen.js?v=246"></script>
+<script src="js/tinyband-instrumente.js?v=246"></script>
+<script src="js/live-groups.js?v=246"></script>
+<script src="js/tinyband-lehrer.js?v=246"></script>
+<script src="js/tipps.js?v=246"></script>
+<script src="js/sport-tabellen.js?v=246"></script>
+<script src="js/sport.js?v=246"></script>
+<script src="js/ex-import.js?v=246"></script>
+<script src="js/exen.js?v=246"></script>
+<script src="js/ex-namen.js?v=246"></script>
+<script src="js/ex-sitzung.js?v=246"></script>
+<script src="js/ex-auswertung.js?v=246"></script>
+<script src="js/ex-reiter.js?v=246"></script>
+<script src="js/tools.js?v=246"></script>
+<script src="js/stundenplan.js?v=246"></script>
+<script src="js/app.js?v=246"></script>
 </body>
 </html>

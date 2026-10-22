@@ -2209,3 +2209,36 @@ button.stumm-knopf.an { background: var(--danger-bg); border-color: var(--danger
   .plan-card:-webkit-full-screen { zoom: 1.2; }
 }
 .plan-zelle .plan-zuletzt { display: none; }
+
+/* Thema einer Stunde: klickbar, von Hand gesetzt, Dialog */
+button.plan-thema-wort, .plan-thema-plus {
+  border: none; background: none; padding: .1rem .2rem; font: inherit; cursor: pointer;
+}
+button.plan-thema-wort { color: var(--muted); font-style: italic; }
+button.plan-thema-wort:hover, .plan-thema-plus:hover { background: var(--hover); color: var(--text); }
+button.plan-thema-wort.manuell { color: var(--accent); font-style: normal; font-weight: 600; opacity: 1; }
+.plan-thema-plus { color: var(--muted); opacity: .55; display: inline-flex; align-items: center; gap: .2rem; font-size: .8rem; }
+.plan-thema-plus .icon { width: .9em; height: .9em; margin: 0; }
+.plan-dialog {
+  border: 1px solid var(--card-border); border-radius: var(--radius); background: var(--card-solid);
+  color: var(--text); padding: 1.2rem 1.4rem; width: min(30rem, 92vw); box-shadow: var(--shadow);
+}
+.plan-dialog::backdrop { background: rgba(8, 4, 24, .55); }
+.plan-dialog h3 { margin: 0 0 .8rem; }
+.plan-dialog label { display: block; margin-bottom: .7rem; font-weight: 600; font-size: .9rem; }
+.plan-dialog input { display: block; width: 100%; margin-top: .25rem; box-sizing: border-box; }
+.plan-dialog .btn-row { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .8rem; }
+.plan-dialog select { display: block; width: 100%; margin-top: .25rem; }
+.plan-dialog .plan-dialog-immer { font-weight: 400; display: flex; align-items: center; gap: .4rem; margin-top: -.3rem; }
+.plan-dialog .plan-dialog-immer input { display: inline; width: auto; margin: 0; }
+.plan-dialog-hinweis { color: var(--muted); font-size: .85rem; line-height: 1.45; margin: .2rem 0 0; }
+/* Tagköpfe der Woche führen zur Tagesansicht */
+button.plan-tagkopf { border: none; background: none; font: inherit; font-weight: 700; color: var(--text); cursor: pointer; }
+button.plan-tagkopf:hover { background: var(--hover); }
+button.plan-tagkopf.heute { background: var(--accent-grad); color: var(--on-accent); }
+.plan-tag-nav { margin-top: 1.1rem; }
+.plan-tag-nav .plan-zwischen { margin: 0; }
+/* „+ Klasse“/„+ Thema“ im Wochenraster nur dezent, deutlicher beim Überfahren */
+.plan-zelle .plan-thema-plus { opacity: .25; }
+.plan-zelle .plan-termin:hover .plan-thema-plus { opacity: .7; }
+@media (hover: none) { .plan-zelle .plan-thema-plus { opacity: .45; } }
