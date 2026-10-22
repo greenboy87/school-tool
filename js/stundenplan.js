@@ -18,6 +18,7 @@ const Stundenplan = {
   RAEUME_KEY: 'stundenplan-raeume',
   ANSICHT_KEY: 'stundenplan-ansicht',
   THEMEN_KEY: 'stundenplan-themen',
+  STAND_KEY: 'stundenplan-stand',
   NEU_HOLEN_MS: 15 * 60 * 1000,
   RAEUME_TAGE: 120,
 
@@ -37,17 +38,26 @@ const Stundenplan = {
       this.wochenVersatz = 0;
       this.render();
     });
-    this.themenSchalter = document.getElementById('plan-themen');
-    this.themenSchalter.checked = localStorage.getItem(this.THEMEN_KEY) !== 'aus';
-    this.themenSchalter.addEventListener('change', () => {
-      localStorage.setItem(this.THEMEN_KEY, this.themenSchalter.checked ? 'an' : 'aus');
-      this.render();
-    });
+    const schalter = (id, key) => {
+      const el = document.getElementById(id);
+      el.checked = localStorage.getItem(key) !== 'aus';
+      el.addEventListener('change', () => {
+        localStorage.setItem(key, el.checked ? 'an' : 'aus');
+        this.render();
+      });
+      return el;
+    };
+    this.themenSchalter = schalter('plan-themen', this.THEMEN_KEY);
+    this.standSchalter = schalter('plan-stand-zeigen', this.STAND_KEY);
     document.getElementById('btn-plan-neu').addEventListener('click', () => this.holen());
     document.getElementById('btn-plan-abo').addEventListener('click', () => this.aboFragen());
     document.getElementById('plan-inhalt').addEventListener('click', e => {
       const link = e.target.closest('[data-klasse]');
       if (link) { this.klasseOeffnen(link.dataset.klasse); return; }
+      const stand = e.target.closest('[data-stand]');
+      if (stand) { this.standAendern(...stand.dataset.stand.split('|')); return; }
+      const datei = e.target.closest('[data-oeffnen]');
+      if (datei) { Lessons.oeffnen(datei.dataset.oeffnen); return; }
       const nav = e.target.closest('[data-woche]');
       if (nav) { this.wochenVersatz += parseInt(nav.dataset.woche, 10); this.render(); }
     });
@@ -279,9 +289,57 @@ const Stundenplan = {
     if (!cls || typeof Lessons === 'undefined') return [];
     return Object.entries(Lessons.lessonsOf(cls))
       .filter(([, e]) => e && e.s === 'progress')
-      .map(([id, e]) => Lessons.topicById(id, e))
-      .filter(Boolean)
-      .map(t => Lessons.schlagwort(t));
+      .map(([id, e]) => ({ topic: Lessons.topicById(id, e), eintrag: e }))
+      .filter(x => x.topic)
+      .map(x => ({ ...x, wort: Lessons.schlagwort(x.topic) }));
+  },
+
+  /* Eigener Vermerk, wo es weitergeht („bis Folie 15“) – je Klasse und Thema,
+     liegt beim Fortschritt der Klasse und reist damit im Sync mit */
+  standAendern(klasseId, topicId) {
+    const cls = Classes.data.classes.find(c => c.id === klasseId);
+    const e = cls && cls.lessons && cls.lessons[topicId];
+    if (!e) return;
+    const topic = Lessons.topicById(topicId, e);
+    const neu = prompt(`Stand in ${cls.name} – ${topic ? Lessons.schlagwort(topic) : 'Thema'}\n` +
+      '(z. B. „bis Folie 15, AB S. 2 offen“):', e.stand || '');
+    if (neu === null) return;
+    const text = neu.trim().slice(0, 200);
+    if (text) e.stand = text; else delete e.stand;
+    Classes.persist();
+    this.render();
+  },
+
+  /* Laufende Themen einer Stunde: Schlagwort (Schalter „Themen“), dazu der
+     eigene Stand und die Knöpfe zum Material (Schalter „Stand“). Die Knöpfe nur
+     in der Tagesansicht – im Wochenraster wäre dafür kein Platz. */
+  themenHtml(t, cls, mitKnoepfen) {
+    const zeigeWort = this.themenSchalter.checked, zeigeStand = this.standSchalter.checked;
+    if (t.entfaellt || !cls || (!zeigeWort && !zeigeStand)) return '';
+    const themen = this.laufendeThemen(cls);
+    if (!themen.length) return '';
+    return themen.map(({ topic, eintrag, wort }) => {
+      const teile = [];
+      if (zeigeWort || themen.length > 1) {
+        teile.push(`<span class="plan-thema-wort" title="Läuft gerade in dieser Klasse">${this.esc(wort)}</span>`);
+      }
+      if (zeigeStand) {
+        const ziel = this.esc(cls.id + '|' + topic.id);
+        teile.push(eintrag.stand
+          ? `<button type="button" class="plan-stand-text" data-stand="${ziel}" title="Stand ändern">${Icons.raw('pen')}${this.esc(eintrag.stand)}</button>`
+          : `<button type="button" class="plan-stand-text leer" data-stand="${ziel}" title="Notieren, wo es weitergeht">${Icons.raw('pen')}Stand notieren</button>`);
+        if (mitKnoepfen && topic.ordner) {
+          const knopf = (icon, text, pfad, titel) =>
+            `<button type="button" class="small" data-oeffnen="${this.esc(pfad)}" title="${this.esc(titel + ': ' + pfad)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
+          teile.push(`<span class="plan-material">${[
+            topic.haupt ? knopf('play', /\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation', topic.haupt, 'Öffnen') : '',
+            topic.ab ? knopf('file', 'AB', topic.ab, 'Öffnen') : '',
+            knopf('folder', '', topic.ordner, 'Ordner öffnen'),
+          ].join('')}</span>`);
+        }
+      }
+      return `<span class="plan-thema">${teile.join('')}</span>`;
+    }).join('');
   },
 
   /* ---------- Darstellung ---------- */
@@ -314,7 +372,7 @@ const Stundenplan = {
   },
 
   /* Ein Termin als Baustein – in der Tagesliste wie im Wochenraster */
-  baustein(t, jetzt) {
+  baustein(t, jetzt, mitKnoepfen) {
     const cls = this.klasseZu(t);
     const getauscht = this.raumGetauscht(t);
     const klassen = this.klassenText(t);
@@ -329,10 +387,7 @@ const Stundenplan = {
     if (t.entfaellt) marken.push('<span class="plan-marke entfall">entfällt</span>');
     if (t.sonder) marken.push('<span class="plan-marke sonder">Sonderstunde</span>');
     if (getauscht) marken.push('<span class="plan-marke raum">Raum geändert</span>');
-    const themen = this.themenSchalter.checked && !t.entfaellt ? this.laufendeThemen(cls) : [];
-    if (themen.length) {
-      marken.push(`<span class="plan-thema" title="Läuft gerade in dieser Klasse">${themen.map(w => this.esc(w)).join(' · ')}</span>`);
-    }
+    marken.push(this.themenHtml(t, cls, mitKnoepfen));
     const klassenName = ['plan-termin',
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',
       jetzt && t.beginn <= jetzt && jetzt < t.ende && !t.entfaellt && 'laeuft'].filter(Boolean).join(' ');
@@ -348,7 +403,7 @@ const Stundenplan = {
     this.el.classList.toggle('plan-woche', this.schalter.checked);
 
     stand.textContent = this.laedt ? 'Wird geholt …'
-      : this.geholt ? 'Stand ' + this.uhr(new Date(this.geholt)) +
+      : this.geholt ? 'Aktualisiert ' + this.uhr(new Date(this.geholt)) +
         (this.tagSchluessel(new Date(this.geholt)) !== this.tagSchluessel(new Date())
           ? ', ' + this.tagName(new Date(this.geholt)) : '') : '';
     stand.classList.toggle('fehler', !!this.fehler);
@@ -383,7 +438,7 @@ const Stundenplan = {
     const naechste = this.termine.find(t => t.ende > jetzt && !t.entfaellt && !t.aufsicht);
     let kopf = '';
     if (naechste) {
-      const b = this.baustein(naechste, jetzt);
+      const b = this.baustein(naechste, jetzt, true);
       const laeuft = naechste.beginn <= jetzt;
       const min = Math.round((naechste.beginn - jetzt) / 60000);
       const wann = laeuft ? `läuft bis ${this.uhr(naechste.ende)}`
@@ -399,7 +454,7 @@ const Stundenplan = {
 
     const datum = this.datum(tag.replace(/-/g, ''));
     const zeilen = liste.map(t => {
-      const b = this.baustein(t, jetzt);
+      const b = this.baustein(t, jetzt, true);
       const vorbei = t.ende <= jetzt ? ' vorbei' : '';
       return `<li class="${b.klassenName}${vorbei}">
         <span class="plan-zeit">${this.uhr(t.beginn)}–${this.uhr(t.ende)}</span>

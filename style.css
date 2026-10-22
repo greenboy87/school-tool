@@ -2127,7 +2127,19 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 .plan-zelle .plan-wer { font-weight: 600; }
 .plan-zelle .plan-marke { font-size: .65rem; }
 /* Laufende Themen der Klasse, nur zum Nachsehen */
-.plan-thema { flex-basis: 100%; color: var(--muted); font-size: .85rem; font-style: italic; opacity: .8; }
+.plan-thema { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .7rem; font-size: .85rem; }
+.plan-thema-wort { color: var(--muted); font-style: italic; opacity: .8; }
+.plan-stand-text {
+  border: none; background: none; padding: .1rem .2rem; font: inherit; font-weight: 600;
+  color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: .3rem;
+}
+.plan-stand-text:hover { background: var(--hover); }
+.plan-stand-text.leer { color: var(--muted); font-weight: 400; opacity: .7; }
+.plan-stand-text .icon { width: .85em; height: .85em; opacity: .6; }
+.plan-material { display: inline-flex; gap: .3rem; flex-wrap: wrap; }
+.plan-material button { padding: .2rem .55rem; font-size: .8rem; }
+.plan-material button:last-child .icon { margin: 0; }
+.plan-zelle .plan-stand-text { font-size: .75rem; padding: 0; }
 .plan-liste .plan-thema { padding-left: 8.3rem; }
 .plan-naechste .plan-thema { font-size: .95rem; }
 .plan-zelle .plan-thema { font-size: .75rem; line-height: 1.25; }
