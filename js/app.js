@@ -139,10 +139,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* Vollbild: nur der Bogen, so groß es geht. Erst ins Vollbild, dann messen –
+  /* Vollbild: die ganze Ampelkarte – Bogen groß, die Regler daneben. Erst ins Vollbild, dann messen –
      wartet man zuerst aufs Mikrofon, ist der Klick „verbraucht“ und der Browser
      verweigert das Vollbild. Eine laufende Messung läuft einfach weiter. */
-  const buehne = document.querySelector('.ampel-visual');
+  const buehne = document.querySelector('.ampel-card');
   const vollbildElement = () => document.fullscreenElement || document.webkitFullscreenElement;
   document.getElementById('btn-vollbild').addEventListener('click', async () => {
     if (vollbildElement()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }

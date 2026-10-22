@@ -1308,15 +1308,35 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 :root:fullscreen .popup-ampel.mit-knopf .laerm-bogen.compact { width: min(92vw, calc((100vh - 6rem) * 1.7)); }
 :root:fullscreen .popup-alarm-count { font-size: 1.4rem; }
 
-/* Vollbild der Lärmampel im Hauptfenster: nur der Bogen, so groß es geht */
-.ampel-visual:fullscreen, .ampel-visual:-webkit-full-screen {
+/* Vollbild der Lärmampel im Hauptfenster: die ganze Karte. Der Bogen nimmt
+   den meisten Platz, Grenzwert, Alarm, Mikrofon und Start stehen daneben. */
+.ampel-card:fullscreen {
   display: flex; align-items: center; justify-content: center;
-  max-width: none; width: 100%; height: 100%; background: var(--page-bg); padding: 4vmin;
+  max-width: none; width: 100%; height: 100%; margin: 0; border: none; border-radius: 0;
+  background: var(--page-bg); padding: 4vmin; font-size: 1.1rem;
 }
-.ampel-visual:fullscreen .laerm-bogen { width: min(92vw, calc((100vh - 10vmin) * 1.7)); }
-.ampel-visual:-webkit-full-screen .laerm-bogen { width: min(92vw, calc((100vh - 10vmin) * 1.7)); }
-.ampel-visual:fullscreen .db-display { font-size: 13.5cqw; }
-.ampel-visual:-webkit-full-screen .db-display { font-size: 13.5cqw; }
+.ampel-card:fullscreen .ampel-layout { flex-wrap: nowrap; gap: 4vw; width: 100%; justify-content: center; }
+.ampel-card:fullscreen .ampel-controls { flex: 0 0 min(30vw, 440px); min-width: 0; }
+.ampel-card:fullscreen .laerm-bogen { width: min(60vw, calc((100vh - 12vmin) * 1.7)); }
+.ampel-card:fullscreen .db-display { font-size: 13.5cqw; }
+.ampel-card:-webkit-full-screen {
+  display: flex; align-items: center; justify-content: center;
+  max-width: none; width: 100%; height: 100%; margin: 0; border: none; border-radius: 0;
+  background: var(--page-bg); padding: 4vmin; font-size: 1.1rem;
+}
+.ampel-card:-webkit-full-screen .ampel-layout { flex-wrap: nowrap; gap: 4vw; width: 100%; justify-content: center; }
+.ampel-card:-webkit-full-screen .ampel-controls { flex: 0 0 min(30vw, 440px); min-width: 0; }
+.ampel-card:-webkit-full-screen .laerm-bogen { width: min(60vw, calc((100vh - 12vmin) * 1.7)); }
+.ampel-card:-webkit-full-screen .db-display { font-size: 13.5cqw; }
+/* Hochkant (iPad senkrecht): Regler unter den Bogen */
+@media (orientation: portrait) {
+  .ampel-card:fullscreen .ampel-layout { flex-direction: column; }
+  .ampel-card:fullscreen .ampel-controls { flex: none; width: min(92vw, 560px); }
+  .ampel-card:fullscreen .laerm-bogen { width: min(92vw, calc((60vh - 8vmin) * 1.7)); }
+  .ampel-card:-webkit-full-screen .ampel-layout { flex-direction: column; }
+  .ampel-card:-webkit-full-screen .ampel-controls { flex: none; width: min(92vw, 560px); }
+  .ampel-card:-webkit-full-screen .laerm-bogen { width: min(92vw, calc((60vh - 8vmin) * 1.7)); }
+}
 .popup-ampel .db-display { color: #f7f3ff; }
 .popup-ampel .bogen-marker { stroke: #f7f3ff; }
 .popup-ampel .bogen-knopf { stroke: #120f26; }
