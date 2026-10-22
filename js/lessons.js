@@ -6,7 +6,8 @@
    deshalb auch nicht durch den Tresor. Katalog-Themen haben die ID „kat:<Ordner>“.
    Eigene Themen (data.topics) kommen dazu und werden mit den Klassen gesichert.
    Fortschritt (class.lessons): { topicId: { s: 'progress'|'done', d1, d2, t } }
-   t = Titel beim Hinzufügen, falls der Ordner später umbenannt wird. */
+   t = Titel beim Hinzufügen, falls der Ordner später umbenannt wird.
+   sw = Schlagwort fürs Klassenbuch, selbst gesetzt (sonst aus dem Titel geraten). */
 const Lessons = {
   STATES: { open: 'Offen', progress: 'Läuft', done: 'Fertig' },
   KATALOG_URL: 'https://greenboy87.github.io/stundenkatalog/katalog.json',
@@ -270,6 +271,44 @@ const Lessons = {
     this.render();
   },
 
+  /* Schlagwort fürs digitale Klassenbuch: selbst gesetztes gilt für alle Klassen,
+     sonst aus dem Titel geraten („1a_Metrum Puls Tempo by phil“ → „Metrum Puls Tempo“) */
+  schlagwort(topic) {
+    for (const c of Classes.data.classes) {
+      const e = c.lessons && c.lessons[topic.id];
+      if (e && e.sw) return e.sw;
+    }
+    return topic.name
+      .replace(/^(ex|klasse)\b[\s\d,–-]*-\s*/i, '')
+      .replace(/^\d+[a-z]?(\s*\d+)?[_.\s-]*/i, '')
+      .replace(/\s+by\s+\S+.*$/, '')
+      .replace(/\s+(mip|wh|neu|alt|test)\b.*$/i, '')
+      .replace(/[\s+_-]+$/, '')
+      .replace(/_/g, ' ')
+      .trim() || topic.name;
+  },
+
+  schlagwortAendern(cls, topic) {
+    const neu = prompt(`Schlagwort für „${topic.name}“ (gilt für alle Klassen):`, this.schlagwort(topic));
+    if (neu === null) return;
+    const sw = neu.trim().slice(0, 120);
+    for (const c of Classes.data.classes) {
+      const e = c.lessons && c.lessons[topic.id];
+      if (e) { if (sw) e.sw = sw; else delete e.sw; }
+    }
+    Classes.persist();
+    this.render();
+  },
+
+  async schlagwortKopieren(knopf, text) {
+    let ok = true;
+    try { await navigator.clipboard.writeText(text); } catch (e) { ok = Band.kopierenAlt(text); }
+    const alt = knopf.innerHTML;
+    knopf.textContent = ok ? '✓ kopiert' : 'Kopieren ging nicht';
+    knopf.disabled = true;
+    setTimeout(() => { knopf.innerHTML = alt; knopf.disabled = false; }, 1500);
+  },
+
   stateOf(cls, topicId) {
     const e = this.lessonsOf(cls)[topicId];
     return e ? (e.s || 'open') : 'open';
@@ -376,6 +415,26 @@ const Lessons = {
         if (t.ab) knopf('file', 'Arbeitsblatt', t.ab, 'Öffnen');
         knopf('folder', '', t.ordner, 'Ordner öffnen');
       }
+      // Laufende Stunde: Schlagwort mit einem Klick in die Zwischenablage
+      let sw = null;
+      if (st === 'progress') {
+        sw = document.createElement('div');
+        sw.className = 'lesson-schlagwort';
+        const wort = this.schlagwort(t);
+        const kopie = document.createElement('button');
+        kopie.className = 'small';
+        kopie.innerHTML = Icons.raw('clipboard');
+        kopie.append(wort);
+        kopie.title = 'Schlagwort kopieren (fürs Klassenbuch einfügen mit Strg+V)';
+        kopie.addEventListener('click', () => this.schlagwortKopieren(kopie, wort));
+        const stift = document.createElement('button');
+        stift.className = 'small';
+        stift.innerHTML = Icons.raw('pen');
+        stift.title = 'Schlagwort ändern';
+        stift.addEventListener('click', () => this.schlagwortAendern(cls, t));
+        sw.append(kopie, stift);
+      }
+
       const weg = document.createElement('button');
       weg.className = 'small danger';
       weg.innerHTML = Icons.raw('x');
@@ -387,7 +446,7 @@ const Lessons = {
       });
       btns.appendChild(weg);
 
-      li.append(main, ...(mat ? [mat] : []), btns);
+      li.append(main, ...(sw ? [sw] : []), ...(mat ? [mat] : []), btns);
       list.appendChild(li);
     }
   },

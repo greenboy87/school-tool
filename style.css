@@ -624,6 +624,8 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .lesson-states .danger .icon { margin: 0; }
 .lesson-material { display: flex; gap: .3rem; flex: 0 0 auto; flex-wrap: wrap; }
 .lesson-material button:last-child .icon { margin: 0; }
+.lesson-schlagwort { display: flex; gap: .3rem; flex: 0 0 auto; }
+.lesson-schlagwort button:last-child .icon { margin: 0; }
 .katalog-fenster { position: fixed; inset: 0; z-index: 200; background: var(--page-bg, var(--bg)); background-color: var(--bg); display: flex; flex-direction: column; }
 .katalog-kopf { display: flex; align-items: center; gap: .75rem; padding: .6rem 1rem; padding-top: max(.6rem, env(safe-area-inset-top)); border-bottom: 1px solid var(--border); }
 .katalog-kopf h3 { margin: 0; flex: 1; font-size: 1rem; }
