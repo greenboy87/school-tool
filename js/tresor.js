@@ -736,17 +736,23 @@ const Tresor = {
     if (!el) return;
     el.textContent = text || '';
     el.classList.toggle('warnung', !!warnung);
+    // Auf schmalen Bildschirmen ist der Text ausgeblendet – dann steht er am Knopf
+    this.statusText = text || '';
+    this.knopfAktualisieren();
   },
 
   knopfAktualisieren() {
     const knopf = document.getElementById('btn-tresor');
     if (!knopf) return;
     const an = this.aktiv();
-    knopf.innerHTML = Icons.raw(an ? 'check' : 'upload') + (an ? 'Sync an' : 'Sync');
+    // Nur das Symbol – der Zustand steht im title und am Rahmen (Klasse „aktiv“)
+    knopf.innerHTML = Icons.raw(an ? 'check' : 'upload');
+    knopf.setAttribute('aria-label', an ? 'Sync an' : 'Sync');
     knopf.classList.toggle('aktiv', an);
-    knopf.title = an
+    knopf.title = (an
       ? 'Geräte-Sync läuft. Klicken für Hochladen, Holen oder Beenden.'
-      : 'Daten verschlüsselt zwischen deinen Geräten abgleichen';
+      : 'Daten verschlüsselt zwischen deinen Geräten abgleichen') +
+      (this.statusText ? '\n' + this.statusText : '');
   },
 };
 

@@ -1700,6 +1700,10 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   .tab-btn { padding: .55rem .45rem; font-size: .9rem; }
   .sync-status { max-width: 5.5rem; }
 }
+/* Bis rund 1100 px passt „gesichert 17:56“ nicht mehr in dieselbe Zeile */
+@media screen and (min-width: 721px) and (max-width: 1100px) {
+  .sync-status { display: none; }
+}
 
 /* Tablet hochkant (iPad: 768 px): noch enger, damit die Leiste einzeilig bleibt.
    Der Sync-Status steht weiter im title des Sync-Knopfs. */
@@ -2251,3 +2255,6 @@ button.plan-tagkopf.heute { background: var(--accent-grad); color: var(--on-acce
 .plan-frei { font-size: .7rem; font-weight: 600; opacity: .7; }
 .plan-geplant { color: var(--muted); font-style: italic; text-decoration: line-through; }
 .plan-termin.entfaellt .plan-thema { opacity: 1; }
+
+/* Notizen stehen unter Extras, unter den Werkzeugen */
+.notes-karte { margin-top: 1.2rem; }

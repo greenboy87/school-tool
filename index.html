@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=247">
+<link rel="stylesheet" href="style.css?v=248">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=247"></script>
-<script src="js/theme.js?v=247"></script>
-<script src="js/auswahl.js?v=247"></script>
-<script src="js/metronom.js?v=247"></script>
-<script src="js/klang.js?v=247"></script>
-<script src="js/schwebe.js?v=247"></script>
-<script src="js/auth.js?v=247"></script>
+<script src="js/icons.js?v=248"></script>
+<script src="js/theme.js?v=248"></script>
+<script src="js/auswahl.js?v=248"></script>
+<script src="js/metronom.js?v=248"></script>
+<script src="js/klang.js?v=248"></script>
+<script src="js/schwebe.js?v=248"></script>
+<script src="js/auth.js?v=248"></script>
 </head>
 <body>
 
@@ -24,13 +24,12 @@
     <button class="tab-btn" data-tab="klassen" data-icon="book" title="Klassen &amp; Noten">Klassen</button>
     <button class="tab-btn" data-tab="band" data-icon="music" title="Schulband">Band</button>
     <button class="tab-btn" data-tab="exen" data-icon="pen" title="Digitale Exen auf iPads">Exen</button>
-    <button class="tab-btn" data-tab="notizen" data-icon="clipboard" title="Notizen">Notes</button>
     <button class="tab-btn" data-tab="sport" data-icon="timer" title="Sport">Sport</button>
     <button class="tab-btn" data-tab="lehrer" data-icon="users" title="Lehrkräfte und Klassenleitungen">Lehrer</button>
     <button class="tab-btn" data-tab="tools" data-icon="sparkles" title="Extras">Extras</button>
   </nav>
   <div class="backup-btns">
-    <button id="btn-tresor" data-icon="upload" title="Daten verschlüsselt zwischen deinen Geräten abgleichen">Sync</button>
+    <button id="btn-tresor" class="nur-icon" data-icon="upload" aria-label="Sync" title="Daten verschlüsselt zwischen deinen Geräten abgleichen"></button>
     <span class="hint sync-status" id="tresor-status"></span>
     <button id="btn-server-backup" data-icon="cloud" aria-label="Backup vom Server holen"
             title="SICHERN – der Knopf fürs wöchentliche Sichern.&#10;Holt den vollständigen Stand vom Sync-Server als Datei, mit Sitzplänen und Fotos.&#10;&#10;Auf diesem Gerät ändert sich dabei nichts. Braucht nur das Sync-Passwort."><span class="knopf-text">Backup</span></button>
@@ -40,7 +39,7 @@
       <input type="checkbox" id="gesichter-schalter" role="switch" checked>
       <span class="schalter-bahn" aria-hidden="true"></span>
       <span class="auge-an" data-icon="eye"></span><span class="auge-aus" data-icon="eyeOff"></span>
-      <span class="knopf-text">Gesichter</span>
+      <span class="knopf-text">Faces</span>
     </label>
     <button id="btn-theme" title="Zum hellen Design wechseln">Hell</button>
     <input type="file" id="import-file" accept=".json" hidden>
@@ -1206,20 +1205,6 @@
   </div>
 </main>
 
-<main id="tab-notizen" class="tab-page">
-  <section class="card">
-    <div class="projekt-header">
-      <h2 data-icon="clipboard">Notizen</h2>
-      <div class="btn-row">
-        <span class="hint" id="notes-status"></span>
-        <button id="btn-print-notes" data-icon="printer">Drucken</button>
-      </div>
-    </div>
-    <p class="hint">Freier Platz für alles, was dir zwischendurch einfällt – Material bestellen, Raum reservieren, Ideen für die nächste Stunde. Wird automatisch gespeichert.</p>
-    <textarea id="notes-text" class="notes-area" rows="22" spellcheck="true"
-      placeholder="Einfach lostippen …"></textarea>
-  </section>
-</main>
 
 <!-- ========== SPORT ========== -->
 <main id="tab-sport" class="tab-page">
@@ -1345,41 +1330,53 @@
     </section>
 
   </div>
+  <section class="card notes-karte" id="notizen">
+    <div class="projekt-header">
+      <h2 data-icon="clipboard">Notizen</h2>
+      <div class="btn-row">
+        <span class="hint" id="notes-status"></span>
+        <button id="btn-print-notes" data-icon="printer">Drucken</button>
+      </div>
+    </div>
+    <p class="hint">Freier Platz für alles, was dir zwischendurch einfällt – Material bestellen, Raum reservieren, Ideen für die nächste Stunde. Wird automatisch gespeichert.</p>
+    <textarea id="notes-text" class="notes-area" rows="22" spellcheck="true"
+      placeholder="Einfach lostippen …"></textarea>
+  </section>
 </main>
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=247"></script>
-<script src="js/firebase-config.js?v=247"></script>
-<script type="module" src="js/live-firebase.js?v=247"></script>
-<script src="js/ai-import.js?v=247"></script>
-<script src="js/store.js?v=247"></script>
-<script src="js/noise.js?v=247"></script>
-<script src="js/classes.js?v=247"></script>
-<script src="js/sitzplan.js?v=247"></script>
-<script src="js/schueler.js?v=247"></script>
-<script src="js/tasten.js?v=247"></script>
-<script src="js/lessons.js?v=247"></script>
-<script src="js/band.js?v=247"></script>
-<script src="js/notes.js?v=247"></script>
-<script src="js/tresor.js?v=247"></script>
-<script src="js/erklaerungen.js?v=247"></script>
-<script src="js/setlisten.js?v=247"></script>
-<script src="js/einklappen.js?v=247"></script>
-<script src="js/tinyband-instrumente.js?v=247"></script>
-<script src="js/live-groups.js?v=247"></script>
-<script src="js/tinyband-lehrer.js?v=247"></script>
-<script src="js/tipps.js?v=247"></script>
-<script src="js/sport-tabellen.js?v=247"></script>
-<script src="js/sport.js?v=247"></script>
-<script src="js/ex-import.js?v=247"></script>
-<script src="js/exen.js?v=247"></script>
-<script src="js/ex-namen.js?v=247"></script>
-<script src="js/ex-sitzung.js?v=247"></script>
-<script src="js/ex-auswertung.js?v=247"></script>
-<script src="js/ex-reiter.js?v=247"></script>
-<script src="js/tools.js?v=247"></script>
-<script src="js/stundenplan.js?v=247"></script>
-<script src="js/app.js?v=247"></script>
+<script src="js/vendor/qrcode.min.js?v=248"></script>
+<script src="js/firebase-config.js?v=248"></script>
+<script type="module" src="js/live-firebase.js?v=248"></script>
+<script src="js/ai-import.js?v=248"></script>
+<script src="js/store.js?v=248"></script>
+<script src="js/noise.js?v=248"></script>
+<script src="js/classes.js?v=248"></script>
+<script src="js/sitzplan.js?v=248"></script>
+<script src="js/schueler.js?v=248"></script>
+<script src="js/tasten.js?v=248"></script>
+<script src="js/lessons.js?v=248"></script>
+<script src="js/band.js?v=248"></script>
+<script src="js/notes.js?v=248"></script>
+<script src="js/tresor.js?v=248"></script>
+<script src="js/erklaerungen.js?v=248"></script>
+<script src="js/setlisten.js?v=248"></script>
+<script src="js/einklappen.js?v=248"></script>
+<script src="js/tinyband-instrumente.js?v=248"></script>
+<script src="js/live-groups.js?v=248"></script>
+<script src="js/tinyband-lehrer.js?v=248"></script>
+<script src="js/tipps.js?v=248"></script>
+<script src="js/sport-tabellen.js?v=248"></script>
+<script src="js/sport.js?v=248"></script>
+<script src="js/ex-import.js?v=248"></script>
+<script src="js/exen.js?v=248"></script>
+<script src="js/ex-namen.js?v=248"></script>
+<script src="js/ex-sitzung.js?v=248"></script>
+<script src="js/ex-auswertung.js?v=248"></script>
+<script src="js/ex-reiter.js?v=248"></script>
+<script src="js/tools.js?v=248"></script>
+<script src="js/stundenplan.js?v=248"></script>
+<script src="js/app.js?v=248"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 /* Freie Notizfelder. Speichern automatisch kurz nach dem Tippen.
-   Zwei Stück: die allgemeinen Notizen im eigenen Reiter und die
+   Zwei Stück: die allgemeinen Notizen unter Extras und die
    Band-Notizen im Unterreiter der Schulband. */
 const Notes = {
   init() {

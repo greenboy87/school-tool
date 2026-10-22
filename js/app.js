@@ -35,7 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
   /* Direkt auf einen Reiter, etwa als Kurzbefehl vom Handy:
      .../school-tool/#plan – mit Passwort: #plan&auf=PASSWORT */
   const reiterAusAnker = () => {
-    const name = location.hash.replace(/^#/, '').split('&')[0];
+    let name = location.hash.replace(/^#/, '').split('&')[0];
+    if (name === 'notizen') name = 'tools';      // Notizen stehen jetzt unter Extras
     const btn = name && document.querySelector(`.tab-btn[data-tab="${CSS.escape(name)}"]`);
     if (btn) btn.click();
   };
