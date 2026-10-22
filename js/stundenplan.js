@@ -20,6 +20,8 @@
        th: [{ id, w }] (Themen mit Schlagwort; ohne id ein eigener Eintrag wie
        „Schulaufgabe“), m: 1 (Thema von Hand gesetzt), s: 'bis Folie 15' (eigener Stand),
        i: 'Geld einsammeln' (Info zu dieser Stunde) }
+   Stunden ohne Klasse im School-Tool (Vertretung in einer fremden Klasse) haben
+   ihr eigenes Buch, Classes.data.planStunden – die Klasse steht dort aus dem Abo.
    Die Themen werden am Tag nach der Stunde festgeschrieben; bis dahin folgen sie
    dem Fortschritt im Reiter Stunden. Der Stand gehört zu genau einer Stunde.
 
@@ -311,6 +313,7 @@ const Stundenplan = {
 
   klasseZu(t) {
     if (t.klasseId) return Classes.data.classes.find(c => c.id === t.klasseId) || null;
+    if (t.ausBuchOhne) return null;
     const vonHand = this.klasseVonHand(t);
     if (vonHand !== undefined) return vonHand ? Classes.data.classes.find(c => c.id === vonHand) || null : null;
     if (!t.klassen.length || !Classes.data) return null;
@@ -332,6 +335,28 @@ const Stundenplan = {
       if (wertung > besteWertung) { beste = c; besteWertung = wertung; }
     }
     return beste;
+  },
+
+  /* Vertretung in einer Klasse, die man sonst nicht hat: keine eigene Klasse
+     nötig. Solche Stunden landen in einem Buch ohne Klasse; angezeigt wird die
+     Klasse aus dem Abo. Ein festes Objekt, damit Vergleiche mit === greifen. */
+  ohneKlasse() {
+    if (!Classes.data.planStunden) Classes.data.planStunden = {};
+    if (!this._ohne || this._ohne.stundenbuch !== Classes.data.planStunden) {
+      this._ohne = { id: '-', name: 'ohne Klasse', ohne: true, stundenbuch: Classes.data.planStunden, lessons: {} };
+    }
+    return this._ohne;
+  },
+
+  /* Wohin Thema, Stand und Info einer Stunde gehören: zur Klasse – oder, ohne
+     Klasse, ins Buch ohne Klasse. Aufsichten haben keins. */
+  buchKlasse(t) {
+    if (t.aufsicht || !Classes.data) return null;
+    return this.klasseZu(t) || this.ohneKlasse();
+  },
+
+  klasseFinden(id) {
+    return id === '-' ? this.ohneKlasse() : Classes.data.classes.find(c => c.id === id) || null;
   },
 
   klasseOeffnen(id) {
@@ -386,7 +411,7 @@ const Stundenplan = {
   klassenStunden(cls) {
     const c = this.cache();
     if (!c.stunden[cls.id]) {
-      c.stunden[cls.id] = this.alleTermine().filter(t => !t.entfaellt && !t.aufsicht && this.klasseZu(t) === cls);
+      c.stunden[cls.id] = this.alleTermine().filter(t => !t.entfaellt && !t.aufsicht && this.buchKlasse(t) === cls);
     }
     return c.stunden[cls.id];
   },
@@ -398,6 +423,7 @@ const Stundenplan = {
      Entfallene Stunden zählen nicht – das Thema rückt in die nächste. */
   kette(cls) {
     const c = this.cache();
+    if (cls.ohne) return {};
     if (c.kette[cls.id]) return c.kette[cls.id];
     const jetzt = new Date();
     const stunden = this.klassenStunden(cls);
@@ -438,7 +464,7 @@ const Stundenplan = {
   /* Von Hand Geplantes einer entfallenen Stunde auf die nächste Stunde der
      Klasse legen, die noch nichts Eigenes hat */
   verschieben(klasseId, key) {
-    const cls = Classes.data.classes.find(c => c.id === klasseId);
+    const cls = this.klasseFinden(klasseId);
     const buch = cls && cls.stundenbuch;
     const rec = buch && buch[key];
     if (!rec) return;
@@ -446,6 +472,7 @@ const Stundenplan = {
     const ziel = this.klassenStunden(cls).find(t => {
       const k = this.buchSchluessel(t);
       const r = buch[k];
+      if (cls.ohne && rec.k && this.klassenText(t) !== rec.k) return false;
       return k > key && t.ende > new Date() && !(r && (r.m || r.s || r.i));
     });
     if (!ziel) { alert('Keine freie Stunde dieser Klasse mehr im Plan.'); return; }
@@ -533,7 +560,7 @@ const Stundenplan = {
     const jeStunde = new Map();
     for (const t of this.termine) {
       if (t.aufsicht || t.ende > jetzt) continue;
-      const cls = this.klasseZu(t);
+      const cls = this.buchKlasse(t);
       if (!cls) continue;
       const id = cls.id + '|' + this.buchSchluessel(t);
       const vorher = jeStunde.get(id);
@@ -588,7 +615,7 @@ const Stundenplan = {
   },
 
   standAendern(klasseId, key) {
-    const cls = Classes.data.classes.find(c => c.id === klasseId);
+    const cls = this.klasseFinden(klasseId);
     if (!cls) return;
     const buch = cls.stundenbuch || (cls.stundenbuch = {});
     const rec = buch[key] || {};
@@ -633,7 +660,8 @@ const Stundenplan = {
 
     const jahr = Classes.currentSchoolYear();
     const klassen = [...Classes.data.classes].sort((a, b) => (b.year === jahr) - (a.year === jahr));
-    wahlKlasse.innerHTML = '<option value="">– keine Klasse –</option>' + klassen.map(c =>
+    const abo = this.klassenText(t);
+    wahlKlasse.innerHTML = `<option value="">${abo ? '– keine, ' + this.esc(abo) + ' aus dem Abo –' : '– keine Klasse –'}</option>` + klassen.map(c =>
       `<option value="${this.esc(c.id)}">${this.esc(c.name)}${c.year && c.year !== jahr ? ' (' + this.esc(c.year) + ')' : ''}</option>`).join('');
     wahlKlasse.value = alteKlasse ? alteKlasse.id : '';
     immer.checked = false;
@@ -651,12 +679,12 @@ const Stundenplan = {
 
     // Themenauswahl der gerade gewählten Klasse
     const fuellen = () => {
-      const cls = Classes.data.classes.find(c => c.id === wahlKlasse.value);
-      const buch = cls ? cls.stundenbuch || {} : {};
+      const cls = this.klasseFinden(wahlKlasse.value || '-');
+      const buch = cls.stundenbuch || {};
       const rec = buch[key] || {};
       // Was ohne eigenen Eintrag gälte – dafür den Eintrag kurz beiseitelegen
       let auto = '';
-      if (cls) {
+      if (!cls.ohne) {
         const merk = buch[key];
         if (merk && merk.m) { const ohne = { ...merk }; delete ohne.th; delete ohne.m; buch[key] = ohne; }
         this._cache = null;
@@ -665,7 +693,7 @@ const Stundenplan = {
         this._cache = null;
       }
       const stufe = { progress: 'läuft', open: 'offen', done: 'fertig' };
-      const themen = cls ? Lessons.assignedTopics(cls) : [];
+      const themen = cls.ohne ? [] : Lessons.assignedTopics(cls);
       wahlThema.innerHTML =
         `<option value="auto">Automatisch${auto ? ': ' + this.esc(auto) : ' (nichts)'}</option>` +
         (themen.length ? `<optgroup label="Themen der Klasse">${themen.map(tp =>
@@ -675,10 +703,10 @@ const Stundenplan = {
       // Vorschläge wie unter Klassen → Stunden: erst die eigene Jahrgangsstufe
       const passt = tp => cls && cls.grade && tp.grades && tp.grades.includes(cls.grade);
       const gesehen = new Set();
-      document.getElementById('plan-dialog-katalog-liste').innerHTML = cls ? Lessons.allTopics()
+      document.getElementById('plan-dialog-katalog-liste').innerHTML = Lessons.allTopics()
         .sort((a, b) => passt(b) - passt(a))
         .filter(tp => !gesehen.has(tp.name.toLowerCase()) && gesehen.add(tp.name.toLowerCase()))
-        .map(tp => `<option value="${this.esc(tp.name)}"${tp.grades && tp.grades.length ? ` label="Kl. ${this.esc(Lessons.gradeLabel(tp.grades))}"` : ''}>`).join('') : '';
+        .map(tp => `<option value="${this.esc(tp.name)}"${tp.grades && tp.grades.length ? ` label="Kl. ${this.esc(Lessons.gradeLabel(tp.grades))}"` : ''}>`).join('');
       katalogFeld.value = '';
       feld.value = '';
       if (!rec.m || !rec.th) wahlThema.value = 'auto';
@@ -687,7 +715,6 @@ const Stundenplan = {
       else { wahlThema.value = 'eigen'; feld.value = rec.th.map(x => x.w).join(' · '); }
       standFeld.value = rec.s || '';
       infoFeld.value = rec.i || '';
-      wahlThema.disabled = feld.disabled = standFeld.disabled = infoFeld.disabled = !cls;
       zeigeEigen();
     };
     wahlKlasse.onchange = fuellen;
@@ -706,15 +733,18 @@ const Stundenplan = {
         if (immer.checked && t.platz) { zuordnung['p:' + t.platz] = neueId; delete zuordnung[key]; }
         else zuordnung[key] = neueId;
       }
-      const cls = Classes.data.classes.find(c => c.id === neueId);
-      // Was die alte Klasse zu dieser Stunde schon hatte, zieht mit um (ohne Thema)
-      let rec = cls ? (cls.stundenbuch || {})[key] || {} : {};
-      if (alteKlasse && alteKlasse !== cls && alteKlasse.stundenbuch && alteKlasse.stundenbuch[key]) {
-        const alt = alteKlasse.stundenbuch[key];
-        delete alteKlasse.stundenbuch[key];
-        if (cls) { rec = { ...alt, ...rec }; delete rec.th; delete rec.m; }
+      const cls = this.klasseFinden(neueId || '-');
+      const vorher = alteKlasse || this.ohneKlasse();
+      // Was bisher zu dieser Stunde notiert war, zieht mit um (ohne Thema)
+      let rec = (cls.stundenbuch || {})[key] || {};
+      if (vorher !== cls && vorher.stundenbuch && vorher.stundenbuch[key]) {
+        const alt = vorher.stundenbuch[key];
+        delete vorher.stundenbuch[key];
+        rec = { ...alt, ...rec };
+        delete rec.th;
+        delete rec.m;
       }
-      if (cls) {
+      {
         const buch = cls.stundenbuch || (cls.stundenbuch = {});
         const thema = wahlThema.value;
         const text = feld.value.trim().slice(0, 120);
@@ -726,13 +756,15 @@ const Stundenplan = {
           const name = katalogFeld.value.trim();
           const passend = Lessons.allTopics().filter(tp => tp.name.toLowerCase() === name.toLowerCase());
           const tp = passend.find(x => cls.grade && x.grades && x.grades.includes(cls.grade)) || passend[0];
-          if (tp) {
+          if (tp && !cls.ohne) {
             const l = Lessons.lessonsOf(cls);
             if (!l[tp.id]) {
               l[tp.id] = { s: 'open', added: Date.now() };
               if (tp.ordner) l[tp.id].t = tp.name;
             }
             rec.th = [{ id: tp.id, w: Lessons.schlagwort(tp) }];
+          } else if (tp) {
+            rec.th = [{ id: tp.id, w: Lessons.schlagwort(tp) }];   // ohne Klasse: nur für diese Stunde
           } else if (name) {
             rec.th = [{ w: name.slice(0, 120) }];
           }
@@ -745,7 +777,7 @@ const Stundenplan = {
         } else {
           // Getippte Schlagwörter, die zu einem Thema der Klasse passen, behalten
           // dessen Material-Knöpfe; alles andere ist ein eigener Eintrag
-          const zuId = new Map(Lessons.assignedTopics(cls).map(tp => [Lessons.schlagwort(tp).toLowerCase(), tp.id]));
+          const zuId = new Map((cls.ohne ? [] : Lessons.assignedTopics(cls)).map(tp => [Lessons.schlagwort(tp).toLowerCase(), tp.id]));
           rec.th = text.split(/\s+·\s+/).filter(Boolean).map(w => {
             const id = zuId.get(w.toLowerCase());
             return id ? { id, w } : { w };
@@ -764,7 +796,7 @@ const Stundenplan = {
       this.klassenbuchZeigen();
     };
     dlg.showModal();
-    (wahlThema.disabled ? wahlKlasse : wahlThema).focus();
+    wahlThema.focus();
   },
 
   /* Stunden aus dem Stundenbuch, die das Abo nicht mehr liefert – damit auch
@@ -773,14 +805,15 @@ const Stundenplan = {
     if (!Classes.data) return [];
     const erster = this.termine.length ? this.tagSchluessel(this.termine[0].beginn) : '9999';
     const liste = [];
-    for (const cls of Classes.data.classes) {
+    for (const cls of [...Classes.data.classes, this.ohneKlasse()]) {
       for (const [key, rec] of Object.entries(cls.stundenbuch || {})) {
         const [tag, zeit] = key.split(' ');
         if (tag >= erster || !rec.e) continue;   // nur Vergangenes; Geplantes ohne Zeit hat kein e
         liste.push({
           beginn: new Date(tag + 'T' + zeit), ende: new Date(tag + 'T' + rec.e),
           fach: rec.f || '', klassen: rec.k ? rec.k.split(' · ') : [], raum: rec.r || '',
-          entfaellt: !!rec.x, aufsicht: false, sonder: false, platz: '', klasseId: cls.id,
+          entfaellt: !!rec.x, aufsicht: false, sonder: false, platz: '', klasseId: cls.ohne ? undefined : cls.id,
+          ausBuchOhne: !!cls.ohne,
         });
       }
     }
@@ -810,7 +843,7 @@ const Stundenplan = {
         `<button type="button" class="small" data-verschieben="${this.esc(cls.id + '|' + key)}" title="Auf die nächste Stunde der Klasse legen, die noch nichts Eigenes hat">→ nächste Stunde</button></span>`;
     }
     if (!cls) {
-      return zeigeStand ? `<span class="plan-thema"><button type="button" class="plan-thema-plus" data-thema="${this.esc(key)}" title="Klasse und Thema für diese Stunde eintragen">${Icons.raw('plus')}Klasse</button></span>` : '';
+      return '';
     }
     const rec = (cls.stundenbuch || {})[key] || {};
     const { themen, vorschlag } = this.themenDerStunde(cls, t);
@@ -912,8 +945,9 @@ const Stundenplan = {
     if (t.entfaellt) marken.push('<span class="plan-marke entfall">entfällt</span>');
     if (t.sonder) marken.push('<span class="plan-marke sonder">Sonderstunde</span>');
     if (getauscht) marken.push('<span class="plan-marke raum">Raum geändert</span>');
-    marken.push(this.themenHtml(t, cls, mitKnoepfen));
-    const info = cls && !t.entfaellt && ((cls.stundenbuch || {})[this.buchSchluessel(t)] || {}).i;
+    const buchCls = this.buchKlasse(t);
+    marken.push(this.themenHtml(t, buchCls, mitKnoepfen));
+    const info = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).i;
     if (info) marken.push(`<span class="plan-info" title="Info zu dieser Stunde – klicken zum Ändern">${Icons.raw('alert')}${this.esc(info)}</span>`);
     const klassenName = ['plan-termin',
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',
