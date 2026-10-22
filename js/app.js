@@ -139,8 +139,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Popup: einfaches Fenster, geht in jedem Browser (auch Safari)
-  const popupOeffnen = () => window.open('ampel.html', 'laermampel',
+  /* Vollbild: nur der Bogen, so groß es geht. Erst ins Vollbild, dann messen –
+     wartet man zuerst aufs Mikrofon, ist der Klick „verbraucht“ und der Browser
+     verweigert das Vollbild. Eine laufende Messung läuft einfach weiter. */
+  const buehne = document.querySelector('.ampel-visual');
+  const vollbildElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+  document.getElementById('btn-vollbild').addEventListener('click', async () => {
+    if (vollbildElement()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    const rein = buehne.requestFullscreen || buehne.webkitRequestFullscreen;
+    if (!rein) { alert('Dieser Browser kann den Vollbildmodus hier nicht anzeigen.'); return; }
+    const p = rein.call(buehne);
+    if (p && p.catch) p.catch(err => alert('Vollbild nicht möglich: ' + err.message));
+    if (!meter.running) {
+      try {
+        await meter.start();
+        btnMic.innerHTML = Icons.raw('stop') + 'Messung stoppen';
+        mikrofoneLaden();
+      } catch (e) {
+        alert('Mikrofon-Zugriff nicht möglich. Bitte im Browser erlauben.\n(' + e.message + ')');
+      }
+    }
+  });
+  // Im Vollbild ist nur die Bühne zu sehen – der „ZU LAUT!“-Alarm muss mit hinein
+  const alarmMitnehmen = () => (vollbildElement() === buehne ? buehne : document.body).appendChild(meter.overlay);
+  document.addEventListener('fullscreenchange', alarmMitnehmen);
+  document.addEventListener('webkitfullscreenchange', alarmMitnehmen);
+
+  // Popup: einfaches Fenster, geht in jedem Browser (auch Safari).
+  // Läuft die Messung hier schon, misst das Popup gleich von selbst mit.
+  const popupOeffnen = () => window.open('ampel.html' + (meter.running ? '?start=1' : ''), 'laermampel',
     'width=380,height=360,menubar=no,toolbar=no,location=no,status=no');
   document.getElementById('btn-popup').addEventListener('click', popupOeffnen);
 
