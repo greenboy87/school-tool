@@ -364,6 +364,12 @@ const Stundenplan = {
       String(d.getDate()).padStart(2, '0');
   },
   TAGE: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+  /* Stundenraster der Schule nach Anfangszeit; der Nachmittag bleibt ohne Nummer */
+  STUNDEN: { '08:00': '1.', '08:45': '2.', '09:30': '3.', '10:15': 'Pause', '10:45': '4.', '11:30': '5.', '12:15': '6.' },
+  stunde(d) {
+    const s = this.STUNDEN[this.uhr(d)];
+    return s ? `<span class="plan-nr${s === 'Pause' ? ' pause' : ''}">${s}</span>` : '<span class="plan-nr"></span>';
+  },
   tagName(d) {
     return this.TAGE[d.getDay()] + ' ' + d.getDate() + '.' + (d.getMonth() + 1) + '.';
   },
@@ -466,7 +472,7 @@ const Stundenplan = {
       const b = this.baustein(t, jetzt, true);
       const vorbei = t.ende <= jetzt ? ' vorbei' : '';
       return `<li class="${b.klassenName}${vorbei}">
-        <span class="plan-zeit">${this.uhr(t.beginn)}–${this.uhr(t.ende)}</span>
+        ${this.stunde(t.beginn)}<span class="plan-zeit">${this.uhr(t.beginn)}–${this.uhr(t.ende)}</span>
         <span class="plan-wer">${b.wer}</span>${b.raum}${b.marken}
       </li>`;
     }).join('');
@@ -527,7 +533,8 @@ const Stundenplan = {
           return `<div class="${b.klassenName}"><span class="plan-wer">${b.wer}</span>${b.raum}${b.marken}</div>`;
         }).join('')}</div>`;
       }).join('');
-      return `<div class="plan-uhr">${z}</div>${zeile}`;
+      const nr = this.STUNDEN[z];
+      return `<div class="plan-uhr">${nr ? `<strong class="plan-nr${nr === 'Pause' ? ' pause' : ''}">${nr}</strong>` : ''}${z}</div>${zeile}`;
     }).join('');
     return `${nav}<div class="plan-raster-huelle"><div class="plan-raster">${kopf}${zellen}</div></div>`;
   },

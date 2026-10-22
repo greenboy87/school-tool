@@ -2137,6 +2137,10 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 }
 .plan-liste li:last-child { border-bottom: none; }
 .plan-liste .plan-zeit { min-width: 7.5rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.plan-liste .plan-nr { min-width: 2.6rem; font-weight: 700; }
+.plan-nr.pause { font-weight: 400; font-size: .8em; color: var(--muted); }
+.plan-uhr .plan-nr { display: block; font-size: 1rem; color: var(--text); }
+.plan-uhr .plan-nr.pause { font-size: .75rem; color: var(--muted); }
 .plan-liste .plan-wer { font-weight: 600; }
 .plan-liste li.vorbei { opacity: .5; }
 .plan-liste li.laeuft { background: var(--active-soft); border-radius: var(--radius-sm); }
@@ -2178,7 +2182,7 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 .plan-material { display: inline-flex; gap: .3rem; flex-wrap: wrap; }
 .plan-material button { padding: .2rem .55rem; font-size: .8rem; }
 .plan-zelle .plan-stand-text { font-size: .75rem; padding: 0; }
-.plan-liste .plan-thema { padding-left: 8.3rem; }
+.plan-liste .plan-thema { padding-left: 11.7rem; }
 .plan-naechste .plan-thema { font-size: .95rem; }
 .plan-zelle .plan-thema { font-size: .75rem; line-height: 1.25; }
 @media (max-width: 600px) { .plan-liste .plan-thema { padding-left: 0; } }
