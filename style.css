@@ -2307,3 +2307,15 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 #plan-inhalt.hervor .plan-termin:not(.gleich) { opacity: .3; }
 #plan-inhalt.hervor .plan-zelle .plan-termin.gleich { outline: 2px solid var(--accent); outline-offset: -1px; }
 #plan-inhalt.hervor .plan-liste li.gleich { box-shadow: inset 3px 0 var(--accent); }
+/* iPads gebucht / Warnung bei Entfall; Link im Look eines kleinen Knopfs */
+.plan-ipads.gebucht { color: var(--green); }
+.plan-ipads.warnung { color: var(--danger); }
+.knopf-link {
+  font-size: .82rem; font-weight: 600; border: 1px solid var(--border); background: var(--input-bg); color: var(--text);
+  border-radius: var(--radius-sm); padding: .35rem .7rem; text-decoration: none; display: inline-block;
+}
+.knopf-link:hover { background: var(--hover); }
+.plan-dialog-status { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .9rem; font-size: .88rem; margin: -.3rem 0 .7rem; }
+.plan-dialog-status > span { color: var(--muted); }
+.plan-dialog .plan-dialog-status label { display: inline-flex; align-items: center; gap: .3rem; margin: 0; font-weight: 600; }
+.plan-dialog .plan-dialog-status input { display: inline; width: auto; margin: 0; }

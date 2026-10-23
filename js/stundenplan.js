@@ -141,6 +141,15 @@ const Stundenplan = {
     inhalt.addEventListener('pointerleave', () => hervorheben(''));
 
     this.ausCacheLaden();
+    // iPad-Buchungen, die das Lesezeichen aus dem Schulmanager mitbringt
+    const buchungenLesen = () => {
+      if (!/(?:^|[#&])ipads=/.test(location.hash) || typeof IpadBuchen === 'undefined') return;
+      const n = IpadBuchen.ankerLesen();
+      this.ipadMeldung = n ? `${n} iPad-Buchung${n === 1 ? '' : 'en'} übernommen` : 'Keine eigenen iPad-Buchungen gefunden';
+      this.render();
+    };
+    buchungenLesen();
+    window.addEventListener('hashchange', buchungenLesen);
     this.render();
 
     // Geholt wird, wenn der Reiter offen ist – und dann alle 15 Minuten
@@ -546,7 +555,10 @@ const Stundenplan = {
       const rec = (cls.stundenbuch || {})[key];
       if (rec && rec.m && rec.th) {
         const ids = rec.th.map(x => x.id).filter(Boolean);
-        if (ids.length) { carry = ids; art = 'weiter'; }
+        if (ids.length) {
+          carry = ids;
+          art = ids.every(id => Lessons.stateOf(cls, id) === 'progress') ? 'laeuft' : 'weiter';
+        }
         continue;
       }
       // Ein Thema, das erst ab einem späteren Tag läuft (übernommen für eine
@@ -785,12 +797,20 @@ const Stundenplan = {
 
     /* Präsentation, AB und Ordner zum Thema, das gerade gewählt ist */
     const material = document.getElementById('plan-dialog-material');
-    let autoThemen = [];
+    const statusZeile = document.getElementById('plan-dialog-status');
+    let autoThemen = [], statusVorher = '';
     const materialZeigen = () => {
       const cls = this.klasseFinden(wahlKlasse.value || '-');
       const wahl = wahlThema.value;
       const themen = wahl === 'auto' ? autoThemen
         : wahl.startsWith('id:') ? [this.themaAus(cls, wahl.slice(3))] : [];
+      // Stand des Themas in der Klasse: offen / läuft / fertig – wie im Reiter Stunden.
+      // Wer ein offenes Thema für eine Stunde wählt, fängt es an: dann „läuft“ vorausgewählt.
+      const ids = themen.map(x => x.topic.id).filter(id => id && !cls.ohne && Lessons.lessonsOf(cls)[id]);
+      statusZeile.hidden = !ids.length && wahl !== 'katalog';
+      statusVorher = ids.length ? Lessons.stateOf(cls, ids[0]) : 'open';
+      const vor = wahl === 'katalog' || (wahl.startsWith('id:') && statusVorher === 'open') ? 'progress' : statusVorher;
+      statusZeile.querySelectorAll('input').forEach(i => { i.checked = i.value === vor; });
       const knopf = (icon, text, pfad, titel) =>
         `<button type="button" class="small" data-oeffnen="${this.esc(pfad)}" title="${this.esc(titel + ': ' + pfad)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
       const mehrere = themen.length > 1;
@@ -925,6 +945,19 @@ const Stundenplan = {
             return id ? { id, w } : { w };
           });
           rec.m = 1;
+        }
+        // Stand der gewählten Themen in der Klasse (offen / läuft / fertig). Liegt die
+        // Stunde in der Zukunft, beginnt bzw. endet das Thema erst an ihrem Tag.
+        const neuStatus = (statusZeile.querySelector('input:checked') || {}).value;
+        const statusIds = statusZeile.hidden || cls.ohne ? [] : (rec.th && rec.m ? rec.th : autoThemen.map(x => ({ id: x.topic.id })))
+          .map(x => x.id).filter(id => id && Lessons.lessonsOf(cls)[id]);
+        const tagDerStunde = key.split(' ')[0];
+        for (const id of neuStatus ? statusIds : []) {
+          if (Lessons.stateOf(cls, id) === neuStatus) continue;
+          Lessons.setState(cls, id, neuStatus);
+          const e = Lessons.lessonsOf(cls)[id];
+          if (neuStatus === 'progress' && e && tagDerStunde > e.d1) e.d1 = tagDerStunde;
+          if (neuStatus === 'done' && e && tagDerStunde > e.d2) e.d2 = tagDerStunde;
         }
         const stand = standFeld.value.trim().slice(0, 200);
         if (stand) rec.s = stand; else delete rec.s;
@@ -1099,8 +1132,17 @@ const Stundenplan = {
     marken.push(this.themenHtml(t, buchCls, mitKnoepfen));
     const info = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).i;
     if (info) marken.push(`<span class="plan-info" title="Info zu dieser Stunde – klicken zum Ändern">${Icons.raw('alert')}${this.esc(info)}</span>`);
-    const ipads = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).p;
-    if (ipads) marken.push(`<span class="plan-ipads">${Icons.raw('grid')}iPads: ${this.ipadLinks(t, mitKnoepfen === 'start')}</span>`);
+    // iPads: gebucht (aus dem Schulmanager abgeglichen) – oder nötig, aber noch nicht gebucht
+    const gebucht = !t.aufsicht && ((Classes.data && Classes.data.planIpads) || {})[this.buchSchluessel(t)];
+    const koffer = id => (this.KOFFER.find(k => k.id === id) || { raum: id }).raum;
+    if (gebucht && gebucht.length) {
+      marken.push(t.entfaellt
+        ? `<span class="plan-ipads warnung" title="Die Stunde entfällt – Buchung im Schulmanager stornieren?">${Icons.raw('alert')}iPads gebucht (${gebucht.map(koffer).join(', ')}) – Stunde entfällt!</span>`
+        : `<span class="plan-ipads gebucht" title="Im Schulmanager gebucht">${Icons.raw('check')}iPads gebucht: ${gebucht.map(koffer).join(', ')}</span>`);
+    } else {
+      const ipads = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).p;
+      if (ipads) marken.push(`<span class="plan-ipads">${Icons.raw('grid')}iPads: ${this.ipadLinks(t, mitKnoepfen === 'start')}</span>`);
+    }
     const klassenName = ['plan-termin',
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',
       t.vorschau && 'vorschau', !t.entfaellt && !t.aufsicht && 'klickbar',
@@ -1124,6 +1166,11 @@ const Stundenplan = {
       : this.geholt ? 'Aktualisiert ' + this.uhr(new Date(this.geholt)) +
         (this.tagSchluessel(new Date(this.geholt)) !== this.tagSchluessel(new Date())
           ? ', ' + this.tagName(new Date(this.geholt)) : '') : '';
+    const ipadStand = Classes.data && Classes.data.planIpadsStand;
+    if (this.ipadMeldung || ipadStand) {
+      stand.textContent += (stand.textContent ? ' · ' : '') + (this.ipadMeldung ||
+        'iPads abgeglichen ' + new Date(ipadStand).toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric' }));
+    }
     stand.classList.toggle('fehler', !!this.fehler);
     if (this.fehler) stand.textContent = 'Nicht aktualisiert: ' + this.fehler +
       (this.geholt ? ' – gezeigt wird der Stand von ' + this.uhr(new Date(this.geholt)) : '');
