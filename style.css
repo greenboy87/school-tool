@@ -2292,3 +2292,11 @@ table.klassenbuch tr.entfallen:hover { background: none; }
   background: var(--accent-grad); color: var(--on-accent); text-decoration: none; cursor: grab;
 }
 .plan-ipads a.plan-ipad-buchen { font-weight: 800; }
+/* Vorschlag übernehmen */
+.plan-uebernehmen {
+  border: 1px solid var(--border); background: var(--panel); color: var(--accent); font: inherit; font-size: .78rem; font-weight: 700;
+  padding: .05rem .5rem; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center; gap: .25rem;
+}
+.plan-uebernehmen:hover { background: var(--active-soft); }
+.plan-uebernehmen .icon { width: .9em; height: .9em; margin: 0; }
+.plan-zelle .plan-uebernehmen { font-size: .7rem; padding: 0 .4rem; }

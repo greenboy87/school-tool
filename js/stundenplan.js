@@ -104,6 +104,8 @@ const Stundenplan = {
       if (link) { this.klasseOeffnen(link.dataset.klasse); return; }
       const thema = e.target.closest('[data-thema]');
       if (thema) { this.themaBearbeiten(thema.dataset.thema); return; }
+      const nehmen = e.target.closest('[data-uebernehmen]');
+      if (nehmen) { this.uebernehmen(...nehmen.dataset.uebernehmen.split('|')); return; }
       const stand = e.target.closest('[data-stand]');
       if (stand) { this.standAendern(stand.dataset.stand.split('|')[0], stand.dataset.stand.split('|')[1]); return; }
       const datei = e.target.closest('[data-oeffnen]');
@@ -534,9 +536,30 @@ const Stundenplan = {
         if (ids.length) { carry = ids; art = 'weiter'; }
         continue;
       }
-      erg[key] = { themen: carry.map(id => this.themaAus(cls, id)), art };
+      // Ein Thema, das erst ab einem späteren Tag läuft (übernommen für eine
+      // kommende Stunde), gilt noch nicht für die Stunden davor
+      const tag = this.tagSchluessel(t.beginn);
+      const gilt = carry.filter(id => { const e = Lessons.lessonsOf(cls)[id]; return !e || !e.d1 || e.d1 <= tag || e.s !== 'progress'; });
+      erg[key] = { themen: gilt.map(id => this.themaAus(cls, id)), art };
     }
     return (c.kette[cls.id] = erg);
+  },
+
+  /* Vorschlag annehmen: die Themen auf „Läuft“, wie im Reiter Stunden. Liegt
+     die Stunde in der Zukunft, beginnt das Thema erst an ihrem Tag – sonst
+     bekämen heute schon vorbeigegangene Stunden es nachträglich. */
+  uebernehmen(klasseId, key, ids) {
+    const cls = this.klasseFinden(klasseId);
+    if (!cls || cls.ohne) return;
+    const tag = key.split(' ')[0];
+    for (const id of ids.split(',')) {
+      if (Lessons.stateOf(cls, id) === 'progress') continue;
+      Lessons.setState(cls, id, 'progress');
+      const e = Lessons.lessonsOf(cls)[id];
+      if (e && tag > e.d1) e.d1 = tag;
+    }
+    Classes.persist();
+    this.render();
   },
 
   /* Von Hand Geplantes einer entfallenen Stunde auf die nächste Stunde der
@@ -939,6 +962,11 @@ const Stundenplan = {
       const titel = vorschlag ? 'Vorschlag: Fortführung der vorigen Stunde bzw. nächstes offenes Thema – klicken zum Ändern'
         : rec.m ? 'Von Hand gesetzt – klicken zum Ändern' : 'Thema dieser Stunde – klicken zum Ändern';
       teile.push(`<button type="button" class="plan-thema-wort${art}" data-thema="${ziel}" title="${titel}">${vorschlag ? 'Vorschlag: ' : ''}${this.esc(worte)}</button>`);
+      // Vorschlag mit einem Klick annehmen: Thema läuft ab dieser Stunde
+      const ids = themen.map(x => x.topic.id).filter(Boolean);
+      if (vorschlag && ids.length && !cls.ohne) {
+        teile.push(`<button type="button" class="plan-uebernehmen" data-uebernehmen="${this.esc(cls.id + '|' + key + '|' + ids.join(','))}" title="Vorschlag übernehmen – das Thema steht danach in der Klasse auf „Läuft“">${Icons.raw('check')}übernehmen</button>`);
+      }
     } else if (zeigeStand && rec.m) {
       teile.push(`<button type="button" class="plan-thema-wort manuell" data-thema="${ziel}" title="Von Hand: kein Thema – klicken zum Ändern">kein Thema</button>`);
     } else if (zeigeStand) {
