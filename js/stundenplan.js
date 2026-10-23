@@ -890,8 +890,9 @@ const Stundenplan = {
       else { wahlThema.value = 'eigen'; feld.value = rec.th.map(x => x.w).join(' · '); }
       standFeld.value = rec.s || '';
       infoFeld.value = rec.i || '';
-      ipadFeld.checked = !!rec.p || gebucht.length > 0;
-      ipadFeld.disabled = gebucht.length > 0;
+      // Gebucht: kein Merker nötig – das Häkchen verschwindet
+      ipadFeld.checked = !!rec.p;
+      ipadFeld.closest('label').hidden = gebucht.length > 0;
       zeigeEigen();
     };
     wahlKlasse.onchange = fuellen;
