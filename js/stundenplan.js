@@ -403,24 +403,32 @@ const Stundenplan = {
     return this.IPAD_SEITE + kofferId + '?startDate=' + this.tagSchluessel(datum);
   },
 
-  /* Links zum Buchen. „Buchen“ öffnet die Buchungsseite mit dem Auftrag im
-     Fensternamen (siehe ipad-buchen.js) – dort erledigt das Lesezeichen den Rest.
-     Daneben die Koffer auf dem Stockwerk des Raums und „alle“ zum Buchen von
-     Hand (dort zeigt der Schulmanager beim Überfahren, welcher frei ist). */
+  /* Links zum Buchen. Jeder Link öffnet die Buchungsseite des Schulmanagers mit
+     dem Auftrag im Fensternamen (siehe ipad-buchen.js) – dort erledigt das
+     Lesezeichen den Rest: „buchen“ nimmt den ersten freien Koffer auf dem
+     Stockwerk des Raums, „H300“ diesen Koffer (belegt: den nächsten freien auf
+     dem Stockwerk), „alle“ den ersten freien überhaupt. Vor dem Buchen nennt
+     das Lesezeichen den Koffer und fragt nach. Ohne Stundennummer (Nachmittag ohne Raster) gibt es keinen
+     Auftrag, dann öffnen die Links nur die Seite. */
   ipadLinks(t, kurz) {
     const koffer = this.kofferFuer(t.raum);
-    const link = (href, text, titel, ziel = 'schulmanager') =>
-      `<a href="${this.esc(href)}" target="${this.esc(ziel)}" rel="noopener" title="${this.esc(titel)}">${this.esc(text)}</a>`;
     const nr = parseInt(this.STUNDEN[this.uhr(t.beginn)], 10);
-    const auftrag = nr ? ['stbuchen', this.tagSchluessel(t.beginn), nr,
-      (koffer.length ? koffer : this.KOFFER).map(k => k.id).join(','),
-      `${t.fach} ${this.klassenText(t)}, ${t.raum || ''}`.replace(/\|/g, '/')].join('|') : '';
-    const buchen = auftrag ? `<a href="${this.esc(this.ipadAdresse(t.beginn))}" target="${this.esc(auftrag)}" rel="noopener" class="plan-ipad-buchen"
-      title="Öffnet die Buchung im Schulmanager – dort das Lesezeichen „iPads buchen“ anklicken: Es nimmt den ersten freien Koffer auf dem Stockwerk">buchen</a> · ` : '';
-    return buchen + koffer.map(k => link(this.ipadAdresse(t.beginn, k.id), k.raum,
-      `iPad-Koffer ${k.raum} (${k.ipads} iPads) am ${this.tagName(t.beginn)} buchen`)).join(' ') +
-      ' ' + link(this.ipadAdresse(t.beginn), koffer.length ? (kurz ? 'alle' : 'alle Koffer') : 'iPads buchen',
-        'Alle iPad-Koffer an diesem Tag – beim Überfahren einer Stunde zeigt der Schulmanager, welche frei sind');
+    const was = `${t.fach} ${this.klassenText(t)}, ${t.raum || ''}`.replace(/\|/g, '/');
+    const auftrag = liste => nr ? ['stbuchen', this.tagSchluessel(t.beginn), nr, liste.map(k => k.id).join(','), was].join('|') : 'schulmanager';
+    const link = (href, text, liste, titel, extra = '') =>
+      `<a href="${this.esc(href)}" target="${this.esc(auftrag(liste))}" rel="noopener"${extra} title="${this.esc(titel)}">${this.esc(text)}</a>`;
+    const hinweis = ' – im Schulmanager-Tab das Lesezeichen „iPads buchen“ anklicken';
+    const rest = this.KOFFER.filter(k => !koffer.includes(k));
+    return (koffer.length ? link(this.ipadAdresse(t.beginn), 'buchen', koffer,
+      'Ersten freien Koffer auf dem Stockwerk buchen' + hinweis, ' class="plan-ipad-buchen"') + ' · ' : '') +
+      // Ist der gewählte Koffer belegt, kommen erst die übrigen auf dem Stockwerk dran
+      koffer.map(k => link(this.ipadAdresse(t.beginn, k.id), k.raum, [k, ...koffer.filter(x => x !== k)],
+        `Koffer ${k.raum} (${k.ipads} iPads) am ${this.tagName(t.beginn)} buchen${hinweis}`)).join(' ') + ' ' +
+      link(this.ipadAdresse(t.beginn), koffer.length ? (kurz ? 'alle' : 'alle Koffer') : 'iPads buchen', [...koffer, ...rest],
+        'Ersten freien Koffer im ganzen Haus buchen' + hinweis) +
+      // Nur die Seite, ohne Auftrag – zum Buchen von Hand
+      ` · <a href="${this.esc(this.ipadAdresse(t.beginn))}" target="schulmanager" rel="noopener" class="plan-ipad-hand"
+        title="Nur die Buchungsseite für ${this.esc(this.tagName(t.beginn))} öffnen – selbst buchen, ohne Lesezeichen">von Hand</a>`;
   },
 
   klasseFinden(id) {
