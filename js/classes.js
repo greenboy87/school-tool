@@ -1285,6 +1285,7 @@ const Classes = {
     if (typeof Sitzplan !== 'undefined') Sitzplan.render();
     if (typeof Lessons !== 'undefined') Lessons.render();
     if (typeof Stundenplan !== 'undefined') Stundenplan.klassenbuchZeigen();
+    if (typeof Ablage !== 'undefined') Ablage.render();
   },
 
   /* ---------- Schüler ---------- */

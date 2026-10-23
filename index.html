@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=264">
+<link rel="stylesheet" href="style.css?v=265">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=264"></script>
-<script src="js/theme.js?v=264"></script>
-<script src="js/auswahl.js?v=264"></script>
-<script src="js/metronom.js?v=264"></script>
-<script src="js/klang.js?v=264"></script>
-<script src="js/schwebe.js?v=264"></script>
-<script src="js/auth.js?v=264"></script>
+<script src="js/icons.js?v=265"></script>
+<script src="js/theme.js?v=265"></script>
+<script src="js/auswahl.js?v=265"></script>
+<script src="js/metronom.js?v=265"></script>
+<script src="js/klang.js?v=265"></script>
+<script src="js/schwebe.js?v=265"></script>
+<script src="js/auth.js?v=265"></script>
 </head>
 <body>
 
@@ -285,6 +285,7 @@
             <button class="subtab-btn" data-subtab="klassenbuch" data-icon="book">Klassenbuch</button>
             <button class="subtab-btn" data-subtab="sitzplan" data-icon="grid">Sitzplan</button>
             <button class="subtab-btn" data-subtab="notizen" data-icon="clipboard">Notizen</button>
+            <button class="subtab-btn" data-subtab="ablage" data-icon="folder">Ablage</button>
           </nav>
           <button id="btn-carry-class" class="small" title="Kopie dieser Klasse für das nächste Schuljahr anlegen (Schüler bleiben, Stunden starten neu)">Nächstes Schuljahr</button>
           <button id="btn-delete-class" class="danger small">Klasse löschen</button>
@@ -593,6 +594,28 @@
             Wird automatisch gespeichert und gehört zur Klasse, nicht zum Gerät.</p>
           <textarea id="klassen-notes-text" class="notes-area" rows="16" spellcheck="true"
             placeholder="Einfach lostippen …"></textarea>
+        </section>
+
+        <section id="subtab-ablage" class="subtab-page card">
+          <div id="ablage-dokumente" class="ablage-dokumente">
+            <div class="projekt-header">
+              <h3>Dokumente</h3>
+              <div class="btn-row">
+                <input type="file" id="ablage-datei" accept="application/pdf,image/*" multiple hidden>
+                <button id="btn-ablage-datei" class="small" data-icon="upload">Dokument ablegen</button>
+              </div>
+            </div>
+            <p class="hint">PDFs und Fotos zur Klasse – etwa eine abfotografierte Liste. Hierher ziehen oder „Dokument ablegen“.
+              Sie reisen verschlüsselt im Sync mit.</p>
+            <ul id="ablage-dokumentliste" class="ablage-dokumentliste"></ul>
+          </div>
+          <hr>
+          <div class="projekt-header">
+            <h3>Listen</h3>
+            <div class="btn-row"><button id="btn-ablage-liste" class="small" data-icon="plus">Neue Liste</button></div>
+          </div>
+          <p class="hint">Ein Vermerk je Schüler, z. B. Schwimmfähigkeit oder Einverständniserklärung. Wird beim Tippen gespeichert.</p>
+          <div id="ablage-listen"></div>
         </section>
 
         <section id="subtab-sitzplan" class="subtab-page geteilt">
@@ -1397,38 +1420,39 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=264"></script>
-<script src="js/firebase-config.js?v=264"></script>
-<script type="module" src="js/live-firebase.js?v=264"></script>
-<script src="js/ai-import.js?v=264"></script>
-<script src="js/store.js?v=264"></script>
-<script src="js/noise.js?v=264"></script>
-<script src="js/classes.js?v=264"></script>
-<script src="js/sitzplan.js?v=264"></script>
-<script src="js/schueler.js?v=264"></script>
-<script src="js/tasten.js?v=264"></script>
-<script src="js/lessons.js?v=264"></script>
-<script src="js/band.js?v=264"></script>
-<script src="js/notes.js?v=264"></script>
-<script src="js/tresor.js?v=264"></script>
-<script src="js/erklaerungen.js?v=264"></script>
-<script src="js/setlisten.js?v=264"></script>
-<script src="js/einklappen.js?v=264"></script>
-<script src="js/tinyband-instrumente.js?v=264"></script>
-<script src="js/live-groups.js?v=264"></script>
-<script src="js/tinyband-lehrer.js?v=264"></script>
-<script src="js/tipps.js?v=264"></script>
-<script src="js/sport-tabellen.js?v=264"></script>
-<script src="js/sport.js?v=264"></script>
-<script src="js/ex-import.js?v=264"></script>
-<script src="js/exen.js?v=264"></script>
-<script src="js/ex-namen.js?v=264"></script>
-<script src="js/ex-sitzung.js?v=264"></script>
-<script src="js/ex-auswertung.js?v=264"></script>
-<script src="js/ex-reiter.js?v=264"></script>
-<script src="js/tools.js?v=264"></script>
-<script src="js/ipad-buchen.js?v=264"></script>
-<script src="js/stundenplan.js?v=264"></script>
-<script src="js/app.js?v=264"></script>
+<script src="js/vendor/qrcode.min.js?v=265"></script>
+<script src="js/firebase-config.js?v=265"></script>
+<script type="module" src="js/live-firebase.js?v=265"></script>
+<script src="js/ai-import.js?v=265"></script>
+<script src="js/store.js?v=265"></script>
+<script src="js/noise.js?v=265"></script>
+<script src="js/classes.js?v=265"></script>
+<script src="js/sitzplan.js?v=265"></script>
+<script src="js/schueler.js?v=265"></script>
+<script src="js/tasten.js?v=265"></script>
+<script src="js/lessons.js?v=265"></script>
+<script src="js/band.js?v=265"></script>
+<script src="js/notes.js?v=265"></script>
+<script src="js/tresor.js?v=265"></script>
+<script src="js/erklaerungen.js?v=265"></script>
+<script src="js/setlisten.js?v=265"></script>
+<script src="js/einklappen.js?v=265"></script>
+<script src="js/tinyband-instrumente.js?v=265"></script>
+<script src="js/live-groups.js?v=265"></script>
+<script src="js/tinyband-lehrer.js?v=265"></script>
+<script src="js/tipps.js?v=265"></script>
+<script src="js/sport-tabellen.js?v=265"></script>
+<script src="js/sport.js?v=265"></script>
+<script src="js/ex-import.js?v=265"></script>
+<script src="js/exen.js?v=265"></script>
+<script src="js/ex-namen.js?v=265"></script>
+<script src="js/ex-sitzung.js?v=265"></script>
+<script src="js/ex-auswertung.js?v=265"></script>
+<script src="js/ex-reiter.js?v=265"></script>
+<script src="js/tools.js?v=265"></script>
+<script src="js/ablage.js?v=265"></script>
+<script src="js/ipad-buchen.js?v=265"></script>
+<script src="js/stundenplan.js?v=265"></script>
+<script src="js/app.js?v=265"></script>
 </body>
 </html>

@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Tipps.init();
   Erklaerungen.init();
   Stundenplan.init();
+  Ablage.init();
 
   /* ----- Haupttabs ----- */
   document.querySelectorAll('.tab-btn').forEach(btn => {

@@ -2327,3 +2327,21 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .plan-kb { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .55rem; font-size: .8rem; }
 .plan-kb .icon { width: .95em; height: .95em; margin: 0; }
 .plan-zelle .plan-kb { padding: .1rem .4rem; font-size: .72rem; }
+
+/* Ablage je Klasse (Klassen → Ablage) */
+.ablage-dokumente { border-radius: var(--radius-sm); padding: .2rem; transition: background .15s; }
+.ablage-dokumente.ziel { background: var(--active-soft); outline: 2px dashed var(--accent); }
+.ablage-dokumentliste { list-style: none; margin: .4rem 0 0; padding: 0; }
+.ablage-dokumentliste li { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .8rem; padding: .4rem .2rem; border-bottom: 1px solid var(--border); }
+.ablage-dokumentliste li:last-child { border-bottom: none; }
+.ablage-name { border: none; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--accent); cursor: pointer; display: inline-flex; align-items: center; gap: .35rem; text-align: left; }
+.ablage-name:hover { background: none; text-decoration: underline; }
+.ablage-knoepfe { margin-left: auto; display: inline-flex; gap: .3rem; }
+.ablage-knoepfe .icon { margin: 0; }
+.ablage-liste { margin: 1rem 0 1.4rem; }
+.ablage-liste h4 { margin: 0; }
+.ablage-tabelle { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.ablage-tabelle td { padding: .2rem .4rem; border-bottom: 1px solid var(--border); }
+.ablage-tabelle td.num { width: 2.2rem; text-align: right; color: var(--muted); }
+.ablage-tabelle td:nth-child(2) { width: 40%; }
+.ablage-tabelle input { width: 100%; box-sizing: border-box; padding: .25rem .45rem; }
