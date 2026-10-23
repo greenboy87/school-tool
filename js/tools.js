@@ -21,6 +21,18 @@ const Tools = {
       if (min > 0) this.startTimer(min * 60);
     });
     document.getElementById('btn-timer-stop').addEventListener('click', () => this.stopTimer());
+    // Vollbild: nur die Bühne mit Zeit und Knöpfen – wie bei der Stoppuhr im Reiter Sport
+    document.getElementById('btn-timer-voll').addEventListener('click', () => {
+      const buehne = document.getElementById('timer-buehne');
+      if ((document.fullscreenElement || document.webkitFullscreenElement) === buehne) {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+        return;
+      }
+      const rein = buehne.requestFullscreen || buehne.webkitRequestFullscreen;
+      if (!rein) { alert('Dieser Browser kann den Vollbildmodus hier nicht anzeigen.'); return; }
+      const p = rein.call(buehne);
+      if (p && p.catch) p.catch(err => alert('Vollbild nicht möglich: ' + err.message));
+    });
 
   },
 

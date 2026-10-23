@@ -2347,3 +2347,15 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .ablage-tabelle input { width: 100%; box-sizing: border-box; padding: .25rem .45rem; }
 /* Automatisch weiterlaufendes Thema: normale Schrift – grau bleibt für Vorschläge */
 button.plan-thema-wort.laeuft { color: var(--text); font-style: normal; font-weight: 500; }
+
+/* Arbeitsphasen-Timer: Zeit oben, Knöpfe darunter; im Vollbild riesig */
+.timer-buehne .timer-display { margin: .4rem 0 .8rem; }
+.timer-buehne:fullscreen, .timer-buehne:-webkit-full-screen {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4vh;
+  width: 100%; height: 100%; background: var(--page-bg); padding: 4vmin;
+}
+.timer-buehne:fullscreen .timer-display { font-size: min(26vw, 55vh); margin: 0; line-height: 1; }
+.timer-buehne:-webkit-full-screen .timer-display { font-size: min(26vw, 55vh); margin: 0; line-height: 1; }
+.timer-buehne:fullscreen .timer-display .icon { width: .6em; height: .6em; }
+.timer-buehne:fullscreen .timer-knoepfe button { font-size: 1.3rem; padding: .8rem 1.4rem; }
+.timer-buehne:fullscreen #timer-custom { font-size: 1.3rem; width: 7rem; }
