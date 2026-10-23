@@ -512,8 +512,8 @@ const Stundenplan = {
       return k ? { themen: k.themen, vorschlag: k.art !== 'laeuft' } : { themen: [], vorschlag: false };
     }
     const tag = this.tagSchluessel(t.beginn);
-    const ids = Object.entries(Lessons.lessonsOf(cls)).filter(([, e]) => e && e.d1 && e.d1 <= tag &&
-      (e.s === 'progress' || (e.s === 'done' && e.d2 && e.d2 >= tag))).map(([id]) => id);
+    const ids = Object.entries(Lessons.lessonsOf(cls)).filter(([id, e]) => e && e.d1 && e.d1 <= tag &&
+      (e.s === 'progress' || e.s === 'done') && this.giltIn(cls, id, key)).map(([id]) => id);
     return { themen: ids.map(id => this.themaAus(cls, id)), vorschlag: false };
   },
 
@@ -571,31 +571,43 @@ const Stundenplan = {
      - sonst Fortführung der vorigen Stunde (ihr Thema, solange es nicht fertig ist),
        sonst das laufende Thema, sonst das nächste offene als Vorschlag.
      Entfallene Stunden zählen nicht – das Thema rückt in die nächste. */
+  /* Gilt ein Thema der Klasse in der Stunde „2026-10-28 10:45“? Läuft es ab einer
+     bestimmten Stunde bzw. ist es ab einer Stunde fertig (im Fenster gesetzt),
+     stehen genaue Stunden in ab/bis – sonst zählen die Tage d1/d2 aus dem Reiter
+     Stunden. Fertig heißt: bis einschließlich dieser Stunde, danach nicht mehr. */
+  giltIn(cls, id, key) {
+    const e = Lessons.lessonsOf(cls)[id];
+    if (!e) return true;
+    const tag = key.split(' ')[0];
+    if (e.s === 'done') return e.bis ? key <= e.bis : !!e.d2 && e.d2 >= tag;
+    if (e.s === 'progress') {
+      const ab = e.ab && (!e.d1 || e.ab.slice(0, 10) >= e.d1) ? e.ab : null;
+      return ab ? key >= ab : !e.d1 || e.d1 <= tag;
+    }
+    return true;
+  },
+
   kette(cls) {
     const c = this.cache();
     if (cls.ohne) return {};
     if (c.kette[cls.id]) return c.kette[cls.id];
     const jetzt = new Date();
     const stunden = this.klassenStunden(cls);
-    const fertig = id => Lessons.stateOf(cls, id) === 'done';
-    let carry = [], art = 'weiter';
+    const stand = id => Lessons.stateOf(cls, id);
+    // Was läuft ohne weitere Angabe: laufende Themen, sonst das nächste offene als Vorschlag
+    const ersatz = key => {
+      const laufend = Object.entries(Lessons.lessonsOf(cls))
+        .filter(([id, e]) => e && e.s === 'progress' && this.giltIn(cls, id, key)).map(([id]) => id);
+      if (laufend.length) return { ids: laufend, art: 'laeuft' };
+      const offen = Lessons.assignedTopics(cls).find(tp => stand(tp.id) === 'open');
+      return { ids: offen ? [offen.id] : [], art: 'vorschlag' };
+    };
     // Fortführung: die letzte vergangene Stunde mit einem Thema der Klasse
+    let carry = [], art = 'weiter';
     for (const t of stunden.filter(x => x.ende <= jetzt).reverse()) {
       const ids = this.themenDerStunde(cls, t, jetzt).themen.map(x => x.topic.id).filter(Boolean);
-      if (!ids.length) continue;
-      carry = ids.filter(id => !fertig(id));
-      break;
+      if (ids.length) { carry = ids; break; }
     }
-    if (!carry.length) {
-      carry = Object.entries(Lessons.lessonsOf(cls)).filter(([, e]) => e && e.s === 'progress').map(([id]) => id);
-      art = 'laeuft';
-    }
-    if (!carry.length) {
-      const offen = Lessons.assignedTopics(cls).find(tp => Lessons.stateOf(cls, tp.id) === 'open');
-      carry = offen ? [offen.id] : [];
-      art = 'vorschlag';
-    }
-    if (art === 'weiter' && carry.every(id => Lessons.stateOf(cls, id) === 'progress')) art = 'laeuft';
     const erg = {};
     for (const t of stunden) {
       if (t.ende <= jetzt) continue;
@@ -603,17 +615,21 @@ const Stundenplan = {
       const rec = (cls.stundenbuch || {})[key];
       if (rec && rec.m && rec.th) {
         const ids = rec.th.map(x => x.id).filter(Boolean);
-        if (ids.length) {
-          carry = ids;
-          art = ids.every(id => Lessons.stateOf(cls, id) === 'progress') ? 'laeuft' : 'weiter';
-        }
+        if (ids.length) { carry = ids; art = 'weiter'; }
         continue;
       }
-      // Ein Thema, das erst ab einem späteren Tag läuft (übernommen für eine
-      // kommende Stunde), gilt noch nicht für die Stunden davor
-      const tag = this.tagSchluessel(t.beginn);
-      const gilt = carry.filter(id => { const e = Lessons.lessonsOf(cls)[id]; return !e || !e.d1 || e.d1 <= tag || e.s !== 'progress'; });
-      erg[key] = { themen: gilt.map(id => this.themaAus(cls, id)), art };
+      // Fortgeführt wird, was in dieser Stunde noch gilt – ein Thema, das vorher
+      // fertig wurde oder erst später beginnt, nicht
+      let gilt = carry.filter(id => this.giltIn(cls, id, key));
+      let artHier = art;
+      if (!gilt.length) {
+        const e = ersatz(key);
+        gilt = e.ids;
+        artHier = e.art;
+        if (gilt.length) { carry = gilt; art = e.art; }
+      }
+      if (artHier === 'weiter' && gilt.every(id => stand(id) !== 'open')) artHier = 'laeuft';
+      erg[key] = { themen: gilt.map(id => this.themaAus(cls, id)), art: artHier };
     }
     return (c.kette[cls.id] = erg);
   },
@@ -630,6 +646,7 @@ const Stundenplan = {
       Lessons.setState(cls, id, 'progress');
       const e = Lessons.lessonsOf(cls)[id];
       if (e && tag > e.d1) e.d1 = tag;
+      if (e) { e.ab = key; delete e.bis; }
     }
     Classes.persist();
     this.render();
@@ -1014,8 +1031,11 @@ const Stundenplan = {
           if (Lessons.stateOf(cls, id) === neuStatus) continue;
           Lessons.setState(cls, id, neuStatus);
           const e = Lessons.lessonsOf(cls)[id];
-          if (neuStatus === 'progress' && e && tagDerStunde > e.d1) e.d1 = tagDerStunde;
-          if (neuStatus === 'done' && e && tagDerStunde > e.d2) e.d2 = tagDerStunde;
+          if (!e) continue;
+          // „läuft“ ab dieser Stunde, „fertig“ mit dieser Stunde
+          if (neuStatus === 'progress') { if (tagDerStunde > e.d1) e.d1 = tagDerStunde; e.ab = key; delete e.bis; }
+          if (neuStatus === 'done') { e.d2 = tagDerStunde; e.bis = key; }
+          if (neuStatus === 'open') { delete e.ab; delete e.bis; }
         }
         const stand = standFeld.value.trim().slice(0, 200);
         if (stand) rec.s = stand; else delete rec.s;
