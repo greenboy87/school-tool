@@ -127,6 +127,19 @@ const Stundenplan = {
       if (stunde) this.themaBearbeiten(stunde.dataset.stunde);
     });
 
+    // Maus über einer Stunde: alle Stunden derselben Klasse leuchten auf
+    const inhalt = document.getElementById('plan-inhalt');
+    const hervorheben = gruppe => {
+      inhalt.classList.toggle('hervor', !!gruppe);
+      inhalt.querySelectorAll('[data-gruppe]').forEach(el =>
+        el.classList.toggle('gleich', !!gruppe && el.dataset.gruppe === gruppe));
+    };
+    inhalt.addEventListener('pointerover', e => {
+      const el = e.target.closest('[data-gruppe]');
+      hervorheben(el ? el.dataset.gruppe : '');
+    });
+    inhalt.addEventListener('pointerleave', () => hervorheben(''));
+
     this.ausCacheLaden();
     this.render();
 
@@ -1092,7 +1105,10 @@ const Stundenplan = {
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',
       t.vorschau && 'vorschau', !t.entfaellt && !t.aufsicht && 'klickbar',
       jetzt && t.beginn <= jetzt && jetzt < t.ende && !t.entfaellt && 'laeuft'].filter(Boolean).join(' ');
-    const attr = !t.entfaellt && !t.aufsicht ? ` data-stunde="${this.esc(this.buchSchluessel(t))}"` : '';
+    // Gruppe für das Hervorheben: dieselbe Klasse – ohne Klasse im School-Tool die aus dem Abo
+    const gruppe = t.aufsicht ? '' : cls ? cls.id : klassen ? 'abo:' + klassen : '';
+    const attr = (!t.entfaellt && !t.aufsicht ? ` data-stunde="${this.esc(this.buchSchluessel(t))}"` : '') +
+      (gruppe ? ` data-gruppe="${this.esc(gruppe)}"` : '');
     return { klassenName, attr, wer, raum, marken: marken.join('') };
   },
 

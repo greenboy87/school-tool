@@ -2302,3 +2302,8 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .plan-zelle .plan-uebernehmen { font-size: .7rem; padding: 0 .4rem; }
 .plan-dialog-material { display: flex; flex-wrap: wrap; gap: .35rem; margin: -.3rem 0 .8rem; }
 #btn-vollbild-seite.aktiv { border-color: var(--accent); color: var(--accent); }
+/* Maus über einer Stunde: dieselbe Klasse hervorheben, Rest abblenden */
+#plan-inhalt .plan-termin { transition: opacity .12s; }
+#plan-inhalt.hervor .plan-termin:not(.gleich) { opacity: .3; }
+#plan-inhalt.hervor .plan-zelle .plan-termin.gleich { outline: 2px solid var(--accent); outline-offset: -1px; }
+#plan-inhalt.hervor .plan-liste li.gleich { box-shadow: inset 3px 0 var(--accent); }
