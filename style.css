@@ -2286,3 +2286,9 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 @media (max-width: 600px) { .plan-liste .plan-ipads { padding-left: 0; } }
 .plan-zelle .plan-ipads { font-size: .72rem; }
 .plan-dialog-ipad-links { font-size: .85rem; color: var(--muted); margin: -.3rem 0 .6rem; }
+/* Lesezeichen zum Ziehen (Extras → iPad-Koffer) */
+.lesezeichen-knopf {
+  display: inline-block; padding: .55rem 1rem; border-radius: var(--radius-sm); font-weight: 700;
+  background: var(--accent-grad); color: var(--on-accent); text-decoration: none; cursor: grab;
+}
+.plan-ipads a.plan-ipad-buchen { font-weight: 800; }

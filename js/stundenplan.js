@@ -76,6 +76,8 @@ const Stundenplan = {
     this.themenSchalter = schalter('plan-themen', this.THEMEN_KEY);
     this.standSchalter = schalter('plan-stand-zeigen', this.STAND_KEY);
     this.karte = this.el.querySelector('.plan-card');
+    const lesezeichen = document.getElementById('ipad-lesezeichen');
+    if (lesezeichen && typeof IpadBuchen !== 'undefined') lesezeichen.href = IpadBuchen.adresse();
     // H = Heute, W = Woche – solange der Plan offen ist und nicht getippt wird
     document.addEventListener('keydown', e => {
       const k = e.key.toLowerCase();
@@ -377,13 +379,21 @@ const Stundenplan = {
     return this.IPAD_SEITE + kofferId + '?startDate=' + this.tagSchluessel(datum);
   },
 
-  /* Links zum Buchen: die Koffer auf dem Stockwerk des Raums, dazu „alle“
-     (dort zeigt der Schulmanager beim Überfahren, welcher frei ist) */
+  /* Links zum Buchen. „Buchen“ öffnet die Buchungsseite mit dem Auftrag im
+     Fensternamen (siehe ipad-buchen.js) – dort erledigt das Lesezeichen den Rest.
+     Daneben die Koffer auf dem Stockwerk des Raums und „alle“ zum Buchen von
+     Hand (dort zeigt der Schulmanager beim Überfahren, welcher frei ist). */
   ipadLinks(t, kurz) {
     const koffer = this.kofferFuer(t.raum);
-    const link = (href, text, titel) =>
-      `<a href="${this.esc(href)}" target="schulmanager" rel="noopener" title="${this.esc(titel)}">${this.esc(text)}</a>`;
-    return koffer.map(k => link(this.ipadAdresse(t.beginn, k.id), k.raum,
+    const link = (href, text, titel, ziel = 'schulmanager') =>
+      `<a href="${this.esc(href)}" target="${this.esc(ziel)}" rel="noopener" title="${this.esc(titel)}">${this.esc(text)}</a>`;
+    const nr = parseInt(this.STUNDEN[this.uhr(t.beginn)], 10);
+    const auftrag = nr ? ['stbuchen', this.tagSchluessel(t.beginn), nr,
+      (koffer.length ? koffer : this.KOFFER).map(k => k.id).join(','),
+      `${t.fach} ${this.klassenText(t)}, ${t.raum || ''}`.replace(/\|/g, '/')].join('|') : '';
+    const buchen = auftrag ? `<a href="${this.esc(this.ipadAdresse(t.beginn))}" target="${this.esc(auftrag)}" rel="noopener" class="plan-ipad-buchen"
+      title="Öffnet die Buchung im Schulmanager – dort das Lesezeichen „iPads buchen“ anklicken: Es nimmt den ersten freien Koffer auf dem Stockwerk">buchen</a> · ` : '';
+    return buchen + koffer.map(k => link(this.ipadAdresse(t.beginn, k.id), k.raum,
       `iPad-Koffer ${k.raum} (${k.ipads} iPads) am ${this.tagName(t.beginn)} buchen`)).join(' ') +
       ' ' + link(this.ipadAdresse(t.beginn), koffer.length ? (kurz ? 'alle' : 'alle Koffer') : 'iPads buchen',
         'Alle iPad-Koffer an diesem Tag – beim Überfahren einer Stunde zeigt der Schulmanager, welche frei sind');
