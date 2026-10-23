@@ -2322,3 +2322,8 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .plan-ipads a.plan-ipad-hand { font-weight: 400; opacity: .8; }
 .plan-dialog-gebucht { color: var(--green); font-weight: 700; }
 .plan-dialog-ipad-hinweis { font-size: .78rem; opacity: .8; }
+/* Knopf „Klassenbuch“: Thema kopieren, Stunde im Schulmanager öffnen */
+.plan-kb-zeile { display: inline-flex; }
+.plan-kb { display: inline-flex; align-items: center; gap: .3rem; padding: .2rem .55rem; font-size: .8rem; }
+.plan-kb .icon { width: .95em; height: .95em; margin: 0; }
+.plan-zelle .plan-kb { padding: .1rem .4rem; font-size: .72rem; }

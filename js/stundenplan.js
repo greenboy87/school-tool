@@ -115,6 +115,8 @@ const Stundenplan = {
       if (nehmen) { this.uebernehmen(...nehmen.dataset.uebernehmen.split('|')); return; }
       const stand = e.target.closest('[data-stand]');
       if (stand) { this.standAendern(stand.dataset.stand.split('|')[0], stand.dataset.stand.split('|')[1]); return; }
+      const kb = e.target.closest('[data-klassenbuch]');
+      if (kb) { this.klassenbuchOeffnen(kb); return; }
       const datei = e.target.closest('[data-oeffnen]');
       if (datei) { Lessons.oeffnen(datei.dataset.oeffnen); return; }
       const kopie = e.target.closest('[data-kopieren]');
@@ -436,6 +438,37 @@ const Stundenplan = {
       // Nur die Seite, ohne Auftrag – zum Buchen von Hand
       ` · <a href="${this.esc(this.ipadAdresse(t.beginn))}" target="schulmanager" rel="noopener" class="plan-ipad-hand"
         title="Nur die Buchungsseite für ${this.esc(this.tagName(t.beginn))} öffnen – selbst buchen, ohne Lesezeichen">von Hand</a>`;
+  },
+
+  /* Klassenbuch im Schulmanager: Jede Stunde hat dort eine eigene Seite; die
+     lessonId ist die Platznummer aus dem Abo. Der Knopf legt das Thema in die
+     Zwischenablage und öffnet die Seite – dort nur noch ins Feld
+     „Unterrichtsinhalte“ klicken und einfügen. Die Anwesenheit bleibt Handarbeit. */
+  KLASSENBUCH: 'https://login.schulmanager-online.de/#/modules/classbook/enter/my/lesson/',
+
+  klassenbuchKnopf(t, cls, kurz) {
+    if (!t.platz || t.entfaellt || t.aufsicht || this.tagSchluessel(t.beginn) > this.tagSchluessel(new Date())) return '';
+    const key = this.buchSchluessel(t);
+    const themen = cls ? this.nummeriert(cls, key, this.themenDerStunde(cls, t).themen) : [];
+    const text = themen.map(x => x.wort).join(' · ');
+    const url = this.KLASSENBUCH + this.tagSchluessel(t.beginn) + '?lessonId=' + t.platz;
+    return `<button type="button" class="small plan-kb" data-klassenbuch="${this.esc(url)}" data-kopie="${this.esc(text)}"
+      title="${this.esc(text ? `„${text}“ kopieren und die Stunde im Klassenbuch öffnen – dort ins Feld Unterrichtsinhalte klicken und Cmd+V` : 'Die Stunde im Klassenbuch öffnen')}">${Icons.raw('book')}${kurz ? '' : 'Klassenbuch'}</button>`;
+  },
+
+  /* Erst kopieren (solange dieses Fenster den Fokus hat), dann öffnen – ein
+     Tab „klassenbuch“, der beim nächsten Mal wiederverwendet wird */
+  klassenbuchOeffnen(knopf) {
+    const text = knopf.dataset.kopie;
+    const oeffnen = () => window.open(knopf.dataset.klassenbuch, 'klassenbuch');
+    if (!text) { oeffnen(); return; }
+    const fertig = ok => {
+      const alt = knopf.innerHTML;
+      knopf.innerHTML = Icons.raw('check') + (ok ? 'kopiert' : 'Kopieren ging nicht');
+      setTimeout(() => { knopf.innerHTML = alt; }, 2000);
+      oeffnen();
+    };
+    navigator.clipboard.writeText(text).then(() => fertig(true), () => fertig(Band.kopierenAlt(text)));
   },
 
   klasseFinden(id) {
@@ -839,10 +872,12 @@ const Stundenplan = {
         topic.haupt ? knopf('play', (/\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation') + (mehrere ? ' ' + wort : ''), topic.haupt, 'Starten') : '',
         topic.ab ? knopf('file', 'Arbeitsblatt', topic.ab, 'Öffnen') : '',
         topic.ordner ? knopf('folder', 'Ordner', topic.ordner, 'Ordner öffnen') : '',
-      ]).join('');
+      ]).join('') + this.klassenbuchKnopf(t, cls.ohne ? null : cls);
       material.hidden = !material.innerHTML;
     };
     material.onclick = e => {
+      const kb = e.target.closest('[data-klassenbuch]');
+      if (kb) { this.klassenbuchOeffnen(kb); return; }
       const b = e.target.closest('[data-oeffnen]');
       if (b) Lessons.oeffnen(b.dataset.oeffnen);
     };
@@ -1153,6 +1188,8 @@ const Stundenplan = {
     if (getauscht) marken.push('<span class="plan-marke raum">Raum geändert</span>');
     const buchCls = this.buchKlasse(t);
     marken.push(this.themenHtml(t, buchCls, mitKnoepfen));
+    const kb = this.klassenbuchKnopf(t, buchCls, mitKnoepfen === 'start');
+    if (kb) marken.push(`<span class="plan-kb-zeile">${kb}</span>`);
     const info = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).i;
     if (info) marken.push(`<span class="plan-info" title="Info zu dieser Stunde – klicken zum Ändern">${Icons.raw('alert')}${this.esc(info)}</span>`);
     // iPads: gebucht (aus dem Schulmanager abgeglichen) – oder nötig, aber noch nicht gebucht
