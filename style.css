@@ -2320,3 +2320,5 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .plan-dialog .plan-dialog-status label { display: inline-flex; align-items: center; gap: .3rem; margin: 0; font-weight: 600; }
 .plan-dialog .plan-dialog-status input { display: inline; width: auto; margin: 0; }
 .plan-ipads a.plan-ipad-hand { font-weight: 400; opacity: .8; }
+.plan-dialog-gebucht { color: var(--green); font-weight: 700; }
+.plan-dialog-ipad-hinweis { font-size: .78rem; opacity: .8; }

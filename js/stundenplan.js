@@ -788,7 +788,13 @@ const Stundenplan = {
     const standFeld = document.getElementById('plan-dialog-stand');
     const infoFeld = document.getElementById('plan-dialog-info');
     const ipadFeld = document.getElementById('plan-dialog-ipads');
-    document.getElementById('plan-dialog-ipad-links').innerHTML = 'Jetzt buchen: ' + this.ipadLinks(t);
+    // Schon gebucht (laut letztem Abgleich mit dem Schulmanager)? Dann keine
+    // Buchungslinks – sonst ließe sich für dieselbe Stunde ein zweiter Koffer buchen
+    const gebucht = ((Classes.data.planIpads || {})[key] || []).map(id => (this.KOFFER.find(k => k.id === id) || { raum: id }).raum);
+    document.getElementById('plan-dialog-ipad-links').innerHTML = gebucht.length
+      ? `<span class="plan-dialog-gebucht">✓ Gebucht im Schulmanager: ${this.esc(gebucht.join(', '))}</span>`
+      : 'Jetzt buchen: ' + this.ipadLinks(t) +
+        '<br><span class="plan-dialog-ipad-hinweis">Das Häkchen ist nur ein Merker: Die Stunde zeigt dann die Buchungslinks als Erinnerung.</span>';
     const nr = this.STUNDEN[this.uhr(t.beginn)];
     document.getElementById('plan-dialog-titel').textContent =
       `${t.fach} ${this.klassenText(t)} · ${this.tagName(t.beginn)} · ${nr && nr !== 'Pause' ? nr + ' Stunde' : this.uhr(t.beginn)}` +
@@ -884,7 +890,8 @@ const Stundenplan = {
       else { wahlThema.value = 'eigen'; feld.value = rec.th.map(x => x.w).join(' · '); }
       standFeld.value = rec.s || '';
       infoFeld.value = rec.i || '';
-      ipadFeld.checked = !!rec.p;
+      ipadFeld.checked = !!rec.p || gebucht.length > 0;
+      ipadFeld.disabled = gebucht.length > 0;
       zeigeEigen();
     };
     wahlKlasse.onchange = fuellen;
