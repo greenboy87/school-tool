@@ -2278,3 +2278,11 @@ table.klassenbuch tbody tr { cursor: pointer; }
 table.klassenbuch tbody tr:hover { background: var(--hover); }
 table.klassenbuch tr.entfallen { color: var(--muted); cursor: default; }
 table.klassenbuch tr.entfallen:hover { background: none; }
+/* iPads für eine Stunde: Links zur Buchung im Schulmanager */
+.plan-ipads { flex-basis: 100%; display: inline-flex; flex-wrap: wrap; align-items: center; gap: .15rem .45rem; font-size: .85rem; font-weight: 600; color: var(--highlight); }
+.plan-ipads .icon { width: .95em; height: .95em; margin: 0; }
+.plan-ipads a, .plan-dialog-ipad-links a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.plan-liste .plan-ipads { padding-left: 11.7rem; }
+@media (max-width: 600px) { .plan-liste .plan-ipads { padding-left: 0; } }
+.plan-zelle .plan-ipads { font-size: .72rem; }
+.plan-dialog-ipad-links { font-size: .85rem; color: var(--muted); margin: -.3rem 0 .6rem; }

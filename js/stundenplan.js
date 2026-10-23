@@ -19,7 +19,7 @@
      { e: '10:15', f: 'Mu', k: '5a', r: 'H311', x: 1 (entfallen),
        th: [{ id, w }] (Themen mit Schlagwort; ohne id ein eigener Eintrag wie
        „Schulaufgabe“), m: 1 (Thema von Hand gesetzt), s: 'bis Folie 15' (eigener Stand),
-       i: 'Geld einsammeln' (Info zu dieser Stunde) }
+       i: 'Geld einsammeln' (Info zu dieser Stunde), p: 1 (iPads nötig) }
    Stunden ohne Klasse im School-Tool (Vertretung in einer fremden Klasse) haben
    ihr eigenes Buch, Classes.data.planStunden – die Klasse steht dort aus dem Abo.
    Die Themen werden am Tag nach der Stunde festgeschrieben; bis dahin folgen sie
@@ -37,6 +37,18 @@ const Stundenplan = {
   THEMEN_KEY: 'stundenplan-themen',
   STAND_KEY: 'stundenplan-stand',
   NEU_HOLEN_MS: 15 * 60 * 1000,
+
+  /* iPad-Koffer im Schulmanager (Ressourcen → Koffer = Kategorie 1682). Die
+     Buchungsseite lässt sich über die Adresse auf Koffer und Woche stellen;
+     gebucht wird dort mit einem Klick auf die Stunde. Passend sind die Koffer
+     im selben Haus und Stockwerk wie der Raum (H311 → H3xx, Mu1-N110 → N1xx). */
+  IPAD_SEITE: 'https://login.schulmanager-online.de/#/modules/resources/book/1682/',
+  KOFFER: [
+    { id: 66893, raum: 'N101', ipads: 20 }, { id: 66895, raum: 'N104', ipads: 16 },
+    { id: 66894, raum: 'H104', ipads: 16 }, { id: 100869, raum: 'H202', ipads: 16 },
+    { id: 112899, raum: 'H218', ipads: 16 }, { id: 66897, raum: 'H300', ipads: 20 },
+    { id: 66898, raum: 'H304', ipads: 16 }, { id: 127145, raum: 'H313', ipads: 20 },
+  ],
   RAEUME_TAGE: 120,
 
   termine: [],
@@ -85,6 +97,7 @@ const Stundenplan = {
     document.getElementById('btn-plan-neu').addEventListener('click', () => this.holen());
     document.getElementById('btn-plan-abo').addEventListener('click', () => this.aboFragen());
     document.getElementById('plan-inhalt').addEventListener('click', e => {
+      if (e.target.closest('a')) return;     // Links (iPads buchen) öffnen nur sich selbst
       const link = e.target.closest('[data-klasse]');
       if (link) { this.klasseOeffnen(link.dataset.klasse); return; }
       const thema = e.target.closest('[data-thema]');
@@ -355,6 +368,27 @@ const Stundenplan = {
     return this.klasseZu(t) || this.ohneKlasse();
   },
 
+  kofferFuer(raum) {
+    const m = String(raum || '').match(/([A-Z])(\d)\d\d/);
+    return m ? this.KOFFER.filter(k => k.raum[0] === m[1] && k.raum[1] === m[2]) : [];
+  },
+
+  ipadAdresse(datum, kofferId = -1) {
+    return this.IPAD_SEITE + kofferId + '?startDate=' + this.tagSchluessel(datum);
+  },
+
+  /* Links zum Buchen: die Koffer auf dem Stockwerk des Raums, dazu „alle“
+     (dort zeigt der Schulmanager beim Überfahren, welcher frei ist) */
+  ipadLinks(t, kurz) {
+    const koffer = this.kofferFuer(t.raum);
+    const link = (href, text, titel) =>
+      `<a href="${this.esc(href)}" target="schulmanager" rel="noopener" title="${this.esc(titel)}">${this.esc(text)}</a>`;
+    return koffer.map(k => link(this.ipadAdresse(t.beginn, k.id), k.raum,
+      `iPad-Koffer ${k.raum} (${k.ipads} iPads) am ${this.tagName(t.beginn)} buchen`)).join(' ') +
+      ' ' + link(this.ipadAdresse(t.beginn), koffer.length ? (kurz ? 'alle' : 'alle Koffer') : 'iPads buchen',
+        'Alle iPad-Koffer an diesem Tag – beim Überfahren einer Stunde zeigt der Schulmanager, welche frei sind');
+  },
+
   klasseFinden(id) {
     return id === '-' ? this.ohneKlasse() : Classes.data.classes.find(c => c.id === id) || null;
   },
@@ -473,12 +507,12 @@ const Stundenplan = {
       const k = this.buchSchluessel(t);
       const r = buch[k];
       if (cls.ohne && rec.k && this.klassenText(t) !== rec.k) return false;
-      return k > key && t.ende > new Date() && !(r && (r.m || r.s || r.i));
+      return k > key && t.ende > new Date() && !(r && (r.m || r.s || r.i || r.p));
     });
     if (!ziel) { alert('Keine freie Stunde dieser Klasse mehr im Plan.'); return; }
     const k = this.buchSchluessel(ziel);
     const neu = buch[k] || (buch[k] = {});
-    for (const feld of ['th', 'm', 's', 'i']) if (rec[feld] !== undefined) { neu[feld] = rec[feld]; delete rec[feld]; }
+    for (const feld of ['th', 'm', 's', 'i', 'p']) if (rec[feld] !== undefined) { neu[feld] = rec[feld]; delete rec[feld]; }
     if (!Object.keys(rec).length) delete buch[key];
     Classes.persist();
     this.render();
@@ -653,6 +687,8 @@ const Stundenplan = {
     const feld = document.getElementById('plan-dialog-thema');
     const standFeld = document.getElementById('plan-dialog-stand');
     const infoFeld = document.getElementById('plan-dialog-info');
+    const ipadFeld = document.getElementById('plan-dialog-ipads');
+    document.getElementById('plan-dialog-ipad-links').innerHTML = 'Jetzt buchen: ' + this.ipadLinks(t);
     const nr = this.STUNDEN[this.uhr(t.beginn)];
     document.getElementById('plan-dialog-titel').textContent =
       `${t.fach} ${this.klassenText(t)} · ${this.tagName(t.beginn)} · ${nr && nr !== 'Pause' ? nr + ' Stunde' : this.uhr(t.beginn)}` +
@@ -715,6 +751,7 @@ const Stundenplan = {
       else { wahlThema.value = 'eigen'; feld.value = rec.th.map(x => x.w).join(' · '); }
       standFeld.value = rec.s || '';
       infoFeld.value = rec.i || '';
+      ipadFeld.checked = !!rec.p;
       zeigeEigen();
     };
     wahlKlasse.onchange = fuellen;
@@ -788,6 +825,7 @@ const Stundenplan = {
         if (stand) rec.s = stand; else delete rec.s;
         const info = infoFeld.value.trim().slice(0, 200);
         if (info) rec.i = info; else delete rec.i;
+        if (ipadFeld.checked) rec.p = 1; else delete rec.p;
         if (Object.keys(rec).length) buch[key] = rec; else delete buch[key];
       }
       Classes.persist();
@@ -837,8 +875,9 @@ const Stundenplan = {
     if (t.entfaellt) {
       // Entfallen, aber schon von Hand geplant: zeigen und verschieben lassen
       const rec = cls && (cls.stundenbuch || {})[key];
-      if (!rec || !(rec.m || rec.s || rec.i)) return '';
-      const geplant = [rec.m && rec.th ? (rec.th.map(x => x.w).join(' · ') || 'kein Thema') : '', rec.s, rec.i].filter(Boolean).join(' – ');
+      if (!rec || !(rec.m || rec.s || rec.i || rec.p)) return '';
+      const geplant = [rec.m && rec.th ? (rec.th.map(x => x.w).join(' · ') || 'kein Thema') : '', rec.s, rec.i,
+        rec.p ? 'iPads (Buchung im Schulmanager prüfen!)' : ''].filter(Boolean).join(' – ');
       return `<span class="plan-thema"><span class="plan-geplant" title="War für diese Stunde geplant">geplant: ${this.esc(geplant)}</span>` +
         `<button type="button" class="small" data-verschieben="${this.esc(cls.id + '|' + key)}" title="Auf die nächste Stunde der Klasse legen, die noch nichts Eigenes hat">→ nächste Stunde</button></span>`;
     }
@@ -949,6 +988,8 @@ const Stundenplan = {
     marken.push(this.themenHtml(t, buchCls, mitKnoepfen));
     const info = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).i;
     if (info) marken.push(`<span class="plan-info" title="Info zu dieser Stunde – klicken zum Ändern">${Icons.raw('alert')}${this.esc(info)}</span>`);
+    const ipads = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).p;
+    if (ipads) marken.push(`<span class="plan-ipads">${Icons.raw('grid')}iPads: ${this.ipadLinks(t, mitKnoepfen === 'start')}</span>`);
     const klassenName = ['plan-termin',
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',
       t.vorschau && 'vorschau', !t.entfaellt && !t.aufsicht && 'klickbar',
