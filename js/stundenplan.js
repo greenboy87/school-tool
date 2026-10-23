@@ -438,8 +438,42 @@ const Stundenplan = {
   /* Zwischenspeicher für einen Zeichendurchgang – Termine, Stunden je Klasse
      und die Themenkette werden sonst für jede Zelle neu berechnet */
   cache() {
-    if (!this._cache) this._cache = { kette: {}, stunden: {} };
+    if (!this._cache) this._cache = { kette: {}, stunden: {}, nummern: {} };
     return this._cache;
+  },
+
+  /* Die wievielte Stunde zu einem Thema ist das in dieser Klasse? „Rhythmus
+     Praxis I“ beim ersten Mal, „II“ beim zweiten … – so sieht man gleich, ob
+     ein Thema neu anfängt oder weiterläuft. Gezählt werden alle Stunden der
+     Klasse im Stundenbuch, im Abo und in der Vorschau; Entfall zählt nicht. */
+  nummern(cls) {
+    const c = this.cache();
+    if (cls.ohne) return {};
+    if (c.nummern[cls.id]) return c.nummern[cls.id];
+    const zaehler = {}, erg = {};
+    for (const t of this.klassenStunden(cls)) {
+      const key = this.buchSchluessel(t);
+      erg[key] = {};
+      for (const { topic } of this.themenDerStunde(cls, t).themen) {
+        if (!topic.id) continue;
+        zaehler[topic.id] = (zaehler[topic.id] || 0) + 1;
+        erg[key][topic.id] = zaehler[topic.id];
+      }
+    }
+    return (c.nummern[cls.id] = erg);
+  },
+
+  roemisch(n) {
+    const teile = [[10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
+    let text = '';
+    for (const [wert, zeichen] of teile) while (n >= wert) { text += zeichen; n -= wert; }
+    return text;
+  },
+
+  /* Themen einer Stunde mit Folgenummer im Schlagwort */
+  nummeriert(cls, key, themen) {
+    const nr = this.nummern(cls)[key] || {};
+    return themen.map(x => x.topic.id && nr[x.topic.id] ? { ...x, wort: x.wort + ' ' + this.roemisch(nr[x.topic.id]) } : x);
   },
 
   klassenStunden(cls) {
@@ -885,7 +919,8 @@ const Stundenplan = {
       return '';
     }
     const rec = (cls.stundenbuch || {})[key] || {};
-    const { themen, vorschlag } = this.themenDerStunde(cls, t);
+    const roh = this.themenDerStunde(cls, t);
+    const themen = this.nummeriert(cls, key, roh.themen), vorschlag = roh.vorschlag;
     const worte = themen.map(x => x.wort).join(' · ');
     const ziel = this.esc(key);
     const teile = [];
@@ -1123,7 +1158,8 @@ const Stundenplan = {
         const [tag, zeit] = key.split(' ');
         const datum = new Date(tag + 'T' + zeit);
         const t = { beginn: datum, ende: new Date(tag + 'T' + r.e), entfaellt: !!r.x };
-        const themen = r.th ? r.th.map(x => x.w) : this.themenDerStunde(cls, t, jetzt).themen.map(x => x.wort);
+        const roh = r.th ? r.th.map(x => this.themaAus(cls, x.id, x.w)) : this.themenDerStunde(cls, t, jetzt).themen;
+        const themen = this.nummeriert(cls, key, roh).map(x => x.wort);
         if (r.x) entfallen++; else gehalten++;
         const nr = this.STUNDEN[zeit];
         return {
