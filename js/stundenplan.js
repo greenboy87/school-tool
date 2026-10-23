@@ -419,15 +419,16 @@ const Stundenplan = {
      dem Stockwerk), „alle“ den ersten freien überhaupt. Vor dem Buchen nennt
      das Lesezeichen den Koffer und fragt nach. Ohne Stundennummer (Nachmittag ohne Raster) gibt es keinen
      Auftrag, dann öffnen die Links nur die Seite. */
-  ipadLinks(t, kurz) {
-    const koffer = this.kofferFuer(t.raum);
+  ipadLinks(t, kurz, ohne = []) {
+    // ohne: schon gebuchte Koffer – für einen zweiten Koffer zur selben Stunde
+    const koffer = this.kofferFuer(t.raum).filter(k => !ohne.includes(k.id));
     const nr = parseInt(this.STUNDEN[this.uhr(t.beginn)], 10);
     const was = `${t.fach} ${this.klassenText(t)}, ${t.raum || ''}`.replace(/\|/g, '/');
     const auftrag = liste => nr ? ['stbuchen', this.tagSchluessel(t.beginn), nr, liste.map(k => k.id).join(','), was].join('|') : 'schulmanager';
     const link = (href, text, liste, titel, extra = '') =>
       `<a href="${this.esc(href)}" target="${this.esc(auftrag(liste))}" rel="noopener"${extra} title="${this.esc(titel)}">${this.esc(text)}</a>`;
     const hinweis = ' – im Schulmanager-Tab das Lesezeichen „iPads buchen“ anklicken';
-    const rest = this.KOFFER.filter(k => !koffer.includes(k));
+    const rest = this.KOFFER.filter(k => !koffer.includes(k) && !ohne.includes(k.id));
     return (koffer.length ? link(this.ipadAdresse(t.beginn), 'buchen', koffer,
       'Ersten freien Koffer auf dem Stockwerk buchen' + hinweis, ' class="plan-ipad-buchen"') + ' · ' : '') +
       // Ist der gewählte Koffer belegt, kommen erst die übrigen auf dem Stockwerk dran
@@ -847,9 +848,12 @@ const Stundenplan = {
     const ipadFeld = document.getElementById('plan-dialog-ipads');
     // Schon gebucht (laut letztem Abgleich mit dem Schulmanager)? Dann keine
     // Buchungslinks – sonst ließe sich für dieselbe Stunde ein zweiter Koffer buchen
-    const gebucht = ((Classes.data.planIpads || {})[key] || []).map(id => (this.KOFFER.find(k => k.id === id) || { raum: id }).raum);
+    const gebuchtIds = (Classes.data.planIpads || {})[key] || [];
+    const gebucht = gebuchtIds.map(id => (this.KOFFER.find(k => k.id === id) || { raum: id }).raum);
+    // Schon gebucht: Stand zeigen und nur noch einen weiteren, anderen Koffer anbieten
     document.getElementById('plan-dialog-ipad-links').innerHTML = gebucht.length
-      ? `<span class="plan-dialog-gebucht">✓ Gebucht im Schulmanager: ${this.esc(gebucht.join(', '))}</span>`
+      ? `<span class="plan-dialog-gebucht">✓ Gebucht im Schulmanager: ${this.esc(gebucht.join(', '))}</span>` +
+        `<br>Weiteren Koffer buchen: ${this.ipadLinks(t, false, gebuchtIds)}`
       : 'Jetzt buchen: ' + this.ipadLinks(t) +
         '<br><span class="plan-dialog-ipad-hinweis">Das Häkchen ist nur ein Merker: Die Stunde zeigt dann die Buchungslinks als Erinnerung.</span>';
     const nr = this.STUNDEN[this.uhr(t.beginn)];
