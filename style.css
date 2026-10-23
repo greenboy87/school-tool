@@ -2345,3 +2345,5 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .ablage-tabelle td.num { width: 2.2rem; text-align: right; color: var(--muted); }
 .ablage-tabelle td:nth-child(2) { width: 40%; }
 .ablage-tabelle input { width: 100%; box-sizing: border-box; padding: .25rem .45rem; }
+/* Automatisch weiterlaufendes Thema: normale Schrift – grau bleibt für Vorschläge */
+button.plan-thema-wort.laeuft { color: var(--text); font-style: normal; font-weight: 500; }

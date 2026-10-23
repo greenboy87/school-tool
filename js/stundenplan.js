@@ -1087,7 +1087,8 @@ const Stundenplan = {
     const ziel = this.esc(key);
     const teile = [];
     if (themen.length && (zeigeWort || zeigeStand)) {
-      const art = vorschlag ? ' vorschlag' : rec.m ? ' manuell' : '';
+      // festgelegt (pink) · läuft automatisch weiter (normal) · nur Vorschlag (grau)
+      const art = vorschlag ? ' vorschlag' : rec.m ? ' manuell' : ' laeuft';
       const titel = vorschlag ? 'Vorschlag: Fortführung der vorigen Stunde bzw. nächstes offenes Thema – klicken zum Ändern'
         : rec.m ? 'Von Hand gesetzt – klicken zum Ändern' : 'Thema dieser Stunde – klicken zum Ändern';
       teile.push(`<button type="button" class="plan-thema-wort${art}" data-thema="${ziel}" title="${titel}">${vorschlag ? 'Vorschlag: ' : ''}${this.esc(worte)}</button>`);
