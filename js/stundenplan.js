@@ -76,6 +76,13 @@ const Stundenplan = {
     this.themenSchalter = schalter('plan-themen', this.THEMEN_KEY);
     this.standSchalter = schalter('plan-stand-zeigen', this.STAND_KEY);
     this.karte = this.el.querySelector('.plan-card');
+    // Klick neben das Bearbeiten-Fenster schließt es – ohne zu speichern, wie „Abbrechen“
+    const dlg = document.getElementById('plan-dialog');
+    dlg.addEventListener('click', e => {
+      if (e.target !== dlg) return;            // Klick auf Inhalt, nicht auf den Rand
+      const r = dlg.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dlg.close();
+    });
     const lesezeichen = document.getElementById('ipad-lesezeichen');
     if (lesezeichen && typeof IpadBuchen !== 'undefined') lesezeichen.href = IpadBuchen.adresse();
     // H = Heute, W = Woche – solange der Plan offen ist und nicht getippt wird
