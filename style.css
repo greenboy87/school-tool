@@ -2300,3 +2300,5 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .plan-uebernehmen:hover { background: var(--active-soft); }
 .plan-uebernehmen .icon { width: .9em; height: .9em; margin: 0; }
 .plan-zelle .plan-uebernehmen { font-size: .7rem; padding: 0 .4rem; }
+.plan-dialog-material { display: flex; flex-wrap: wrap; gap: .35rem; margin: -.3rem 0 .8rem; }
+#btn-vollbild-seite.aktiv { border-color: var(--accent); color: var(--accent); }

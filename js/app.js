@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const buehne = document.querySelector('.ampel-card');
   const vollbildElement = () => document.fullscreenElement || document.webkitFullscreenElement;
   document.getElementById('btn-vollbild').addEventListener('click', async () => {
-    if (vollbildElement()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    if (vollbildElement() === buehne) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
     const rein = buehne.requestFullscreen || buehne.webkitRequestFullscreen;
     if (!rein) { alert('Dieser Browser kann den Vollbildmodus hier nicht anzeigen.'); return; }
     const p = rein.call(buehne);
@@ -237,6 +237,27 @@ document.addEventListener('DOMContentLoaded', () => {
       alert('Schwebendes Fenster konnte nicht geöffnet werden: ' + e.message);
     }
   });
+
+  /* ----- Ganze Seite im Vollbild: alle Reiter bleiben bedienbar ----- */
+  const seiteVoll = document.getElementById('btn-vollbild-seite');
+  const seiteVollZeigen = () => {
+    const an = (document.fullscreenElement || document.webkitFullscreenElement) === document.documentElement;
+    seiteVoll.classList.toggle('aktiv', an);
+    seiteVoll.title = an ? 'Vollbild beenden (Esc)' : 'Ganze Seite im Vollbild – alle Reiter bleiben bedienbar';
+  };
+  seiteVoll.addEventListener('click', () => {
+    const doc = document.documentElement;
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      return;
+    }
+    const rein = doc.requestFullscreen || doc.webkitRequestFullscreen;
+    if (!rein) { alert('Dieser Browser kann den Vollbildmodus hier nicht anzeigen.'); return; }
+    const p = rein.call(doc);
+    if (p && p.catch) p.catch(err => alert('Vollbild nicht möglich: ' + err.message));
+  });
+  document.addEventListener('fullscreenchange', seiteVollZeigen);
+  document.addEventListener('webkitfullscreenchange', seiteVollZeigen);
 
   /* ----- Theme ----- */
   Theme.updateButton();

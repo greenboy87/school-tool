@@ -141,7 +141,9 @@ const Tasten = {
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return false;
     const ziel = e.target;
     if (ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]')) return false;
-    if (document.fullscreenElement) return false;
+    // Die ganze Seite im Vollbild: Tasten wie gewohnt. Ein einzelnes Element im
+    // Vollbild (Sitzplan, Stoppuhr …) behält die Pfeile für sich.
+    if (document.fullscreenElement && document.fullscreenElement !== document.documentElement) return false;
     if (typeof Sitzplan !== 'undefined' && Sitzplan.gesichter) return false;
     if (document.documentElement.classList.contains('locked')) return false;
     return true;

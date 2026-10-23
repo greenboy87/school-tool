@@ -156,7 +156,8 @@ const Classes = {
       const ziel = e.target;
       if (ziel && (ziel.closest('input, textarea, select, [contenteditable="true"]'))) return;
       // Beim Gesichterzuordnen ruecken die Pfeile den Rahmen, im Vollbild bleibt die Klasse
-      if ((typeof Sitzplan !== 'undefined' && Sitzplan.gesichter) || document.fullscreenElement) return;
+      if ((typeof Sitzplan !== 'undefined' && Sitzplan.gesichter) ||
+          (document.fullscreenElement && document.fullscreenElement !== document.documentElement)) return;
       // Ist rechts ein Steckbrief offen, gehen die Pfeile durch die Schueler –
       // die Liste steht ja senkrecht. Esc waehlt ab, dann sind es wieder Klassen.
       if (typeof Schueler !== 'undefined' && Schueler.imSteckbrief()) {

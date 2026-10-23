@@ -770,9 +770,32 @@ const Stundenplan = {
     immer.checked = false;
     immer.closest('label').hidden = !t.platz;
 
+    /* Präsentation, AB und Ordner zum Thema, das gerade gewählt ist */
+    const material = document.getElementById('plan-dialog-material');
+    let autoThemen = [];
+    const materialZeigen = () => {
+      const cls = this.klasseFinden(wahlKlasse.value || '-');
+      const wahl = wahlThema.value;
+      const themen = wahl === 'auto' ? autoThemen
+        : wahl.startsWith('id:') ? [this.themaAus(cls, wahl.slice(3))] : [];
+      const knopf = (icon, text, pfad, titel) =>
+        `<button type="button" class="small" data-oeffnen="${this.esc(pfad)}" title="${this.esc(titel + ': ' + pfad)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
+      const mehrere = themen.length > 1;
+      material.innerHTML = themen.flatMap(({ topic, wort }) => [
+        topic.haupt ? knopf('play', (/\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation') + (mehrere ? ' ' + wort : ''), topic.haupt, 'Starten') : '',
+        topic.ab ? knopf('file', 'Arbeitsblatt', topic.ab, 'Öffnen') : '',
+        topic.ordner ? knopf('folder', 'Ordner', topic.ordner, 'Ordner öffnen') : '',
+      ]).join('');
+      material.hidden = !material.innerHTML;
+    };
+    material.onclick = e => {
+      const b = e.target.closest('[data-oeffnen]');
+      if (b) Lessons.oeffnen(b.dataset.oeffnen);
+    };
     const zeigeEigen = () => {
       eigenZeile.hidden = wahlThema.value !== 'eigen';
       katalogZeile.hidden = wahlThema.value !== 'katalog';
+      materialZeigen();
     };
     wahlThema.onchange = () => {
       zeigeEigen();
@@ -787,11 +810,13 @@ const Stundenplan = {
       const rec = buch[key] || {};
       // Was ohne eigenen Eintrag gälte – dafür den Eintrag kurz beiseitelegen
       let auto = '';
+      autoThemen = [];
       if (!cls.ohne) {
         const merk = buch[key];
         if (merk && merk.m) { const ohne = { ...merk }; delete ohne.th; delete ohne.m; buch[key] = ohne; }
         this._cache = null;
-        auto = this.themenDerStunde(cls, t).themen.map(x => x.wort).join(' · ');
+        autoThemen = this.themenDerStunde(cls, t).themen;
+        auto = autoThemen.map(x => x.wort).join(' · ');
         if (merk) buch[key] = merk;
         this._cache = null;
       }
@@ -1155,7 +1180,8 @@ const Stundenplan = {
     if (ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]')) return false;
     const html = document.documentElement;
     if (html.classList.contains('locked')) return false;
-    const voll = document.fullscreenElement || document.webkitFullscreenElement;
+    let voll = document.fullscreenElement || document.webkitFullscreenElement;
+    if (voll === document.documentElement) voll = null;     // ganze Seite: wie ohne Vollbild
     if (voll && voll !== this.karte) return false;
     const obenUnterwegs = !voll && typeof Tasten !== 'undefined' && Tasten.ebene === 'oben' &&
       html.classList.contains('tasten-oben');
@@ -1173,7 +1199,7 @@ const Stundenplan = {
   },
 
   vollbild() {
-    if (document.fullscreenElement || document.webkitFullscreenElement) {
+    if ((document.fullscreenElement || document.webkitFullscreenElement) === this.karte) {
       (document.exitFullscreen || document.webkitExitFullscreen).call(document);
       return;
     }
