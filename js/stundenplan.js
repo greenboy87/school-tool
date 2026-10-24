@@ -85,14 +85,15 @@ const Stundenplan = {
     });
     const lesezeichen = document.getElementById('ipad-lesezeichen');
     if (lesezeichen && typeof IpadBuchen !== 'undefined') lesezeichen.href = IpadBuchen.adresse();
-    // H = Heute, W = Woche – solange der Plan offen ist und nicht getippt wird
+    // H = Heute, W = Woche, S = Stand ein/aus – solange der Plan offen ist und nicht getippt wird
     document.addEventListener('keydown', e => {
       const k = e.key.toLowerCase();
-      if ((k !== 'h' && k !== 'w') || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (!['h', 'w', 's'].includes(k) || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
       if (!this.el.classList.contains('active')) return;
       const ziel = e.target;
       if (ziel && ziel.closest && ziel.closest('input, textarea, select, dialog, [contenteditable="true"]')) return;
       e.preventDefault();
+      if (k === 's') { this.standSchalter.click(); return; }     // S: Stand ein/aus
       this.ansicht(k === 'w' ? 'woche' : 'heute');
     });
     document.getElementById('btn-plan-voll').addEventListener('click', () => this.vollbild());
@@ -1103,7 +1104,8 @@ const Stundenplan = {
      Platz für den Start der Präsentation (mitKnoepfen = 'start'). */
   themenHtml(t, cls, mitKnoepfen) {
     const zeigeWort = this.themenSchalter.checked, zeigeStand = this.standSchalter.checked;
-    if (t.aufsicht || (!zeigeWort && !zeigeStand)) return '';
+    // Der Start-Knopf im Wochenraster bleibt immer – auch bei ausgeschalteten Schaltern
+    if (t.aufsicht || (!zeigeWort && !zeigeStand && mitKnoepfen !== 'start')) return '';
     const key = this.buchSchluessel(t);
     if (t.entfaellt) {
       // Entfallen, aber schon von Hand geplant: zeigen und verschieben lassen
@@ -1140,7 +1142,7 @@ const Stundenplan = {
     } else if (!themen.length && zeigeWort) {
       teile.push(`<button type="button" class="plan-thema-plus" data-thema="${ziel}" title="Thema für diese Stunde eintragen">${Icons.raw('plus')}Thema</button>`);
     }
-    if (!teile.length && !rec.s && !(zeigeStand && themen.length)) return '';
+    if (!teile.length && !rec.s && !(themen.length && (zeigeStand || mitKnoepfen === 'start'))) return '';
     if (zeigeStand && (themen.length || rec.s)) {
       const stelle = this.esc(cls.id + '|' + key);
       const zuletzt = rec.s ? '' : this.letzterStand(cls, key, themen);
@@ -1148,7 +1150,7 @@ const Stundenplan = {
         ? `<button type="button" class="plan-stand-text" data-stand="${stelle}" title="Stand dieser Stunde ändern">${Icons.raw('pen')}${this.esc(rec.s)}</button>`
         : `<button type="button" class="plan-stand-text leer" data-stand="${stelle}" title="Notieren, wie weit du in dieser Stunde gekommen bist">${Icons.raw('pen')}Stand notieren${zuletzt ? ` <span class="plan-zuletzt">· zuletzt ${this.esc(zuletzt)}</span>` : ''}</button>`);
     }
-    if (mitKnoepfen && zeigeStand && themen.length) {
+    if (mitKnoepfen && themen.length && (zeigeStand || mitKnoepfen === 'start')) {
       const knopf = (icon, text, attr, titel) =>
         `<button type="button" class="small" ${attr} title="${this.esc(titel)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
       const oeffnen = (icon, text, pfad, titel) =>
