@@ -2297,7 +2297,7 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .plan-uebernehmen:hover { background: var(--active-soft); }
 .plan-uebernehmen .icon { width: .9em; height: .9em; margin: 0; }
 .plan-zelle .plan-uebernehmen { font-size: .7rem; padding: 0 .4rem; }
-.plan-dialog-material { display: flex; flex-wrap: wrap; gap: .35rem; margin: -.3rem 0 .8rem; }
+.plan-dialog-material { display: flex; flex-wrap: wrap; gap: .35rem; margin: .2rem 0 .8rem; padding-top: .6rem; border-top: 1px solid var(--border); }
 #btn-vollbild-seite.aktiv { border-color: var(--accent); color: var(--accent); }
 /* Maus über einer Stunde: dieselbe Klasse hervorheben, Rest abblenden */
 #plan-inhalt .plan-termin { transition: opacity .12s; }
