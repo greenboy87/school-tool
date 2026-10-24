@@ -826,10 +826,16 @@ const Stundenplan = {
     this.render();
   },
 
-  /* Stunde von Hand bearbeiten: Klasse (diese Stunde oder alle Wochen dieses
-     Platzes), Thema – automatisch, ein Thema der Klasse, eigener Eintrag
-     („Schulaufgabe – nur Aufsicht“) oder kein Thema – und Stand. Ein gewähltes
-     Thema führen die folgenden Stunden fort. */
+  /* Stunde bearbeiten. Das Thema wird direkt getippt; darunter erscheinen
+     Vorschläge – erst die Themen der Klasse, dann der ganze Stundenkatalog.
+     Gespeichert wird:
+       – leeres Feld: automatisch (Fortführung der vorigen Stunde)
+       – Thema der Klasse oder aus dem Katalog: dieses Thema (Katalog: kommt zur Klasse dazu)
+       – anderer Text: eigener Eintrag („Schulaufgabe – nur Aufsicht“)
+       – Knopf „Kein Thema“
+     Den Stand offen/läuft/fertig leitet das Tool daraus ab: Das gewählte Thema
+     läuft ab dieser Stunde, das bis dahin laufende ist mit der Stunde davor fertig.
+     Unverändertes Thema-Feld lässt das Thema der Stunde in Ruhe. */
   themaBearbeiten(key) {
     this._cache = null;
     const t = this.alleTermine().find(x => !x.entfaellt && !x.aufsicht && this.buchSchluessel(x) === key);
@@ -838,28 +844,23 @@ const Stundenplan = {
     const dlg = document.getElementById('plan-dialog');
     const wahlKlasse = document.getElementById('plan-dialog-klasse');
     const immer = document.getElementById('plan-dialog-immer');
-    const wahlThema = document.getElementById('plan-dialog-wahl');
-    const eigenZeile = document.getElementById('plan-dialog-eigen');
-    const katalogZeile = document.getElementById('plan-dialog-katalog-zeile');
-    const katalogFeld = document.getElementById('plan-dialog-katalog');
     const feld = document.getElementById('plan-dialog-thema');
+    const liste = document.getElementById('plan-dialog-vorschlaege');
+    const autoZeile = document.getElementById('plan-dialog-auto');
+    const material = document.getElementById('plan-dialog-material');
     const standFeld = document.getElementById('plan-dialog-stand');
     const infoFeld = document.getElementById('plan-dialog-info');
-    const ipadFeld = document.getElementById('plan-dialog-ipads');
-    // Schon gebucht (laut letztem Abgleich mit dem Schulmanager)? Dann keine
-    // Buchungslinks – sonst ließe sich für dieselbe Stunde ein zweiter Koffer buchen
-    const gebuchtIds = (Classes.data.planIpads || {})[key] || [];
-    const gebucht = gebuchtIds.map(id => (this.KOFFER.find(k => k.id === id) || { raum: id }).raum);
-    // Schon gebucht: Stand zeigen und nur noch einen weiteren, anderen Koffer anbieten
-    document.getElementById('plan-dialog-ipad-links').innerHTML = gebucht.length
-      ? `<span class="plan-dialog-gebucht">✓ Gebucht im Schulmanager: ${this.esc(gebucht.join(', '))}</span>` +
-        `<br>Weiteren Koffer buchen: ${this.ipadLinks(t, false, gebuchtIds)}`
-      : 'Jetzt buchen: ' + this.ipadLinks(t) +
-        '<br><span class="plan-dialog-ipad-hinweis">Das Häkchen ist nur ein Merker: Die Stunde zeigt dann die Buchungslinks als Erinnerung.</span>';
     const nr = this.STUNDEN[this.uhr(t.beginn)];
     document.getElementById('plan-dialog-titel').textContent =
       `${t.fach} ${this.klassenText(t)} · ${this.tagName(t.beginn)} · ${nr && nr !== 'Pause' ? nr + ' Stunde' : this.uhr(t.beginn)}` +
       (t.vorschau ? ' (Vorschau)' : '');
+
+    // iPads: gebucht zeigen, sonst (bzw. für einen weiteren Koffer) die Buchungslinks
+    const gebuchtIds = (Classes.data.planIpads || {})[key] || [];
+    const gebucht = gebuchtIds.map(id => (this.KOFFER.find(k => k.id === id) || { raum: id }).raum);
+    document.getElementById('plan-dialog-ipad-links').innerHTML = gebucht.length
+      ? `<span class="plan-dialog-gebucht">✓ iPads gebucht: ${this.esc(gebucht.join(', '))}</span><br>Weiteren Koffer: ${this.ipadLinks(t, false, gebuchtIds)}`
+      : 'iPads buchen: ' + this.ipadLinks(t);
 
     const jahr = Classes.currentSchoolYear();
     const klassen = [...Classes.data.classes].sort((a, b) => (b.year === jahr) - (a.year === jahr));
@@ -870,27 +871,74 @@ const Stundenplan = {
     immer.checked = false;
     immer.closest('label').hidden = !t.platz;
 
-    /* Präsentation, AB und Ordner zum Thema, das gerade gewählt ist */
-    const material = document.getElementById('plan-dialog-material');
-    const statusZeile = document.getElementById('plan-dialog-status');
-    let autoThemen = [], statusVorher = '';
+    const ohneNummer = w => String(w).replace(/\s+[IVX]+$/, '').trim();
+    let cls, autoThemen = [], start = '', gewaehlt = null, markiert = -1, treffer = [];
+
+    // Vorschläge: Themen der Klasse (mit Stand), dann der Katalog (Jahrgangsstufe zuerst)
+    const kandidaten = () => {
+      const stufe = { progress: 'läuft', open: 'offen', done: 'fertig' };
+      const eigene = cls.ohne ? [] : Lessons.assignedTopics(cls).map(tp => ({
+        id: tp.id, wort: Lessons.schlagwort(tp), titel: tp.name, quelle: 'klasse',
+        info: stufe[Lessons.stateOf(cls, tp.id)] || '', fertig: Lessons.stateOf(cls, tp.id) === 'done' }));
+      const schon = new Set(eigene.map(x => x.id));
+      const passt = tp => cls.grade && tp.grades && tp.grades.includes(cls.grade);
+      const katalog = Lessons.allTopics().filter(tp => !schon.has(tp.id))
+        .sort((a, b) => passt(b) - passt(a))
+        .map(tp => ({ id: tp.id, wort: Lessons.schlagwort(tp), titel: tp.name, quelle: 'katalog',
+          info: [tp.grades && tp.grades.length ? 'Kl. ' + Lessons.gradeLabel(tp.grades) : '', (tp.tags || []).slice(0, 2).join(', ')].filter(Boolean).join(' · ') }));
+      return { eigene, katalog };
+    };
+    const vorschlaegeZeigen = () => {
+      const q = feld.value.trim().toLowerCase();
+      const { eigene, katalog } = kandidaten();
+      const passt = x => !q || x.wort.toLowerCase().includes(q) || x.titel.toLowerCase().includes(q) || x.info.toLowerCase().includes(q);
+      const e1 = eigene.filter(x => passt(x) && (q || !x.fertig));
+      const k1 = q ? katalog.filter(passt).slice(0, 12) : [];
+      treffer = [...e1, ...k1];
+      markiert = -1;
+      const zeile = (x, i) => `<li role="option" data-i="${i}" class="${x.quelle}"><span class="wort">${this.esc(x.wort)}</span>` +
+        `<span class="info">${this.esc(x.info)}</span></li>`;
+      liste.innerHTML = (e1.length ? `<li class="kopf">Diese Klasse</li>${e1.map((x, i) => zeile(x, i)).join('')}` : '') +
+        (k1.length ? `<li class="kopf">Stundenkatalog</li>${k1.map((x, i) => zeile(x, e1.length + i)).join('')}` : '') +
+        (q && !treffer.length ? '<li class="kopf">Kein Treffer – wird als eigener Eintrag gespeichert</li>' : '');
+      liste.hidden = !liste.innerHTML;
+    };
+    const markieren = i => {
+      markiert = i;
+      liste.querySelectorAll('[data-i]').forEach(li => li.classList.toggle('aktiv', Number(li.dataset.i) === i));
+    };
+    const waehlen = i => {
+      const x = treffer[i];
+      if (!x) return;
+      gewaehlt = x;
+      feld.value = x.wort;
+      liste.hidden = true;
+      materialZeigen();
+    };
+    feld.oninput = () => { gewaehlt = null; vorschlaegeZeigen(); materialZeigen(); };
+    feld.onfocus = vorschlaegeZeigen;
+    feld.onkeydown = e => {
+      if (liste.hidden || !treffer.length) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); markieren(Math.min(treffer.length - 1, markiert + 1)); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); markieren(Math.max(0, markiert - 1)); }
+      if (e.key === 'Enter' && markiert >= 0) { e.preventDefault(); waehlen(markiert); }
+      if (e.key === 'Escape') { e.preventDefault(); liste.hidden = true; }
+    };
+    liste.onmousedown = e => {               // mousedown: vor dem blur des Felds
+      const li = e.target.closest('[data-i]');
+      if (li) { e.preventDefault(); waehlen(Number(li.dataset.i)); }
+    };
+    feld.onblur = () => setTimeout(() => { liste.hidden = true; }, 150);
+
+    /* Präsentation, Arbeitsblatt, Ordner und Klassenbuch zum Thema im Feld */
     const materialZeigen = () => {
-      const cls = this.klasseFinden(wahlKlasse.value || '-');
-      const wahl = wahlThema.value;
-      const themen = wahl === 'auto' ? autoThemen
-        : wahl.startsWith('id:') ? [this.themaAus(cls, wahl.slice(3))] : [];
-      // Stand des Themas in der Klasse: offen / läuft / fertig – wie im Reiter Stunden.
-      // Wer ein offenes Thema für eine Stunde wählt, fängt es an: dann „läuft“ vorausgewählt.
-      const ids = themen.map(x => x.topic.id).filter(id => id && !cls.ohne && Lessons.lessonsOf(cls)[id]);
-      statusZeile.hidden = !ids.length && wahl !== 'katalog';
-      statusVorher = ids.length ? Lessons.stateOf(cls, ids[0]) : 'open';
-      const vor = wahl === 'katalog' || (wahl.startsWith('id:') && statusVorher === 'open') ? 'progress' : statusVorher;
-      statusZeile.querySelectorAll('input').forEach(i => { i.checked = i.value === vor; });
+      const themen = feld.value.trim() === start
+        ? (start ? ((cls.stundenbuch || {})[key] || {}).th || [] : []).map(x => this.themaAus(cls, x.id, x.w)).concat(start ? [] : autoThemen)
+        : gewaehlt ? [this.themaAus(cls, gewaehlt.id)] : [];
       const knopf = (icon, text, pfad, titel) =>
         `<button type="button" class="small" data-oeffnen="${this.esc(pfad)}" title="${this.esc(titel + ': ' + pfad)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
-      const mehrere = themen.length > 1;
-      material.innerHTML = themen.flatMap(({ topic, wort }) => [
-        topic.haupt ? knopf('play', (/\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation') + (mehrere ? ' ' + wort : ''), topic.haupt, 'Starten') : '',
+      material.innerHTML = themen.filter(x => x.topic).flatMap(({ topic }) => [
+        topic.haupt ? knopf('play', /\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation', topic.haupt, 'Starten') : '',
         topic.ab ? knopf('file', 'Arbeitsblatt', topic.ab, 'Öffnen') : '',
         topic.ordner ? knopf('folder', 'Ordner', topic.ordner, 'Ordner öffnen') : '',
       ]).join('') + this.klassenbuchKnopf(t, cls.ohne ? null : cls);
@@ -902,61 +950,33 @@ const Stundenplan = {
       const b = e.target.closest('[data-oeffnen]');
       if (b) Lessons.oeffnen(b.dataset.oeffnen);
     };
-    const zeigeEigen = () => {
-      eigenZeile.hidden = wahlThema.value !== 'eigen';
-      katalogZeile.hidden = wahlThema.value !== 'katalog';
-      materialZeigen();
-    };
-    wahlThema.onchange = () => {
-      zeigeEigen();
-      if (!eigenZeile.hidden) feld.focus();
-      if (!katalogZeile.hidden) katalogFeld.focus();
-    };
 
-    // Themenauswahl der gerade gewählten Klasse
+    // Feld für die gewählte Klasse füllen
     const fuellen = () => {
-      const cls = this.klasseFinden(wahlKlasse.value || '-');
+      cls = this.klasseFinden(wahlKlasse.value || '-');
+      document.getElementById('plan-dialog-klasse-name').textContent = cls.ohne ? (abo ? abo + ' (aus dem Abo)' : 'keine') : cls.name;
       const buch = cls.stundenbuch || {};
       const rec = buch[key] || {};
       // Was ohne eigenen Eintrag gälte – dafür den Eintrag kurz beiseitelegen
-      let auto = '';
       autoThemen = [];
       if (!cls.ohne) {
         const merk = buch[key];
         if (merk && merk.m) { const ohne = { ...merk }; delete ohne.th; delete ohne.m; buch[key] = ohne; }
         this._cache = null;
         autoThemen = this.themenDerStunde(cls, t).themen;
-        auto = autoThemen.map(x => x.wort).join(' · ');
         if (merk) buch[key] = merk;
         this._cache = null;
       }
-      const stufe = { progress: 'läuft', open: 'offen', done: 'fertig' };
-      const themen = cls.ohne ? [] : Lessons.assignedTopics(cls);
-      wahlThema.innerHTML =
-        `<option value="auto">Automatisch${auto ? ': ' + this.esc(auto) : ' (nichts)'}</option>` +
-        (themen.length ? `<optgroup label="Themen der Klasse">${themen.map(tp =>
-          `<option value="id:${this.esc(tp.id)}">${this.esc(Lessons.schlagwort(tp))} · ${stufe[Lessons.stateOf(cls, tp.id)] || ''}</option>`).join('')}</optgroup>` : '') +
-        '<option value="katalog">Aus dem Stundenkatalog …</option>' +
-        '<option value="eigen">Eigener Eintrag …</option><option value="kein">Kein Thema</option>';
-      // Vorschläge wie unter Klassen → Stunden: erst die eigene Jahrgangsstufe
-      const passt = tp => cls && cls.grade && tp.grades && tp.grades.includes(cls.grade);
-      const gesehen = new Set();
-      document.getElementById('plan-dialog-katalog-liste').innerHTML = Lessons.allTopics()
-        .sort((a, b) => passt(b) - passt(a))
-        .filter(tp => !gesehen.has(tp.name.toLowerCase()) && gesehen.add(tp.name.toLowerCase()))
-        .map(tp => `<option value="${this.esc(tp.name)}"${tp.grades && tp.grades.length ? ` label="Kl. ${this.esc(Lessons.gradeLabel(tp.grades))}"` : ''}>`).join('');
-      katalogFeld.value = '';
-      feld.value = '';
-      if (!rec.m || !rec.th) wahlThema.value = 'auto';
-      else if (!rec.th.length) wahlThema.value = 'kein';
-      else if (rec.th.length === 1 && rec.th[0].id && themen.some(tp => tp.id === rec.th[0].id)) wahlThema.value = 'id:' + rec.th[0].id;
-      else { wahlThema.value = 'eigen'; feld.value = rec.th.map(x => x.w).join(' · '); }
+      const auto = autoThemen.map(x => x.wort).join(' · ');
+      start = rec.m && rec.th ? rec.th.map(x => x.w).join(' · ') : '';
+      feld.value = start;
+      feld.placeholder = rec.m && rec.th && !rec.th.length ? 'Kein Thema – tippen für ein Thema'
+        : auto ? auto + ' (automatisch) – tippen für ein anderes Thema' : 'Thema tippen …';
+      autoZeile.textContent = auto ? `Leer lassen = automatisch: ${auto}` : 'Leer lassen = kein Thema';
       standFeld.value = rec.s || '';
       infoFeld.value = rec.i || '';
-      // Gebucht: kein Merker nötig – das Häkchen verschwindet
-      ipadFeld.checked = !!rec.p;
-      ipadFeld.closest('label').hidden = gebucht.length > 0;
-      zeigeEigen();
+      gewaehlt = null;
+      materialZeigen();
     };
     wahlKlasse.onchange = fuellen;
     fuellen();
@@ -964,19 +984,17 @@ const Stundenplan = {
     // Gespeichert wird beim Absenden (Knopf oder Enter) – das kommt sofort,
     // das close-Ereignis des Fensters nicht in jedem Browser verlässlich
     dlg.querySelector('form').onsubmit = ev => {
-      if (!ev.submitter || ev.submitter.value === 'speichern') speichern();
+      const wahl = ev.submitter ? ev.submitter.value : 'speichern';
+      if (wahl === 'speichern' || wahl === 'kein') speichern(wahl === 'kein');
     };
-    const speichern = () => {
+    const speichern = kein => {
       const neueId = wahlKlasse.value;
       const zuordnung = Classes.data.planKlassen || (Classes.data.planKlassen = {});
-      // Klasse: nur merken, wenn sie von der erkannten abweicht
       if (neueId !== (alteKlasse ? alteKlasse.id : '') || immer.checked) {
         if (immer.checked && t.platz) { zuordnung['p:' + t.platz] = neueId; delete zuordnung[key]; }
         else zuordnung[key] = neueId;
       }
-      const cls = this.klasseFinden(neueId || '-');
       const vorher = alteKlasse || this.ohneKlasse();
-      // Was bisher zu dieser Stunde notiert war, zieht mit um (ohne Thema)
       let rec = (cls.stundenbuch || {})[key] || {};
       if (vorher !== cls && vorher.stundenbuch && vorher.stundenbuch[key]) {
         const alt = vorher.stundenbuch[key];
@@ -985,76 +1003,71 @@ const Stundenplan = {
         delete rec.th;
         delete rec.m;
       }
-      {
-        const buch = cls.stundenbuch || (cls.stundenbuch = {});
-        const thema = wahlThema.value;
-        const text = feld.value.trim().slice(0, 120);
-        if (thema === 'auto' || (thema === 'eigen' && !text)) { delete rec.th; delete rec.m; }
-        else if (thema === 'kein') { rec.th = []; rec.m = 1; }
-        else if (thema === 'katalog') {
-          // Wie „Zur Klasse hinzufügen“: gleicher Titel in mehreren Ordnern –
-          // den für die Jahrgangsstufe; ohne Treffer bleibt es ein eigener Eintrag
-          const name = katalogFeld.value.trim();
-          const passend = Lessons.allTopics().filter(tp => tp.name.toLowerCase() === name.toLowerCase());
-          const tp = passend.find(x => cls.grade && x.grades && x.grades.includes(cls.grade)) || passend[0];
-          if (tp && !cls.ohne) {
+      const buch = cls.stundenbuch || (cls.stundenbuch = {});
+      const text = ohneNummer(feld.value.trim().slice(0, 120));
+      let neuesThema = null;                       // gewähltes Thema der Klasse (für den Stand)
+      if (kein) { rec.th = []; rec.m = 1; }
+      else if (feld.value.trim() === start) { /* Thema unverändert */ }
+      else if (!text) { delete rec.th; delete rec.m; }
+      else {
+        // Wahl aus der Liste – oder getippt: passt es zu einem Thema der Klasse oder des Katalogs?
+        let x = gewaehlt;
+        if (!x) {
+          const { eigene, katalog } = kandidaten();
+          const gleich = y => y.wort.toLowerCase() === text.toLowerCase() || y.titel.toLowerCase() === text.toLowerCase();
+          x = eigene.find(gleich) || katalog.find(gleich) || null;
+        }
+        if (x) {
+          if (!cls.ohne && x.quelle === 'katalog') {
             const l = Lessons.lessonsOf(cls);
-            if (!l[tp.id]) {
-              l[tp.id] = { s: 'open', added: Date.now() };
-              if (tp.ordner) l[tp.id].t = tp.name;
-            }
-            rec.th = [{ id: tp.id, w: Lessons.schlagwort(tp) }];
-          } else if (tp) {
-            rec.th = [{ id: tp.id, w: Lessons.schlagwort(tp) }];   // ohne Klasse: nur für diese Stunde
-          } else if (name) {
-            rec.th = [{ w: name.slice(0, 120) }];
+            if (!l[x.id]) { l[x.id] = { s: 'open', added: Date.now() }; if (x.id.startsWith('kat:')) l[x.id].t = x.titel; }
           }
-          if (tp || name) rec.m = 1;
-        }
-        else if (thema.startsWith('id:')) {
-          const tp = Lessons.topicById(thema.slice(3), (cls.lessons || {})[thema.slice(3)]);
-          rec.th = [{ id: thema.slice(3), w: tp ? Lessons.schlagwort(tp) : thema.slice(3) }];
-          rec.m = 1;
+          rec.th = [{ id: x.id, w: x.wort }];
+          if (!cls.ohne) neuesThema = x.id;
         } else {
-          // Getippte Schlagwörter, die zu einem Thema der Klasse passen, behalten
-          // dessen Material-Knöpfe; alles andere ist ein eigener Eintrag
-          const zuId = new Map((cls.ohne ? [] : Lessons.assignedTopics(cls)).map(tp => [Lessons.schlagwort(tp).toLowerCase(), tp.id]));
-          rec.th = text.split(/\s+·\s+/).filter(Boolean).map(w => {
-            const id = zuId.get(w.toLowerCase());
-            return id ? { id, w } : { w };
-          });
-          rec.m = 1;
+          rec.th = text.split(/\s+·\s+/).filter(Boolean).map(w => ({ w }));
         }
-        // Stand der gewählten Themen in der Klasse (offen / läuft / fertig). Liegt die
-        // Stunde in der Zukunft, beginnt bzw. endet das Thema erst an ihrem Tag.
-        const neuStatus = (statusZeile.querySelector('input:checked') || {}).value;
-        const statusIds = statusZeile.hidden || cls.ohne ? [] : (rec.th && rec.m ? rec.th : autoThemen.map(x => ({ id: x.topic.id })))
-          .map(x => x.id).filter(id => id && Lessons.lessonsOf(cls)[id]);
-        const tagDerStunde = key.split(' ')[0];
-        for (const id of neuStatus ? statusIds : []) {
-          if (Lessons.stateOf(cls, id) === neuStatus) continue;
-          Lessons.setState(cls, id, neuStatus);
-          const e = Lessons.lessonsOf(cls)[id];
-          if (!e) continue;
-          // „läuft“ ab dieser Stunde, „fertig“ mit dieser Stunde
-          if (neuStatus === 'progress') { if (tagDerStunde > e.d1) e.d1 = tagDerStunde; e.ab = key; delete e.bis; }
-          if (neuStatus === 'done') { e.d2 = tagDerStunde; e.bis = key; }
-          if (neuStatus === 'open') { delete e.ab; delete e.bis; }
-        }
-        const stand = standFeld.value.trim().slice(0, 200);
-        if (stand) rec.s = stand; else delete rec.s;
-        const info = infoFeld.value.trim().slice(0, 200);
-        if (info) rec.i = info; else delete rec.i;
-        if (ipadFeld.checked) rec.p = 1; else delete rec.p;
-        if (Object.keys(rec).length) buch[key] = rec; else delete buch[key];
+        rec.m = 1;
       }
+      const stand = standFeld.value.trim().slice(0, 200);
+      if (stand) rec.s = stand; else delete rec.s;
+      const info = infoFeld.value.trim().slice(0, 200);
+      if (info) rec.i = info; else delete rec.i;
+      delete rec.p;                                // früherer iPad-Merker, entfällt
+      if (Object.keys(rec).length) buch[key] = rec; else delete buch[key];
+      if (neuesThema) this.themaBeginnt(cls, neuesThema, key);
       Classes.persist();
       this.buchFuehren();
       this.render();
       this.klassenbuchZeigen();
     };
     dlg.showModal();
-    wahlThema.focus();
+    feld.focus();
+    feld.select();
+  },
+
+  /* Stand aus dem Plan ableiten: Das Thema läuft ab dieser Stunde; ein anderes
+     Thema, das bis hierher lief, ist mit der Stunde davor fertig. */
+  themaBeginnt(cls, id, key) {
+    this._cache = null;
+    const tag = key.split(' ')[0];
+    const davor = this.klassenStunden(cls).map(x => this.buchSchluessel(x)).filter(k => k < key).pop();
+    for (const [anderes, e] of Object.entries(Lessons.lessonsOf(cls))) {
+      if (anderes === id || !e || e.s !== 'progress' || !this.giltIn(cls, anderes, key)) continue;
+      if (!davor || !this.giltIn(cls, anderes, davor)) continue;      // lief vorher gar nicht
+      Lessons.setState(cls, anderes, 'done');
+      e.d2 = davor.split(' ')[0];
+      e.bis = davor;
+    }
+    const e = Lessons.lessonsOf(cls)[id];
+    if (e && (e.s !== 'progress' || !this.giltIn(cls, id, key))) {
+      Lessons.setState(cls, id, 'progress');
+      const neu = Lessons.lessonsOf(cls)[id];
+      if (tag > neu.d1) neu.d1 = tag;
+      neu.ab = key;
+      delete neu.bis;
+    }
+    this._cache = null;
   },
 
   /* Stunden aus dem Stundenbuch, die das Abo nicht mehr liefert – damit auch
@@ -1110,7 +1123,8 @@ const Stundenplan = {
     const worte = themen.map(x => x.wort).join(' · ');
     const ziel = this.esc(key);
     const teile = [];
-    if (themen.length && (zeigeWort || zeigeStand)) {
+    // Schalter „Themen“: Thema der Stunde ein/aus – unabhängig von „Stand“
+    if (themen.length && zeigeWort) {
       // festgelegt (pink) · läuft automatisch weiter (normal) · nur Vorschlag (grau)
       const art = vorschlag ? ' vorschlag' : rec.m ? ' manuell' : ' laeuft';
       const titel = vorschlag ? 'Vorschlag: Fortführung der vorigen Stunde bzw. nächstes offenes Thema – klicken zum Ändern'
@@ -1121,12 +1135,12 @@ const Stundenplan = {
       if (vorschlag && ids.length && !cls.ohne) {
         teile.push(`<button type="button" class="plan-uebernehmen" data-uebernehmen="${this.esc(cls.id + '|' + key + '|' + ids.join(','))}" title="Vorschlag übernehmen – das Thema steht danach in der Klasse auf „Läuft“">${Icons.raw('check')}übernehmen</button>`);
       }
-    } else if (zeigeStand && rec.m) {
+    } else if (!themen.length && zeigeWort && rec.m) {
       teile.push(`<button type="button" class="plan-thema-wort manuell" data-thema="${ziel}" title="Von Hand: kein Thema – klicken zum Ändern">kein Thema</button>`);
-    } else if (zeigeStand) {
+    } else if (!themen.length && zeigeWort) {
       teile.push(`<button type="button" class="plan-thema-plus" data-thema="${ziel}" title="Thema für diese Stunde eintragen">${Icons.raw('plus')}Thema</button>`);
     }
-    if (!teile.length && !rec.s) return '';
+    if (!teile.length && !rec.s && !(zeigeStand && themen.length)) return '';
     if (zeigeStand && (themen.length || rec.s)) {
       const stelle = this.esc(cls.id + '|' + key);
       const zuletzt = rec.s ? '' : this.letzterStand(cls, key, themen);
@@ -1224,9 +1238,6 @@ const Stundenplan = {
       marken.push(t.entfaellt
         ? `<span class="plan-ipads warnung" title="Die Stunde entfällt – Buchung im Schulmanager stornieren?">${Icons.raw('alert')}iPads gebucht (${gebucht.map(koffer).join(', ')}) – Stunde entfällt!</span>`
         : `<span class="plan-ipads gebucht" title="Im Schulmanager gebucht">${Icons.raw('check')}iPads gebucht: ${gebucht.map(koffer).join(', ')}</span>`);
-    } else {
-      const ipads = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).p;
-      if (ipads) marken.push(`<span class="plan-ipads">${Icons.raw('grid')}iPads: ${this.ipadLinks(t, mitKnoepfen === 'start')}</span>`);
     }
     const klassenName = ['plan-termin',
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',

@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=269">
+<link rel="stylesheet" href="style.css?v=270">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=269"></script>
-<script src="js/theme.js?v=269"></script>
-<script src="js/auswahl.js?v=269"></script>
-<script src="js/metronom.js?v=269"></script>
-<script src="js/klang.js?v=269"></script>
-<script src="js/schwebe.js?v=269"></script>
-<script src="js/auth.js?v=269"></script>
+<script src="js/icons.js?v=270"></script>
+<script src="js/theme.js?v=270"></script>
+<script src="js/auswahl.js?v=270"></script>
+<script src="js/metronom.js?v=270"></script>
+<script src="js/klang.js?v=270"></script>
+<script src="js/schwebe.js?v=270"></script>
+<script src="js/auth.js?v=270"></script>
 </head>
 <body>
 
@@ -192,44 +192,32 @@
     </div>
     <div id="plan-inhalt"></div>
     <dialog id="plan-dialog" class="plan-dialog">
-      <form method="dialog">
+      <form method="dialog" autocomplete="off">
         <h3 id="plan-dialog-titel"></h3>
-        <label>Klasse
-          <select id="plan-dialog-klasse" data-nativ></select>
-        </label>
-        <label class="check-label plan-dialog-immer" title="Ohne Häkchen gilt die Klasse nur für diese eine Stunde (z. B. Vertretung). Mit Häkchen jede Woche für diesen Platz im Stundenplan – nötig, wenn eine reguläre Stunde der falschen oder keiner Klasse zugeordnet ist."><input type="checkbox" id="plan-dialog-immer"> Klasse jede Woche für diesen Platz (sonst nur für diese Stunde)</label>
-        <label>Thema
-          <select id="plan-dialog-wahl" data-nativ></select>
-        </label>
-        <div id="plan-dialog-status" class="plan-dialog-status" hidden>
-          <span>Thema in der Klasse:</span>
-          <label><input type="radio" name="plan-dialog-status" value="open"> offen</label>
-          <label><input type="radio" name="plan-dialog-status" value="progress"> läuft</label>
-          <label><input type="radio" name="plan-dialog-status" value="done"> fertig</label>
+        <label for="plan-dialog-thema">Thema</label>
+        <div class="plan-dialog-suche">
+          <input type="text" id="plan-dialog-thema" maxlength="120" autocomplete="off" spellcheck="false">
+          <ul id="plan-dialog-vorschlaege" class="plan-dialog-vorschlaege" role="listbox" hidden></ul>
         </div>
+        <p id="plan-dialog-auto" class="plan-dialog-hinweis"></p>
         <div id="plan-dialog-material" class="plan-dialog-material" hidden></div>
-        <label id="plan-dialog-katalog-zeile" hidden>Thema aus dem Stundenkatalog
-          <input type="search" id="plan-dialog-katalog" list="plan-dialog-katalog-liste" autocomplete="off"
-                 placeholder="Thema tippen – Vorschläge aus deinem Stundenkatalog …">
-        </label>
-        <datalist id="plan-dialog-katalog-liste"></datalist>
-        <label id="plan-dialog-eigen" hidden>Eigener Eintrag
-          <input type="text" id="plan-dialog-thema" autocomplete="off" maxlength="120" placeholder="z. B. Schulaufgabe – nur Aufsicht">
-        </label>
         <label>Stand
           <input type="text" id="plan-dialog-stand" autocomplete="off" maxlength="200" placeholder="z. B. bis Folie 15">
         </label>
         <label>Info
           <input type="text" id="plan-dialog-info" autocomplete="off" maxlength="200" placeholder="z. B. Geld einsammeln, Elternbrief austeilen">
         </label>
-        <label class="check-label plan-dialog-immer"><input type="checkbox" id="plan-dialog-ipads"> iPads für diese Stunde</label>
         <p class="plan-dialog-ipad-links" id="plan-dialog-ipad-links"></p>
-        <p class="plan-dialog-hinweis">„Automatisch“ führt die vorige Stunde fort – oder schlägt das nächste offene Thema vor.
-          Ein Thema aus dem Katalog kommt dabei zur Klasse dazu, wie unter Klassen → Stunden.
-          Ein gewähltes Thema läuft in den folgenden Stunden weiter. Entfällt die Stunde später im Schulmanager,
-          bleibt das Geplante sichtbar und lässt sich auf die nächste Stunde schieben.</p>
+        <details class="plan-dialog-klasse">
+          <summary>Klasse: <span id="plan-dialog-klasse-name"></span></summary>
+          <label>Klasse
+            <select id="plan-dialog-klasse" data-nativ></select>
+          </label>
+          <label class="check-label plan-dialog-immer" title="Ohne Häkchen gilt die Klasse nur für diese eine Stunde (z. B. Vertretung). Mit Häkchen jede Woche für diesen Platz im Stundenplan – nötig, wenn eine reguläre Stunde der falschen oder keiner Klasse zugeordnet ist."><input type="checkbox" id="plan-dialog-immer"> Klasse jede Woche für diesen Platz (sonst nur für diese Stunde)</label>
+        </details>
         <div class="btn-row">
           <button value="speichern" class="primary">Speichern</button>
+          <button value="kein" type="submit" title="Diese Stunde ohne Thema (z. B. Ausflug)">Kein Thema</button>
           <button value="abbrechen" formnovalidate>Abbrechen</button>
         </div>
       </form>
@@ -1424,39 +1412,39 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=269"></script>
-<script src="js/firebase-config.js?v=269"></script>
-<script type="module" src="js/live-firebase.js?v=269"></script>
-<script src="js/ai-import.js?v=269"></script>
-<script src="js/store.js?v=269"></script>
-<script src="js/noise.js?v=269"></script>
-<script src="js/classes.js?v=269"></script>
-<script src="js/sitzplan.js?v=269"></script>
-<script src="js/schueler.js?v=269"></script>
-<script src="js/tasten.js?v=269"></script>
-<script src="js/lessons.js?v=269"></script>
-<script src="js/band.js?v=269"></script>
-<script src="js/notes.js?v=269"></script>
-<script src="js/tresor.js?v=269"></script>
-<script src="js/erklaerungen.js?v=269"></script>
-<script src="js/setlisten.js?v=269"></script>
-<script src="js/einklappen.js?v=269"></script>
-<script src="js/tinyband-instrumente.js?v=269"></script>
-<script src="js/live-groups.js?v=269"></script>
-<script src="js/tinyband-lehrer.js?v=269"></script>
-<script src="js/tipps.js?v=269"></script>
-<script src="js/sport-tabellen.js?v=269"></script>
-<script src="js/sport.js?v=269"></script>
-<script src="js/ex-import.js?v=269"></script>
-<script src="js/exen.js?v=269"></script>
-<script src="js/ex-namen.js?v=269"></script>
-<script src="js/ex-sitzung.js?v=269"></script>
-<script src="js/ex-auswertung.js?v=269"></script>
-<script src="js/ex-reiter.js?v=269"></script>
-<script src="js/tools.js?v=269"></script>
-<script src="js/ablage.js?v=269"></script>
-<script src="js/ipad-buchen.js?v=269"></script>
-<script src="js/stundenplan.js?v=269"></script>
-<script src="js/app.js?v=269"></script>
+<script src="js/vendor/qrcode.min.js?v=270"></script>
+<script src="js/firebase-config.js?v=270"></script>
+<script type="module" src="js/live-firebase.js?v=270"></script>
+<script src="js/ai-import.js?v=270"></script>
+<script src="js/store.js?v=270"></script>
+<script src="js/noise.js?v=270"></script>
+<script src="js/classes.js?v=270"></script>
+<script src="js/sitzplan.js?v=270"></script>
+<script src="js/schueler.js?v=270"></script>
+<script src="js/tasten.js?v=270"></script>
+<script src="js/lessons.js?v=270"></script>
+<script src="js/band.js?v=270"></script>
+<script src="js/notes.js?v=270"></script>
+<script src="js/tresor.js?v=270"></script>
+<script src="js/erklaerungen.js?v=270"></script>
+<script src="js/setlisten.js?v=270"></script>
+<script src="js/einklappen.js?v=270"></script>
+<script src="js/tinyband-instrumente.js?v=270"></script>
+<script src="js/live-groups.js?v=270"></script>
+<script src="js/tinyband-lehrer.js?v=270"></script>
+<script src="js/tipps.js?v=270"></script>
+<script src="js/sport-tabellen.js?v=270"></script>
+<script src="js/sport.js?v=270"></script>
+<script src="js/ex-import.js?v=270"></script>
+<script src="js/exen.js?v=270"></script>
+<script src="js/ex-namen.js?v=270"></script>
+<script src="js/ex-sitzung.js?v=270"></script>
+<script src="js/ex-auswertung.js?v=270"></script>
+<script src="js/ex-reiter.js?v=270"></script>
+<script src="js/tools.js?v=270"></script>
+<script src="js/ablage.js?v=270"></script>
+<script src="js/ipad-buchen.js?v=270"></script>
+<script src="js/stundenplan.js?v=270"></script>
+<script src="js/app.js?v=270"></script>
 </body>
 </html>
