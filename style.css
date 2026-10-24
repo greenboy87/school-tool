@@ -2390,3 +2390,7 @@ button.plan-thema-wort.laeuft { color: var(--text); font-style: normal; font-wei
 .plan-liste .plan-notiz { margin-left: 11.7rem; width: calc(100% - 11.7rem); }
 @media (max-width: 600px) { .plan-liste .plan-notiz { margin-left: 0; width: 100%; } }
 .plan-zelle .plan-notiz { font-size: .74rem; }
+/* Klassen → Stunden: Stand nur als Anzeige (gesetzt wird im Plan) */
+.lesson-stand { font-size: .78rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; align-self: center; cursor: help; }
+.lesson-stand.stand-progress { color: var(--accent); border-color: var(--accent); }
+.lesson-stand.stand-done { color: var(--green); border-color: currentColor; }

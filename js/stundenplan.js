@@ -640,7 +640,8 @@ const Stundenplan = {
     // Fortführung: die letzte vergangene Stunde mit einem Thema der Klasse
     let carry = [], art = 'weiter';
     for (const t of stunden.filter(x => x.ende <= jetzt).reverse()) {
-      const ids = this.themenDerStunde(cls, t, jetzt).themen.map(x => x.topic.id).filter(Boolean);
+      const ids = this.themenDerStunde(cls, t, jetzt).themen.map(x => x.topic.id)
+        .filter(id => id && Lessons.lessonsOf(cls)[id]);        // aus der Klasse genommen: nicht fortführen
       if (ids.length) { carry = ids; break; }
     }
     const erg = {};
@@ -649,7 +650,7 @@ const Stundenplan = {
       const key = this.buchSchluessel(t);
       const rec = (cls.stundenbuch || {})[key];
       if (rec && rec.m && rec.th) {
-        const ids = rec.th.map(x => x.id).filter(Boolean);
+        const ids = rec.th.map(x => x.id).filter(id => id && Lessons.lessonsOf(cls)[id]);
         if (ids.length) { carry = ids; art = 'weiter'; }
         continue;
       }
@@ -782,7 +783,7 @@ const Stundenplan = {
   /* Vergangene Stunden ins Stundenbuch schreiben. Läuft nach jedem Holen und
      Zeichnen; was sich nicht geändert hat, wird nicht gespeichert. Gibt es zur
      selben Zeit Entfall und Ersatzstunde derselben Klasse, zählt die Ersatzstunde. */
-  buchFuehren() {
+  buchFuehren(heuteMit) {
     if (!Classes.data || typeof Lessons === 'undefined') return;
     const jetzt = new Date(), heute = this.tagSchluessel(jetzt);
     let geaendert = false;
@@ -804,7 +805,8 @@ const Stundenplan = {
         if (wert && rec[feld] !== wert) { rec[feld] = wert; geaendert = true; }
         if (!wert && rec[feld] !== undefined) { delete rec[feld]; geaendert = true; }
       }
-      if (!t.entfaellt && !rec.th && this.tagSchluessel(t.beginn) < heute) {
+      // Festgeschrieben wird am Tag danach – oder gleich, wenn ein Thema aus der Klasse genommen wird
+      if (!t.entfaellt && !rec.th && (this.tagSchluessel(t.beginn) < heute || heuteMit)) {
         rec.th = this.themenDerStunde(cls, t, jetzt).themen.map(x => ({ id: x.topic.id, w: x.wort }));
         geaendert = true;
       }

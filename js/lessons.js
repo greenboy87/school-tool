@@ -315,6 +315,9 @@ const Lessons = {
 
   /* Thema wieder aus der Klasse nehmen (die Sammlung bleibt unberührt) */
   removeTopic(cls, topicId) {
+    // Erst die schon gehaltenen Stunden festschreiben (auch die von heute), damit
+    // ihr Thema im Klassenbuch bleibt
+    if (typeof Stundenplan !== 'undefined') Stundenplan.buchFuehren(true);
     delete this.lessonsOf(cls)[topicId];
     Classes.persist();
     this.render();
@@ -439,15 +442,19 @@ const Lessons = {
       meta.textContent = bits.join(' · ');
       main.appendChild(meta);
 
+      /* Offen/Läuft/Fertig ergibt sich aus dem Stundenplan (Thema einer Stunde
+         gewählt → läuft; anderes Thema danach → fertig). Hier nur die Anzeige,
+         damit kein Klick den Plan verstellt. */
       const btns = document.createElement('div');
       btns.className = 'lesson-states';
-      for (const [key, label] of Object.entries(this.STATES)) {
-        const b = document.createElement('button');
-        b.className = 'small state-btn' + (st === key ? ' active' : '');
-        b.textContent = label;
-        b.addEventListener('click', () => this.setState(cls, t.id, key));
-        btns.appendChild(b);
-      }
+      const stand = document.createElement('span');
+      const tagText = d => d ? new Date(d + 'T12:00').toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric' }) : '';
+      const e = entry || {};
+      stand.className = 'lesson-stand stand-' + st;
+      stand.textContent = st === 'progress' ? 'läuft' + (e.d1 ? ' seit ' + tagText(e.d1) : '')
+        : st === 'done' ? 'fertig' + (e.d2 ? ' am ' + tagText(e.d2) : '') : 'offen';
+      stand.title = 'Wird im Stundenplan gesetzt: Thema einer Stunde wählen – es läuft ab dort; ein anderes Thema danach beendet es.';
+      btns.appendChild(stand);
       let mat = null;
       if (t.ordner) {
         mat = document.createElement('div');
@@ -489,8 +496,8 @@ const Lessons = {
       weg.innerHTML = Icons.raw('x');
       weg.title = 'Thema aus dieser Klasse nehmen (bleibt in der Sammlung erhalten)';
       weg.addEventListener('click', () => {
-        if (this.stateOf(cls, t.id) !== 'open' &&
-            !confirm(`„${t.name}“ aus der Klasse nehmen? Der bisherige Stand geht dabei verloren.`)) return;
+        if (!confirm(`„${this.schlagwort(t)}“ aus der Klasse ${cls.name} nehmen?\n\n` +
+          'Gehaltene Stunden behalten das Thema im Klassenbuch. In kommenden Stunden wird es nicht mehr fortgeführt.')) return;
         this.removeTopic(cls, t.id);
       });
       btns.appendChild(weg);
