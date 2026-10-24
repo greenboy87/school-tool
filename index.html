@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=274">
+<link rel="stylesheet" href="style.css?v=275">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=274"></script>
-<script src="js/theme.js?v=274"></script>
-<script src="js/auswahl.js?v=274"></script>
-<script src="js/metronom.js?v=274"></script>
-<script src="js/klang.js?v=274"></script>
-<script src="js/schwebe.js?v=274"></script>
-<script src="js/auth.js?v=274"></script>
+<script src="js/icons.js?v=275"></script>
+<script src="js/theme.js?v=275"></script>
+<script src="js/auswahl.js?v=275"></script>
+<script src="js/metronom.js?v=275"></script>
+<script src="js/klang.js?v=275"></script>
+<script src="js/schwebe.js?v=275"></script>
+<script src="js/auth.js?v=275"></script>
 </head>
 <body>
 
@@ -178,10 +178,10 @@
         <span class="schalter-bahn" aria-hidden="true"></span>
         <span>Themen</span>
       </label>
-      <label class="schalter" title="Eigenen Stand („bis Folie 15“) und Knöpfe: Präsentation, AB, Ordner, Klassenbuch – Taste S">
+      <label class="schalter" title="Notizfeld je Stunde („bis Folie 15“) und Knöpfe: Präsentation, AB, Ordner, Klassenbuch – Taste S oder N">
         <input type="checkbox" id="plan-stand-zeigen" role="switch">
         <span class="schalter-bahn" aria-hidden="true"></span>
-        <span>Stand</span>
+        <span>Note</span>
       </label>
       <span class="hint plan-stand" id="plan-stand"></span>
       <button id="btn-plan-neu" class="small" data-icon="reset" title="Jetzt neu vom Schulmanager holen">Aktualisieren</button>
@@ -201,7 +201,7 @@
         </div>
         <p id="plan-dialog-auto" class="plan-dialog-hinweis"></p>
         <div id="plan-dialog-material" class="plan-dialog-material" hidden></div>
-        <label>Stand
+        <label>Note
           <input type="text" id="plan-dialog-stand" autocomplete="off" maxlength="200" placeholder="z. B. bis Folie 15">
         </label>
         <label>Info
@@ -564,8 +564,8 @@
                       title="Alle Stunden dieser Klasse drucken – im Druckfenster „Als PDF sichern“ wählen">Drucken / PDF</button>
             </div>
           </div>
-          <p class="hint">Jede gehaltene Stunde dieser Klasse mit Thema und Stand – aus dem Stundenplan.
-            Eine Zeile anklicken, um Thema, Stand oder Info nachzutragen.</p>
+          <p class="hint">Jede gehaltene Stunde dieser Klasse mit Thema und Notiz – aus dem Stundenplan.
+            Eine Zeile anklicken, um Thema, Notiz oder Info nachzutragen.</p>
           <div id="klassenbuch-tabelle" class="klassenbuch-huelle"></div>
         </section>
 
@@ -1412,39 +1412,39 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=274"></script>
-<script src="js/firebase-config.js?v=274"></script>
-<script type="module" src="js/live-firebase.js?v=274"></script>
-<script src="js/ai-import.js?v=274"></script>
-<script src="js/store.js?v=274"></script>
-<script src="js/noise.js?v=274"></script>
-<script src="js/classes.js?v=274"></script>
-<script src="js/sitzplan.js?v=274"></script>
-<script src="js/schueler.js?v=274"></script>
-<script src="js/tasten.js?v=274"></script>
-<script src="js/lessons.js?v=274"></script>
-<script src="js/band.js?v=274"></script>
-<script src="js/notes.js?v=274"></script>
-<script src="js/tresor.js?v=274"></script>
-<script src="js/erklaerungen.js?v=274"></script>
-<script src="js/setlisten.js?v=274"></script>
-<script src="js/einklappen.js?v=274"></script>
-<script src="js/tinyband-instrumente.js?v=274"></script>
-<script src="js/live-groups.js?v=274"></script>
-<script src="js/tinyband-lehrer.js?v=274"></script>
-<script src="js/tipps.js?v=274"></script>
-<script src="js/sport-tabellen.js?v=274"></script>
-<script src="js/sport.js?v=274"></script>
-<script src="js/ex-import.js?v=274"></script>
-<script src="js/exen.js?v=274"></script>
-<script src="js/ex-namen.js?v=274"></script>
-<script src="js/ex-sitzung.js?v=274"></script>
-<script src="js/ex-auswertung.js?v=274"></script>
-<script src="js/ex-reiter.js?v=274"></script>
-<script src="js/tools.js?v=274"></script>
-<script src="js/ablage.js?v=274"></script>
-<script src="js/ipad-buchen.js?v=274"></script>
-<script src="js/stundenplan.js?v=274"></script>
-<script src="js/app.js?v=274"></script>
+<script src="js/vendor/qrcode.min.js?v=275"></script>
+<script src="js/firebase-config.js?v=275"></script>
+<script type="module" src="js/live-firebase.js?v=275"></script>
+<script src="js/ai-import.js?v=275"></script>
+<script src="js/store.js?v=275"></script>
+<script src="js/noise.js?v=275"></script>
+<script src="js/classes.js?v=275"></script>
+<script src="js/sitzplan.js?v=275"></script>
+<script src="js/schueler.js?v=275"></script>
+<script src="js/tasten.js?v=275"></script>
+<script src="js/lessons.js?v=275"></script>
+<script src="js/band.js?v=275"></script>
+<script src="js/notes.js?v=275"></script>
+<script src="js/tresor.js?v=275"></script>
+<script src="js/erklaerungen.js?v=275"></script>
+<script src="js/setlisten.js?v=275"></script>
+<script src="js/einklappen.js?v=275"></script>
+<script src="js/tinyband-instrumente.js?v=275"></script>
+<script src="js/live-groups.js?v=275"></script>
+<script src="js/tinyband-lehrer.js?v=275"></script>
+<script src="js/tipps.js?v=275"></script>
+<script src="js/sport-tabellen.js?v=275"></script>
+<script src="js/sport.js?v=275"></script>
+<script src="js/ex-import.js?v=275"></script>
+<script src="js/exen.js?v=275"></script>
+<script src="js/ex-namen.js?v=275"></script>
+<script src="js/ex-sitzung.js?v=275"></script>
+<script src="js/ex-auswertung.js?v=275"></script>
+<script src="js/ex-reiter.js?v=275"></script>
+<script src="js/tools.js?v=275"></script>
+<script src="js/ablage.js?v=275"></script>
+<script src="js/ipad-buchen.js?v=275"></script>
+<script src="js/stundenplan.js?v=275"></script>
+<script src="js/app.js?v=275"></script>
 </body>
 </html>

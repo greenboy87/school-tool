@@ -89,15 +89,24 @@ const Stundenplan = {
     });
     const lesezeichen = document.getElementById('ipad-lesezeichen');
     if (lesezeichen && typeof IpadBuchen !== 'undefined') lesezeichen.href = IpadBuchen.adresse();
-    // H = Heute, W = Woche, S = Stand ein/aus – solange der Plan offen ist und nicht getippt wird
+    document.addEventListener('keydown', e => {
+      if (e.key.toLowerCase() !== 'z' || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+      if (!this.el.classList.contains('active') && !document.querySelector('#subtab-klassenbuch.active')) return;
+      const ziel = e.target;
+      if (ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]')) return;
+      if (document.getElementById('plan-dialog').open) return;
+      e.preventDefault();
+      this.rueckgaengig();
+    });
+    // H = Heute, W = Woche, S oder N = Note ein/aus – solange der Plan offen ist und nicht getippt wird
     document.addEventListener('keydown', e => {
       const k = e.key.toLowerCase();
-      if (!['h', 'w', 's'].includes(k) || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (!['h', 'w', 's', 'n'].includes(k) || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
       if (!this.el.classList.contains('active')) return;
       const ziel = e.target;
       if (ziel && ziel.closest && ziel.closest('input, textarea, select, dialog, [contenteditable="true"]')) return;
       e.preventDefault();
-      if (k === 's') { this.standSchalter.click(); return; }     // S: Stand ein/aus
+      if (k === 's' || k === 'n') { this.standSchalter.click(); return; }     // S/N: Note ein/aus
       this.ansicht(k === 'w' ? 'woche' : 'heute');
     });
     document.getElementById('btn-plan-voll').addEventListener('click', () => this.vollbild());
@@ -160,6 +169,7 @@ const Stundenplan = {
     inhalt.addEventListener('input', e => {
       const f = e.target.closest('.plan-notiz');
       if (!f) return;
+      if (!f.dataset.geaendert) this.merken('Note');
       f.dataset.geaendert = '1';
       this.notizHoehe(f);
       clearTimeout(notizUhr);
@@ -665,6 +675,7 @@ const Stundenplan = {
   uebernehmen(klasseId, key, ids) {
     const cls = this.klasseFinden(klasseId);
     if (!cls || cls.ohne) return;
+    this.merken('Vorschlag übernommen');
     const tag = key.split(' ')[0];
     for (const id of ids.split(',')) {
       if (Lessons.stateOf(cls, id) === 'progress') continue;
@@ -692,6 +703,7 @@ const Stundenplan = {
       return k > key && t.ende > new Date() && !(r && (r.m || r.s || r.i || r.p));
     });
     if (!ziel) { alert('Keine freie Stunde dieser Klasse mehr im Plan.'); return; }
+    this.merken('Verschieben auf die nächste Stunde');
     const k = this.buchSchluessel(ziel);
     const neu = buch[k] || (buch[k] = {});
     for (const feld of ['th', 'm', 's', 'i', 'p']) if (rec[feld] !== undefined) { neu[feld] = rec[feld]; delete rec[feld]; }
@@ -755,6 +767,7 @@ const Stundenplan = {
 
   /* Tage ohne Unterricht (Ferien, Feiertag) – nur für die Vorschau nötig */
   freiUmschalten(tage) {
+    this.merken('Freie Tage');
     const frei = Classes.data.planFrei || (Classes.data.planFrei = {});
     const alleFrei = tage.every(t => frei[t]);
     for (const t of tage) { if (alleFrei) delete frei[t]; else frei[t] = 1; }
@@ -1012,6 +1025,7 @@ const Stundenplan = {
       if (wahl === 'speichern' || wahl === 'kein') speichern(wahl === 'kein');
     };
     const speichern = kein => {
+      this.merken(`${t.fach} ${this.klassenText(t)}, ${this.tagName(t.beginn)}`);
       const neueId = wahlKlasse.value;
       const zuordnung = Classes.data.planKlassen || (Classes.data.planKlassen = {});
       if (neueId !== (alteKlasse ? alteKlasse.id : '') || immer.checked) {
@@ -1184,12 +1198,62 @@ const Stundenplan = {
           topic.ordner ? oeffnen('folder', 'Ordner', topic.ordner, 'Ordner öffnen') : '',
         ]).concat([
           knopf('clipboard', 'Thema', `data-kopieren="${this.esc(worte)}"`, 'Schlagwort kopieren: ' + worte),
-          rec.s ? knopf('clipboard', 'Alles', `data-kopieren="${this.esc(alles)}"`, 'Thema und Stand kopieren: ' + alles) : '',
+          rec.s ? knopf('clipboard', 'Alles', `data-kopieren="${this.esc(alles)}"`, 'Thema und Note kopieren: ' + alles) : '',
         ]);
       }
       if (knoepfe.join('')) teile.push(`<span class="plan-material">${knoepfe.join('')}</span>`);
     }
     return teile.length ? `<span class="plan-thema">${teile.join('')}</span>` : '';
+  },
+
+  /* ---------- Rückgängig (Strg+Z / Cmd+Z) ----------
+     Vor jeder Änderung im Plan wird festgehalten, was der Plan verändern kann:
+     je Klasse Stundenbuch und Themen-Fortschritt, dazu Klassen-Zuordnung, freie
+     Tage und das Buch ohne Klasse. Nur das wird zurückgesetzt – Schülerlisten,
+     Noten oder anderes, was inzwischen anderswo geändert wurde, bleiben. */
+  VERLAUF_MAX: 20,
+  verlauf: [],
+
+  planStand() {
+    const d = Classes.data;
+    return JSON.stringify({
+      klassen: Object.fromEntries(d.classes.map(c => [c.id, { stundenbuch: c.stundenbuch || null, lessons: c.lessons || {} }])),
+      planKlassen: d.planKlassen || null, planFrei: d.planFrei || null, planStunden: d.planStunden || null,
+    });
+  },
+
+  merken(was) {
+    this.verlauf.push({ was, stand: this.planStand() });
+    if (this.verlauf.length > this.VERLAUF_MAX) this.verlauf.shift();
+  },
+
+  rueckgaengig() {
+    const schritt = this.verlauf.pop();
+    if (!schritt) { this.meldung('Nichts zum Rückgängigmachen'); return; }
+    const alt = JSON.parse(schritt.stand);
+    const d = Classes.data;
+    for (const c of d.classes) {
+      const a = alt.klassen[c.id];
+      if (!a) continue;
+      if (a.stundenbuch) c.stundenbuch = a.stundenbuch; else delete c.stundenbuch;
+      c.lessons = a.lessons;
+    }
+    for (const feld of ['planKlassen', 'planFrei', 'planStunden']) {
+      if (alt[feld]) d[feld] = alt[feld]; else delete d[feld];
+    }
+    this._ohne = null;
+    Classes.persist();
+    this.render();
+    this.klassenbuchZeigen();
+    if (Classes.currentClass() && typeof Lessons !== 'undefined') Lessons.render();
+    this.meldung('Rückgängig: ' + schritt.was);
+  },
+
+  meldung(text) {
+    this.hinweis = text;
+    this.render();
+    clearTimeout(this._hinweisUhr);
+    this._hinweisUhr = setTimeout(() => { this.hinweis = ''; this.render(); }, 4000);
   },
 
   /* Freies Notizfeld je Stunde (der „Stand“): einfach hineinklicken und
@@ -1200,7 +1264,7 @@ const Stundenplan = {
     const rec = (cls.stundenbuch || {})[key] || {};
     const zuletzt = rec.s ? '' : this.letzterStand(cls, key, this.themenDerStunde(cls, t).themen);
     return `<textarea class="plan-notiz" rows="1" maxlength="500" data-notiz="${this.esc(cls.id + '|' + key)}"
-      placeholder="${this.esc(zuletzt ? '✎ zuletzt: ' + zuletzt : '✎')}" title="Stand, Notiz zu dieser Stunde – einfach hineinschreiben"
+      placeholder="${this.esc(zuletzt ? '✎ zuletzt: ' + zuletzt : '✎')}" title="Note zu dieser Stunde – einfach hineinschreiben"
       spellcheck="true">${this.esc(rec.s || '')}</textarea>`;
   },
 
@@ -1324,6 +1388,7 @@ const Stundenplan = {
       stand.textContent += (stand.textContent ? ' · ' : '') + (this.ipadMeldung ||
         'iPads abgeglichen ' + new Date(ipadStand).toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric' }));
     }
+    if (this.hinweis) stand.textContent = this.hinweis;
     stand.classList.toggle('fehler', !!this.fehler);
     if (this.fehler) stand.textContent = 'Nicht aktualisiert: ' + this.fehler +
       (this.geholt ? ' – gezeigt wird der Stand von ' + this.uhr(new Date(this.geholt)) : '');
@@ -1484,7 +1549,7 @@ const Stundenplan = {
     }
     const mitInfo = zeilen.some(z => z.info);
     ziel.innerHTML = `<table class="klassenbuch">
-      <thead><tr><th class="num">Nr.</th><th>Datum</th><th>Std.</th><th>Thema</th><th>Stand</th>${mitInfo ? '<th>Info</th>' : ''}<th>Raum</th></tr></thead>
+      <thead><tr><th class="num">Nr.</th><th>Datum</th><th>Std.</th><th>Thema</th><th>Notiz</th>${mitInfo ? '<th>Info</th>' : ''}<th>Raum</th></tr></thead>
       <tbody>${zeilen.map(z => `<tr class="${z.entfallen ? 'entfallen' : ''}" data-buch="${this.esc(z.key)}" title="Klicken zum Bearbeiten">
         <td class="num">${z.nr}</td><td>${this.esc(z.datum)}</td><td>${this.esc(z.stunde)}</td>
         <td>${z.entfallen ? '<em>entfallen</em>' : this.esc(z.thema) || '<span class="hint">–</span>'}</td>
@@ -1497,7 +1562,7 @@ const Stundenplan = {
     const { zeilen, gehalten, entfallen } = this.buchZeilen(cls);
     if (!zeilen.length) { alert('Für diese Klasse sind noch keine Stunden erfasst.'); return; }
     const mitInfo = zeilen.some(z => z.info);
-    const spalten = [{ titel: 'Nr.', cls: 'num' }, { titel: 'Datum' }, { titel: 'Std.' }, { titel: 'Thema' }, { titel: 'Stand' }];
+    const spalten = [{ titel: 'Nr.', cls: 'num' }, { titel: 'Datum' }, { titel: 'Std.' }, { titel: 'Thema' }, { titel: 'Notiz' }];
     if (mitInfo) spalten.push({ titel: 'Info' });
     spalten.push({ titel: 'Raum' });
     Band.printHtml(`Klassenbuch ${cls.name}`, Band.printTable(spalten, zeilen.map(z => [
