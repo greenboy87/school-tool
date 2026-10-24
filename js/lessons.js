@@ -91,6 +91,55 @@ const Lessons = {
     this.katalogIds = new Map(k.stunden.map(s => [s.id, s]));
     this.fillTagOptions();
     this.migrieren();
+    this.neuVerknuepfen();
+  },
+
+  /* Katalog-Themen werden am Ordnerpfad erkannt („kat:Klasse 7 - 2.2 Musik und
+     Werbung“). Wird ein Ordner umbenannt – auch nur durch das „ +“ beim
+     Fertig-Markieren –, fände das Tool das Thema nicht mehr: keine Knöpfe zu
+     Präsentation, AB, Ordner. Deshalb: Fehlt ein zugeordnetes Thema im Katalog,
+     wird der passende Ordner gesucht – erst derselbe Pfad ohne „+“-Zeichen, dann
+     derselbe Titel – und das Thema überall neu verknüpft: in den Klassen, im
+     Stundenbuch (Plan, Klassenbuch) und bei den Stunden ohne Klasse. Nur bei
+     genau einem Treffer, sonst bliebe offen, welcher gemeint ist. */
+  neuVerknuepfen() {
+    const d = Classes.data;
+    if (!d || !this.katalog) return;
+    const norm = pfad => String(pfad).split('/')
+      .map(teil => teil.replace(/\s+c?\+$/i, '').replace(/\s+/g, ' ').trim().toLowerCase()).join('/');
+    const eindeutig = (liste, schluessel) => {
+      const m = new Map();
+      for (const st of liste) {
+        const k = schluessel(st);
+        m.set(k, m.has(k) ? null : st);       // doppelt: kein eindeutiger Treffer
+      }
+      return m;
+    };
+    const nachPfad = eindeutig(this.katalog.stunden, st => norm(st.id));
+    const nachTitel = eindeutig(this.katalog.stunden, st => String(st.titel).trim().toLowerCase());
+    const neu = {};                             // alte Kennung → neue
+    for (const c of d.classes) {
+      const l = c.lessons || {};
+      for (const [id, e] of Object.entries(l)) {
+        if (!id.startsWith('kat:') || this.katalogIds.has(id.slice(4))) continue;
+        const st = nachPfad.get(norm(id.slice(4))) ||
+          (e && e.t ? nachTitel.get(String(e.t).trim().toLowerCase()) : null);
+        if (!st) continue;
+        const ziel = 'kat:' + st.id;
+        neu[id] = ziel;
+        if (!l[ziel]) l[ziel] = { ...e, t: st.titel };
+        delete l[id];
+      }
+    }
+    if (!Object.keys(neu).length) return;
+    // Stundenbuch: festgeschriebene und von Hand gesetzte Themen umhängen
+    for (const buch of [...d.classes.map(c => c.stundenbuch), d.planStunden]) {
+      for (const rec of Object.values(buch || {})) {
+        for (const th of (rec && rec.th) || []) if (th.id && neu[th.id]) th.id = neu[th.id];
+      }
+    }
+    console.info('Katalog: Themen neu verknüpft', neu);
+    Classes.persist();
   },
 
   /* no-cache: der Browser fragt nach, bekommt aber bei unverändertem Katalog nur „304“ */

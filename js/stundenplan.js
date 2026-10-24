@@ -76,6 +76,10 @@ const Stundenplan = {
     this.themenSchalter = schalter('plan-themen', this.THEMEN_KEY);
     this.standSchalter = schalter('plan-stand-zeigen', this.STAND_KEY);
     this.karte = this.el.querySelector('.plan-card');
+    const einpassen = () => requestAnimationFrame(() => this.vollbildEinpassen());
+    document.addEventListener('fullscreenchange', einpassen);
+    document.addEventListener('webkitfullscreenchange', einpassen);
+    window.addEventListener('resize', einpassen);
     // Klick neben das Bearbeiten-Fenster schließt es – ohne zu speichern, wie „Abbrechen“
     const dlg = document.getElementById('plan-dialog');
     dlg.addEventListener('click', e => {
@@ -1342,6 +1346,7 @@ const Stundenplan = {
     inhalt.querySelectorAll('.plan-notiz[data-geaendert]').forEach(f => this.notizSpeichern(f));
     inhalt.innerHTML = this.schalter.checked ? this.wocheHtml() : this.heuteHtml();
     inhalt.querySelectorAll('.plan-notiz').forEach(f => this.notizHoehe(f));
+    this.vollbildEinpassen();
   },
 
   /* Heute/Woche umschalten. Heute ohne Tag = der aktuelle Tag (Taste H);
@@ -1411,6 +1416,19 @@ const Stundenplan = {
     e.preventDefault();
     e.stopImmediatePropagation();
     return true;
+  },
+
+  /* Im Vollbild passt der ganze Plan auf den Bildschirm: zu groß → verkleinern,
+     statt scrollen zu müssen. Außerhalb des Vollbilds normale Größe. */
+  vollbildEinpassen() {
+    const k = this.karte;
+    if (!k) return;
+    const voll = (document.fullscreenElement || document.webkitFullscreenElement) === k;
+    k.style.zoom = '';
+    if (!voll) return;
+    const hoch = k.scrollHeight, breit = k.scrollWidth;
+    const faktor = Math.min(1, window.innerHeight / hoch, window.innerWidth / breit);
+    if (faktor < 1) k.style.zoom = Math.max(0.4, faktor * 0.98).toFixed(3);
   },
 
   vollbild() {

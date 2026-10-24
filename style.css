@@ -2208,10 +2208,7 @@ button.stumm-knopf.an { background: var(--danger-bg); border-color: var(--danger
 /* Stundenplan im Vollbild */
 .plan-card:fullscreen { max-width: none; width: 100%; height: 100%; overflow: auto; border: none; border-radius: 0; background: var(--page-bg); padding: 3vmin 4vmin; }
 .plan-card:-webkit-full-screen { max-width: none; width: 100%; height: 100%; overflow: auto; border: none; border-radius: 0; background: var(--page-bg); padding: 3vmin 4vmin; }
-@media (min-width: 1400px) {
-  .plan-card:fullscreen { zoom: 1.2; }
-  .plan-card:-webkit-full-screen { zoom: 1.2; }
-}
+/* Größe im Vollbild: Stundenplan.vollbildEinpassen() verkleinert, bis alles passt */
 .plan-zelle .plan-zuletzt { display: none; }
 
 /* Thema einer Stunde: klickbar, von Hand gesetzt, Dialog */
