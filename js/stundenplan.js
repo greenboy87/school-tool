@@ -108,6 +108,7 @@ const Stundenplan = {
     document.getElementById('btn-plan-abo').addEventListener('click', () => this.aboFragen());
     document.getElementById('plan-inhalt').addEventListener('click', e => {
       if (e.target.closest('a')) return;     // Links (iPads buchen) öffnen nur sich selbst
+      if (e.target.closest('.plan-notiz')) return;      // ins Notizfeld klicken = schreiben
       const link = e.target.closest('[data-klasse]');
       if (link) { this.klasseOeffnen(link.dataset.klasse); return; }
       const thema = e.target.closest('[data-thema]');
@@ -149,6 +150,24 @@ const Stundenplan = {
       hervorheben(el ? el.dataset.gruppe : '');
     });
     inhalt.addEventListener('pointerleave', () => hervorheben(''));
+
+    // Notizfeld: beim Tippen speichern, mitwachsen; nach dem Schreiben nachzeichnen, was liegen blieb
+    let notizUhr = null;
+    inhalt.addEventListener('input', e => {
+      const f = e.target.closest('.plan-notiz');
+      if (!f) return;
+      f.dataset.geaendert = '1';
+      this.notizHoehe(f);
+      clearTimeout(notizUhr);
+      notizUhr = setTimeout(() => this.notizSpeichern(f), 400);
+    });
+    inhalt.addEventListener('focusout', e => {
+      const f = e.target.closest('.plan-notiz');
+      if (!f) return;
+      clearTimeout(notizUhr);
+      this.notizSpeichern(f);
+      if (this.spaeterZeichnen) { this.spaeterZeichnen = false; setTimeout(() => this.render(), 0); }
+    });
 
     this.ausCacheLaden();
     // iPad-Buchungen, die das Lesezeichen aus dem Schulmanager mitbringt
@@ -1142,14 +1161,7 @@ const Stundenplan = {
     } else if (!themen.length && zeigeWort) {
       teile.push(`<button type="button" class="plan-thema-plus" data-thema="${ziel}" title="Thema für diese Stunde eintragen">${Icons.raw('plus')}Thema</button>`);
     }
-    if (!teile.length && !rec.s && !(themen.length && (zeigeStand || mitKnoepfen === 'start'))) return '';
-    if (zeigeStand && (themen.length || rec.s)) {
-      const stelle = this.esc(cls.id + '|' + key);
-      const zuletzt = rec.s ? '' : this.letzterStand(cls, key, themen);
-      teile.push(rec.s
-        ? `<button type="button" class="plan-stand-text" data-stand="${stelle}" title="Stand dieser Stunde ändern">${Icons.raw('pen')}${this.esc(rec.s)}</button>`
-        : `<button type="button" class="plan-stand-text leer" data-stand="${stelle}" title="Notieren, wie weit du in dieser Stunde gekommen bist">${Icons.raw('pen')}Stand notieren${zuletzt ? ` <span class="plan-zuletzt">· zuletzt ${this.esc(zuletzt)}</span>` : ''}</button>`);
-    }
+    if (!teile.length && !(themen.length && (zeigeStand || mitKnoepfen === 'start'))) return '';
     if (mitKnoepfen && themen.length && (zeigeStand || mitKnoepfen === 'start')) {
       const knopf = (icon, text, attr, titel) =>
         `<button type="button" class="small" ${attr} title="${this.esc(titel)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
@@ -1174,6 +1186,31 @@ const Stundenplan = {
       if (knoepfe.join('')) teile.push(`<span class="plan-material">${knoepfe.join('')}</span>`);
     }
     return teile.length ? `<span class="plan-thema">${teile.join('')}</span>` : '';
+  },
+
+  /* Freies Notizfeld je Stunde (der „Stand“): einfach hineinklicken und
+     schreiben, mehrzeilig, wächst mit. Gespeichert wird beim Tippen; leer zeigt
+     es nur ✎ – oder schwach den letzten Stand zum selben Thema. */
+  notizFeld(t, cls) {
+    const key = this.buchSchluessel(t);
+    const rec = (cls.stundenbuch || {})[key] || {};
+    const zuletzt = rec.s ? '' : this.letzterStand(cls, key, this.themenDerStunde(cls, t).themen);
+    return `<textarea class="plan-notiz" rows="1" maxlength="500" data-notiz="${this.esc(cls.id + '|' + key)}"
+      placeholder="${this.esc(zuletzt ? '✎ zuletzt: ' + zuletzt : '✎')}" title="Stand, Notiz zu dieser Stunde – einfach hineinschreiben"
+      spellcheck="true">${this.esc(rec.s || '')}</textarea>`;
+  },
+
+  notizSpeichern(feld) {
+    const [klasseId, key] = feld.dataset.notiz.split('|');
+    const cls = this.klasseFinden(klasseId);
+    if (!cls) return;
+    const buch = cls.stundenbuch || (cls.stundenbuch = {});
+    const rec = buch[key] || {};
+    const text = feld.value.replace(/\s+$/, '').slice(0, 500);
+    if (text.trim()) rec.s = text; else delete rec.s;
+    if (Object.keys(rec).length) buch[key] = rec; else delete buch[key];
+    delete feld.dataset.geaendert;
+    Classes.persist();
   },
 
   /* ---------- Darstellung ---------- */
@@ -1229,6 +1266,7 @@ const Stundenplan = {
     if (getauscht) marken.push('<span class="plan-marke raum">Raum geändert</span>');
     const buchCls = this.buchKlasse(t);
     marken.push(this.themenHtml(t, buchCls, mitKnoepfen));
+    if (buchCls && !t.entfaellt && this.standSchalter.checked) marken.push(this.notizFeld(t, buchCls));
     const kb = this.klassenbuchKnopf(t, buchCls, mitKnoepfen === 'start');
     if (kb) marken.push(`<span class="plan-kb-zeile">${kb}</span>`);
     const info = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).i;
@@ -1252,8 +1290,21 @@ const Stundenplan = {
     return { klassenName, attr, wer, raum, marken: marken.join('') };
   },
 
+  /* Höhe nach Inhalt – wo der Browser field-sizing nicht kann */
+  notizHoehe(f) {
+    if (CSS.supports && CSS.supports('field-sizing', 'content')) return;
+    f.style.height = 'auto';
+    f.style.height = f.scrollHeight + 'px';
+  },
+
   render() {
     if (!this.el) return;
+    // Während im Notizfeld geschrieben wird, nicht neu zeichnen – sonst wäre das Getippte weg
+    const aktiv = document.activeElement;
+    if (aktiv && aktiv.classList && aktiv.classList.contains('plan-notiz') && this.el.contains(aktiv)) {
+      this.spaeterZeichnen = true;
+      return;
+    }
     const inhalt = document.getElementById('plan-inhalt');
     const stand = document.getElementById('plan-stand');
     const abo = this.abo();
@@ -1287,7 +1338,10 @@ const Stundenplan = {
     }
     this.buchFuehren();
     this._cache = null;
+    // Was in einem Notizfeld getippt, aber noch nicht gesichert ist, vorher sichern
+    inhalt.querySelectorAll('.plan-notiz[data-geaendert]').forEach(f => this.notizSpeichern(f));
     inhalt.innerHTML = this.schalter.checked ? this.wocheHtml() : this.heuteHtml();
+    inhalt.querySelectorAll('.plan-notiz').forEach(f => this.notizHoehe(f));
   },
 
   /* Heute/Woche umschalten. Heute ohne Tag = der aktuelle Tag (Taste H);

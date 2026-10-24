@@ -2380,3 +2380,16 @@ button.plan-thema-wort.laeuft { color: var(--text); font-style: normal; font-wei
 .plan-dialog-klasse { margin: .4rem 0 .2rem; font-size: .88rem; }
 .plan-dialog-klasse summary { cursor: pointer; color: var(--muted); }
 .plan-dialog-klasse[open] summary { margin-bottom: .5rem; }
+/* Notizfeld je Stunde: unauffällig, wächst mit dem Text */
+.plan-notiz {
+  display: block; width: 100%; box-sizing: border-box; margin-top: .2rem; flex-basis: 100%;
+  font: inherit; font-size: .82rem; line-height: 1.35; color: var(--text);
+  background: transparent; border: 1px solid transparent; border-radius: 6px;
+  padding: .15rem .35rem; resize: none; overflow: hidden; min-height: 1.6em; field-sizing: content;
+}
+.plan-notiz::placeholder { color: var(--muted); opacity: .45; }
+.plan-termin:hover .plan-notiz { border-color: var(--border); }
+.plan-notiz:focus { outline: none; border-color: var(--accent); background: var(--input-bg); }
+.plan-liste .plan-notiz { margin-left: 11.7rem; width: calc(100% - 11.7rem); }
+@media (max-width: 600px) { .plan-liste .plan-notiz { margin-left: 0; width: 100%; } }
+.plan-zelle .plan-notiz { font-size: .74rem; }
