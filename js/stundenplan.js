@@ -200,13 +200,19 @@ const Stundenplan = {
       if (Date.now() - this.geholt > this.NEU_HOLEN_MS) this.holen();
       else this.render();
     });
+    /* Das Abo wird auch geholt, wenn der Plan zu ist – sonst füllt sich das
+       Stundenbuch nicht, und nach gut zwei Wochen ohne Plan fehlten Stunden.
+       Kostet keinen Firebase-Download (das Abo kommt über den Worker). */
+    setTimeout(() => {
+      if (this.abo() && Date.now() - this.geholt > this.NEU_HOLEN_MS) this.holen();
+    }, 3000);
     setInterval(() => {
-      if (!this.sichtbar()) return;
+      if (document.hidden) return;
       if (Date.now() - this.geholt > this.NEU_HOLEN_MS) this.holen();
-      else this.render();               // „läuft gerade“ weiterrücken
+      else if (this.sichtbar()) this.render();               // „läuft gerade“ weiterrücken
     }, 60 * 1000);
     document.addEventListener('visibilitychange', () => {
-      if (this.sichtbar() && Date.now() - this.geholt > this.NEU_HOLEN_MS) this.holen();
+      if (!document.hidden && Date.now() - this.geholt > this.NEU_HOLEN_MS) this.holen();
     });
   },
 
@@ -485,7 +491,7 @@ const Stundenplan = {
     if (!t.platz || t.entfaellt || t.aufsicht || this.tagSchluessel(t.beginn) > this.tagSchluessel(new Date())) return '';
     const key = this.buchSchluessel(t);
     const themen = cls ? this.nummeriert(cls, key, this.themenDerStunde(cls, t).themen) : [];
-    const text = themen.map(x => x.wort).join(' · ');
+    const text = themen.map(x => Lessons.ohneReihe(x.wort)).join(' · ');
     const url = this.KLASSENBUCH + this.tagSchluessel(t.beginn) + '?lessonId=' + t.platz;
     return `<button type="button" class="small plan-kb" data-klassenbuch="${this.esc(url)}" data-kopie="${this.esc(text)}"
       title="${this.esc(text ? `„${text}“ kopieren und die Stunde im Klassenbuch öffnen – dort ins Feld Unterrichtsinhalte klicken und Cmd+V` : 'Die Stunde im Klassenbuch öffnen')}">${Icons.raw('book')}${kurz ? '' : 'Klassenbuch'}</button>`;
@@ -528,8 +534,12 @@ const Stundenplan = {
   themaAus(cls, id, w) {
     if (!id) return { topic: { id: null, name: w, eigen: true }, wort: w };
     const e = (cls.lessons || {})[id];
-    const topic = Lessons.topicById(id, e || { t: w }) || { id, name: w || id };
-    return { topic, wort: w || Lessons.schlagwort(topic) };
+    const gefunden = Lessons.topicById(id, e || { t: w });
+    const topic = gefunden || { id, name: w || id };
+    // Aktuelles Schlagwort, solange das Thema bekannt ist – so wirken spätere
+    // Änderungen (eigenes Schlagwort, Reihennummer) auch auf frühere Stunden
+    const bekannt = gefunden && !gefunden.fehlt;
+    return { topic, wort: bekannt ? Lessons.schlagwort(topic) : (w || Lessons.schlagwort(topic)) };
   },
 
   /* Welche Themen gehören zu dieser Stunde?
@@ -752,7 +762,7 @@ const Stundenplan = {
     for (; d <= ende; d.setDate(d.getDate() + 1)) {
       const wt = d.getDay();
       const tag = this.tagSchluessel(d);
-      if (wt === 0 || wt === 6 || frei[tag]) continue;
+      if (wt === 0 || wt === 6 || this.istFrei(tag)) continue;
       for (const [platz, p] of Object.entries(plaetze)) {
         if (p.wt !== wt) continue;
         liste.push({
@@ -766,12 +776,41 @@ const Stundenplan = {
     return liste.sort((a, b) => a.beginn - b.beginn);
   },
 
-  /* Tage ohne Unterricht (Ferien, Feiertag) – nur für die Vorschau nötig */
+  /* Unterrichtsfreie Tage in Bayern (km.bayern.de, Ferienordnung bis 2029/30):
+     Ferien als [erster, letzter Tag, Name], dazu Feiertage an Schultagen. Nur für
+     die Vorschau nötig – das Abo kennt keine Ferien. Für ein neues Schuljahr hier
+     ergänzen. Von Hand lässt sich jeder Tag umstellen (planFrei: 1 frei, 0 Unterricht). */
+  FERIEN: [
+    ['2026-11-02', '2026-11-06', 'Herbstferien'],
+    ['2026-11-18', '2026-11-18', 'Buß- und Bettag'],
+    ['2026-12-24', '2027-01-08', 'Weihnachtsferien'],
+    ['2027-02-08', '2027-02-12', 'Frühjahrsferien'],
+    ['2027-03-22', '2027-04-02', 'Osterferien'],
+    ['2027-05-06', '2027-05-06', 'Christi Himmelfahrt'],
+    ['2027-05-17', '2027-05-17', 'Pfingstmontag'],
+    ['2027-05-18', '2027-05-28', 'Pfingstferien'],
+    ['2027-08-02', '2027-09-13', 'Sommerferien'],
+  ],
+
+  ferienName(tag) {
+    const f = this.FERIEN.find(([von, bis]) => tag >= von && tag <= bis);
+    return f ? f[2] : '';
+  },
+
+  istFrei(tag) {
+    const hand = (Classes.data.planFrei || {})[tag];
+    return hand === 1 || (hand !== 0 && !!this.ferienName(tag));
+  },
+
   freiUmschalten(tage) {
     this.merken('Freie Tage');
     const frei = Classes.data.planFrei || (Classes.data.planFrei = {});
-    const alleFrei = tage.every(t => frei[t]);
-    for (const t of tage) { if (alleFrei) delete frei[t]; else frei[t] = 1; }
+    const alleFrei = tage.every(t => this.istFrei(t));
+    for (const t of tage) {
+      // Zurück zum Normalfall, wenn er passt – sonst ausdrücklich frei bzw. Unterricht
+      const soll = !alleFrei;
+      if (soll === !!this.ferienName(t)) delete frei[t]; else frei[t] = soll ? 1 : 0;
+    }
     Classes.persist();
     this.render();
   },
@@ -1193,13 +1232,13 @@ const Stundenplan = {
         knoepfe = themen.filter(x => x.topic.haupt)
           .map(x => oeffnen('play', mehrere ? x.wort : 'Start', x.topic.haupt, 'Präsentation starten'));
       } else {
-        const alles = rec.s ? `${worte} – ${rec.s}` : worte;
+        const alles = Lessons.ohneReihe(rec.s ? `${worte} – ${rec.s}` : worte);
         knoepfe = themen.flatMap(({ topic, wort }) => [
           topic.haupt ? oeffnen('play', (/\.pdf$/i.test(topic.haupt) ? 'PDF' : 'Präsentation') + (mehrere ? ' ' + wort : ''), topic.haupt, 'Starten') : '',
           topic.ab ? oeffnen('file', 'AB', topic.ab, 'Öffnen') : '',
           topic.ordner ? oeffnen('folder', 'Ordner', topic.ordner, 'Ordner öffnen') : '',
         ]).concat([
-          knopf('clipboard', 'Thema', `data-kopieren="${this.esc(worte)}"`, 'Schlagwort kopieren: ' + worte),
+          knopf('clipboard', 'Thema', `data-kopieren="${this.esc(Lessons.ohneReihe(worte))}"`, 'Schlagwort kopieren: ' + Lessons.ohneReihe(worte)),
           rec.s ? knopf('clipboard', 'Alles', `data-kopieren="${this.esc(alles)}"`, 'Thema und Notiz kopieren: ' + alles) : '',
         ]);
       }
@@ -1634,7 +1673,7 @@ const Stundenplan = {
     const name = tag === heute ? 'Heute' : this.tagWahl ? '' : 'Nächster Schultag';
     const aboEnde = this.letzterAboTag();
     const vorschau = aboEnde && tag > aboEnde;
-    const istFrei = !!(Classes.data.planFrei || {})[tag];
+    const istFrei = this.istFrei(tag);
     const tagKopf = `<div class="plan-wochen-nav plan-tag-nav">
       <button type="button" class="small" data-tagnav="-1" ${davor ? '' : 'disabled'} aria-label="Tag zurück">‹</button>
       <h3 class="plan-zwischen">${name ? name + ', ' : ''}${this.tagName(datum)}</h3>
@@ -1644,7 +1683,7 @@ const Stundenplan = {
       <button type="button" class="small" data-frei="${tag}" title="Ferien oder Feiertag: an diesem Tag keine Stunden vorsehen">${istFrei ? 'Doch Unterricht' : 'Tag frei'}</button>` : ''}
     </div>`;
     return `${kopf}${tagKopf}
-      <ul class="plan-liste">${zeilen.length ? zeilen : `<li class="hint">${istFrei ? 'Als unterrichtsfrei markiert.' : 'Keine Stunden an diesem Tag.'}</li>`}</ul>${aenderungen}`;
+      <ul class="plan-liste">${zeilen.length ? zeilen : `<li class="hint">${istFrei ? this.esc(this.ferienName(tag) || 'Als unterrichtsfrei markiert.') : 'Keine Stunden an diesem Tag.'}</li>`}</ul>${aenderungen}`;
   },
 
   wocheHtml() {
@@ -1667,10 +1706,9 @@ const Stundenplan = {
       : this.wochenVersatz === -1 ? 'Letzte Woche' : 'Woche';
     // Tage nach dem Abo kommen aus der Regelwoche; Ferien markiert man hier
     const aboEnde = this.letzterAboTag();
-    const frei = Classes.data.planFrei || {};
     const vorschauTage = [0, 1, 2, 3, 4].map(i => { const d = new Date(mo); d.setDate(d.getDate() + i); return this.tagSchluessel(d); })
       .filter(tag => aboEnde && tag > aboEnde);
-    const alleFrei = vorschauTage.length && vorschauTage.every(tag => frei[tag]);
+    const alleFrei = vorschauTage.length && vorschauTage.every(tag => this.istFrei(tag));
     const nav = `<div class="plan-wochen-nav">
       <button type="button" class="small" data-woche="-1" ${zurueck ? '' : 'disabled'} aria-label="Woche zurück">‹</button>
       <strong>${titel}</strong> <span class="hint">${mo.getDate()}.${mo.getMonth() + 1}. – ${fr.getDate()}.${fr.getMonth() + 1}.</span>
@@ -1678,13 +1716,13 @@ const Stundenplan = {
       ${vorschauTage.length ? `<span class="plan-vorschau-hinweis" title="Noch nicht im Schulmanager-Abo – aus der Regelwoche. Entfall und Vertretung kommen, sobald das Abo die Woche enthält.">Vorschau</span>
       <button type="button" class="small" data-frei="${vorschauTage.join(',')}" title="Ferien oder Feiertage: an diesen Tagen keine Stunden vorsehen">${alleFrei ? 'Doch Unterricht' : 'Woche frei'}</button>` : ''}
     </div>`;
-    if (!woche.length) return nav + `<p class="hint">${alleFrei ? 'Als unterrichtsfrei markiert.' : 'Für diese Woche stehen keine Stunden im Plan.'}</p>`;
+    if (!woche.length) return nav + `<p class="hint">${alleFrei ? this.esc(this.ferienName(vorschauTage[0]) || 'Als unterrichtsfrei markiert.') : 'Für diese Woche stehen keine Stunden im Plan.'}</p>`;
 
     const zeiten = [...new Set(woche.map(t => this.uhr(t.beginn)))].sort();
     const heute = this.tagSchluessel(jetzt);
     const tage = [0, 1, 2, 3, 4].map(i => { const d = new Date(mo); d.setDate(d.getDate() + i); return d; });
     const kopf = '<div class="plan-ecke"></div>' + tage.map(d =>
-      `<button type="button" class="plan-tagkopf${this.tagSchluessel(d) === heute ? ' heute' : ''}" data-tag="${this.tagSchluessel(d)}" title="Diesen Tag als Tagesansicht">${this.tagName(d)}${frei[this.tagSchluessel(d)] ? ' <span class="plan-frei">frei</span>' : ''}</button>`).join('');
+      `<button type="button" class="plan-tagkopf${this.tagSchluessel(d) === heute ? ' heute' : ''}" data-tag="${this.tagSchluessel(d)}" title="Diesen Tag als Tagesansicht">${this.tagName(d)}${this.istFrei(this.tagSchluessel(d)) ? ` <span class="plan-frei">${this.esc(this.ferienName(this.tagSchluessel(d)) || 'frei')}</span>` : ''}</button>`).join('');
     const zellen = zeiten.map(z => {
       const zeile = tage.map(d => {
         const tag = this.tagSchluessel(d);

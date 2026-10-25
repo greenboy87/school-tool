@@ -330,14 +330,24 @@ const Lessons = {
       const e = c.lessons && c.lessons[topic.id];
       if (e && e.sw) return e.sw;
     }
-    return topic.name
-      .replace(/^(ex|klasse)\b[\s\d,–-]*-\s*/i, '')
+    // Reihennummer wie „2.2“ bleibt stehen (sie ordnet die Stunde in die Reihe ein);
+    // Ordner-Präfixe wie „1a_“ oder „3 “ fallen weg
+    const name = topic.name.replace(/^(ex|klasse)\b[\s\d,–-]*-\s*/i, '');
+    const reihe = /^(\d+\.\d+)\s+/.exec(name);
+    const rest = (reihe ? name.slice(reihe[0].length) : name)
       .replace(/^\d+[a-z]?(\s*\d+)?[_.\s-]*/i, '')
       .replace(/\s+by\s+\S+.*$/, '')
       .replace(/\s+(mip|wh|neu|alt|test)\b.*$/i, '')
       .replace(/[\s+_-]+$/, '')
       .replace(/_/g, ' ')
-      .trim() || topic.name;
+      .trim();
+    return rest ? (reihe ? reihe[1] + ' ' + rest : rest) : topic.name;
+  },
+
+  /* Fürs Klassenbuch der Schule: ohne Reihennummer („2.2 Musik und Werbung III“
+     → „Musik und Werbung III“) – die Nummer ist Toms eigene Ordnung */
+  ohneReihe(text) {
+    return String(text || '').split(' · ').map(t => t.replace(/^\d+(\.\d+)+\s+/, '')).join(' · ');
   },
 
   schlagwortAendern(cls, topic) {
@@ -482,7 +492,7 @@ const Lessons = {
         kopie.innerHTML = Icons.raw('clipboard');
         kopie.append(wort);
         kopie.title = 'Schlagwort kopieren (fürs Klassenbuch einfügen mit Strg+V)';
-        kopie.addEventListener('click', () => this.schlagwortKopieren(kopie, wort));
+        kopie.addEventListener('click', () => this.schlagwortKopieren(kopie, this.ohneReihe(wort)));
         const stift = document.createElement('button');
         stift.className = 'small';
         stift.innerHTML = Icons.raw('pen');

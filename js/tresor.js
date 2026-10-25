@@ -464,6 +464,7 @@ const Tresor = {
   MAX_PLAN: 15 * 1024 * 1024,
   TEIL_GROESSE: 2 * 1000 * 1000,      // Zeichen je Stueck, mit Abstand unter der Grenze
   PLAN_MERKER: 'tresor-plaene',
+  HOL_MERKER: 'tresor-dateistand',     // je Datei der Server-„stand“, den dieses Gerät schon hat
 
   merker() {
     try { return JSON.parse(localStorage.getItem(this.PLAN_MERKER) || '{}'); }
@@ -471,6 +472,19 @@ const Tresor = {
   },
 
   fingerabdruck(name, groesse) { return `${name}|${groesse}`; },
+
+  holMerker() {
+    try { return JSON.parse(localStorage.getItem(this.HOL_MERKER) || '{}'); }
+    catch (e) { return {}; }
+  },
+
+  /* Nur die Namen der Dateien eines Asts – ohne ihren Inhalt. Das Firebase-SDK
+     kennt das nicht, die REST-Schnittstelle schon („shallow“). */
+  async dateiNamen(pfad) {
+    const r = await fetch(`${window.FIREBASE_CONFIG.databaseURL}/${pfad}.json?shallow=true`);
+    if (!r.ok) throw new Error('Dateiliste: ' + r.status);
+    return Object.keys((await r.json()) || {});
+  },
 
   /* Sitzpläne und Fotos verhalten sich gleich – ein gemeinsamer Weg für beide */
   DATEIARTEN: [
@@ -483,6 +497,7 @@ const Tresor = {
   async dateienHochladen() {
     if (!this.aktiv()) return;
     const merker = this.merker();
+    const holMerker = this.holMerker();
     const { db, ref, set } = window.FB;
     for (const art of this.DATEIARTEN) {
       for (const id of await art.ids()) {
@@ -524,20 +539,34 @@ const Tresor = {
           }
         }
         merker[schluessel] = fp;
+        holMerker[schluessel] = kopf.stand;
       }
     }
     localStorage.setItem(this.PLAN_MERKER, JSON.stringify(merker));
+    localStorage.setItem(this.HOL_MERKER, JSON.stringify(holMerker));
   },
 
+  /* Dateien vom Server holen – nur, was sich geändert hat. Früher kam bei jeder
+     Übernahme (also nach fast jeder Änderung auf einem anderen Gerät) jeder
+     Sitzplan, jedes Foto und jedes Ablage-Dokument komplett herunter. Jetzt:
+     Dateinamen (shallow), je Datei nur das Feld „stand“, und den Inhalt nur,
+     wenn der Stand neu ist oder die Datei auf diesem Gerät fehlt. */
   async dateienHolen() {
     if (!this.aktiv()) return 0;
     const { db, ref, get } = window.FB;
-    const merker = {};
+    const merker = this.merker();
+    const holMerker = this.holMerker();
     let geholt = 0;
     for (const art of this.DATEIARTEN) {
-      const alle = (await get(ref(db, `schoolTool/tresor/${this.id}/${art.knoten}`))).val() || {};
-      for (const [id, p] of Object.entries(alle)) {
+      const basis = `schoolTool/tresor/${this.id}/${art.knoten}`;
+      const lokal = new Set(await art.ids());
+      for (const id of await this.dateiNamen(basis)) {
+        const schluessel = art.knoten + ':' + id;
         try {
+          const stand = (await get(ref(db, `${basis}/${id}/stand`))).val();
+          if (stand && holMerker[schluessel] === stand && lokal.has(id)) continue;   // unverändert
+          const p = (await get(ref(db, `${basis}/${id}`))).val();
+          if (!p) continue;
           const iv = this.vonB64(p.iv);
           const text = this.teileZusammensetzen(p, art.knoten, id);
           if (text === null) continue;
@@ -545,7 +574,8 @@ const Tresor = {
             { name: 'AES-GCM', iv }, this.schluessel, this.vonB64(text));
           const datei = new File([klar], p.name || art.standard, { type: p.typ || art.typ });
           await art.legen(id, datei);
-          merker[art.knoten + ':' + id] = this.fingerabdruck(datei.name, datei.size);
+          merker[schluessel] = this.fingerabdruck(datei.name, datei.size);
+          holMerker[schluessel] = p.stand;
           geholt++;
         } catch (e) {
           console.error('Datei konnte nicht übernommen werden:', art.knoten, id, e);
@@ -553,6 +583,7 @@ const Tresor = {
       }
     }
     localStorage.setItem(this.PLAN_MERKER, JSON.stringify(merker));
+    localStorage.setItem(this.HOL_MERKER, JSON.stringify(holMerker));
     return geholt;
   },
 
