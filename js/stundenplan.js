@@ -140,6 +140,8 @@ const Stundenplan = {
       if (nav) { this.woche(parseInt(nav.dataset.woche, 10)); return; }
       const tagNav = e.target.closest('[data-tagnav]');
       if (tagNav) { this.tag(parseInt(tagNav.dataset.tagnav, 10)); return; }
+      const leer = e.target.closest('[data-leer]');
+      if (leer && !e.target.closest('.plan-termin')) { this.neueStunde(leer.dataset.leer); return; }
       const tagKopf = e.target.closest('[data-tag]');
       if (tagKopf) { this.ansicht('heute', tagKopf.dataset.tag); return; }
       const schieben = e.target.closest('[data-verschieben]');
@@ -914,9 +916,10 @@ const Stundenplan = {
      Den Stand offen/läuft/fertig leitet das Tool daraus ab: Das gewählte Thema
      läuft ab dieser Stunde, das bis dahin laufende ist mit der Stunde davor fertig.
      Unverändertes Thema-Feld lässt das Thema der Stunde in Ruhe. */
-  themaBearbeiten(key) {
+  themaBearbeiten(key, neu) {
     this._cache = null;
-    const t = this.alleTermine().find(x => !x.entfaellt && !x.aufsicht && this.buchSchluessel(x) === key);
+    // neu: eine Stunde, die es noch nicht gibt (Klick in ein leeres Feld)
+    const t = neu || this.alleTermine().find(x => (!x.entfaellt || x.vonHandAus) && !x.aufsicht && this.buchSchluessel(x) === key);
     if (!t) return;
     const alteKlasse = this.klasseZu(t);
     const dlg = document.getElementById('plan-dialog');
@@ -1061,15 +1064,50 @@ const Stundenplan = {
 
     // Gespeichert wird beim Absenden (Knopf oder Enter) – das kommt sofort,
     // das close-Ereignis des Fensters nicht in jedem Browser verlässlich
+    // Stunde streichen / wieder einsetzen, zusätzliche Stunde löschen
+    const ausKnopf = document.getElementById('plan-dialog-aus');
+    const loeschKnopf = document.getElementById('plan-dialog-loeschen');
+    ausKnopf.hidden = !!neu;
+    ausKnopf.textContent = t.vonHandAus ? 'Stunde findet doch statt' : 'Stunde fällt aus';
+    loeschKnopf.hidden = !t.extra || !!neu;
+    if (neu) dlg.querySelector('.plan-dialog-klasse').open = true;
+    ausKnopf.onclick = () => {
+      this.merken(t.vonHandAus ? 'Stunde wieder eingesetzt' : 'Stunde gestrichen');
+      const buch = cls.stundenbuch || (cls.stundenbuch = {});
+      const rec = buch[key] || {};
+      if (t.vonHandAus) delete rec.aus; else rec.aus = 1;
+      if (Object.keys(rec).length) buch[key] = rec; else delete buch[key];
+      Classes.persist();
+      dlg.close();
+      this.buchFuehren();
+      this.render();
+      this.klassenbuchZeigen();
+    };
+    loeschKnopf.onclick = () => {
+      if (!confirm('Diese zusätzliche Stunde löschen – samt Thema und Notiz?')) return;
+      this.merken('Zusätzliche Stunde gelöscht');
+      delete (Classes.data.planExtra || {})[key];
+      if (cls.stundenbuch) delete cls.stundenbuch[key];
+      Classes.persist();
+      dlg.close();
+      this.render();
+      this.klassenbuchZeigen();
+    };
+    if (neu) document.getElementById('plan-dialog-titel').textContent = `Neue Stunde · ${this.tagName(t.beginn)} · ${this.STUNDEN[this.uhr(t.beginn)] || this.uhr(t.beginn)}${/\d\./.test(this.STUNDEN[this.uhr(t.beginn)] || '') ? ' Stunde' : ''}`;
+
     dlg.querySelector('form').onsubmit = ev => {
       const wahl = ev.submitter ? ev.submitter.value : 'speichern';
       if (wahl === 'speichern' || wahl === 'kein') speichern(wahl === 'kein');
     };
     const speichern = kein => {
-      this.merken(`${t.fach} ${this.klassenText(t)}, ${this.tagName(t.beginn)}`);
+      this.merken(neu ? 'Neue Stunde' : `${t.fach} ${this.klassenText(t)}, ${this.tagName(t.beginn)}`);
       const neueId = wahlKlasse.value;
       const zuordnung = Classes.data.planKlassen || (Classes.data.planKlassen = {});
-      if (neueId !== (alteKlasse ? alteKlasse.id : '') || immer.checked) {
+      if (t.extra) {
+        // Zusätzliche Stunde: Klasse steht bei ihr selbst
+        const extra = Classes.data.planExtra || (Classes.data.planExtra = {});
+        extra[key] = { ...(extra[key] || {}), k: neueId };
+      } else if (neueId !== (alteKlasse ? alteKlasse.id : '') || immer.checked) {
         if (immer.checked && t.platz) { zuordnung['p:' + t.platz] = neueId; delete zuordnung[key]; }
         else zuordnung[key] = neueId;
       }
@@ -1113,6 +1151,11 @@ const Stundenplan = {
       const info = infoFeld.value.trim().slice(0, 200);
       if (info) rec.i = info; else delete rec.i;
       delete rec.p;                                // früherer iPad-Merker, entfällt
+      if (t.extra) {
+        // Damit sie im Klassenbuch steht wie eine Stunde aus dem Abo
+        rec.e = this.uhr(t.ende);
+        rec.k = cls.ohne ? '' : (this.klassenSchluessel(cls.name) || cls.name);
+      }
       if (Object.keys(rec).length) buch[key] = rec; else delete buch[key];
       if (neuesThema) this.themaBeginnt(cls, neuesThema, key);
       Classes.persist();
@@ -1149,6 +1192,16 @@ const Stundenplan = {
     this._cache = null;
   },
 
+  /* Klick in ein leeres Feld: neue Stunde – erst beim Speichern angelegt */
+  neueStunde(key) {
+    const [tag, zeit] = key.split(' ');
+    const beginn = new Date(tag + 'T' + zeit);
+    this.themaBearbeiten(key, {
+      uid: '', art: 'extra', platz: '', beginn, ende: new Date(beginn.getTime() + 45 * 60000), titel: '', fach: '',
+      klassen: [], raum: '', entfaellt: false, aufsicht: false, sonder: false, ort: '', extra: true, ausBuchOhne: true,
+    });
+  },
+
   /* Stunden aus dem Stundenbuch, die das Abo nicht mehr liefert – damit auch
      ältere Wochen im Plan stehen */
   buchTermine() {
@@ -1172,8 +1225,59 @@ const Stundenplan = {
 
   alleTermine() {
     const c = this.cache();
-    if (!c.alle) c.alle = this.buchTermine().concat(this.termine, this.vorschauTermine());
+    if (!c.alle) {
+      const basis = this.buchTermine().concat(this.termine, this.vorschauTermine(), this.extraTermine());
+      // Von Hand gestrichen („Stunde fällt aus“): wie ein Entfall behandeln
+      const mitAus = basis.map(t => {
+        if (t.entfaellt || t.aufsicht) return t;
+        const cls = this.buchKlasse(t);
+        const rec = cls && (cls.stundenbuch || {})[this.buchSchluessel(t)];
+        return rec && rec.aus ? { ...t, entfaellt: true, vonHandAus: true } : t;
+      });
+      // Zeitlich sortiert – Zählung und Fortführung gehen der Reihe nach
+      c.alle = mitAus.concat(this.verwaisteTermine(mitAus)).sort((a, b) => a.beginn - b.beginn);
+    }
     return c.alle;
+  },
+
+  /* Zusätzliche Stunden, von Hand in ein leeres Feld gesetzt
+     (Classes.data.planExtra: „2026-10-28 13:00“ → { k: Klassen-Kennung }) */
+  extraTermine() {
+    const extra = (Classes.data && Classes.data.planExtra) || {};
+    return Object.entries(extra).map(([key, x]) => {
+      const [tag, zeit] = key.split(' ');
+      const beginn = new Date(tag + 'T' + zeit);
+      const cls = x.k && Classes.data.classes.find(c => c.id === x.k);
+      return { uid: '', art: 'extra', platz: '', beginn, ende: new Date(beginn.getTime() + 45 * 60000),
+        titel: '', fach: '', klassen: cls ? [cls.name] : [], raum: x.r || '', entfaellt: false, aufsicht: false,
+        sonder: false, ort: '', extra: true, klasseId: cls ? cls.id : undefined, ausBuchOhne: !cls };
+    });
+  },
+
+  /* Geplantes, dessen Stunde aus dem Plan verschwunden ist (vom Schulmanager
+     ganz gelöscht statt als Entfall markiert): nicht stillschweigend verstecken,
+     sondern als „nicht mehr im Plan“ zeigen – mit „→ nächste Stunde“. */
+  verwaisteTermine(alle) {
+    if (!this.termine.length || !Classes.data) return [];
+    const da = new Set();
+    for (const t of alle) {
+      if (t.aufsicht) continue;
+      const cls = this.buchKlasse(t);
+      if (cls) da.add(cls.id + '|' + this.buchSchluessel(t));
+    }
+    const liste = [];
+    for (const cls of [...Classes.data.classes, this.ohneKlasse()]) {
+      for (const [key, rec] of Object.entries(cls.stundenbuch || {})) {
+        if (!rec || !(rec.m || rec.s || rec.i) || da.has(cls.id + '|' + key)) continue;
+        const [tag, zeit] = key.split(' ');
+        const beginn = new Date(tag + 'T' + zeit);
+        liste.push({ uid: '', art: 'weg', platz: '', beginn, ende: new Date(beginn.getTime() + 45 * 60000),
+          titel: '', fach: rec.f || '', klassen: rec.k ? rec.k.split(' · ') : (cls.ohne ? [] : [cls.name]), raum: rec.r || '',
+          entfaellt: true, verschwunden: true, aufsicht: false, sonder: false, ort: '',
+          klasseId: cls.ohne ? undefined : cls.id, ausBuchOhne: !!cls.ohne });
+      }
+    }
+    return liste;
   },
 
   /* Themen einer Stunde: Schlagwort (Schalter „Themen“), dazu der eigene
@@ -1370,7 +1474,12 @@ const Stundenplan = {
       ? `<span class="plan-raum getauscht" title="Sonst ${this.esc(getauscht)}">${this.esc(t.raum)}</span>`
       : (t.raum ? `<span class="plan-raum">${this.esc(t.raum)}</span>` : '');
     const marken = [];
-    if (t.entfaellt) marken.push('<span class="plan-marke entfall">entfällt</span>');
+    if (t.entfaellt) {
+      marken.push(t.verschwunden ? '<span class="plan-marke entfall" title="Die Stunde steht nicht mehr im Schulmanager">nicht mehr im Plan</span>'
+        : t.vonHandAus ? '<span class="plan-marke entfall" title="Von dir gestrichen – anklicken, um sie wieder einzusetzen">fällt aus</span>'
+        : '<span class="plan-marke entfall">entfällt</span>');
+    }
+    if (t.extra) marken.push('<span class="plan-marke sonder" title="Von dir angelegte Stunde">zusätzlich</span>');
     if (t.sonder) marken.push('<span class="plan-marke sonder">Sonderstunde</span>');
     if (getauscht) marken.push('<span class="plan-marke raum">Raum geändert</span>');
     const buchCls = this.buchKlasse(t);
@@ -1390,11 +1499,11 @@ const Stundenplan = {
     }
     const klassenName = ['plan-termin',
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',
-      t.vorschau && 'vorschau', !t.entfaellt && !t.aufsicht && 'klickbar',
+      t.vorschau && 'vorschau', (!t.entfaellt || t.vonHandAus) && !t.aufsicht && 'klickbar',
       jetzt && t.beginn <= jetzt && jetzt < t.ende && !t.entfaellt && 'laeuft'].filter(Boolean).join(' ');
     // Gruppe für das Hervorheben: dieselbe Klasse – ohne Klasse im School-Tool die aus dem Abo
     const gruppe = t.aufsicht ? '' : cls ? cls.id : klassen ? 'abo:' + klassen : '';
-    const attr = (!t.entfaellt && !t.aufsicht ? ` data-stunde="${this.esc(this.buchSchluessel(t))}"` : '') +
+    const attr = ((!t.entfaellt || t.vonHandAus) && !t.aufsicht ? ` data-stunde="${this.esc(this.buchSchluessel(t))}"` : '') +
       (gruppe ? ` data-gruppe="${this.esc(gruppe)}"` : '');
     return { klassenName, attr, wer, raum, marken: marken.join('') };
   },
@@ -1718,7 +1827,9 @@ const Stundenplan = {
     </div>`;
     if (!woche.length) return nav + `<p class="hint">${alleFrei ? this.esc(this.ferienName(vorschauTage[0]) || 'Als unterrichtsfrei markiert.') : 'Für diese Woche stehen keine Stunden im Plan.'}</p>`;
 
-    const zeiten = [...new Set(woche.map(t => this.uhr(t.beginn)))].sort();
+    // Alle Stunden 1–6 als Zeilen – auch leere, damit man dort eine Stunde anlegen kann
+    const regulaer = Object.entries(this.STUNDEN).filter(([z, n]) => /^[1-6]\./.test(n)).map(([z]) => z);
+    const zeiten = [...new Set([...woche.map(t => this.uhr(t.beginn)), ...regulaer])].sort();
     const heute = this.tagSchluessel(jetzt);
     const tage = [0, 1, 2, 3, 4].map(i => { const d = new Date(mo); d.setDate(d.getDate() + i); return d; });
     const kopf = '<div class="plan-ecke"></div>' + tage.map(d =>
@@ -1727,7 +1838,10 @@ const Stundenplan = {
       const zeile = tage.map(d => {
         const tag = this.tagSchluessel(d);
         const hier = woche.filter(t => this.tagSchluessel(t.beginn) === tag && this.uhr(t.beginn) === z);
-        return `<div class="plan-zelle${tag === heute ? ' heute' : ''}">${hier.map(t => {
+        // Leeres Feld einer Unterrichtsstunde: hier lässt sich eine Stunde anlegen
+        const leer = !hier.length && /\d\./.test(this.STUNDEN[z] || '') && !this.istFrei(tag)
+          ? ` data-leer="${tag} ${z}" title="Zusätzliche Stunde anlegen"` : '';
+        return `<div class="plan-zelle${tag === heute ? ' heute' : ''}"${leer}>${hier.map(t => {
           const b = this.baustein(t, jetzt, 'start');
           return `<div class="${b.klassenName}"${b.attr}><span class="plan-wer">${b.wer}</span>${b.raum}${b.marken}</div>`;
         }).join('')}</div>`;

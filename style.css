@@ -2394,3 +2394,10 @@ button.plan-thema-wort.laeuft { color: var(--text); font-style: normal; font-wei
 .lesson-stand { font-size: .78rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; align-self: center; cursor: help; }
 .lesson-stand.stand-progress { color: var(--accent); border-color: var(--accent); }
 .lesson-stand.stand-done { color: var(--green); border-color: currentColor; }
+/* Leeres Feld im Wochenraster: Stunde anlegen */
+.plan-zelle[data-leer] { cursor: pointer; position: relative; }
+.plan-zelle[data-leer]:hover::after {
+  content: '+ Stunde'; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: .78rem; font-weight: 600; color: var(--muted);
+}
+.plan-dialog .btn-row .plan-dialog-rechts { margin-left: auto; }
