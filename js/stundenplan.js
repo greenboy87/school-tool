@@ -98,7 +98,7 @@ const Stundenplan = {
       e.preventDefault();
       this.rueckgaengig();
     });
-    // H = Heute, W = Woche, S oder N = Note ein/aus – solange der Plan offen ist und nicht getippt wird
+    // H = Heute, W = Woche, S oder N = Notiz ein/aus – solange der Plan offen ist und nicht getippt wird
     document.addEventListener('keydown', e => {
       const k = e.key.toLowerCase();
       if (!['h', 'w', 's', 'n'].includes(k) || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
@@ -106,7 +106,7 @@ const Stundenplan = {
       const ziel = e.target;
       if (ziel && ziel.closest && ziel.closest('input, textarea, select, dialog, [contenteditable="true"]')) return;
       e.preventDefault();
-      if (k === 's' || k === 'n') { this.standSchalter.click(); return; }     // S/N: Note ein/aus
+      if (k === 's' || k === 'n') { this.standSchalter.click(); return; }     // S/N: Notiz ein/aus
       this.ansicht(k === 'w' ? 'woche' : 'heute');
     });
     document.getElementById('btn-plan-voll').addEventListener('click', () => this.vollbild());
@@ -169,7 +169,7 @@ const Stundenplan = {
     inhalt.addEventListener('input', e => {
       const f = e.target.closest('.plan-notiz');
       if (!f) return;
-      if (!f.dataset.geaendert) this.merken('Note');
+      if (!f.dataset.geaendert) this.merken('Notiz');
       f.dataset.geaendert = '1';
       this.notizHoehe(f);
       clearTimeout(notizUhr);
@@ -1200,7 +1200,7 @@ const Stundenplan = {
           topic.ordner ? oeffnen('folder', 'Ordner', topic.ordner, 'Ordner öffnen') : '',
         ]).concat([
           knopf('clipboard', 'Thema', `data-kopieren="${this.esc(worte)}"`, 'Schlagwort kopieren: ' + worte),
-          rec.s ? knopf('clipboard', 'Alles', `data-kopieren="${this.esc(alles)}"`, 'Thema und Note kopieren: ' + alles) : '',
+          rec.s ? knopf('clipboard', 'Alles', `data-kopieren="${this.esc(alles)}"`, 'Thema und Notiz kopieren: ' + alles) : '',
         ]);
       }
       if (knoepfe.join('')) teile.push(`<span class="plan-material">${knoepfe.join('')}</span>`);
@@ -1266,7 +1266,7 @@ const Stundenplan = {
     const rec = (cls.stundenbuch || {})[key] || {};
     const zuletzt = rec.s ? '' : this.letzterStand(cls, key, this.themenDerStunde(cls, t).themen);
     return `<textarea class="plan-notiz" rows="1" maxlength="500" data-notiz="${this.esc(cls.id + '|' + key)}"
-      placeholder="${this.esc(zuletzt ? '✎ zuletzt: ' + zuletzt : '✎')}" title="Note zu dieser Stunde – einfach hineinschreiben"
+      placeholder="${this.esc(zuletzt ? '✎ zuletzt: ' + zuletzt : '✎')}" title="Notiz zu dieser Stunde – einfach hineinschreiben"
       spellcheck="true">${this.esc(rec.s || '')}</textarea>`;
   },
 
