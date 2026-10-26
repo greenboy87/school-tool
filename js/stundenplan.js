@@ -1825,7 +1825,10 @@ const Stundenplan = {
       ${vorschauTage.length ? `<span class="plan-vorschau-hinweis" title="Noch nicht im Schulmanager-Abo – aus der Regelwoche. Entfall und Vertretung kommen, sobald das Abo die Woche enthält.">Vorschau</span>
       <button type="button" class="small" data-frei="${vorschauTage.join(',')}" title="Ferien oder Feiertage: an diesen Tagen keine Stunden vorsehen">${alleFrei ? 'Doch Unterricht' : 'Woche frei'}</button>` : ''}
     </div>`;
-    if (!woche.length) return nav + `<p class="hint">${alleFrei ? this.esc(this.ferienName(vorschauTage[0]) || 'Als unterrichtsfrei markiert.') : 'Für diese Woche stehen keine Stunden im Plan.'}</p>`;
+    // Ganz ohne Stunden und ohne freie Tage: nichts zu zeigen. Ferienwochen bekommen das Raster
+    // mit den markierten Tagen, damit man die Ferien im Kalender sieht.
+    const tageDerWoche = [0, 1, 2, 3, 4].map(i => { const d = new Date(mo); d.setDate(d.getDate() + i); return this.tagSchluessel(d); });
+    if (!woche.length && !tageDerWoche.some(tag => this.istFrei(tag))) return nav + '<p class="hint">Für diese Woche stehen keine Stunden im Plan.</p>';
 
     // Alle Stunden 1–6 als Zeilen – auch leere, damit man dort eine Stunde anlegen kann
     const regulaer = Object.entries(this.STUNDEN).filter(([z, n]) => /^[1-6]\./.test(n)).map(([z]) => z);
@@ -1841,7 +1844,10 @@ const Stundenplan = {
         // Leeres Feld einer Unterrichtsstunde: hier lässt sich eine Stunde anlegen
         const leer = !hier.length && /\d\./.test(this.STUNDEN[z] || '') && !this.istFrei(tag)
           ? ` data-leer="${tag} ${z}" title="Zusätzliche Stunde anlegen"` : '';
-        return `<div class="plan-zelle${tag === heute ? ' heute' : ''}"${leer}>${hier.map(t => {
+        // Ferien und Feiertage: Spalte markiert, in der ersten Zeile der Name
+        const frei = this.istFrei(tag) && !hier.length;
+        const name = frei && z === zeiten[0] ? `<div class="plan-ferien">${this.esc(this.ferienName(tag) || 'unterrichtsfrei')}</div>` : '';
+        return `<div class="plan-zelle${tag === heute ? ' heute' : ''}${frei ? ' frei' : ''}"${leer}>${name}${hier.map(t => {
           const b = this.baustein(t, jetzt, 'start');
           return `<div class="${b.klassenName}"${b.attr}><span class="plan-wer">${b.wer}</span>${b.raum}${b.marken}</div>`;
         }).join('')}</div>`;

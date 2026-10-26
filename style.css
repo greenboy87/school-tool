@@ -2406,3 +2406,11 @@ button.plan-thema-wort.laeuft { color: var(--text); font-style: normal; font-wei
   font-size: .78rem; font-weight: 600; color: var(--muted);
 }
 .plan-dialog .btn-row .plan-dialog-rechts { margin-left: auto; }
+/* Ferien und Feiertage im Wochenraster */
+.plan-zelle.frei {
+  background: repeating-linear-gradient(135deg, var(--panel) 0 8px, transparent 8px 16px);
+  border: 1px dashed var(--border);
+}
+.plan-ferien { font-size: .82rem; font-weight: 700; color: var(--green); padding: .3rem .4rem; }
+.plan-tagkopf .plan-frei { display: block; font-size: .7rem; color: var(--green); opacity: 1; }
+.plan-tagkopf.heute .plan-frei { color: inherit; }
