@@ -614,6 +614,7 @@ const ExSitzung = {
       kopf = `<span>${frei} freigegeben · ${wartend} warten · ${zaehle('offen')} noch nicht da</span>
         <span class="btn-row">
           ${wartend ? '<button data-aktion="alle-freigeben" class="small">Alle freigeben</button>' : ''}
+          <button data-aktion="nachtragen" class="small" title="Für jemanden, der beim Öffnen des Warteraums nicht in der Liste stand">Schüler nachträglich zulassen</button>
           ${i.ohneLimit ? '' : `<button data-aktion="dauer" class="small" title="Gilt für alle; zählt nicht als Zeitzuschlag">Dauer: ${i.dauerMinuten} min ändern</button>`}
           <button data-aktion="starten" class="primary" ${frei ? '' : 'disabled'}>Ex starten</button>
         </span>`;
@@ -624,6 +625,7 @@ const ExSitzung = {
             : `reguläre Restzeit <strong>${this.zeitText(rest)}</strong>${i.zuschlagMin ? ` (+${i.zuschlagMin} min für alle)` : ''}${i.zeitAnzeigen === false ? ' · auf den iPads verborgen' : ''}`}</span>
         <span class="btn-row">
           ${wartend ? '<button data-aktion="alle-freigeben" class="small">Alle freigeben</button>' : ''}
+          <button data-aktion="nachtragen" class="small" title="Für jemanden, der beim Öffnen des Warteraums nicht in der Liste stand">Schüler nachträglich zulassen</button>
           ${i.ohneLimit ? '' : '<button data-aktion="zuschlag-alle" class="small">Zeit + für alle</button>'}
           <button data-aktion="beenden" class="danger">Ex beenden</button>
         </span>`;
@@ -721,6 +723,7 @@ const ExSitzung = {
         }
         case 'ausblenden': this.vergessen(); return;
         case 'nachschreiben': { const l = this.lokal(); this.nachschreibenVorbereiten(`${l.exId}|${l.klasseId}|${l.exNummer}`); return; }
+        case 'nachtragen': await this.nachtragen(); return;
         case 'uebernehmen': await this.uebernehmen(uid, nr); return;
         case 'starten': await this.starten(); return;
         case 'dauer': {
@@ -737,6 +740,74 @@ const ExSitzung = {
     } catch (e) {
       alert('Das hat nicht geklappt: ' + e.message);
     }
+  },
+
+  /* Schüler nachträglich zulassen: Wer beim Öffnen des Warteraums nicht in der
+     Klassenliste stand, bekommt die nächste freie Nummer hinter allen bisherigen.
+     Die alten Nummern bleiben, wie sie sind. Die Zuordnung kommt in alle
+     Sitzungen derselben Ex (Nachschreiben, Auswertung), der QR-Code trägt
+     danach auch den neuen Namen. */
+  async nachtragen() {
+    const lokal = this.lokal(), i = this.info;
+    const cls = lokal && this.klasseVon(lokal.klasseId);
+    if (!cls || !i || i.status === 'beendet') return;
+    const key = `${lokal.exId}|${lokal.klasseId}|${lokal.exNummer}`;
+    const verwandte = Object.values(this.sitzungen()).filter(l => `${l.exId}|${l.klasseId}|${l.exNummer}` === key);
+    const vergeben = new Map();                    // Schüler-ID → Nummer
+    let hoechste = 0;
+    for (const l of verwandte) {
+      for (const [nr, sid] of Object.entries(l.nummern || {})) {
+        if (sid && !vergeben.has(sid)) vergeben.set(sid, nr);
+        hoechste = Math.max(hoechste, Number(nr) || 0);
+      }
+    }
+    for (const k of [...Object.keys(i.erlaubt || {}), ...Object.keys(i.fehlt || {})]) hoechste = Math.max(hoechste, Number(k.slice(1)) || 0);
+    for (const t of Object.values(this.teilnehmer)) hoechste = Math.max(hoechste, Number(t.nummer) || 0);
+    const nr = String(hoechste + 1);
+    if (hoechste + 1 > 999) { alert('Es ist keine Nummer mehr frei.'); return; }
+
+    let sid;
+    if (cls.test) {
+      if (!confirm(`Nr. ${nr} zusätzlich zulassen?`)) return;
+      sid = 't' + nr;
+    } else {
+      const kandidaten = cls.students.filter(s => !vergeben.has(s.id));
+      const ein = prompt('Wen zulassen?\n\n' +
+        (kandidaten.length ? 'Noch nicht in dieser Ex:\n' + kandidaten.map((s, k) => `${k + 1}) ${Classes.studentName(s)}`).join('\n') +
+          '\n\nNummer aus dieser Liste eingeben – oder einen neuen Namen (Vorname Nachname), der dann auch in die Klassenliste kommt.'
+          : 'Einen Namen eingeben (Vorname Nachname). Er kommt auch in die Klassenliste.'), '');
+      if (ein == null || !ein.trim()) return;
+      const wahl = /^\d+$/.test(ein.trim()) ? kandidaten[Number(ein.trim()) - 1] : null;
+      if (/^\d+$/.test(ein.trim()) && !wahl) { alert('Diese Nummer steht nicht in der Liste.'); return; }
+      if (wahl) sid = wahl.id;
+      else {
+        const n = Classes.parseName(ein);
+        if (!n || !n.last) { alert('Bitte einen Namen eingeben.'); return; }
+        const gleich = cls.students.find(s => `${s.last}\u0000${s.first}`.toLocaleLowerCase('de') === `${n.last}\u0000${n.first}`.toLocaleLowerCase('de'));
+        if (gleich && vergeben.has(gleich.id)) {
+          const alt = vergeben.get(gleich.id);
+          alert(`${Classes.studentName(gleich)} steht in dieser Ex schon als Nr. ${alt}.` +
+            (i.fehlt && i.fehlt['n' + alt] ? ' Nimm dort „Doch da“.' : ''));
+          return;
+        }
+        if (gleich) sid = gleich.id;
+        else {
+          const s = { id: Store.uid(), first: n.first, last: n.last };
+          cls.students.push(s);
+          Classes.sortStudents(cls);
+          sid = s.id;
+        }
+      }
+      const s = cls.students.find(x => x.id === sid);
+      if (!confirm(`${Classes.studentName(s)} als Nr. ${nr} zulassen?\n\nAuf dem iPad den QR-Code neu scannen lassen – oder Nummer ${nr} wählen.`)) return;
+    }
+
+    // Erst lokal festhalten, damit das Dashboard den Namen sofort kennt
+    for (const l of verwandte) l.nummern = { ...(l.nummern || {}), [nr]: sid };
+    Classes.persist();
+    try { Classes.renderClassList(); Classes.renderStudents(); } catch (e) {}
+    document.dispatchEvent(new CustomEvent('ex-sitzungen'));
+    await FB.update(this.ref('info'), { [`erlaubt/n${nr}`]: true });
   },
 
   /* Zeitzuschlag gesamt (nicht „noch einmal dazu“) – so lässt er sich auch zurücknehmen */
