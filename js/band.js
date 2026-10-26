@@ -359,6 +359,23 @@ const Band = {
       this.save();
     });
     document.getElementById('btn-print-rehearsal').addEventListener('click', () => this.printRehearsal());
+    const probeSuche = document.getElementById('rehearsal-suche');
+    probeSuche.addEventListener('input', () => { this.probeMarkiert = 0; this.probeSuchen(); });
+    probeSuche.addEventListener('keydown', e => {
+      const zeilen = [...document.querySelectorAll('#rehearsal-suche-treffer li[data-wahl]')];
+      if (e.key === 'Escape') { probeSuche.value = ''; this.probeSuchen(); return; }
+      if (!zeilen.length) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const n = zeilen.length;
+        this.probeMarkiert = (this.probeMarkiert + (e.key === 'ArrowDown' ? 1 : n - 1)) % n;
+        zeilen.forEach((z, i) => z.classList.toggle('markiert', i === this.probeMarkiert));
+        zeilen[this.probeMarkiert].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        zeilen[Math.min(this.probeMarkiert, zeilen.length - 1)].click();
+      }
+    });
 
     this.renderAll();
   },
@@ -1031,15 +1048,20 @@ const Band = {
       if (!s) return;
       const frage = pre === 'idea'
         ? `Vorschlag „${s.title}“ löschen?`
-        : `Song „${s.title}“ löschen? Er verschwindet auch aus Setlisten und Probenplänen.`;
+        : `Song „${s.title}“ löschen? Er verschwindet auch aus Setlisten.`;
       if (!confirm(frage)) return;
       if (pre === 'idea') {
         this.d().ideas = this.d().ideas.filter(x => x.id !== s.id);
       } else {
         this.d().songs = this.d().songs.filter(x => x.id !== s.id);
         this.d().gigs.forEach(g => g.songIds = g.songIds.filter(id => id !== s.id));
-        this.d().rehearsals.forEach(r => delete r.songs[s.id]);
       }
+      // In Probenplänen bleibt der Song als freier Eintrag stehen
+      this.d().rehearsals.forEach(r => {
+        if (!Object.prototype.hasOwnProperty.call(r.songs, s.id)) return;
+        if (!r.frei) r.frei = {};
+        r.frei[s.id] = { title: s.title, artist: s.artist || '' };
+      });
       this.songAktiv[pre] = null;
       this.save();
       this.renderAll();
@@ -1560,7 +1582,7 @@ const Band = {
       name.textContent = this.fmt(r.date);
       const cnt = document.createElement('span');
       cnt.className = 'pavg';
-      const n = Object.keys(r.songs || {}).length;
+      const n = this.probeEintraege(r).length;
       cnt.textContent = n ? `${n} Songs geprobt` : 'nichts eingetragen';
       li.append(name, cnt);
       li.addEventListener('click', () => { this.currentRehearsalId = r.id; this.renderRehearsals(); });
@@ -1569,40 +1591,141 @@ const Band = {
     this.renderRehearsalDetail();
   },
 
+  /* Eine Probe merkt sich in r.songs { id: Anmerkung } – in der Reihenfolge,
+     in der die Songs hinzukamen. Die id zeigt auf einen Song, einen Vorschlag
+     oder einen freien Eintrag in r.frei { id: { title, artist } }. */
+  probeEintrag(r, id) {
+    const s = this.song(id);
+    if (s) return { ...s, herkunft: 'song' };
+    const v = this.d().ideas.find(x => x.id === id);
+    if (v) return { ...v, herkunft: 'idea' };
+    const f = r.frei && r.frei[id];
+    if (f) return { id, title: f.title, artist: f.artist || '', herkunft: 'frei' };
+    return null;
+  },
+  probeEintraege(r) {
+    return Object.keys(r.songs || {}).map(id => this.probeEintrag(r, id)).filter(Boolean);
+  },
+
+  probeSuchen() {
+    const ul = document.getElementById('rehearsal-suche-treffer');
+    const r = this.currentRehearsal();
+    const text = document.getElementById('rehearsal-suche').value.trim();
+    ul.innerHTML = '';
+    if (!r || !text) { ul.hidden = true; return; }
+    const q = text.toLowerCase();
+    const passt = s => s.title.toLowerCase().includes(q) || (s.artist || '').toLowerCase().includes(q);
+    const treffer = [
+      ...this.d().songs.filter(passt).map(s => ({ s, art: 'Song' })),
+      ...this.d().ideas.filter(passt).map(s => ({ s, art: 'Vorschlag' })),
+    ].filter(t => !Object.prototype.hasOwnProperty.call(r.songs, t.s.id)).slice(0, 12);
+
+    const zeile = (name, unter, los) => {
+      const li = document.createElement('li');
+      li.dataset.wahl = '1';
+      const n = document.createElement('span');
+      n.className = 'treffer-name';
+      n.textContent = name;
+      const u = document.createElement('span');
+      u.className = 'treffer-klasse';
+      u.textContent = unter;
+      li.append(n, u);
+      li.addEventListener('click', los);
+      ul.appendChild(li);
+    };
+    for (const { s, art } of treffer) {
+      zeile(s.title, art + (s.artist ? ' · ' + s.artist : ''), () => this.probeHinzu(r, s.id));
+    }
+    // Frei eintragen, solange kein Song genau so heißt
+    const genau = [...this.d().songs, ...this.d().ideas, ...this.probeEintraege(r)]
+      .some(s => s.title.toLowerCase() === q);
+    if (!genau) {
+      zeile(`„${text}“ frei eintragen`, 'steht weder in „Songs“ noch in „Vorschläge“', () => {
+        const id = Store.uid();
+        if (!r.frei) r.frei = {};
+        r.frei[id] = { title: text, artist: '' };
+        this.probeHinzu(r, id);
+      });
+    }
+    if (!ul.children.length) ul.innerHTML = '<li class="hint">Schon in dieser Probe.</li>';
+    const zeilen = ul.querySelectorAll('li[data-wahl]');
+    if (zeilen.length) zeilen[Math.min(this.probeMarkiert || 0, zeilen.length - 1)].classList.add('markiert');
+    ul.hidden = false;
+  },
+
+  probeHinzu(r, id) {
+    if (!Object.prototype.hasOwnProperty.call(r.songs, id)) r.songs[id] = '';
+    this.save();
+    const feld = document.getElementById('rehearsal-suche');
+    feld.value = '';
+    this.probeSuchen();
+    this.renderRehearsals();
+    feld.focus();
+  },
+
+  /* Freien Eintrag zum Vorschlag oder Song machen. Die id bleibt, damit die
+     Probe ihn weiter findet; gleichnamige freie Einträge in anderen Proben
+     zeigen danach auf denselben Song. */
+  freiUebernehmen(r, id, pre) {
+    const f = r.frei && r.frei[id];
+    if (!f) return;
+    this.songListe(pre).push({ id, title: f.title, artist: f.artist || '', key: '', capo: '', tempo: '', notes: '' });
+    const titel = f.title.toLowerCase();
+    for (const p of this.d().rehearsals) {
+      if (!p.frei) continue;
+      for (const [fid, x] of Object.entries(p.frei)) {
+        if (x.title.toLowerCase() !== titel) continue;
+        delete p.frei[fid];
+        if (fid === id) continue;
+        if (Object.prototype.hasOwnProperty.call(p.songs, id)) { delete p.songs[fid]; continue; }
+        // Schlüssel umbenennen, Reihenfolge behalten
+        p.songs = Object.fromEntries(Object.entries(p.songs).map(([k, v]) => [k === fid ? id : k, v]));
+      }
+    }
+    this.save();
+    this.renderAll();
+  },
+
   renderRehearsalDetail() {
     const r = this.currentRehearsal();
     document.getElementById('rehearsal-detail').hidden = !r;
     if (!r) return;
     document.getElementById('rehearsal-title').textContent = 'Probe am ' + this.fmt(r.date);
     document.getElementById('rehearsal-notes').value = r.notes || '';
+    this.probeSuchen();
 
     const table = document.getElementById('rehearsal-table');
-    table.innerHTML = '<tr><th>geprobt</th><th>Song</th><th>Anmerkung zu dieser Probe</th></tr>';
-    const songs = this.d().songs;
-    if (!songs.length) {
-      table.innerHTML += '<tr><td colspan="3" class="hint">Hier erscheint jeder Song mit einem ' +
-        'eigenen Anmerkungsfeld, sobald du im Bereich „Songs“ Stücke angelegt hast.</td></tr>';
+    table.innerHTML = '<tr><th>Song</th><th>Anmerkung zu dieser Probe</th><th></th></tr>';
+    const eintraege = this.probeEintraege(r);
+    if (!eintraege.length) {
+      table.innerHTML += '<tr><td colspan="3" class="hint">Noch keine Songs in dieser Probe – ' +
+        'oben suchen und hinzufügen.</td></tr>';
       return;
     }
-    for (const s of songs) {
-      const done = Object.prototype.hasOwnProperty.call(r.songs, s.id);
+    for (const s of eintraege) {
       const tr = document.createElement('tr');
-      if (done) tr.className = 'rehearsed';
-
-      const tdC = document.createElement('td');
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.checked = done;
-      cb.addEventListener('change', () => {
-        if (cb.checked) r.songs[s.id] = r.songs[s.id] || '';
-        else delete r.songs[s.id];
-        this.save();
-        this.renderRehearsals();
-      });
-      tdC.appendChild(cb);
 
       const tdT = document.createElement('td');
       tdT.textContent = s.title + (s.artist ? ' – ' + s.artist : '');
+      if (s.herkunft === 'idea') {
+        const tag = document.createElement('span');
+        tag.className = 'probe-herkunft';
+        tag.textContent = 'Vorschlag';
+        tdT.appendChild(tag);
+      } else if (s.herkunft === 'frei') {
+        const knoepfe = document.createElement('div');
+        knoepfe.className = 'probe-frei';
+        [['idea', 'In Vorschläge'], ['song', 'In Songs']].forEach(([pre, label]) => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'small';
+          b.textContent = '→ ' + label;
+          b.title = `„${s.title}“ mit einem Klick in ${pre === 'song' ? '„Songs“' : '„Vorschläge“'} übernehmen`;
+          b.addEventListener('click', () => this.freiUebernehmen(r, s.id, pre));
+          knoepfe.appendChild(b);
+        });
+        tdT.appendChild(knoepfe);
+      }
 
       const tdN = document.createElement('td');
       const note = document.createElement('input');
@@ -1611,15 +1734,27 @@ const Band = {
       note.placeholder = 'z. B. Tempo schneller, Bridge nochmal';
       note.value = r.songs[s.id] || '';
       note.addEventListener('change', () => {
-        r.songs[s.id] = note.value;      // Eintrag markiert den Song zugleich als geprobt
-        cb.checked = true;
-        tr.className = 'rehearsed';
+        r.songs[s.id] = note.value;
         this.save();
-        this.renderRehearsals();
       });
       tdN.appendChild(note);
 
-      tr.append(tdC, tdT, tdN);
+      const tdX = document.createElement('td');
+      tdX.className = 'pick-spalte';
+      const weg = document.createElement('button');
+      weg.type = 'button';
+      weg.className = 'probe-weg';
+      weg.textContent = '×';
+      weg.title = 'Aus dieser Probe nehmen';
+      weg.addEventListener('click', () => {
+        delete r.songs[s.id];
+        if (r.frei) delete r.frei[s.id];
+        this.save();
+        this.renderRehearsals();
+      });
+      tdX.appendChild(weg);
+
+      tr.append(tdT, tdN, tdX);
       table.appendChild(tr);
     }
   },
@@ -1627,7 +1762,7 @@ const Band = {
   printRehearsal() {
     const r = this.currentRehearsal();
     if (!r) return;
-    const done = this.d().songs.filter(s => Object.prototype.hasOwnProperty.call(r.songs, s.id));
+    const done = this.probeEintraege(r);
     const inhalt = (r.notes ? `<p>${this.esc(r.notes)}</p>` : '') + (done.length
       ? this.printTable(
           [{ titel: 'Nr.', cls: 'num' }, { titel: 'Song' },

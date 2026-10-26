@@ -653,6 +653,15 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 /* Auswahl fuer den Ausdruck: schmale Spalte, angekreuzte Zeile hervorgehoben */
 .band-table th.pick-spalte, .band-table td.pick-spalte { width: 1.8rem; text-align: center; padding: .35rem .2rem; }
 .band-table tr.gewaehlt { background: var(--active-soft); }
+.probe-suche { margin-top: .6rem; padding: 0; }
+.probe-suche input { width: 100%; }
+.probe-herkunft { margin-left: .4rem; font-size: .75rem; color: var(--muted); }
+.probe-frei { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .3rem; }
+.probe-weg {
+  width: 1.7rem; height: 1.7rem; padding: 0; border: none; border-radius: 6px;
+  background: var(--hover); color: var(--text); font-size: 1.1rem; line-height: 1; cursor: pointer;
+}
+.probe-weg:hover { background: var(--accent); color: var(--on-accent); }
 /* Klassenleitung am Bandmitglied: Ziffer und Kuerzel, Namen stehen im Tooltip */
 .leitungs-zelle { white-space: nowrap; color: var(--accent-soft); font-size: .88rem; }
 .leitungs-zelle .rolle-ziffer { margin-right: .15em; }
