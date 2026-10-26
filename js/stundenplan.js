@@ -19,7 +19,8 @@
      { e: '10:15', f: 'Mu', k: '5a', r: 'H311', x: 1 (entfallen),
        th: [{ id, w }] (Themen mit Schlagwort; ohne id ein eigener Eintrag wie
        „Schulaufgabe“), m: 1 (Thema von Hand gesetzt), s: 'bis Folie 15' (eigener Stand),
-       i: 'Geld einsammeln' (Info zu dieser Stunde), p: 1 (iPads nötig) }
+       i: 'Geld einsammeln' (Info zu dieser Stunde), z: 'Praxisnote' (Zusatz zum Thema
+       nur dieser Stunde – „Musik und Werbung III Praxisnote“) }
    Stunden ohne Klasse im School-Tool (Vertretung in einer fremden Klasse) haben
    ihr eigenes Buch, Classes.data.planStunden – die Klasse steht dort aus dem Abo.
    Die Themen werden am Tag nach der Stunde festgeschrieben; bis dahin folgen sie
@@ -493,7 +494,8 @@ const Stundenplan = {
     if (!t.platz || t.entfaellt || t.aufsicht || this.tagSchluessel(t.beginn) > this.tagSchluessel(new Date())) return '';
     const key = this.buchSchluessel(t);
     const themen = cls ? this.nummeriert(cls, key, this.themenDerStunde(cls, t).themen) : [];
-    const text = themen.map(x => Lessons.ohneReihe(x.wort)).join(' · ');
+    const zusatz = ((cls && cls.stundenbuch) || {})[key] && cls.stundenbuch[key].z;
+    const text = themen.map(x => Lessons.ohneReihe(x.wort)).join(' · ') + (zusatz && themen.length ? ' ' + zusatz : '');
     const url = this.KLASSENBUCH + this.tagSchluessel(t.beginn) + '?lessonId=' + t.platz;
     return `<button type="button" class="small plan-kb" data-klassenbuch="${this.esc(url)}" data-kopie="${this.esc(text)}"
       title="${this.esc(text ? `„${text}“ kopieren und die Stunde im Klassenbuch öffnen – dort ins Feld Unterrichtsinhalte klicken und Cmd+V` : 'Die Stunde im Klassenbuch öffnen')}">${Icons.raw('book')}${kurz ? '' : 'Klassenbuch'}</button>`;
@@ -953,7 +955,7 @@ const Stundenplan = {
     immer.closest('label').hidden = !t.platz;
 
     const ohneNummer = w => String(w).replace(/\s+[IVX]+$/, '').trim();
-    let cls, autoThemen = [], start = '', gewaehlt = null, markiert = -1, treffer = [];
+    let cls, autoThemen = [], basisThemen = [], start = '', gewaehlt = null, markiert = -1, treffer = [];
 
     // Vorschläge: Themen der Klasse (mit Stand), dann der Katalog (Jahrgangsstufe zuerst)
     const kandidaten = () => {
@@ -1049,7 +1051,12 @@ const Stundenplan = {
         this._cache = null;
       }
       const auto = autoThemen.map(x => x.wort).join(' · ');
-      start = rec.m && rec.th ? rec.th.map(x => x.w).join(' · ') : '';
+      // Vorbelegt mit dem Thema dieser Stunde samt Nummer und Zusatz – dahinter
+      // weiterschreiben ergibt einen Zusatz („… III Praxisnote“), Überschreiben ein anderes Thema
+      const keinThema = rec.m && rec.th && !rec.th.length;
+      basisThemen = keinThema ? [] : rec.m && rec.th ? rec.th.map(x => this.themaAus(cls, x.id, x.w)) : autoThemen;
+      start = keinThema ? '' : (this.nummeriert(cls, key, basisThemen).map(x => x.wort).join(' · ') +
+        (rec.z && basisThemen.length ? ' ' + rec.z : '')).trim();
       feld.value = start;
       feld.placeholder = rec.m && rec.th && !rec.th.length ? 'Kein Thema – tippen für ein Thema'
         : auto ? auto + ' (automatisch) – tippen für ein anderes Thema' : 'Thema tippen …';
@@ -1121,28 +1128,44 @@ const Stundenplan = {
         delete rec.m;
       }
       const buch = cls.stundenbuch || (cls.stundenbuch = {});
-      const text = ohneNummer(feld.value.trim().slice(0, 120));
+      const roh = feld.value.trim().slice(0, 120);
+      const text = ohneNummer(roh);
+      /* Beginnt der Text mit einem Thema (mit oder ohne Nummer), ist der Rest
+         ein Zusatz: „Musik und Werbung III Praxisnote“ → Zusatz „Praxisnote“.
+         null: Text beginnt nicht mit diesem Thema. */
+      const zusatzNach = (wort) => {
+        if (!wort || !roh.toLowerCase().startsWith(wort.toLowerCase())) return null;
+        const rest = roh.slice(wort.length);
+        if (rest && !/^\s/.test(rest)) return null;
+        return rest.trim().replace(/^[IVX]+(\s+|$)/, '').trim();
+      };
+      const zusatzSetzen = z => { if (z) rec.z = z.slice(0, 80); else delete rec.z; };
       let neuesThema = null;                       // gewähltes Thema der Klasse (für den Stand)
-      if (kein) { rec.th = []; rec.m = 1; }
-      else if (feld.value.trim() === start) { /* Thema unverändert */ }
-      else if (!text) { delete rec.th; delete rec.m; }
-      else {
-        // Wahl aus der Liste – oder getippt: passt es zu einem Thema der Klasse oder des Katalogs?
-        let x = gewaehlt;
-        if (!x) {
-          const { eigene, katalog } = kandidaten();
-          const gleich = y => y.wort.toLowerCase() === text.toLowerCase() || y.titel.toLowerCase() === text.toLowerCase();
-          x = eigene.find(gleich) || katalog.find(gleich) || null;
-        }
+      const bisher = basisThemen.map(x => x.wort).join(' · ');
+      if (kein) { rec.th = []; rec.m = 1; delete rec.z; }
+      else if (roh === start) { /* Thema unverändert */ }
+      else if (!text) { delete rec.th; delete rec.m; delete rec.z; }
+      else if (bisher && zusatzNach(bisher) !== null) {
+        zusatzSetzen(zusatzNach(bisher));          // gleiches Thema, nur der Zusatz ist neu
+      } else {
+        // Wahl aus der Liste – oder getippt: beginnt es mit einem Thema der Klasse oder des
+        // Katalogs (das längste passende gewinnt), ist der Rest wieder ein Zusatz
+        const { eigene, katalog } = kandidaten();
+        const passend = [...(gewaehlt ? [gewaehlt] : []), ...eigene, ...katalog]
+          .filter(y => zusatzNach(y.wort) !== null || y.titel.toLowerCase() === text.toLowerCase())
+          .sort((a, b) => b.wort.length - a.wort.length);
+        const x = passend[0] || null;
         if (x) {
           if (!cls.ohne && x.quelle === 'katalog') {
             const l = Lessons.lessonsOf(cls);
             if (!l[x.id]) { l[x.id] = { s: 'open', added: Date.now() }; if (x.id.startsWith('kat:')) l[x.id].t = x.titel; }
           }
           rec.th = [{ id: x.id, w: x.wort }];
+          zusatzSetzen(zusatzNach(x.wort) || '');
           if (!cls.ohne) neuesThema = x.id;
         } else {
           rec.th = text.split(/\s+·\s+/).filter(Boolean).map(w => ({ w }));
+          delete rec.z;
         }
         rec.m = 1;
       }
@@ -1304,7 +1327,7 @@ const Stundenplan = {
     const rec = (cls.stundenbuch || {})[key] || {};
     const roh = this.themenDerStunde(cls, t);
     const themen = this.nummeriert(cls, key, roh.themen), vorschlag = roh.vorschlag;
-    const worte = themen.map(x => x.wort).join(' · ');
+    const worte = themen.map(x => x.wort).join(' · ') + (rec.z && themen.length ? ' ' + rec.z : '');
     const ziel = this.esc(key);
     const teile = [];
     // Schalter „Themen“: Thema der Stunde ein/aus – unabhängig von „Stand“
@@ -1672,6 +1695,7 @@ const Stundenplan = {
         const t = { beginn: datum, ende: new Date(tag + 'T' + r.e), entfaellt: !!r.x };
         const roh = r.th ? r.th.map(x => this.themaAus(cls, x.id, x.w)) : this.themenDerStunde(cls, t, jetzt).themen;
         const themen = this.nummeriert(cls, key, roh).map(x => x.wort);
+        if (r.z && themen.length) themen[themen.length - 1] += ' ' + r.z;
         if (r.x) entfallen++; else gehalten++;
         const nr = this.STUNDEN[zeit];
         return {
