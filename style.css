@@ -1302,6 +1302,11 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 .popup-ampel .laerm-bogen, .ampel-visual .laerm-bogen { container-type: inline-size; }
 .popup-ampel .db-display.small { font-size: max(2rem, 13.5cqw); }
 .popup-knoepfe { display: flex; gap: .4rem; }
+.popup-einstellungen { width: min(90vw, 340px); color: #d9d1f2; font-size: .85rem; }
+.popup-einstellungen .hint { color: #bdb3de; }
+.popup-einstellungen .alarm-config { margin: .4rem 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
+.popup-ampel.einst-offen .laerm-bogen.compact { width: min(90vw, calc((100vh - 15rem) * 1.6)); }
+:root:fullscreen .popup-ampel.einst-offen .laerm-bogen.compact { width: min(92vw, calc((100vh - 14rem) * 1.7)); }
 /* Im Vollbild nur der Bogen; die Knöpfe erscheinen, wenn die Maus darüber fährt */
 :root:fullscreen .popup-knoepfe { opacity: 0; transition: opacity .2s; }
 :root:fullscreen .popup-knoepfe:hover, :root:fullscreen .popup-knoepfe:focus-within { opacity: 1; }

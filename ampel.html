@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lärmampel</title>
-<link rel="stylesheet" href="style.css?v=280">
-<script src="js/icons.js?v=280"></script>
-<script src="js/theme.js?v=280"></script>
-<script src="js/auth.js?v=280"></script>
+<link rel="stylesheet" href="style.css?v=281">
+<script src="js/icons.js?v=281"></script>
+<script src="js/theme.js?v=281"></script>
+<script src="js/auth.js?v=281"></script>
 </head>
 <body class="popup-body">
   <div class="popup-ampel mit-knopf">
@@ -19,9 +19,19 @@
       <button id="btn-mic" class="primary small" data-icon="mic">Start</button>
       <button id="btn-stumm" class="small stumm-knopf" data-icon="micOff" title="Stumm, solange du sprichst (Taste M)">Stumm</button>
       <button id="btn-voll" class="small" data-icon="expand" title="Vollbild ein/aus (Esc beendet)">Vollbild</button>
+      <button id="btn-einst" class="small" data-icon="gauge" aria-expanded="false" title="Grenzwert und Alarm einstellen">Einstellungen</button>
+    </div>
+    <div class="popup-einstellungen" id="popup-einstellungen" hidden>
+      <label class="slider-label">Grenzwert: <strong><span id="threshold-value">70</span> dB</strong>
+        <span class="hint">· Gelb ab <span id="warn-value">60</span> dB</span>
+        <input type="range" id="threshold" min="40" max="100" value="70">
+      </label>
+      <p class="hint alarm-config">Vollbild-Alarm nach <input type="number" id="alarm-delay" min="1" max="30" step="0.5" value="3"> s Dauer-Rot
+        <button id="btn-alarm-count-reset" class="small" title="Zähler auf 0 setzen (z. B. zu Stundenbeginn)">Zähler auf 0</button>
+      </p>
     </div>
   </div>
-<script src="js/noise.js?v=280"></script>
+<script src="js/noise.js?v=281"></script>
 <script>
   const meter = new NoiseMeter({
     dbEl: document.getElementById('db-value'),
@@ -71,8 +81,34 @@
       if (p && p.catch) p.catch(err => alert('Vollbild nicht möglich: ' + err.message));
     }
   });
+  // Einstellungen: Grenzwert und Alarm – gelten auch fürs Hauptfenster
+  const einst = document.getElementById('popup-einstellungen');
+  const btnEinst = document.getElementById('btn-einst');
+  const ampelBox = document.querySelector('.popup-ampel');
+  const slider = document.getElementById('threshold');
+  const alarmDelay = document.getElementById('alarm-delay');
+  const einstZeigen = () => {
+    slider.value = meter.threshold;
+    document.getElementById('threshold-value').textContent = meter.threshold;
+    document.getElementById('warn-value').textContent = meter.threshold - 10;
+    if (document.activeElement !== alarmDelay) alarmDelay.value = meter.alarmDelay;
+  };
+  einstZeigen();
+  btnEinst.addEventListener('click', () => {
+    einst.hidden = !einst.hidden;
+    btnEinst.setAttribute('aria-expanded', !einst.hidden);
+    ampelBox.classList.toggle('einst-offen', !einst.hidden);
+    // Das Fenster ist für den Bogen allein bemessen – für die Regler etwas höher machen
+    if (!einst.hidden && window.innerHeight < 470) { try { window.resizeBy(0, 470 - window.innerHeight); } catch (e) {} }
+  });
+  slider.addEventListener('input', () => { meter.setThreshold(parseInt(slider.value, 10)); einstZeigen(); });
+  alarmDelay.addEventListener('change', () => {
+    const v = parseFloat(alarmDelay.value);
+    if (v >= 1) meter.setAlarmDelay(v);
+  });
+  document.getElementById('btn-alarm-count-reset').addEventListener('click', () => meter.resetAlarmCount());
   // Grenzwert live übernehmen, wenn er im Hauptfenster geändert wird
-  window.addEventListener('storage', () => meter.reloadThreshold());
+  window.addEventListener('storage', () => { meter.reloadThreshold(); einstZeigen(); });
   // Laufende Messung zählt als Nutzung – die Ampel soll sich im Unterricht nicht sperren
   setInterval(() => { if (meter.running) { Auth._lastWrite = 0; Auth.touch(); } }, 60000);
 </script>

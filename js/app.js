@@ -75,6 +75,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (v >= 1) meter.setAlarmDelay(v);
   });
   document.getElementById('btn-alarm-count-reset').addEventListener('click', () => meter.resetAlarmCount());
+  // Im Popup geänderte Einstellungen hier nachziehen
+  window.addEventListener('storage', e => {
+    if (e.key !== 'ampel-threshold' && e.key !== 'ampel-alarm-delay') return;
+    meter.reloadThreshold();
+    slider.value = meter.threshold;
+    updateThresholdUi();
+    alarmDelay.value = meter.alarmDelay;
+  });
 
   /* ----- Mikrofon-Auswahl -----
      Die Gerätenamen gibt der Browser erst preis, wenn die Erlaubnis erteilt ist –
