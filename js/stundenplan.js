@@ -1156,7 +1156,8 @@ const Stundenplan = {
     const ausKnopf = document.getElementById('plan-dialog-aus');
     const loeschKnopf = document.getElementById('plan-dialog-loeschen');
     ausKnopf.hidden = !!neu;
-    ausKnopf.textContent = t.vonHandAus ? 'Stunde findet doch statt' : 'Stunde fällt aus';
+    // Papierkorb: die Stunde fällt weg – bleibt aber wieder einsetzbar
+    ausKnopf.innerHTML = t.vonHandAus ? Icons.raw('reset') + 'Wieder einsetzen' : Icons.raw('trash') + 'Löschen';
     loeschKnopf.hidden = !t.extra || !!neu;
     if (neu) dlg.querySelector('.plan-dialog-klasse').open = true;
     ausKnopf.onclick = () => {
