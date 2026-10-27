@@ -518,10 +518,12 @@ const Stundenplan = {
      die Anwesenheit bestätigen. Das erledigt das Lesezeichen im Schulmanager-Tab
      (IpadBuchen.lesezeichenCode) – der Auftrag reist wie beim iPad-Buchen im
      Fensternamen: stklassenbuch|{"d":"2026-10-27","s":[{p,t,n}]} */
+  /* Alle Stunden des Tags, auch die noch kommenden – Inhalte gehen schon vorher,
+     die Anwesenheit lässt der Schulmanager erst ab Stundenbeginn bestätigen */
   klassenbuchStunden(tag) {
-    const jetzt = new Date();
+    if (tag > this.tagSchluessel(new Date())) return [];
     return this.alleTermine().filter(t => t.platz && !t.entfaellt && !t.aufsicht && !t.verschwunden && !t.vorschau &&
-      this.tagSchluessel(t.beginn) === tag && t.beginn <= jetzt);
+      this.tagSchluessel(t.beginn) === tag);
   },
 
   klassenbuchTag(tag) {
@@ -1873,7 +1875,7 @@ const Stundenplan = {
       <h3 class="plan-zwischen">${name ? name + ', ' : ''}${this.tagName(datum)}</h3>
       <button type="button" class="small" data-tagnav="1" ${danach ? '' : 'disabled'} aria-label="Tag vor">›</button>
       ${this.tagWahl ? '<button type="button" class="small" data-tag="" title="Zurück zum heutigen Tag (Taste H)">Heute</button>' : ''}
-      ${kbTag ? `<button type="button" class="small" data-kbtag="${kbTag}" title="Alle bisherigen Stunden ${kbTag === tag ? 'dieses Tags' : 'von heute'} ins Klassenbuch: Thema (sonst Notiz) eintragen und Anwesenheit bestätigen – im Schulmanager-Tab dann das Lesezeichen anklicken">${Icons.raw('book')}Klassenbuch ${kbTag === tag ? '' : 'von heute '}eintragen</button>` : ''}
+      ${kbTag ? `<button type="button" class="small" data-kbtag="${kbTag}" title="Alle Stunden ${kbTag === heute ? 'von heute' : 'dieses Tags'} ins Klassenbuch: Thema (sonst Notiz) eintragen und Anwesenheit bestätigen (geht erst ab Stundenbeginn) – im Schulmanager-Tab dann das Lesezeichen anklicken">${Icons.raw('book')}${kbTag === heute ? 'Heute alles eintragen' : 'Klassenbuch eintragen'}</button>` : ''}
       ${vorschau ? `<span class="plan-vorschau-hinweis" title="Noch nicht im Schulmanager-Abo – aus der Regelwoche">Vorschau</span>
       <button type="button" class="small" data-frei="${tag}" title="Ferien oder Feiertag: an diesem Tag keine Stunden vorsehen">${istFrei ? 'Doch Unterricht' : 'Tag frei'}</button>` : ''}
     </div>`;

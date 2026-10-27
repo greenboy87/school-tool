@@ -80,7 +80,7 @@ const IpadBuchen = {
           ok.click();
           await suchen(() => !knopf('Bestätigen'), 5);
           teile.push(knopf('Bestätigen') ? 'Anwesenheit NICHT bestätigt' : 'Anwesenheit bestätigt');
-        } else teile.push('Anwesenheit nicht möglich');
+        } else teile.push('Anwesenheit noch nicht möglich (Stunde hat nicht begonnen?)');
         bericht.push(`✓ ${x.n}: ${teile.join(', ')}`);
       }
       alert(`Klassenbuch ${tagName}:\n\n${bericht.join('\n')}`);
