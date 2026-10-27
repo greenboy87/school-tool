@@ -83,6 +83,20 @@ const Stundenplan = {
     document.addEventListener('fullscreenchange', einpassen);
     document.addEventListener('webkitfullscreenchange', einpassen);
     window.addEventListener('resize', einpassen);
+    // Am Handy: in der Tagesansicht nach links/rechts wischen = Tag vor/zurück
+    let wisch = null;
+    this.karte.addEventListener('touchstart', e => {
+      const f = e.touches[0];
+      wisch = e.touches.length === 1 && !this.schalter.checked &&
+        !e.target.closest('input, textarea, select, dialog') ? { x: f.clientX, y: f.clientY } : null;
+    }, { passive: true });
+    this.karte.addEventListener('touchend', e => {
+      if (!wisch) return;
+      const f = e.changedTouches[0];
+      const dx = f.clientX - wisch.x, dy = f.clientY - wisch.y;
+      wisch = null;
+      if (Math.abs(dx) > 70 && Math.abs(dy) < Math.abs(dx) / 2) this.tag(dx < 0 ? 1 : -1);
+    }, { passive: true });
     // Klick neben das Bearbeiten-Fenster schließt es – ohne zu speichern, wie „Abbrechen“
     const dlg = document.getElementById('plan-dialog');
     dlg.addEventListener('click', e => {
