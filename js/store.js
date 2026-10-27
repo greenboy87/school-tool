@@ -12,6 +12,39 @@ const Store = {
 
   save(data) {
     localStorage.setItem(this.KEY, JSON.stringify(data));
+    // Einmal je Stunde den Stand beiseitelegen
+    if (Date.now() - (Number(localStorage.getItem(this.SICHERUNG_ZEIT)) || 0) > 3600e3) this.sichern(data, 'stündlich');
+  },
+
+  /* ----- Sicherungen: frühere Stände auf diesem Gerät -----
+     Bevor ein Stand ersetzt wird (Übernahme vom Server, Wiederherstellen,
+     Backup einspielen), und einmal je Stunde, kommt eine Kopie hierher. So
+     lässt sich ein versehentlich überschriebener Stand zurückholen – im
+     Oktober 2026 hatte ein alter Stand von einem anderen Rechner die Notizen
+     zweier Tage ersetzt. Je Art werden die letzten SICHERUNG_MAX behalten
+     (die Daten sind um 100 KB groß). Bleibt im Browser, wird nicht übertragen. */
+  SICHERUNG_KEY: 'schooltool-sicherungen',
+  SICHERUNG_ZEIT: 'schooltool-sicherung-zeit',
+  SICHERUNG_MAX: 6,
+
+  sicherungen() {
+    try { return JSON.parse(localStorage.getItem(this.SICHERUNG_KEY)) || []; } catch (e) { return []; }
+  },
+
+  sichern(data, grund) {
+    if (!data || !Array.isArray(data.classes) || !data.classes.length) return;
+    const text = JSON.stringify(data);
+    const stuendlich = grund === 'stündlich';
+    let liste = this.sicherungen().filter(x => x.daten !== text);     // gleicher Stand nicht doppelt
+    liste.unshift({ zeit: Date.now(), grund, daten: text });
+    let n = { true: 0, false: 0 };
+    liste = liste.filter(x => ++n[x.grund === 'stündlich'] <= this.SICHERUNG_MAX);
+    // Wird der Speicher knapp, die ältesten zuerst opfern
+    while (liste.length) {
+      try { localStorage.setItem(this.SICHERUNG_KEY, JSON.stringify(liste)); break; }
+      catch (e) { liste.pop(); }
+    }
+    if (stuendlich) localStorage.setItem(this.SICHERUNG_ZEIT, String(Date.now()));
   },
 
   uid() {
@@ -49,6 +82,7 @@ const Store = {
         const istServer = roh && roh.schoolTool === 'server-backup';
         const data = istServer ? roh.daten : roh;
         if (!data || !Array.isArray(data.classes)) throw new Error('Ungültiges Format');
+        this.sichern(this.load(), 'vor dem Einspielen eines Backups');
         this.save(data);
         if (istServer && roh.dateien) await this.dateienZurueckschreiben(roh.dateien);
         onDone(null);

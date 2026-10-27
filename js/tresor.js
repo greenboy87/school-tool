@@ -34,6 +34,11 @@ const Tresor = {
   pausiert: false,        // nach „nichts tun“ im Konflikt: kein automatisches Hochladen
   aenderungen: 0,         // zählt Speichervorgänge – was während des Hochladens dazukommt, bleibt „geändert“
   abmeldenStand: null,
+  /* Erst nach dem Abgleich beim Start zählt Speichern als Änderung. Sonst gilt
+     ein Gerät mit altem Stand schon als „geändert“, nur weil der Plan beim Öffnen
+     selbst etwas nachträgt – und sein alter Stand ersetzt den neueren auf dem
+     Server. Genau so gingen im Oktober 2026 Notizen verloren. */
+  bereit: false,
 
   aktiv() { return !!this.schluessel; },
 
@@ -53,7 +58,7 @@ const Tresor = {
     const originalSave = Store.save.bind(Store);
     Store.save = (data) => {
       originalSave(data);
-      if (this.aktiv()) {
+      if (this.aktiv() && this.bereit) {
         this.aenderungen++;
         this.geaendert(true);
         this.geplantHochladen();
@@ -80,11 +85,96 @@ const Tresor = {
       'Geräte-Sync ist aktiv.\n\n' +
       '1 = Jetzt hochladen\n' +
       '2 = Vom Server holen (überschreibt die Daten auf diesem Gerät)\n' +
-      '3 = Sync auf diesem Gerät beenden\n\n' +
+      '3 = Sync auf diesem Gerät beenden\n' +
+      '4 = Frühere Stände dieses Geräts (Sicherungen)\n' +
+      '5 = Frühere Stände vom Server (letzte 2 Tage stündlich, 2 Wochen täglich)\n\n' +
       'Zahl eingeben:', '1');
     if (wahl === '1') this.hochladen(true);
     else if (wahl === '2') this.herunterladen(true);
     else if (wahl === '3') this.trennen();
+    else if (wahl === '4') this.sicherungWaehlen();
+    else if (wahl === '5') this.verlaufWaehlen();
+  },
+
+  /* ---------- Frühere Stände ---------- */
+  zaehle(d) {
+    const k = (d.classes || []).length;
+    const s = (d.classes || []).reduce((a, c) => a + (c.students || []).length, 0);
+    const n = (d.classes || []).reduce((a, c) => a + Object.values(c.stundenbuch || {}).filter(r => r.s).length, 0);
+    return `${k} Klassen, ${s} Schüler, ${n} Stundennotizen`;
+  },
+
+  /* Einen früheren Stand zurückholen: der jetzige wird vorher gesichert, der
+     frühere dann ganz normal gespeichert und hochgeladen */
+  async zurueckholen(daten, wann) {
+    if (!confirm(`Stand von ${wann} zurückholen?\n\n${this.zaehle(daten)}\n\n` +
+      'Der jetzige Stand wird vorher gesichert (Sync → 4) und lässt sich ebenso zurückholen.')) return;
+    Store.sichern(Store.load(), 'vor dem Zurückholen');
+    delete daten.standAt;
+    Store.save(daten);
+    clearTimeout(this.timer);
+    this.status('Früherer Stand zurückgeholt – wird hochgeladen …');
+    await this.hochladen(false);
+    location.reload();
+  },
+
+  sicherungWaehlen() {
+    const liste = Store.sicherungen();
+    if (!liste.length) { alert('Auf diesem Gerät gibt es noch keine Sicherungen.'); return; }
+    const zeilen = liste.map((x, i) => {
+      let d = {};
+      try { d = JSON.parse(x.daten); } catch (e) { /* kaputte Sicherung */ }
+      return `${i + 1} = ${this.zeit(x.zeit)} – ${x.grund} (${this.zaehle(d)})`;
+    });
+    const wahl = prompt('Frühere Stände auf diesem Gerät:\n\n' + zeilen.join('\n') + '\n\nNummer eingeben:');
+    const x = liste[Number(wahl) - 1];
+    if (!x) return;
+    this.zurueckholen(JSON.parse(x.daten), this.zeit(x.zeit));
+  },
+
+  /* Verlauf auf dem Server: bei jedem Hochladen landet der Stand zusätzlich in
+     einem Fach „h0“…„h47“ (Stunde) und „t0“…„t13“ (Tag) – jedes Fach hält den
+     letzten Stand seiner Stunde bzw. seines Tags. Nur Hochladen, also kein
+     Download-Kontingent; gelesen wird nur beim Zurückholen. */
+  async verlaufSchreiben(paket, stand, geraet) {
+    const { db, ref, update } = window.FB;
+    const fach = { chiffre: paket.chiffre, iv: paket.iv, stand, geraet };
+    const stunde = Math.floor(stand / 3600e3), tag = Math.floor(stand / 864e5);
+    try {
+      await update(ref(db, `schoolTool/tresor/${this.id}/verlauf`), { ['h' + (stunde % 48)]: fach, ['t' + (tag % 14)]: fach });
+    } catch (e) {
+      console.warn('Verlauf nicht gespeichert (Regeln?):', e);
+    }
+  },
+
+  async verlaufWaehlen() {
+    if (!this.aktiv()) return;
+    try {
+      const { db, ref, get } = window.FB;
+      const faecher = [...Array(48).keys()].map(i => 'h' + i).concat([...Array(14).keys()].map(i => 't' + i));
+      const basis = `schoolTool/tresor/${this.id}/verlauf`;
+      const koepfe = await Promise.all(faecher.map(f => get(ref(db, `${basis}/${f}/stand`))
+        .then(s => ({ f, stand: s.val() })).catch(() => ({ f, stand: null }))));
+      const gesehen = new Set();
+      const liste = koepfe.filter(k => k.stand && !gesehen.has(k.stand) && gesehen.add(k.stand))
+        .sort((a, b) => b.stand - a.stand).slice(0, 30);
+      if (!liste.length) {
+        alert('Auf dem Server liegt noch kein Verlauf.\n\nEr entsteht ab jetzt bei jedem Hochladen – sofern die ' +
+          'Datenbankregeln den Ast „verlauf“ schon erlauben (siehe firebase-regeln.md).');
+        return;
+      }
+      const geraete = await Promise.all(liste.map(k => get(ref(db, `${basis}/${k.f}/geraet`)).then(s => s.val() || '')));
+      const wahl = prompt('Frühere Stände auf dem Server:\n\n' +
+        liste.map((k, i) => `${i + 1} = ${this.zeit(k.stand)}${geraete[i] ? ' (' + geraete[i] + ')' : ''}`).join('\n') +
+        '\n\nNummer eingeben:');
+      const k = liste[Number(wahl) - 1];
+      if (!k) return;
+      const [chiffre, iv] = await Promise.all(['chiffre', 'iv'].map(f => get(ref(db, `${basis}/${k.f}/${f}`)).then(s => s.val())));
+      const daten = await this.entschluesseln({ chiffre, iv, salz: this.nachB64(this.salz) });
+      this.zurueckholen(daten, this.zeit(k.stand));
+    } catch (e) {
+      alert('Der Verlauf ließ sich nicht laden.\n\n' + this.fehlertext(e));
+    }
   },
 
   einrichten() {
@@ -202,11 +292,7 @@ const Tresor = {
       if (fernStand > lokalStand && still && this.istGeaendert()) still = false;
       if (fernStand > lokalStand) {
         // Beide Seiten benennen: Sonst weiß man nicht, was man gerade ersetzt.
-        const zaehle = d => {
-          const k = (d.classes || []).length;
-          const s = (d.classes || []).reduce((a, c) => a + (c.students || []).length, 0);
-          return `${k} ${k === 1 ? 'Klasse' : 'Klassen'}, ${s} Schüler`;
-        };
+        const zaehle = d => this.zaehle(d);
         if (still || confirm(
           'Passwort stimmt – auf dem Server liegen Daten.\n\n' +
           `VOM SERVER (${this.zeit(fernStand)}, ${vorhanden.geraet || 'anderes Gerät'}):\n` +
@@ -214,7 +300,7 @@ const Tresor = {
           'AUF DIESEM GERÄT' + (lokalStand ? ` (${this.zeit(lokalStand)})` : ' (noch nie abgeglichen)') + ':\n' +
           `   ${zaehle(lokal)}\n\n` +
           'Den Stand vom Server übernehmen? Die Daten auf diesem Gerät werden dabei ersetzt.')) {
-          await this.uebernehmen(daten, fernStand);
+          await this.uebernehmen(daten, fernStand, vorhanden.geraet);
           this.status('Stand vom Server übernommen (' + this.zeit(fernStand) + ').');
           this.knopfAktualisieren();
           return;
@@ -235,6 +321,7 @@ const Tresor = {
           localStorage.removeItem(this.PASS_KEY);
           this.passwort = this.id = this.salz = this.schluessel = null;
           this.status('Nichts verändert – der Sync ist auf diesem Gerät aus.');
+          this.bereit = true;
           this.knopfAktualisieren();
           if (!still) alert('Es wurde nichts verändert – weder hier noch auf dem Server.\n\n' +
             'Der Sync ist auf diesem Gerät ausgeschaltet. Über „Sync“ kannst du es ' +
@@ -242,6 +329,9 @@ const Tresor = {
           return;
         }
       }
+      // Den Serverstand vorher beiseitelegen, falls er gleich ersetzt wird
+      if (fernStand > lokalStand) Store.sichern(daten, `Serverstand vor dem Überschreiben (${vorhanden.geraet || 'anderes Gerät'})`);
+      this.bereit = true;
       this.knopfAktualisieren();
       this.status('verbunden');
       // Hier angekommen, gilt der Stand dieses Geräts (ggf. ausdrücklich gewählt)
@@ -267,6 +357,7 @@ const Tresor = {
       this.salz = crypto.getRandomValues(new Uint8Array(16));
       this.schluessel = await this.schluesselAus(pw, this.salz);
       localStorage.setItem(this.PASS_KEY, pw);
+      this.bereit = true;
       this.knopfAktualisieren();
       await this.hochladen(false, true);
       this.mithoeren();
@@ -275,7 +366,9 @@ const Tresor = {
     }
   },
 
-  async uebernehmen(daten, stand) {
+  async uebernehmen(daten, stand, geraet) {
+    // Der bisherige Stand dieses Geräts bleibt als Sicherung (Sync → 4)
+    Store.sichern(Store.load(), `vor Übernahme vom Server${geraet ? ' (' + geraet + ')' : ''}`);
     daten.standAt = stand;
     Store.save(daten);
     clearTimeout(this.timer);     // das eben Übernommene nicht gleich wieder hochladen
@@ -303,6 +396,11 @@ const Tresor = {
     if (confirm('Stattdessen den Stand dieses Browsers hochladen?\n\n' +
       `Der neuere Stand (${wer}) wird dabei ersetzt.\n\n` +
       'Abbrechen: nichts tun – dieser Browser sichert vorerst nicht, bis du über „Sync“ entscheidest.')) {
+      // Den Stand, der gleich ersetzt wird, vorher hier sichern
+      try {
+        const paket = await this.kopfHolen();
+        Store.sichern(await this.entschluesseln(paket), `Serverstand vor dem Überschreiben (${geraet || 'anderes Gerät'})`);
+      } catch (e) { console.error('Serverstand nicht gesichert:', e); }
       await this.hochladen(false, true);
       return;
     }
@@ -402,6 +500,7 @@ const Tresor = {
       await update(ref(db, `schoolTool/tresor/${this.id}`), {
         ...paket, stand, geraet: this.geraetName(),
       });
+      await this.verlaufSchreiben(paket, stand, this.geraetName());
       this.letzterStand = stand;
       this.basisSetzen(stand);
       // Was seit Beginn des Hochladens geändert wurde, ist schon wieder neu angestoßen
@@ -444,7 +543,7 @@ const Tresor = {
         `Stand vom Server: ${this.zeit(paket.stand)}\n` +
         `${(daten.classes || []).length} Klassen\n\n` +
         'Übernehmen? Die Daten auf diesem Gerät werden dabei ersetzt.')) return;
-      await this.uebernehmen(daten, paket.stand || Date.now());
+      await this.uebernehmen(daten, paket.stand || Date.now(), paket.geraet);
     } catch (e) {
       alert('Herunterladen fehlgeschlagen.\n\n' + this.fehlertext(e));
     }

@@ -46,7 +46,11 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
 
 **R2.** **Veröffentlichen**. Fertig – im School-Tool einmal Strg+Shift+R.
 
-> **Zuletzt geändert am 14.10.2026 – Ex-Testraum:** Unter `teilnehmer` ist `nameV`
+> **Zuletzt geändert am 27.10.2026 – Verlauf im Tresor:** Unter `tresor/$id` ist `verlauf`
+> neu – frühere Stände (je Stunde der letzten 2 Tage, je Tag der letzten 2 Wochen), damit sich
+> ein versehentlich überschriebener Stand zurückholen lässt (Sync → 5).
+>
+> **Davor geändert am 14.10.2026 – Ex-Testraum:** Unter `teilnehmer` ist `nameV`
 > neu – der selbst gewählte Name im Testraum, auf dem iPad verschlüsselt (nur in
 > Sitzungen mit `info/test`). **Den kompletten Block erneut kopieren** (R1 und R2).
 >
@@ -126,6 +130,16 @@ den vorhandenen Inhalt **komplett markieren und ersetzen** durch genau diesen Te
               "stand":   { ".validate": "newData.isNumber()" },
               "teile":   { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 200" },
               "$teil":   { ".validate": "$teil.matches(/^t[0-9]{1,3}$/) && newData.isString() && newData.val().length <= 2100000" }
+            }
+          },
+          "verlauf": {
+            "$fach": {
+              ".validate": "$fach.matches(/^[ht][0-9]{1,2}$/)",
+              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 10000000" },
+              "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
+              "stand":   { ".validate": "newData.isNumber()" },
+              "geraet":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+              "$andere": { ".validate": false }
             }
           },
           "$andere": { ".validate": false }
@@ -336,6 +350,16 @@ fügst nur einen Block hinzu:
               "stand":   { ".validate": "newData.isNumber()" },
               "teile":   { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 200" },
               "$teil":   { ".validate": "$teil.matches(/^t[0-9]{1,3}$/) && newData.isString() && newData.val().length <= 2100000" }
+            }
+          },
+          "verlauf": {
+            "$fach": {
+              ".validate": "$fach.matches(/^[ht][0-9]{1,2}$/)",
+              "chiffre": { ".validate": "newData.isString() && newData.val().length <= 10000000" },
+              "iv":      { ".validate": "newData.isString() && newData.val().length <= 64" },
+              "stand":   { ".validate": "newData.isNumber()" },
+              "geraet":  { ".validate": "newData.isString() && newData.val().length <= 32" },
+              "$andere": { ".validate": false }
             }
           },
           "$andere": { ".validate": false }
