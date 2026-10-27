@@ -485,8 +485,8 @@ const Stundenplan = {
   },
 
   /* Klassenbuch im Schulmanager: Jede Stunde hat dort eine eigene Seite; die
-     lessonId ist die Platznummer aus dem Abo. Der Knopf legt das Thema in die
-     Zwischenablage und öffnet die Seite – dort nur noch ins Feld
+     lessonId ist die Platznummer aus dem Abo. Der Knopf legt das Thema (ohne Thema:
+     die Notiz) in die Zwischenablage und öffnet die Seite – dort nur noch ins Feld
      „Unterrichtsinhalte“ klicken und einfügen. Die Anwesenheit bleibt Handarbeit. */
   KLASSENBUCH: 'https://login.schulmanager-online.de/#/modules/classbook/enter/my/lesson/',
 
@@ -495,16 +495,27 @@ const Stundenplan = {
     const key = this.buchSchluessel(t);
     const themen = cls ? this.nummeriert(cls, key, this.themenDerStunde(cls, t).themen) : [];
     const zusatz = ((cls && cls.stundenbuch) || {})[key] && cls.stundenbuch[key].z;
-    const text = themen.map(x => Lessons.ohneReihe(x.wort)).join(' · ') + (zusatz && themen.length ? ' ' + zusatz : '');
+    // Ohne Thema (etwa Schulband) kommt die Notiz der Stunde ins Klassenbuch
+    const buch = this.buchKlasse(t);
+    const notiz = ((buch && buch.stundenbuch) || {})[key] && buch.stundenbuch[key].s;
+    const text = themen.length ? themen.map(x => Lessons.ohneReihe(x.wort)).join(' · ') + (zusatz ? ' ' + zusatz : '')
+      : notiz || '';
     const url = this.KLASSENBUCH + this.tagSchluessel(t.beginn) + '?lessonId=' + t.platz;
-    return `<button type="button" class="small plan-kb" data-klassenbuch="${this.esc(url)}" data-kopie="${this.esc(text)}"
-      title="${this.esc(text ? `„${text}“ kopieren und die Stunde im Klassenbuch öffnen – dort ins Feld Unterrichtsinhalte klicken und Cmd+V` : 'Die Stunde im Klassenbuch öffnen')}">${Icons.raw('book')}${kurz ? '' : 'Klassenbuch'}</button>`;
+    return `<button type="button" class="small plan-kb" data-klassenbuch="${this.esc(url)}" data-kopie="${this.esc(text)}"${themen.length ? '' : ` data-notiz="${this.esc(key)}"`}
+      title="${this.esc(text ? `„${text}“${themen.length ? '' : ' (Notiz)'} kopieren und die Stunde im Klassenbuch öffnen – dort ins Feld Unterrichtsinhalte klicken und Cmd+V` : 'Die Stunde im Klassenbuch öffnen')}">${Icons.raw('book')}${kurz ? '' : 'Klassenbuch'}</button>`;
   },
 
   /* Erst kopieren (solange dieses Fenster den Fokus hat), dann öffnen – ein
      Tab „klassenbuch“, der beim nächsten Mal wiederverwendet wird */
   klassenbuchOeffnen(knopf) {
-    const text = knopf.dataset.kopie;
+    let text = knopf.dataset.kopie;
+    // Notiz frisch lesen – sie kann gerade erst getippt worden sein
+    if (knopf.dataset.notiz) {
+      const key = knopf.dataset.notiz;
+      const t = this.alleTermine().find(x => !x.aufsicht && this.buchSchluessel(x) === key && knopf.dataset.klassenbuch.endsWith('=' + x.platz));
+      const buch = t && this.buchKlasse(t);
+      text = (((buch && buch.stundenbuch) || {})[key] || {}).s || '';
+    }
     const oeffnen = () => window.open(knopf.dataset.klassenbuch, 'klassenbuch');
     if (!text) { oeffnen(); return; }
     const fertig = ok => {
