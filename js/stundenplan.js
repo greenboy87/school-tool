@@ -83,6 +83,10 @@ const Stundenplan = {
     document.addEventListener('fullscreenchange', einpassen);
     document.addEventListener('webkitfullscreenchange', einpassen);
     window.addEventListener('resize', einpassen);
+    // „Als Nächstes“: auf- oder zugeklappt bleibt es auch nach dem Neuzeichnen
+    this.el.addEventListener('toggle', e => {
+      if (e.target.classList && e.target.classList.contains('plan-naechste-klapp')) this.naechsteOffen = e.target.open;
+    }, true);
     // Am Handy: in der Tagesansicht nach links/rechts wischen = Tag vor/zurück
     let wisch = null;
     this.karte.addEventListener('touchstart', e => {
@@ -1862,12 +1866,15 @@ const Stundenplan = {
       const wann = laeuft ? `läuft bis ${this.uhr(naechste.ende)}`
         : this.tagSchluessel(naechste.beginn) !== heute ? `${this.tagName(naechste.beginn)}, ${this.uhr(naechste.beginn)}`
         : min <= 90 ? `in ${min} min · ${this.uhr(naechste.beginn)}` : `um ${this.uhr(naechste.beginn)}`;
-      kopf = `<div class="plan-naechste ${b.klassenName}"${b.attr}>
-        <span class="plan-naechste-label">${laeuft ? 'Jetzt' : 'Als Nächstes'}</span>
-        <span class="plan-naechste-wer">${b.wer}</span>
-        ${b.raum}${b.marken}
-        <span class="plan-naechste-wann">${wann}</span>
-      </div>`;
+      // Zugeklappt: braucht man selten, und offen drängt es den Tag nach unten
+      kopf = `<details class="plan-naechste-klapp"${this.naechsteOffen ? ' open' : ''}>
+        <summary>${laeuft ? 'Jetzt' : 'Als Nächstes'} · ${wann}</summary>
+        <div class="plan-naechste ${b.klassenName}"${b.attr}>
+          <span class="plan-naechste-wer">${b.wer}</span>
+          ${b.raum}${b.marken}
+          <span class="plan-naechste-wann">${wann}</span>
+        </div>
+      </details>`;
     }
 
     const datum = this.datum(tag.replace(/-/g, ''));

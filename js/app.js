@@ -44,6 +44,15 @@ document.addEventListener('DOMContentLoaded', () => {
   reiterAusAnker();
   window.addEventListener('hashchange', reiterAusAnker);
 
+  /* Web-App vom Home-Bildschirm: kein Neuladen-Knopf des Browsers. Die neue
+     Adresse umgeht die zehn Minuten, die GitHub Seiten zwischenspeichern lässt. */
+  const neuLaden = document.getElementById('btn-neu-laden');
+  if (neuLaden && (navigator.standalone || matchMedia('(display-mode: standalone)').matches)) {
+    neuLaden.hidden = false;
+    neuLaden.addEventListener('click', () =>
+      location.replace(location.pathname + '?neu=' + Date.now() + location.hash));
+  }
+
   /* ----- Lärmampel ----- */
   const meter = new NoiseMeter({
     dbEl: document.getElementById('db-value'),
