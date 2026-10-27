@@ -1503,7 +1503,14 @@ const Stundenplan = {
         : '<span class="plan-marke entfall">entfällt</span>');
     }
     if (t.extra) marken.push('<span class="plan-marke sonder" title="Von dir angelegte Stunde">zusätzlich</span>');
-    if (t.sonder) marken.push('<span class="plan-marke sonder">Sonderstunde</span>');
+    if (t.sonder) {
+      // Welche reguläre Stunde entfällt zur selben Zeit? „Sonderstunde · statt 5f“
+      const key = this.buchSchluessel(t);
+      const statt = [...new Set(this.alleTermine()
+        .filter(x => x !== t && x.entfaellt && !x.aufsicht && !x.verschwunden && this.buchSchluessel(x) === key)
+        .map(x => this.klassenText(x)).filter(Boolean))].join(', ');
+      marken.push(`<span class="plan-marke sonder">Sonderstunde${statt ? ' · statt ' + this.esc(statt) : ''}</span>`);
+    }
     if (getauscht) marken.push('<span class="plan-marke raum">Raum geändert</span>');
     const buchCls = this.buchKlasse(t);
     marken.push(this.themenHtml(t, buchCls, mitKnoepfen));
