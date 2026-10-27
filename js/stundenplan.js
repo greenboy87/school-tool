@@ -180,6 +180,7 @@ const Stundenplan = {
         el.classList.toggle('gleich', !!gruppe && el.dataset.gruppe === gruppe));
     };
     inhalt.addEventListener('pointerover', e => {
+      if (e.pointerType !== 'mouse') return;     // am Handy blieb das beim Scrollen hängen
       const el = e.target.closest('[data-gruppe]');
       hervorheben(el ? el.dataset.gruppe : '');
     });
