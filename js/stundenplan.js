@@ -563,7 +563,7 @@ const Stundenplan = {
     const tag = this.tagSchluessel(t.beginn);
     const ids = Object.entries(Lessons.lessonsOf(cls)).filter(([id, e]) => e && e.d1 && e.d1 <= tag &&
       (e.s === 'progress' || e.s === 'done') && this.giltIn(cls, id, key)).map(([id]) => id);
-    return { themen: ids.map(id => this.themaAus(cls, id)), vorschlag: false };
+    return { themen: this.einThema(cls, ids).map(id => this.themaAus(cls, id)), vorschlag: false };
   },
 
   /* Zwischenspeicher für einen Zeichendurchgang – Termine, Stunden je Klasse
@@ -636,6 +636,16 @@ const Stundenplan = {
     return true;
   },
 
+  /* Automatisch bekommt eine Stunde nur ein Thema. Laufen in der Klasse mehrere
+     zugleich, gilt das früher begonnene – es wird erst zu Ende geführt, das
+     andere kommt danach. Mehrere Themen in einer Stunde nur von Hand. */
+  einThema(cls, ids) {
+    if (ids.length < 2) return ids;
+    const L = Lessons.lessonsOf(cls);
+    const beginn = id => { const e = L[id] || {}; return e.ab || e.d1 || '9999'; };
+    return [ids.reduce((a, b) => beginn(b) < beginn(a) ? b : a)];
+  },
+
   kette(cls) {
     const c = this.cache();
     if (cls.ohne) return {};
@@ -647,7 +657,7 @@ const Stundenplan = {
     const ersatz = key => {
       const laufend = Object.entries(Lessons.lessonsOf(cls))
         .filter(([id, e]) => e && e.s === 'progress' && this.giltIn(cls, id, key)).map(([id]) => id);
-      if (laufend.length) return { ids: laufend, art: 'laeuft' };
+      if (laufend.length) return { ids: this.einThema(cls, laufend), art: 'laeuft' };
       const offen = Lessons.assignedTopics(cls).find(tp => stand(tp.id) === 'open');
       return { ids: offen ? [offen.id] : [], art: 'vorschlag' };
     };
@@ -670,7 +680,7 @@ const Stundenplan = {
       }
       // Fortgeführt wird, was in dieser Stunde noch gilt – ein Thema, das vorher
       // fertig wurde oder erst später beginnt, nicht
-      let gilt = carry.filter(id => this.giltIn(cls, id, key));
+      let gilt = this.einThema(cls, carry.filter(id => this.giltIn(cls, id, key)));
       let artHier = art;
       if (!gilt.length) {
         const e = ersatz(key);
