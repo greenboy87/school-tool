@@ -1015,9 +1015,12 @@ const Stundenplan = {
 
     /* Präsentation, Arbeitsblatt, Ordner und Klassenbuch zum Thema im Feld */
     const materialZeigen = () => {
-      const themen = feld.value.trim() === start
-        ? (start ? ((cls.stundenbuch || {})[key] || {}).th || [] : []).map(x => this.themaAus(cls, x.id, x.w)).concat(start ? [] : autoThemen)
-        : gewaehlt ? [this.themaAus(cls, gewaehlt.id)] : [];
+      // Unverändert oder nur ein Zusatz dahinter („… III Praxisnote“): das Thema
+      // der Stunde, auch wenn es bloß automatisch fortgeführt wird
+      const wert = feld.value.trim();
+      const themen = gewaehlt ? [this.themaAus(cls, gewaehlt.id)]
+        : start && wert.startsWith(start) ? basisThemen
+        : !wert ? autoThemen : [];
       const knopf = (icon, text, pfad, titel) =>
         `<button type="button" class="small" data-oeffnen="${this.esc(pfad)}" title="${this.esc(titel + ': ' + pfad)}">${Icons.raw(icon)}${this.esc(text)}</button>`;
       material.innerHTML = themen.filter(x => x.topic).flatMap(({ topic }) => [
