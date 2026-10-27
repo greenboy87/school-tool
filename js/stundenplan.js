@@ -63,6 +63,8 @@ const Stundenplan = {
     this.el = document.getElementById('tab-plan');
     if (!this.el) return;
     this.schalter = document.getElementById('plan-ansicht');
+    // Lesezeichen vom Home-Bildschirm (#plan&heute): immer die Tagesansicht von heute
+    if (/(?:^|[#&])heute(?:&|$)/.test(location.hash)) localStorage.setItem(this.ANSICHT_KEY, 'heute');
     this.schalter.checked = localStorage.getItem(this.ANSICHT_KEY) === 'woche';
     this.schalter.addEventListener('change', () => this.ansicht(this.schalter.checked ? 'woche' : 'heute'));
     const schalter = (id, key) => {
