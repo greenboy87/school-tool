@@ -334,8 +334,15 @@ const Tresor = {
       this.bereit = true;
       this.knopfAktualisieren();
       this.status('verbunden');
-      // Hier angekommen, gilt der Stand dieses Geräts (ggf. ausdrücklich gewählt)
-      await this.hochladen(false, true);
+      /* Beide Seiten gleich und hier nichts offen: nicht hochladen. Sonst lädt
+         jedes Öffnen einen neuen Stand hoch, das andere Gerät übernimmt ihn,
+         lädt neu, lädt seinerseits hoch – und die beiden schaukeln sich auf. */
+      if (fernStand === lokalStand && !this.istGeaendert()) {
+        this.status('aktuell (' + this.zeit(fernStand) + ')');
+      } else {
+        // Hier angekommen, gilt der Stand dieses Geräts (ggf. ausdrücklich gewählt)
+        await this.hochladen(false, true);
+      }
       this.mithoeren();
     } else {
       // Unter diesem Passwort liegt nichts. Das heißt entweder „erstes Gerät“ –
