@@ -526,11 +526,22 @@ const Stundenplan = {
       this.tagSchluessel(t.beginn) === tag);
   },
 
+  /* Zweite Hälfte einer Doppelstunde (gleiches Fach, gleiche Klasse, direkt
+     davor) – der Schulmanager will den Inhalt nur in der ersten */
+  doppelFolge(t, stunden) {
+    const nr = x => parseInt(this.STUNDEN[this.uhr(x.beginn)], 10);
+    return !isNaN(nr(t)) && stunden.some(v => v !== t && v.fach === t.fach &&
+      this.klassenText(v) === this.klassenText(t) && nr(v) === nr(t) - 1);
+  },
+
   klassenbuchTag(tag) {
-    const stunden = this.klassenbuchStunden(tag);
+    const stunden = this.klassenbuchStunden(tag).sort((a, b) => a.beginn - b.beginn);
     if (!stunden.length) return;
-    const auftrag = { d: tag, s: stunden.map(t => ({ p: t.platz, t: this.klassenbuchText(t).text,
-      n: `${this.STUNDEN[this.uhr(t.beginn)] || this.uhr(t.beginn)} ${t.fach} ${this.klassenText(t)}`.trim() })) };
+    const auftrag = { d: tag, s: stunden.map(t => {
+      const folge = this.doppelFolge(t, stunden);
+      return { p: t.platz, t: folge ? '' : this.klassenbuchText(t).text,
+        n: `${this.STUNDEN[this.uhr(t.beginn)] || this.uhr(t.beginn)} ${t.fach} ${this.klassenText(t)}${folge ? ' (Doppelstunde, Inhalt in der Stunde davor)' : ''}`.trim() };
+    }) };
     window.open(this.KLASSENBUCH + tag + '?lessonId=' + stunden[0].platz, 'stklassenbuch|' + JSON.stringify(auftrag));
   },
 
