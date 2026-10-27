@@ -133,6 +133,8 @@ const Stundenplan = {
       if (stand) { this.standAendern(stand.dataset.stand.split('|')[0], stand.dataset.stand.split('|')[1]); return; }
       const kb = e.target.closest('[data-klassenbuch]');
       if (kb) { this.klassenbuchOeffnen(kb); return; }
+      const kbTag = e.target.closest('[data-kbtag]');
+      if (kbTag) { this.klassenbuchTag(kbTag.dataset.kbtag); return; }
       const datei = e.target.closest('[data-oeffnen]');
       if (datei) { Lessons.oeffnen(datei.dataset.oeffnen); return; }
       const kopie = e.target.closest('[data-kopieren]');
@@ -470,7 +472,7 @@ const Stundenplan = {
     const auftrag = liste => nr ? ['stbuchen', this.tagSchluessel(t.beginn), nr, liste.map(k => k.id).join(','), was].join('|') : 'schulmanager';
     const link = (href, text, liste, titel, extra = '') =>
       `<a href="${this.esc(href)}" target="${this.esc(auftrag(liste))}" rel="noopener"${extra} title="${this.esc(titel)}">${this.esc(text)}</a>`;
-    const hinweis = ' – im Schulmanager-Tab das Lesezeichen „iPads buchen“ anklicken';
+    const hinweis = ' – im Schulmanager-Tab das Lesezeichen „Schulmanager“ anklicken';
     const rest = this.KOFFER.filter(k => !koffer.includes(k) && !ohne.includes(k.id));
     return (koffer.length ? link(this.ipadAdresse(t.beginn), 'buchen', koffer,
       'Ersten freien Koffer auf dem Stockwerk buchen' + hinweis, ' class="plan-ipad-buchen"') + ' · ' : '') +
@@ -490,19 +492,44 @@ const Stundenplan = {
      „Unterrichtsinhalte“ klicken und einfügen. Die Anwesenheit bleibt Handarbeit. */
   KLASSENBUCH: 'https://login.schulmanager-online.de/#/modules/classbook/enter/my/lesson/',
 
+  /* Was ins Feld „Unterrichtsinhalte“ kommt: das Thema samt Zusatz, ohne
+     Thema (etwa Schulband) die Notiz der Stunde */
+  klassenbuchText(t) {
+    const key = this.buchSchluessel(t);
+    const buch = this.buchKlasse(t);
+    const cls = buch && !buch.ohne ? buch : null;
+    const themen = cls ? this.nummeriert(cls, key, this.themenDerStunde(cls, t).themen) : [];
+    const rec = ((buch && buch.stundenbuch) || {})[key] || {};
+    const text = themen.length ? themen.map(x => Lessons.ohneReihe(x.wort)).join(' · ') + (rec.z ? ' ' + rec.z : '')
+      : rec.s || '';
+    return { text, themen };
+  },
+
   klassenbuchKnopf(t, cls, kurz) {
     if (!t.platz || t.entfaellt || t.aufsicht || this.tagSchluessel(t.beginn) > this.tagSchluessel(new Date())) return '';
     const key = this.buchSchluessel(t);
-    const themen = cls ? this.nummeriert(cls, key, this.themenDerStunde(cls, t).themen) : [];
-    const zusatz = ((cls && cls.stundenbuch) || {})[key] && cls.stundenbuch[key].z;
-    // Ohne Thema (etwa Schulband) kommt die Notiz der Stunde ins Klassenbuch
-    const buch = this.buchKlasse(t);
-    const notiz = ((buch && buch.stundenbuch) || {})[key] && buch.stundenbuch[key].s;
-    const text = themen.length ? themen.map(x => Lessons.ohneReihe(x.wort)).join(' · ') + (zusatz ? ' ' + zusatz : '')
-      : notiz || '';
+    const { text, themen } = this.klassenbuchText(t);
     const url = this.KLASSENBUCH + this.tagSchluessel(t.beginn) + '?lessonId=' + t.platz;
     return `<button type="button" class="small plan-kb" data-klassenbuch="${this.esc(url)}" data-kopie="${this.esc(text)}"${themen.length ? '' : ` data-notiz="${this.esc(key)}"`}
       title="${this.esc(text ? `„${text}“${themen.length ? '' : ' (Notiz)'} kopieren und die Stunde im Klassenbuch öffnen – dort ins Feld Unterrichtsinhalte klicken und Cmd+V` : 'Die Stunde im Klassenbuch öffnen')}">${Icons.raw('book')}${kurz ? '' : 'Klassenbuch'}</button>`;
+  },
+
+  /* Alle Stunden eines Tags auf einmal ins Klassenbuch: Inhalte eintragen und
+     die Anwesenheit bestätigen. Das erledigt das Lesezeichen im Schulmanager-Tab
+     (IpadBuchen.lesezeichenCode) – der Auftrag reist wie beim iPad-Buchen im
+     Fensternamen: stklassenbuch|{"d":"2026-10-27","s":[{p,t,n}]} */
+  klassenbuchStunden(tag) {
+    const jetzt = new Date();
+    return this.alleTermine().filter(t => t.platz && !t.entfaellt && !t.aufsicht && !t.verschwunden && !t.vorschau &&
+      this.tagSchluessel(t.beginn) === tag && t.beginn <= jetzt);
+  },
+
+  klassenbuchTag(tag) {
+    const stunden = this.klassenbuchStunden(tag);
+    if (!stunden.length) return;
+    const auftrag = { d: tag, s: stunden.map(t => ({ p: t.platz, t: this.klassenbuchText(t).text,
+      n: `${this.STUNDEN[this.uhr(t.beginn)] || this.uhr(t.beginn)} ${t.fach} ${this.klassenText(t)}`.trim() })) };
+    window.open(this.KLASSENBUCH + tag + '?lessonId=' + stunden[0].platz, 'stklassenbuch|' + JSON.stringify(auftrag));
   },
 
   /* Erst kopieren (solange dieses Fenster den Fokus hat), dann öffnen – ein
@@ -1838,11 +1865,15 @@ const Stundenplan = {
     const aboEnde = this.letzterAboTag();
     const vorschau = aboEnde && tag > aboEnde;
     const istFrei = this.istFrei(tag);
+    // Nach Schulschluss zeigt „Heute“ schon den nächsten Tag – der Knopf gilt dann für heute
+    const kbTag = this.klassenbuchStunden(tag).length ? tag
+      : !this.tagWahl && this.klassenbuchStunden(heute).length ? heute : null;
     const tagKopf = `<div class="plan-wochen-nav plan-tag-nav">
       <button type="button" class="small" data-tagnav="-1" ${davor ? '' : 'disabled'} aria-label="Tag zurück">‹</button>
       <h3 class="plan-zwischen">${name ? name + ', ' : ''}${this.tagName(datum)}</h3>
       <button type="button" class="small" data-tagnav="1" ${danach ? '' : 'disabled'} aria-label="Tag vor">›</button>
       ${this.tagWahl ? '<button type="button" class="small" data-tag="" title="Zurück zum heutigen Tag (Taste H)">Heute</button>' : ''}
+      ${kbTag ? `<button type="button" class="small" data-kbtag="${kbTag}" title="Alle bisherigen Stunden ${kbTag === tag ? 'dieses Tags' : 'von heute'} ins Klassenbuch: Thema (sonst Notiz) eintragen und Anwesenheit bestätigen – im Schulmanager-Tab dann das Lesezeichen anklicken">${Icons.raw('book')}Klassenbuch ${kbTag === tag ? '' : 'von heute '}eintragen</button>` : ''}
       ${vorschau ? `<span class="plan-vorschau-hinweis" title="Noch nicht im Schulmanager-Abo – aus der Regelwoche">Vorschau</span>
       <button type="button" class="small" data-frei="${tag}" title="Ferien oder Feiertag: an diesem Tag keine Stunden vorsehen">${istFrei ? 'Doch Unterricht' : 'Tag frei'}</button>` : ''}
     </div>`;

@@ -4,15 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=288">
+<link rel="stylesheet" href="style.css?v=289">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
-<script src="js/icons.js?v=288"></script>
-<script src="js/theme.js?v=288"></script>
-<script src="js/auswahl.js?v=288"></script>
-<script src="js/metronom.js?v=288"></script>
-<script src="js/klang.js?v=288"></script>
-<script src="js/schwebe.js?v=288"></script>
-<script src="js/auth.js?v=288"></script>
+<script src="js/icons.js?v=289"></script>
+<script src="js/theme.js?v=289"></script>
+<script src="js/auswahl.js?v=289"></script>
+<script src="js/metronom.js?v=289"></script>
+<script src="js/klang.js?v=289"></script>
+<script src="js/schwebe.js?v=289"></script>
+<script src="js/auth.js?v=289"></script>
 </head>
 <body>
 
@@ -187,7 +187,7 @@
       <button id="btn-plan-neu" class="small" data-icon="reset" title="Jetzt neu vom Schulmanager holen">Aktualisieren</button>
       <button id="btn-plan-voll" class="small" data-icon="expand" title="Stundenplan im Vollbild (nochmal klicken oder Esc beendet) – ←/→ blättern die Wochen">Vollbild</button>
       <a id="plan-ipad-abgleich" class="knopf-link small" href="https://login.schulmanager-online.de/#/modules/resources/book/1682/-1" target="stabgleich" rel="noopener"
-         title="Holt deine iPad-Buchungen aus dem Schulmanager in den Plan.&#10;&#10;1. Hier klicken – ein Schulmanager-Tab öffnet sich.&#10;2. Dort oben in der Lesezeichenleiste auf „iPads buchen“ klicken.&#10;3. Danach bist du wieder hier, die Buchungen stehen bei den Stunden.">iPads abgleichen</a>
+         title="Holt deine iPad-Buchungen aus dem Schulmanager in den Plan.&#10;&#10;1. Hier klicken – ein Schulmanager-Tab öffnet sich.&#10;2. Dort oben in der Lesezeichenleiste auf das Lesezeichen „Schulmanager“ klicken.&#10;3. Danach bist du wieder hier, die Buchungen stehen bei den Stunden.">iPads abgleichen</a>
       <button id="btn-plan-abo" class="small" title="Adresse des iCal-Abos aus dem Schulmanager">Abo-Adresse</button>
     </div>
     <div id="plan-inhalt"></div>
@@ -1388,11 +1388,11 @@
     </section>
 
     <section class="card">
-      <h2 data-icon="grid">iPad-Koffer per Knopf buchen</h2>
+      <h2 data-icon="grid">Schulmanager-Lesezeichen: iPads buchen, Klassenbuch</h2>
       <p class="hint">Einmal einrichten: Den Knopf unten mit der Maus in die Lesezeichenleiste von Chrome ziehen
         (Leiste einblenden mit Cmd+Shift+B).</p>
       <p><a id="ipad-lesezeichen" class="lesezeichen-knopf" href="#" onclick="return false"
-            title="In die Lesezeichenleiste ziehen – nicht hier klicken">iPads buchen</a></p>
+            title="In die Lesezeichenleiste ziehen – nicht hier klicken">Schulmanager</a></p>
       <p class="hint"><strong>Buchungen sehen:</strong> Im Plan auf „iPads abgleichen“ klicken und im Schulmanager-Tab das
         Lesezeichen anklicken – deine Buchungen der nächsten zwölf Wochen stehen dann bei den Stunden. Nach einer Buchung
         über das Lesezeichen passiert das von selbst.</p>
@@ -1401,6 +1401,10 @@
       <p class="hint">Im Schulmanager-Tab, der sich öffnet, das Lesezeichen anklicken: Es prüft, welche Koffer frei sind, fragt nach
         und bucht. Sind alle belegt, nennt es, wer gebucht hat, und bietet einen Koffer aus einem anderen Stockwerk an.
         Gebucht wird mit deiner Anmeldung im Schulmanager – das School-Tool selbst bekommt davon nichts.</p>
+      <p class="hint"><strong>Klassenbuch eines Tags:</strong> Im Plan (Heute) auf „Klassenbuch eintragen“ klicken und im
+        Schulmanager-Tab das Lesezeichen anklicken. Es zeigt alle Stunden mit Inhalt, fragt einmal nach, trägt die
+        Unterrichtsinhalte ein (schon ausgefüllte bleiben) und bestätigt die Anwesenheit. Abwesende vorher von Hand eintragen.
+        <strong>Nach einem Update</strong> das alte Lesezeichen löschen und den Knopf oben neu in die Leiste ziehen.</p>
     </section>
 
   </div>
@@ -1420,39 +1424,39 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=288"></script>
-<script src="js/firebase-config.js?v=288"></script>
-<script type="module" src="js/live-firebase.js?v=288"></script>
-<script src="js/ai-import.js?v=288"></script>
-<script src="js/store.js?v=288"></script>
-<script src="js/noise.js?v=288"></script>
-<script src="js/classes.js?v=288"></script>
-<script src="js/sitzplan.js?v=288"></script>
-<script src="js/schueler.js?v=288"></script>
-<script src="js/tasten.js?v=288"></script>
-<script src="js/lessons.js?v=288"></script>
-<script src="js/band.js?v=288"></script>
-<script src="js/notes.js?v=288"></script>
-<script src="js/tresor.js?v=288"></script>
-<script src="js/erklaerungen.js?v=288"></script>
-<script src="js/setlisten.js?v=288"></script>
-<script src="js/einklappen.js?v=288"></script>
-<script src="js/tinyband-instrumente.js?v=288"></script>
-<script src="js/live-groups.js?v=288"></script>
-<script src="js/tinyband-lehrer.js?v=288"></script>
-<script src="js/tipps.js?v=288"></script>
-<script src="js/sport-tabellen.js?v=288"></script>
-<script src="js/sport.js?v=288"></script>
-<script src="js/ex-import.js?v=288"></script>
-<script src="js/exen.js?v=288"></script>
-<script src="js/ex-namen.js?v=288"></script>
-<script src="js/ex-sitzung.js?v=288"></script>
-<script src="js/ex-auswertung.js?v=288"></script>
-<script src="js/ex-reiter.js?v=288"></script>
-<script src="js/tools.js?v=288"></script>
-<script src="js/ablage.js?v=288"></script>
-<script src="js/ipad-buchen.js?v=288"></script>
-<script src="js/stundenplan.js?v=288"></script>
-<script src="js/app.js?v=288"></script>
+<script src="js/vendor/qrcode.min.js?v=289"></script>
+<script src="js/firebase-config.js?v=289"></script>
+<script type="module" src="js/live-firebase.js?v=289"></script>
+<script src="js/ai-import.js?v=289"></script>
+<script src="js/store.js?v=289"></script>
+<script src="js/noise.js?v=289"></script>
+<script src="js/classes.js?v=289"></script>
+<script src="js/sitzplan.js?v=289"></script>
+<script src="js/schueler.js?v=289"></script>
+<script src="js/tasten.js?v=289"></script>
+<script src="js/lessons.js?v=289"></script>
+<script src="js/band.js?v=289"></script>
+<script src="js/notes.js?v=289"></script>
+<script src="js/tresor.js?v=289"></script>
+<script src="js/erklaerungen.js?v=289"></script>
+<script src="js/setlisten.js?v=289"></script>
+<script src="js/einklappen.js?v=289"></script>
+<script src="js/tinyband-instrumente.js?v=289"></script>
+<script src="js/live-groups.js?v=289"></script>
+<script src="js/tinyband-lehrer.js?v=289"></script>
+<script src="js/tipps.js?v=289"></script>
+<script src="js/sport-tabellen.js?v=289"></script>
+<script src="js/sport.js?v=289"></script>
+<script src="js/ex-import.js?v=289"></script>
+<script src="js/exen.js?v=289"></script>
+<script src="js/ex-namen.js?v=289"></script>
+<script src="js/ex-sitzung.js?v=289"></script>
+<script src="js/ex-auswertung.js?v=289"></script>
+<script src="js/ex-reiter.js?v=289"></script>
+<script src="js/tools.js?v=289"></script>
+<script src="js/ablage.js?v=289"></script>
+<script src="js/ipad-buchen.js?v=289"></script>
+<script src="js/stundenplan.js?v=289"></script>
+<script src="js/app.js?v=289"></script>
 </body>
 </html>

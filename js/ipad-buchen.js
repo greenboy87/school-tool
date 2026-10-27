@@ -7,7 +7,7 @@
    Zusatz in der Adresse, den der Schulmanager wegräumt):
      stbuchen|2026-10-29|3|66897,66898,127145|Mu 5a, H311   – buchen
      stabgleich                                             – Buchungen holen
-   Ein Lesezeichen in Chrome („iPads buchen“) führt dann auf der Seite des
+   Ein Lesezeichen in Chrome („Schulmanager“) führt dann auf der Seite des
    Schulmanagers – mit dessen Anmeldung – den Auftrag aus. Die eigenen Buchungen
    bringt es als Anker zurück ins School-Tool:
      …/school-tool/#plan&ipads=2026-10-19_2026-12-21~2026-10-23.4.66897~…
@@ -28,6 +28,62 @@ const IpadBuchen = {
     const tagText = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     if (!/schulmanager-online\.de$/.test(location.hostname)) {
       alert('Dieses Lesezeichen funktioniert nur auf der Seite des Schulmanagers.');
+      return;
+    }
+
+    /* Klassenbuch eines Tags: jede Stunde aufrufen, „Unterrichtsinhalte“
+       eintragen und die Anwesenheit bestätigen. Bedient wird die Seite des
+       Schulmanagers selbst – Speichern, Doppelstunden und Vertretungen regelt
+       damit der Schulmanager wie bei Eingabe von Hand. Ein schon ausgefülltes
+       Inhaltsfeld bleibt, wie es ist; eingetragene Abwesenheiten auch. */
+    if ((window.name || '').startsWith('stklassenbuch|')) {
+      let kb;
+      try { kb = JSON.parse(window.name.slice(14)); } catch (e) { kb = null; }
+      window.name = '';                       // derselbe Auftrag nicht zweimal
+      if (!kb || !kb.s || !kb.s.length) { alert('Der Auftrag aus dem School-Tool ließ sich nicht lesen.'); return; }
+      const tagName = new Date(kb.d + 'T12:00').toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'numeric' });
+      if (!confirm(`Klassenbuch ${tagName} – ${kb.s.length} Stunde${kb.s.length === 1 ? '' : 'n'}:\n\n` +
+        kb.s.map(x => `${x.n}: ${x.t || '(kein Inhalt)'}`).join('\n') +
+        '\n\nInhalte eintragen (schon ausgefüllte bleiben) und jeweils die Anwesenheit bestätigen?\n' +
+        'Bereits eingetragene Abwesenheiten bleiben bestehen – wer fehlte, vorher von Hand eintragen.')) return;
+      const warten = ms => new Promise(r => setTimeout(r, ms));
+      const suchen = async (pruefen, sek = 15) => {
+        for (let i = 0; i < sek * 4; i++) { const x = pruefen(); if (x) return x; await warten(250); }
+        return null;
+      };
+      const knopf = text => [...document.querySelectorAll('button')].find(b => b.textContent.trim() === text);
+      const bericht = [];
+      for (const x of kb.s) {
+        // Die alte Seite markieren, um die neue zu erkennen – außer sie ist schon die richtige
+        const ziel = '#/modules/classbook/enter/my/lesson/' + kb.d + '?lessonId=' + x.p;
+        const alt = document.querySelector('textarea.topic-textarea');
+        if (alt && location.hash !== ziel) alt.dataset.stalt = '1';
+        location.hash = ziel;
+        const feld = await suchen(() => { const f = document.querySelector('textarea.topic-textarea'); return f && !f.dataset.stalt ? f : null; });
+        if (!feld) { bericht.push(`✗ ${x.n}: Seite nicht geladen`); continue; }
+        await warten(800);
+        const teile = [];
+        if (feld.disabled) teile.push('Inhalt gesperrt');
+        else if (feld.value.trim()) teile.push(feld.value.trim() === x.t ? 'Inhalt stand schon' : 'Inhalt war schon ausgefüllt – nicht geändert');
+        else if (x.t) {
+          feld.focus();
+          feld.value = x.t;
+          feld.dispatchEvent(new Event('input', { bubbles: true }));
+          feld.dispatchEvent(new KeyboardEvent('keyup', { bubbles: true }));
+          feld.blur();
+          await warten(2500);               // der Schulmanager speichert verzögert
+          teile.push('Inhalt eingetragen');
+        } else teile.push('kein Inhalt');
+        const ok = await suchen(() => knopf('Bestätigen') || ([...document.querySelectorAll('span')].some(s => s.textContent.trim() === 'bestätigt') ? 'schon' : null), 5);
+        if (ok === 'schon') teile.push('Anwesenheit stand schon');
+        else if (ok && !ok.disabled) {
+          ok.click();
+          await suchen(() => !knopf('Bestätigen'), 5);
+          teile.push(knopf('Bestätigen') ? 'Anwesenheit NICHT bestätigt' : 'Anwesenheit bestätigt');
+        } else teile.push('Anwesenheit nicht möglich');
+        bericht.push(`✓ ${x.n}: ${teile.join(', ')}`);
+      }
+      alert(`Klassenbuch ${tagName}:\n\n${bericht.join('\n')}`);
       return;
     }
 
