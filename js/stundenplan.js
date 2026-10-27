@@ -171,6 +171,8 @@ const Stundenplan = {
       if (schieben) { this.verschieben(...schieben.dataset.verschieben.split('|')); return; }
       const frei = e.target.closest('[data-frei]');
       if (frei) { this.freiUmschalten(frei.dataset.frei.split(',')); return; }
+      const kl = e.target.closest('[data-kl]');
+      if (kl) { this.klUmschalten(kl.dataset.kl); return; }
       // Klick irgendwo in die Stunde: bearbeiten
       const stunde = e.target.closest('[data-stunde]');
       if (stunde) this.themaBearbeiten(stunde.dataset.stunde);
@@ -888,6 +890,47 @@ const Stundenplan = {
     return hand === 1 || (hand !== 0 && !!this.ferienName(tag));
   },
 
+  /* Klassenleiterstunde: jeden zweiten Freitag 11:10–11:40, dafür Kurzstunden.
+     Im Abo steht davon nichts. Rhythmus ab einem Start-Freitag, einzelne
+     Freitage von Hand an/aus (Classes.data.planKL: { start, tage: { tag: 1|0 } }). */
+  KURZ: { '08:00': '08:00–08:40', '08:45': '08:40–09:20', '09:30': '09:20–10:00',
+    '10:45': '10:30–11:10', '11:30': '11:40–12:20', '12:15': '12:20–13:00' },
+
+  istKL(tag) {
+    const kl = Classes.data.planKL;
+    if (!kl || new Date(tag + 'T12:00').getDay() !== 5) return false;
+    const hand = (kl.tage || {})[tag];
+    if (hand !== undefined) return hand === 1;
+    if (!kl.start || tag < kl.start || this.istFrei(tag)) return false;
+    const wochen = Math.round((new Date(tag + 'T12:00') - new Date(kl.start + 'T12:00')) / (7 * 864e5));
+    return wochen % 2 === 0;
+  },
+
+  klUmschalten(tag) {
+    const kl = Classes.data.planKL || {};
+    const war = this.istKL(tag);
+    if (!war && !kl.start) {
+      // Erster KL-Freitag: gleich den Rhythmus festlegen
+      if (!confirm('Ab diesem Freitag alle zwei Wochen eine Klassenleiterstunde?\n\n' +
+        'OK: alle zwei Wochen ab hier (einzelne Freitage lassen sich danach ändern).\n' +
+        'Abbrechen: nur an diesem Freitag.')) {
+        this.merken('KL-Stunde');
+        Classes.data.planKL = { tage: { [tag]: 1 } };
+      } else {
+        this.merken('KL-Rhythmus');
+        Classes.data.planKL = { start: tag, tage: {} };
+      }
+    } else {
+      this.merken('KL-Stunde');
+      const tage = kl.tage || (kl.tage = {});
+      delete tage[tag];
+      Classes.data.planKL = kl;
+      if (this.istKL(tag) === war) tage[tag] = war ? 0 : 1;   // der Rhythmus allein passt nicht
+    }
+    Classes.persist();
+    this.render();
+  },
+
   freiUmschalten(tage) {
     this.merken('Freie Tage');
     const frei = Classes.data.planFrei || (Classes.data.planFrei = {});
@@ -1473,6 +1516,7 @@ const Stundenplan = {
     return JSON.stringify({
       klassen: Object.fromEntries(d.classes.map(c => [c.id, { stundenbuch: c.stundenbuch || null, lessons: c.lessons || {} }])),
       planKlassen: d.planKlassen || null, planFrei: d.planFrei || null, planStunden: d.planStunden || null,
+      planKL: d.planKL || null,
     });
   },
 
@@ -1492,7 +1536,7 @@ const Stundenplan = {
       if (a.stundenbuch) c.stundenbuch = a.stundenbuch; else delete c.stundenbuch;
       c.lessons = a.lessons;
     }
-    for (const feld of ['planKlassen', 'planFrei', 'planStunden']) {
+    for (const feld of ['planKlassen', 'planFrei', 'planStunden', 'planKL']) {
       if (alt[feld]) d[feld] = alt[feld]; else delete d[feld];
     }
     this._ohne = null;
@@ -1878,14 +1922,21 @@ const Stundenplan = {
     }
 
     const datum = this.datum(tag.replace(/-/g, ''));
+    // KL-Freitag: Kurzstunden-Zeiten, die KL-Stunde zwischen 4. und 5. Stunde
+    const kl = this.istKL(tag);
+    const klZeile = `<li class="plan-kl"><span class="plan-nr">KL</span><span class="plan-zeit">11:10–11:40</span>
+        <span class="plan-wer">Klassenleiterstunde</span></li>`;
+    let klDrin = !kl;
     const zeilen = liste.map(t => {
       const b = this.baustein(t, jetzt, true);
       const vorbei = t.ende <= jetzt ? ' vorbei' : '';
-      return `<li class="${b.klassenName}${vorbei}"${b.attr}>
-        ${this.stunde(t.beginn)}<span class="plan-zeit">${this.uhr(t.beginn)}–${this.uhr(t.ende)}</span>
+      const zeit = kl && this.KURZ[this.uhr(t.beginn)] || `${this.uhr(t.beginn)}–${this.uhr(t.ende)}`;
+      const vor = !klDrin && this.uhr(t.beginn) >= '11:30' ? (klDrin = true, klZeile) : '';
+      return `${vor}<li class="${b.klassenName}${vorbei}"${b.attr}>
+        ${this.stunde(t.beginn)}<span class="plan-zeit">${zeit}</span>
         <span class="plan-wer">${b.wer}</span>${b.raum}${b.marken}
       </li>`;
-    }).join('');
+    }).join('') + (klDrin ? '' : klZeile);
 
     // Änderungen der kommenden Tage, damit nichts überrascht
     const spaeter = this.tagWahl ? [] : this.termine.filter(t => this.tagSchluessel(t.beginn) > tag &&
@@ -1912,6 +1963,7 @@ const Stundenplan = {
       <button type="button" class="small" data-tagnav="1" ${danach ? '' : 'disabled'} aria-label="Tag vor">›</button>
       ${this.tagWahl ? '<button type="button" class="small" data-tag="" title="Zurück zum heutigen Tag (Taste H)">Heute</button>' : ''}
       ${kbTag ? `<button type="button" class="small" data-kbtag="${kbTag}" title="Alle Stunden ${kbTag === heute ? 'von heute' : 'dieses Tags'} ins Klassenbuch: Thema (sonst Notiz) eintragen und Anwesenheit bestätigen (geht erst ab Stundenbeginn) – im Schulmanager-Tab dann das Lesezeichen anklicken">${Icons.raw('book')}${kbTag === heute ? 'Heute alles eintragen' : 'Klassenbuch eintragen'}</button>` : ''}
+      ${datum.getDay() === 5 && !istFrei ? `<button type="button" class="small${kl ? ' plan-kl-an' : ''}" data-kl="${tag}" title="${kl ? 'Kurzstunden mit Klassenleiterstunde 11:10–11:40 – anklicken: an diesem Freitag doch nicht' : 'An diesem Freitag ist Klassenleiterstunde (Kurzstunden)'}">${kl ? 'KL-Freitag ✓' : 'KL-Stunde?'}</button>` : ''}
       ${vorschau ? `<span class="plan-vorschau-hinweis" title="Noch nicht im Schulmanager-Abo – aus der Regelwoche">Vorschau</span>
       <button type="button" class="small" data-frei="${tag}" title="Ferien oder Feiertag: an diesem Tag keine Stunden vorsehen">${istFrei ? 'Doch Unterricht' : 'Tag frei'}</button>` : ''}
     </div>`;
@@ -1960,7 +2012,7 @@ const Stundenplan = {
     const heute = this.tagSchluessel(jetzt);
     const tage = [0, 1, 2, 3, 4].map(i => { const d = new Date(mo); d.setDate(d.getDate() + i); return d; });
     const kopf = '<div class="plan-ecke"></div>' + tage.map(d =>
-      `<button type="button" class="plan-tagkopf${this.tagSchluessel(d) === heute ? ' heute' : ''}" data-tag="${this.tagSchluessel(d)}" title="Diesen Tag als Tagesansicht">${this.tagName(d)}${this.istFrei(this.tagSchluessel(d)) ? ` <span class="plan-frei">${this.esc(this.ferienName(this.tagSchluessel(d)) || 'frei')}</span>` : ''}</button>`).join('');
+      `<button type="button" class="plan-tagkopf${this.tagSchluessel(d) === heute ? ' heute' : ''}" data-tag="${this.tagSchluessel(d)}" title="Diesen Tag als Tagesansicht">${this.tagName(d)}${this.istKL(this.tagSchluessel(d)) ? ' <span class="plan-kl-marke" title="Klassenleiterstunde 11:10–11:40, Kurzstunden">KL</span>' : ''}${this.istFrei(this.tagSchluessel(d)) ? ` <span class="plan-frei">${this.esc(this.ferienName(this.tagSchluessel(d)) || 'frei')}</span>` : ''}</button>`).join('');
     const zellen = zeiten.map(z => {
       const zeile = tage.map(d => {
         const tag = this.tagSchluessel(d);
