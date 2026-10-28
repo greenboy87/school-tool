@@ -53,6 +53,34 @@ document.addEventListener('DOMContentLoaded', () => {
       location.replace(location.pathname + '?neu=' + Date.now() + location.hash));
   }
 
+  /* Neue Version von selbst holen – beim Start und bei jeder Rückkehr in den
+     Tab. Die Web-App vom Home-Bildschirm hält sonst die alte Seite fest, und
+     ein tagelang offener Tab (Windows) läuft mit altem Code weiter. Gefragt
+     wird am Server vorbei am Zwischenspeicher; neu geladen nur, wenn gerade
+     nichts getippt wird und kein Fenster offen ist. */
+  const meineVersion = Number((/app\.js\?v=(\d+)/.exec(
+    [...document.scripts].map(s => s.src).join(' ')) || [])[1]) || 0;
+  let zuletztGeprueft = 0;
+  const versionPruefen = async () => {
+    if (!meineVersion || document.hidden || Date.now() - zuletztGeprueft < 60000) return;
+    zuletztGeprueft = Date.now();
+    try {
+      const r = await fetch('index.html?pruefen=' + Date.now(), { cache: 'no-store' });
+      const neu = Number((/app\.js\?v=(\d+)/.exec(await r.text()) || [])[1]) || 0;
+      if (neu <= meineVersion) return;
+      // Nicht im Kreis laden, falls der Server kurz noch die alte Seite liefert
+      if (sessionStorage.getItem('st-version-versucht') === String(neu)) return;
+      const aktiv = document.activeElement;
+      if (document.querySelector('dialog[open]') ||
+        (aktiv && aktiv.matches && aktiv.matches('input, textarea, select, [contenteditable="true"]') &&
+          !aktiv.closest('#lock-screen'))) return;
+      sessionStorage.setItem('st-version-versucht', String(neu));
+      location.replace(location.pathname + '?neu=' + Date.now() + location.hash);
+    } catch (e) { /* offline – beim nächsten Mal */ }
+  };
+  setTimeout(versionPruefen, 3000);
+  document.addEventListener('visibilitychange', versionPruefen);
+
   /* ----- Lärmampel ----- */
   const meter = new NoiseMeter({
     dbEl: document.getElementById('db-value'),
