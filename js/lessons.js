@@ -247,9 +247,11 @@ const Lessons = {
 
   /* Katalog neu einlesen und online stellen: Kurzbefehl „Katalog veröffentlichen“
      (Shell-Skript ~/github-projekte/stundenkatalog/veroeffentlichen.sh). GitHub Pages
-     braucht danach eine Weile – so lange immer wieder nachfragen (sonst nur „304“). */
+     braucht danach eine Weile – so lange immer wieder nachfragen (sonst nur „304“).
+     Der Name ist zerlegt (NFD, „o“ + Punkte): so hat Kurzbefehle ihn beim Import aus
+     der .shortcut-Datei gespeichert, und mit dem fertigen „ö“ wird er nicht gefunden. */
   veroeffentlichen() {
-    location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Katalog veröffentlichen');
+    location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Katalog veröffentlichen'.normalize('NFD'));
     clearInterval(this.nachfragen);
     let mal = 0;
     this.nachfragen = setInterval(() => {
