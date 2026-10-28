@@ -146,6 +146,12 @@ const Stundenplan = {
     document.querySelector('.subtab-btn[data-subtab="klassenbuch"]').addEventListener('click', () => this.klassenbuchZeigen());
     document.getElementById('btn-plan-neu').addEventListener('click', () => this.holen());
     document.getElementById('btn-plan-abo').addEventListener('click', () => this.aboFragen());
+    const veroeffentlichen = document.getElementById('btn-katalog-veroeffentlichen');
+    veroeffentlichen.hidden = !Lessons.amMac();
+    veroeffentlichen.addEventListener('click', () => {
+      Lessons.veroeffentlichen();
+      this.meldung('Katalog wird veröffentlicht – der Plan holt ihn in ein, zwei Minuten von selbst.');
+    });
     document.getElementById('plan-inhalt').addEventListener('click', e => {
       if (e.target.closest('a')) return;     // Links (iPads buchen) öffnen nur sich selbst
       if (e.target.closest('.plan-notiz')) return;      // ins Notizfeld klicken = schreiben

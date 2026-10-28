@@ -101,7 +101,10 @@ const Lessons = {
      wird der passende Ordner gesucht – erst derselbe Pfad ohne „+“-Zeichen, dann
      derselbe Titel – und das Thema überall neu verknüpft: in den Klassen, im
      Stundenbuch (Plan, Klassenbuch) und bei den Stunden ohne Klasse. Nur bei
-     genau einem Treffer, sonst bliebe offen, welcher gemeint ist. */
+     genau einem Treffer, sonst bliebe offen, welcher gemeint ist.
+     Ganz umbenannte Ordner („1b_Rhythmus WH“ → „1b_Notenwerte und Rhythmus“)
+     findet nur die Liste „umbenannt“ im Katalog (alt → heute, aus
+     _Katalog/umbenennungen.csv); sie wird zuerst gefragt. */
   neuVerknuepfen() {
     const d = Classes.data;
     if (!d || !this.katalog) return;
@@ -117,13 +120,16 @@ const Lessons = {
     };
     const nachPfad = eindeutig(this.katalog.stunden, st => norm(st.id));
     const nachTitel = eindeutig(this.katalog.stunden, st => String(st.titel).trim().toLowerCase());
+    const umbenannt = this.katalog.umbenannt || {};
+    const fehlt = id => id.startsWith('kat:') && !this.katalogIds.has(id.slice(4));
+    const zielVon = (id, titel) => this.katalogIds.get(umbenannt[id.slice(4)]) || nachPfad.get(norm(id.slice(4))) ||
+      (titel ? nachTitel.get(String(titel).trim().toLowerCase()) : null);
     const neu = {};                             // alte Kennung → neue
     for (const c of d.classes) {
       const l = c.lessons || {};
       for (const [id, e] of Object.entries(l)) {
-        if (!id.startsWith('kat:') || this.katalogIds.has(id.slice(4))) continue;
-        const st = nachPfad.get(norm(id.slice(4))) ||
-          (e && e.t ? nachTitel.get(String(e.t).trim().toLowerCase()) : null);
+        if (!fehlt(id)) continue;
+        const st = zielVon(id, e && e.t);
         if (!st) continue;
         const ziel = 'kat:' + st.id;
         neu[id] = ziel;
@@ -131,13 +137,19 @@ const Lessons = {
         delete l[id];
       }
     }
-    if (!Object.keys(neu).length) return;
-    // Stundenbuch: festgeschriebene und von Hand gesetzte Themen umhängen
+    // Stundenbuch: festgeschriebene und von Hand gesetzte Themen umhängen –
+    // auch solche, die in der Klasse nicht mehr zugeordnet sind (nur über Liste/Pfad)
+    let geaendert = Object.keys(neu).length > 0;
     for (const buch of [...d.classes.map(c => c.stundenbuch), d.planStunden]) {
       for (const rec of Object.values(buch || {})) {
-        for (const th of (rec && rec.th) || []) if (th.id && neu[th.id]) th.id = neu[th.id];
+        for (const th of (rec && rec.th) || []) {
+          if (!th.id || !fehlt(th.id)) continue;
+          if (!neu[th.id]) { const st = zielVon(th.id); if (st) neu[th.id] = 'kat:' + st.id; }
+          if (neu[th.id]) { th.id = neu[th.id]; geaendert = true; }
+        }
       }
     }
+    if (!geaendert) return;
     console.info('Katalog: Themen neu verknüpft', neu);
     Classes.persist();
   },
@@ -150,8 +162,10 @@ const Lessons = {
       const k = await r.json();
       if (this.katalog && this.katalog.erstellt === k.erstellt) return;
       try { localStorage.setItem(this.CACHE_KEY, JSON.stringify(k)); } catch (e) { /* voll – dann eben ohne Zwischenspeicher */ }
+      clearInterval(this.nachfragen);
       this.katalogSetzen(k);
       this.render();
+      if (typeof Stundenplan !== 'undefined' && Stundenplan.sichtbar()) Stundenplan.render();
     } catch (e) { /* offline: Zwischenspeicher reicht */ }
   },
 
@@ -223,6 +237,25 @@ const Lessons = {
       sel.appendChild(o);
     }
     sel.value = wert;
+  },
+
+  amMac() {
+    const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+      (/Mac/.test(navigator.platform) && navigator.maxTouchPoints > 1);
+    return !ios && /Mac/i.test(navigator.platform || navigator.userAgent);
+  },
+
+  /* Katalog neu einlesen und online stellen: Kurzbefehl „Katalog veröffentlichen“
+     (Shell-Skript ~/github-projekte/stundenkatalog/veroeffentlichen.sh). GitHub Pages
+     braucht danach eine Weile – so lange immer wieder nachfragen (sonst nur „304“). */
+  veroeffentlichen() {
+    location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Katalog veröffentlichen');
+    clearInterval(this.nachfragen);
+    let mal = 0;
+    this.nachfragen = setInterval(() => {
+      if (++mal > 12) clearInterval(this.nachfragen);
+      this.katalogLaden();
+    }, 20 * 1000);
   },
 
   /* Ordner oder Datei im iCloud-Ordner öffnen – über dieselben Kurzbefehle wie die Katalogseite.
