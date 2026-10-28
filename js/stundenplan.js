@@ -119,13 +119,19 @@ const Stundenplan = {
       e.preventDefault();
       this.rueckgaengig();
     });
-    // H = Heute, W = Woche, S oder N = Notiz ein/aus – solange der Plan offen ist und nicht getippt wird
+    // H = Heute (von jedem Reiter aus), W = Woche, S oder N = Notiz ein/aus – solange nicht getippt wird
     document.addEventListener('keydown', e => {
       const k = e.key.toLowerCase();
       if (!['h', 'w', 's', 'n'].includes(k) || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
-      if (!this.el.classList.contains('active')) return;
       const ziel = e.target;
-      if (ziel && ziel.closest && ziel.closest('input, textarea, select, dialog, [contenteditable="true"]')) return;
+      // Schalter und Knöpfe behalten nach dem Klicken den Fokus – die sollen H nicht schlucken
+      if (ziel && ziel.closest && ziel.closest('textarea, select, dialog, [contenteditable="true"], ' +
+        'input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button])')) return;
+      if (!this.el.classList.contains('active')) {
+        if (k !== 'h' || document.documentElement.classList.contains('locked')) return;
+        const reiter = document.querySelector('.tab-btn[data-tab="plan"]');
+        if (reiter) reiter.click();
+      }
       e.preventDefault();
       if (k === 's' || k === 'n') { this.standSchalter.click(); return; }     // S/N: Notiz ein/aus
       this.ansicht(k === 'w' ? 'woche' : 'heute');
@@ -1998,6 +2004,7 @@ const Stundenplan = {
       <button type="button" class="small" data-woche="-1" ${zurueck ? '' : 'disabled'} aria-label="Woche zurück">‹</button>
       <strong>${titel}</strong> <span class="hint">${mo.getDate()}.${mo.getMonth() + 1}. – ${fr.getDate()}.${fr.getMonth() + 1}.</span>
       <button type="button" class="small" data-woche="1" ${vor ? '' : 'disabled'} aria-label="Woche vor">›</button>
+      <button type="button" class="small" data-tag="" title="Heute als Tagesansicht (Taste H)">Heute</button>
       ${vorschauTage.length ? `<span class="plan-vorschau-hinweis" title="Noch nicht im Schulmanager-Abo – aus der Regelwoche. Entfall und Vertretung kommen, sobald das Abo die Woche enthält.">Vorschau</span>
       <button type="button" class="small" data-frei="${vorschauTage.join(',')}" title="Ferien oder Feiertage: an diesen Tagen keine Stunden vorsehen">${alleFrei ? 'Doch Unterricht' : 'Woche frei'}</button>` : ''}
     </div>`;
