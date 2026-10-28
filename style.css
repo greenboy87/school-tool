@@ -2369,6 +2369,21 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .ablage-tabelle input { width: 100%; box-sizing: border-box; padding: .25rem .45rem; }
 /* Automatisch weiterlaufendes Thema: normale Schrift – grau bleibt für Vorschläge */
 button.plan-thema-wort.laeuft { color: var(--text); font-style: normal; font-weight: 500; }
+/* Folgestunde („Rhythmus II“), noch nicht bestätigt: dünn, bis ✓ geklickt ist */
+button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-weight: 400; }
+.plan-folge-knoepfe { display: inline-flex; align-items: center; gap: .25rem; }
+.plan-rausnehmen {
+  border: 1px solid var(--border); background: var(--panel); color: var(--muted); font: inherit; line-height: 1;
+  padding: .15rem .3rem; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center;
+}
+.plan-rausnehmen:hover { background: var(--danger-bg); border-color: var(--danger-border); color: var(--danger); }
+.plan-rausnehmen .icon { width: .85em; height: .85em; margin: 0; }
+.plan-zelle .plan-rausnehmen { padding: .05rem .2rem; }
+/* Schalter „Planen“: offene Stunden (unbestätigt, Vorschlag, kein Thema) hervorheben */
+.plan-termin.planen-offen {
+  outline: 2px dashed var(--yellow); outline-offset: -2px;
+  background: color-mix(in srgb, var(--yellow) 14%, transparent);
+}
 
 /* Arbeitsphasen-Timer: Zeit oben, Knöpfe darunter; im Vollbild riesig */
 .timer-buehne .timer-display { margin: .4rem 0 .8rem; }

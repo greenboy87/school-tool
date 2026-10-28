@@ -20,7 +20,8 @@
        th: [{ id, w }] (Themen mit Schlagwort; ohne id ein eigener Eintrag wie
        „Schulaufgabe“), m: 1 (Thema von Hand gesetzt), s: 'bis Folie 15' (eigener Stand),
        i: 'Geld einsammeln' (Info zu dieser Stunde), z: 'Praxisnote' (Zusatz zum Thema
-       nur dieser Stunde – „Musik und Werbung III Praxisnote“) }
+       nur dieser Stunde – „Musik und Werbung III Praxisnote“),
+       b: 'id1,id2' (Folgestunde bestätigt – mit genau diesen Themen) }
    Stunden ohne Klasse im School-Tool (Vertretung in einer fremden Klasse) haben
    ihr eigenes Buch, Classes.data.planStunden – die Klasse steht dort aus dem Abo.
    Die Themen werden am Tag nach der Stunde festgeschrieben; bis dahin folgen sie
@@ -37,6 +38,7 @@ const Stundenplan = {
   ANSICHT_KEY: 'stundenplan-ansicht',
   THEMEN_KEY: 'stundenplan-themen',
   STAND_KEY: 'stundenplan-stand',
+  PLANEN_KEY: 'stundenplan-planen',
   NEU_HOLEN_MS: 15 * 60 * 1000,
 
   /* iPad-Koffer im Schulmanager (Ressourcen → Koffer = Kategorie 1682). Die
@@ -78,6 +80,13 @@ const Stundenplan = {
     };
     this.themenSchalter = schalter('plan-themen', this.THEMEN_KEY);
     this.standSchalter = schalter('plan-stand-zeigen', this.STAND_KEY);
+    // „Planen“ ist anders als die beiden anderen Schalter von Haus aus aus
+    this.planenSchalter = document.getElementById('plan-planen');
+    this.planenSchalter.checked = localStorage.getItem(this.PLANEN_KEY) === 'an';
+    this.planenSchalter.addEventListener('change', () => {
+      localStorage.setItem(this.PLANEN_KEY, this.planenSchalter.checked ? 'an' : 'aus');
+      this.render();
+    });
     this.karte = this.el.querySelector('.plan-card');
     const einpassen = () => requestAnimationFrame(() => this.vollbildEinpassen());
     document.addEventListener('fullscreenchange', einpassen);
@@ -119,10 +128,10 @@ const Stundenplan = {
       e.preventDefault();
       this.rueckgaengig();
     });
-    // H = Heute (von jedem Reiter aus), W = Woche, S oder N = Notiz ein/aus – solange nicht getippt wird
+    // H = Heute (von jedem Reiter aus), W = Woche, S oder N = Notiz ein/aus, P = Planen – solange nicht getippt wird
     document.addEventListener('keydown', e => {
       const k = e.key.toLowerCase();
-      if (!['h', 'w', 's', 'n'].includes(k) || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (!['h', 'w', 's', 'n', 'p'].includes(k) || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
       const ziel = e.target;
       // Schalter und Knöpfe behalten nach dem Klicken den Fokus – die sollen H nicht schlucken
       if (ziel && ziel.closest && ziel.closest('textarea, select, dialog, [contenteditable="true"], ' +
@@ -134,6 +143,7 @@ const Stundenplan = {
       }
       e.preventDefault();
       if (k === 's' || k === 'n') { this.standSchalter.click(); return; }     // S/N: Notiz ein/aus
+      if (k === 'p') { this.planenSchalter.click(); return; }
       this.ansicht(k === 'w' ? 'woche' : 'heute');
     });
     document.getElementById('btn-plan-voll').addEventListener('click', () => this.vollbild());
@@ -161,6 +171,10 @@ const Stundenplan = {
       if (thema) { this.themaBearbeiten(thema.dataset.thema); return; }
       const nehmen = e.target.closest('[data-uebernehmen]');
       if (nehmen) { this.uebernehmen(...nehmen.dataset.uebernehmen.split('|')); return; }
+      const ja = e.target.closest('[data-bestaetigen]');
+      if (ja) { this.bestaetigen(...ja.dataset.bestaetigen.split('|')); return; }
+      const raus = e.target.closest('[data-rausnehmen]');
+      if (raus) { this.rausnehmen(...raus.dataset.rausnehmen.split('|')); return; }
       const stand = e.target.closest('[data-stand]');
       if (stand) { this.standAendern(stand.dataset.stand.split('|')[0], stand.dataset.stand.split('|')[1]); return; }
       const kb = e.target.closest('[data-klassenbuch]');
@@ -795,8 +809,56 @@ const Stundenplan = {
       if (e && tag > e.d1) e.d1 = tag;
       if (e) { e.ab = key; delete e.bis; }
     }
+    // Wird die Stunde damit zur Folgestunde, gilt sie gleich als bestätigt
+    const buch = cls.stundenbuch || (cls.stundenbuch = {});
+    (buch[key] || (buch[key] = {})).b = ids;
     Classes.persist();
     this.render();
+  },
+
+  /* Folgestunde bestätigen: Das Thema läuft hier wirklich weiter */
+  bestaetigen(klasseId, key, ids) {
+    const cls = this.klasseFinden(klasseId);
+    if (!cls || cls.ohne) return;
+    this.merken('Folgestunde bestätigt');
+    const buch = cls.stundenbuch || (cls.stundenbuch = {});
+    (buch[key] || (buch[key] = {})).b = ids;
+    Classes.persist();
+    this.render();
+  },
+
+  /* Folgestunde rausnehmen: Die Stunde bekommt kein Thema, das Thema rückt
+     in die nächste Stunde weiter */
+  rausnehmen(klasseId, key) {
+    const cls = this.klasseFinden(klasseId);
+    if (!cls || cls.ohne) return;
+    this.merken('Folgestunde rausgenommen');
+    const buch = cls.stundenbuch || (cls.stundenbuch = {});
+    const rec = buch[key] || (buch[key] = {});
+    rec.th = [];
+    rec.m = 1;
+    delete rec.z;
+    delete rec.b;
+    Classes.persist();
+    this.render();
+  },
+
+  /* Muss diese Stunde noch geplant werden? Für die Knöpfe ✓/✕ und den Schalter
+     „Planen“. Folgestunde: das Thema läuft automatisch aus der Stunde davor
+     weiter („Rhythmus II“). Sie gilt erst als geplant, wenn sie bestätigt ist –
+     und nur mit den Themen von damals; ändert sich die Kette, ist sie wieder offen.
+     Offen sind außerdem Stunden ohne Thema und bloße Vorschläge. Vergangene
+     Stunden und Stunden ohne Klasse im School-Tool zählen nicht. */
+  planung(cls, t) {
+    if (!cls || cls.ohne || t.entfaellt || t.aufsicht || t.ende <= new Date()) return null;
+    const key = this.buchSchluessel(t);
+    const rec = (cls.stundenbuch || {})[key] || {};
+    const roh = this.themenDerStunde(cls, t);
+    const ids = roh.themen.map(x => x.topic.id).filter(Boolean);
+    const nr = this.nummern(cls)[key] || {};
+    const folge = !rec.m && !rec.th && !roh.vorschlag && ids.some(id => nr[id] > 1);
+    const bestaetigt = folge && rec.b === ids.join(',');
+    return { folge, bestaetigt, ids, offen: !roh.themen.length || roh.vorschlag || (folge && !bestaetigt) };
   },
 
   /* Von Hand Geplantes einer entfallenen Stunde auf die nächste Stunde der
@@ -988,6 +1050,7 @@ const Stundenplan = {
       // Festgeschrieben wird am Tag danach – oder gleich, wenn ein Thema aus der Klasse genommen wird
       if (!t.entfaellt && !rec.th && (this.tagSchluessel(t.beginn) < heute || heuteMit)) {
         rec.th = this.themenDerStunde(cls, t, jetzt).themen.map(x => ({ id: x.topic.id, w: x.wort }));
+        delete rec.b;                              // festgeschrieben – bestätigt braucht es nicht mehr
         geaendert = true;
       }
     }
@@ -1449,7 +1512,8 @@ const Stundenplan = {
      „Stand“). Alle Knöpfe nur in der Tagesansicht; im Wochenraster ist nur
      Platz für den Start der Präsentation (mitKnoepfen = 'start'). */
   themenHtml(t, cls, mitKnoepfen) {
-    const zeigeWort = this.themenSchalter.checked, zeigeStand = this.standSchalter.checked;
+    const planen = this.planenSchalter.checked;
+    const zeigeWort = this.themenSchalter.checked || planen, zeigeStand = this.standSchalter.checked;
     // Der Start-Knopf im Wochenraster bleibt immer – auch bei ausgeschalteten Schaltern
     if (t.aufsicht || (!zeigeWort && !zeigeStand && mitKnoepfen !== 'start')) return '';
     const key = this.buchSchluessel(t);
@@ -1473,15 +1537,25 @@ const Stundenplan = {
     const teile = [];
     // Schalter „Themen“: Thema der Stunde ein/aus – unabhängig von „Stand“
     if (themen.length && zeigeWort) {
-      // festgelegt (pink) · läuft automatisch weiter (normal) · nur Vorschlag (grau)
-      const art = vorschlag ? ' vorschlag' : rec.m ? ' manuell' : ' laeuft';
+      // festgelegt (pink) · läuft automatisch weiter (normal, bestätigt fett) ·
+      // Folgestunde, noch nicht bestätigt (dünn) · nur Vorschlag (grau)
+      const p = this.planung(cls, t);
+      const folge = p && p.folge && !p.bestaetigt;
+      const art = vorschlag ? ' vorschlag' : rec.m ? ' manuell' : folge ? ' folge' : p && p.bestaetigt ? ' laeuft bestaetigt' : ' laeuft';
       const titel = vorschlag ? 'Vorschlag: Fortführung der vorigen Stunde bzw. nächstes offenes Thema – klicken zum Ändern'
-        : rec.m ? 'Von Hand gesetzt – klicken zum Ändern' : 'Thema dieser Stunde – klicken zum Ändern';
+        : rec.m ? 'Von Hand gesetzt – klicken zum Ändern'
+        : folge ? 'Folgestunde – läuft aus der Stunde davor weiter, noch nicht bestätigt. Klicken zum Ändern'
+        : 'Thema dieser Stunde – klicken zum Ändern';
       teile.push(`<button type="button" class="plan-thema-wort${art}" data-thema="${ziel}" title="${titel}">${vorschlag ? 'Vorschlag: ' : ''}${this.esc(worte)}</button>`);
       // Vorschlag mit einem Klick annehmen: Thema läuft ab dieser Stunde
       const ids = themen.map(x => x.topic.id).filter(Boolean);
       if (vorschlag && ids.length && !cls.ohne) {
         teile.push(`<button type="button" class="plan-uebernehmen" data-uebernehmen="${this.esc(cls.id + '|' + key + '|' + ids.join(','))}" title="Vorschlag übernehmen – das Thema steht danach in der Klasse auf „Läuft“">${Icons.raw('check')}übernehmen</button>`);
+      }
+      if (folge) {
+        teile.push(`<span class="plan-folge-knoepfe">` +
+          `<button type="button" class="plan-uebernehmen" data-bestaetigen="${this.esc(cls.id + '|' + key + '|' + p.ids.join(','))}" title="Folgestunde bestätigen – das Thema läuft hier weiter">${Icons.raw('check')}bestätigen</button>` +
+          `<button type="button" class="plan-rausnehmen" data-rausnehmen="${this.esc(cls.id + '|' + key)}" title="Folgestunde rausnehmen – die Stunde bekommt kein Thema, das Thema rückt in die nächste">${Icons.raw('x')}</button></span>`);
       }
     } else if (!themen.length && zeigeWort && rec.m) {
       teile.push(`<button type="button" class="plan-thema-wort manuell" data-thema="${ziel}" title="Von Hand: kein Thema – klicken zum Ändern">kein Thema</button>`);
@@ -1655,6 +1729,7 @@ const Stundenplan = {
     }
     if (getauscht) marken.push('<span class="plan-marke raum">Raum geändert</span>');
     const buchCls = this.buchKlasse(t);
+    const planung = this.planenSchalter.checked && this.planung(buchCls, t);
     marken.push(this.themenHtml(t, buchCls, mitKnoepfen));
     if (buchCls && !t.entfaellt && this.standSchalter.checked) marken.push(this.notizFeld(t, buchCls));
     const kb = this.klassenbuchKnopf(t, buchCls, mitKnoepfen === 'start');
@@ -1671,7 +1746,7 @@ const Stundenplan = {
     }
     const klassenName = ['plan-termin',
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',
-      t.vorschau && 'vorschau', (!t.entfaellt || t.vonHandAus) && !t.aufsicht && 'klickbar',
+      t.vorschau && 'vorschau', planung && (planung.offen ? 'planen-offen' : 'planen-fertig'), (!t.entfaellt || t.vonHandAus) && !t.aufsicht && 'klickbar',
       jetzt && t.beginn <= jetzt && jetzt < t.ende && !t.entfaellt && 'laeuft'].filter(Boolean).join(' ');
     // Gruppe für das Hervorheben: dieselbe Klasse – ohne Klasse im School-Tool die aus dem Abo
     const gruppe = t.aufsicht ? '' : cls ? cls.id : klassen ? 'abo:' + klassen : '';
