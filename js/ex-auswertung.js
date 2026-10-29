@@ -403,8 +403,9 @@ const ExAuswertung = {
   },
 
   /* Alle bewerteten Schüler mit aktuellem Ergebnis, nach Note sortiert */
+  /* Schnitt, Notenbild und Notenliste: ohne die, die als „krank, zählt nicht“ markiert sind */
   ergebnisse() {
-    return this.a.schueler.filter(s => s.r).map(s => ({ s, e: this.ergebnis(s) }));
+    return this.a.schueler.filter(s => s.r && !this.zaehltNicht(s.nr)).map(s => ({ s, e: this.ergebnis(s) }));
   },
 
   /* Grundgerüst; die Teile darin zeichnen sich einzeln, damit beim Ziehen am
@@ -748,9 +749,10 @@ const ExAuswertung = {
     liste.forEach(x => verteilung[x.e.note].push(x));
     const schnitt = liste.length ? fmt((liste.reduce((n, x) => n + x.e.note, 0) / liste.length).toFixed(2)) : '–';
     const vorlaeufig = liste.filter(x => x.e.vorlaeufig).length;
+    const ohne = this.a.schueler.filter(s => s.r && this.zaehltNicht(s.nr)).length;
     const hoechst = Math.max(1, ...Object.values(verteilung).map(v => v.length));
     document.getElementById('ex-notenbild').innerHTML = `
-      <h4>Notenbild <span class="hint">Schnitt ${schnitt}${vorlaeufig ? ` · ${vorlaeufig} vorläufig*` : ''}</span></h4>
+      <h4>Notenbild <span class="hint">Schnitt ${schnitt}${vorlaeufig ? ` · ${vorlaeufig} vorläufig*` : ''}${ohne ? ` · ${ohne} krank, zählen nicht` : ''}</span></h4>
       ${[1, 2, 3, 4, 5, 6].map(n => `
         <div class="ex-stufe">
           <span class="ex-stufe-note">${n}</span>
@@ -769,27 +771,30 @@ const ExAuswertung = {
     const zeilen = a.schueler.map(s => {
       if (s.fehlt || !s.abgabe) {
         return `<tr class="ex-ohne"><td class="nr">${esc(s.nr)}</td><td>${esc(s.name)}</td>
-          <td colspan="${a.meta.aufgaben.length + 5}" class="hint">${s.fehlt ? 'fehlt' : s.nichtDa ? 'nicht teilgenommen'
+          <td colspan="${a.meta.aufgaben.length + 6}" class="hint">${s.fehlt ? 'fehlt' : s.nichtDa ? 'nicht teilgenommen'
             : s.t && s.t.status === 'entfernt' ? 'entfernt, keine Abgabe' : 'keine Abgabe'}</td></tr>`;
       }
       if (!s.r) {
         return `<tr><td class="nr">${esc(s.nr)}</td><td>${esc(s.name)}</td>
-          <td colspan="${a.meta.aufgaben.length + 5}" class="ex-warnung">${esc(s.fehler || 'nicht bewertet')}</td></tr>`;
+          <td colspan="${a.meta.aufgaben.length + 6}" class="ex-warnung">${esc(s.fehler || 'nicht bewertet')}</td></tr>`;
       }
       const e = this.ergebnis(s);
       const zellen = a.meta.aufgaben.map(x => {
         const p = e.je[x.id];
         return `<td class="${p.offen ? 'ex-offen' : ''}">${fmt(p.punkte)}${p.vorschlag ? '?' : ''}</td>`;
       }).join('');
-      return `<tr><td class="nr">${esc(s.nr)}</td><td class="ex-name-zelle">${this.gesichtHtml(s)}${esc(s.name)}${s.t.status === 'entfernt' ? ' <span class="hint">(entfernt)</span>' : ''}</td>${zellen}
+      const krank = this.krankVon(s.nr);
+      const krankKnopf = `<button class="small ex-krank${krank ? ' an-' + krank : ''}" data-krank="${esc(s.nr)}"
+          title="Letzte Stunde krank? Klick schaltet weiter: zählt nicht → zählt trotzdem → nicht krank">${krank ? this.KRANK[krank] : 'krank?'}</button>`;
+      return `<tr${krank === 'nicht' ? ' class="ex-zaehlt-nicht"' : ''}><td class="nr">${esc(s.nr)}</td><td class="ex-name-zelle">${this.gesichtHtml(s)}${esc(s.name)}${s.t.status === 'entfernt' ? ' <span class="hint">(entfernt)</span>' : ''}</td>${zellen}
         <td><strong>${fmt(e.summe)}</strong></td><td><strong class="ex-note">${e.note}</strong>${e.vorlaeufig ? '<span class="hint">*</span>' : ''}</td>
-        <td class="hint">${esc(this.zuschlagText(s))}</td><td>${s.t.notenschutz ? 'ja' : ''}</td>
+        <td class="hint">${esc(this.zuschlagText(s))}</td><td>${s.t.notenschutz ? 'ja' : ''}</td><td>${krankKnopf}</td>
         <td class="aktionen">${this.istKorrigiert(s.nr) ? '<span class="ex-korrigiert-haken" title="Als korrigiert abgehakt">✓</span>' : ''}<button class="small" data-korrektur="${esc(s.nr)}">${e.offen ? `Korrigieren (${e.offen} offen)` : 'Korrigieren'}</button></td></tr>`;
     }).join('');
     document.getElementById('ex-uebersicht').innerHTML = `
       <div class="ex-tabelle-huelle">
       <table class="ex-tabelle ex-uebersicht"><thead><tr><th>Nr.</th><th>Name</th>${kopfAufgaben}<th>Summe</th><th>Note</th>
-        <th>Zeitzuschlag</th><th>Notenschutz</th><th></th></tr></thead><tbody>${zeilen}</tbody></table>
+        <th>Zeitzuschlag</th><th>Notenschutz</th><th title="Letzte Stunde krank">Letzte Std.</th><th></th></tr></thead><tbody>${zeilen}</tbody></table>
       </div>`;
     this.gesichterEinsetzen(document.getElementById('ex-uebersicht'));
   },
@@ -826,6 +831,8 @@ const ExAuswertung = {
   klick(e) {
     const k = e.target.closest('[data-korrektur]');
     if (k) { this.korrekturOeffnen(k.dataset.korrektur); return; }
+    const kr = e.target.closest('[data-krank]');
+    if (kr && this.a) { this.krankWeiter(kr.dataset.krank); return; }
     const b = e.target.closest('button[data-aktion]');
     if (!b || !this.a) return;
     const std = this.standard();
@@ -1003,6 +1010,20 @@ const ExAuswertung = {
     if (an) d.korrigiert[nr] = true; else delete d.korrigiert[nr];
     Classes.persist();
   },
+  /* ---------- Letzte Stunde krank ----------
+     Ein Klick schaltet weiter: – → krank, zählt nicht → krank, zählt (gute Note) → –.
+     Nur lokal (Classes.data.exAuswertungen[key].krank), reist mit dem Sync */
+  KRANK: { nicht: 'krank, zählt nicht', zaehlt: 'krank, zählt' },
+  krankVon(nr) { return (this.a.d.krank || {})[nr] || ''; },
+  zaehltNicht(nr) { return this.krankVon(nr) === 'nicht'; },
+  krankWeiter(nr) {
+    const d = this.a.d;
+    d.krank = d.krank || {};
+    const neu = { '': 'nicht', nicht: 'zaehlt', zaehlt: '' }[this.krankVon(nr)];
+    if (neu) d.krank[nr] = neu; else delete d.krank[nr];
+    Classes.persist();
+    this.notenAktualisieren();
+  },
   autoHaken() { try { return localStorage.getItem('ex-auto-haken') === '1'; } catch (e) { return false; } },
 
   blaettern(richtung) {
@@ -1093,9 +1114,11 @@ const ExAuswertung = {
     if (!a.cls) { alert('Die Klasse gibt es auf diesem Gerät nicht mehr.'); return; }
     const noten = {};
     let vorlaeufig = 0, ohneSchueler = 0;
+    const krank = [];                              // „krank, zählt nicht“: kommt nicht in die Notenliste
     for (const s of a.schueler) {
       const e = this.ergebnis(s);
       if (!e) continue;
+      if (this.zaehltNicht(s.nr)) { krank.push(s.sid); continue; }
       if (!a.cls.students.some(x => x.id === s.sid)) { ohneSchueler++; continue; }
       noten[s.sid] = String(e.note);
       if (e.vorlaeufig) vorlaeufig++;
@@ -1106,6 +1129,7 @@ const ExAuswertung = {
     if (p) {
       if (!confirm(`„${p.name}“ steht schon in der Notenliste von ${a.cls.name}. Die Noten dort durch die aktuellen ersetzen?`)) return;
       Object.keys(noten).forEach(sid => { p.grades[sid] = noten[sid]; });
+      krank.forEach(sid => { delete p.grades[sid]; });
     } else {
       p = { id: Store.uid(), name, date: this.datum(), entered: false, grades: noten, groups: [] };
       a.cls.projects.push(p);
@@ -1114,6 +1138,7 @@ const ExAuswertung = {
     Classes.persist();
     if (Classes.currentClassId === a.cls.id) Classes.renderProjects();
     alert(`${Object.keys(noten).length} Noten stehen jetzt in „${p.name}“ (Klasse ${a.cls.name}, Reiter Projekte & Noten).` +
+      (krank.length ? `\n${krank.length} als „krank, zählt nicht“ markiert – ohne Note.` : '') +
       (ohneSchueler ? `\n${ohneSchueler} Schüler stehen nicht mehr in der Klassenliste und wurden ausgelassen.` : ''));
   },
 
@@ -1121,12 +1146,12 @@ const ExAuswertung = {
     const a = this.a;
     const z = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
     const zahl = x => String(x).replace('.', ',');
-    const kopf = ['Nr', 'Name', ...a.meta.aufgaben.map(x => `${x.id} ${x.titel}`), 'Summe', 'Note', 'vorläufig', 'Zeitzuschlag', 'Notenschutz'];
+    const kopf = ['Nr', 'Name', ...a.meta.aufgaben.map(x => `${x.id} ${x.titel}`), 'Summe', 'Note', 'vorläufig', 'Zeitzuschlag', 'Notenschutz', 'Letzte Stunde'];
     const zeilen = a.schueler.map(s => {
       const e = this.ergebnis(s);
       if (!e) return [s.nr, s.name, ...a.meta.aufgaben.map(() => ''), '', '', '', s.fehlt ? 'fehlt' : s.nichtDa ? 'nicht teilgenommen' : 'keine Abgabe', ''];
       return [s.nr, s.name, ...a.meta.aufgaben.map(x => zahl(e.je[x.id].punkte)), zahl(e.summe), e.note,
-        e.vorlaeufig ? 'ja' : '', this.zuschlagText(s), s.t.notenschutz ? 'ja' : ''];
+        e.vorlaeufig ? 'ja' : '', this.zuschlagText(s), s.t.notenschutz ? 'ja' : '', this.KRANK[this.krankVon(s.nr)] || ''];
     });
     const csv = '﻿' + [kopf, ...zeilen].map(r => r.map(z).join(';')).join('\r\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));

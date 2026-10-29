@@ -35,6 +35,7 @@ const Schueler = {
     an('btn-profil-weiter', () => this.blaettern(1));
     an('btn-steckbrief-zu', () => this.auswahlAufheben());
     an('btn-auswahl-weg', () => this.auswahlAufheben());
+    an('btn-profil-name', () => this.umbenennen());
 
     // Esc wählt ab – nur wenn gerade nichts getippt wird
     document.addEventListener('keydown', e => {
@@ -250,6 +251,25 @@ const Schueler = {
   fotoQuelle(t, andere = null) {
     if (Sitzplan.bildVon(t.cls, t.s.id)) return t;
     return (andere || this.auchIn(t)).find(a => Sitzplan.bildVon(a.cls, a.s.id)) || null;
+  },
+
+  /* Tippfehler im Namen korrigieren. Exen, Noten und Sitzplan hängen an der
+     Schüler-ID, nicht am Namen – sie ziehen also von selbst mit. */
+  umbenennen() {
+    const t = this.gewaehlt();
+    if (!t) return;
+    const ein = prompt('Neuer Name – „Nachname, Vorname“ oder „Vorname Nachname“:', Classes.studentName(t.s));
+    if (ein == null) return;
+    const n = Classes.parseName(ein);
+    if (!n || !n.last) { alert('Bitte einen Namen eingeben.'); return; }
+    if (n.first === (t.s.first || '') && n.last === t.s.last) return;
+    t.s.first = n.first;
+    t.s.last = n.last;
+    Classes.sortStudents(t.cls);
+    Classes.persist();
+    try { Classes.renderStudents(); } catch (e) {}
+    document.dispatchEvent(new CustomEvent('ex-sitzungen'));
+    this.zeigeProfil();
   },
 
   zeigeProfil() {

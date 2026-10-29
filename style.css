@@ -1044,7 +1044,8 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 #profil-foto:hover, .profil-foto.hochladbar:hover, .profil-foto.ziel { outline-color: var(--accent); }
 #btn-profil-foto { margin-top: .2rem; }
 .profil-kopf-text { flex: 1; min-width: 10rem; }
-.profil-kopf-text h2 { margin: 0 0 .5rem; font-size: 1.35rem; }
+.profil-kopf-text h2 { margin: 0 0 .5rem; font-size: 1.35rem; display: inline-block; margin-right: .5rem; }
+.profil-name-knopf { vertical-align: .3rem; }
 .profil-angaben { display: grid; grid-template-columns: auto 1fr; gap: .3rem 1rem; margin: 0 0 .8rem; }
 .profil-angaben dt { color: var(--muted); font-size: .85rem; }
 .profil-angaben dd { margin: 0; }
@@ -1826,6 +1827,12 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .ex-uebersicht td, .ex-uebersicht th { white-space: nowrap; }
 .ex-uebersicht td.ex-offen { background: color-mix(in srgb, var(--yellow) 22%, transparent); }
 .ex-uebersicht tr.ex-ohne td { color: var(--muted); }
+.ex-uebersicht tr.ex-zaehlt-nicht td:not(:last-child):not(:nth-last-child(2)) { color: var(--muted); }
+.ex-uebersicht tr.ex-zaehlt-nicht .ex-note { text-decoration: line-through; }
+.ex-krank { opacity: .55; }
+.ex-krank.an-nicht, .ex-krank.an-zaehlt { opacity: 1; }
+.ex-krank.an-nicht { border-color: var(--danger); color: var(--danger); }
+.ex-krank.an-zaehlt { border-color: var(--accent); color: var(--accent); }
 .ex-note { font-size: 1.1rem; }
 .ex-selbst { display: flex; flex-wrap: wrap; gap: 1rem 2rem; }
 .ex-selbst-block ol { margin: .3rem 0 0; padding-left: 1.2rem; }
