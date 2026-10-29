@@ -2086,7 +2086,10 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 .ex-sitzung-rechts > p { margin: 0 0 .4rem; }
 .ex-warteraum-kopf:empty { display: none; }
 .ex-warteraum-kopf > span:first-child { font-weight: 600; }
-.ex-warteraum-spalten { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 0 1.4rem; align-items: start; }
+.ex-warteraum-spalten { display: flex; flex-wrap: wrap; gap: 0 1.4rem; align-items: flex-start; }
+/* Jede Tabelle mindestens so breit wie ihr Inhalt: passt die zweite nicht daneben, rutscht sie darunter statt überzulaufen */
+.ex-warteraum-spalten > .ex-tabelle { flex: 1 1 24rem; width: auto; min-width: min-content; }
+.ex-warteraum-spalten .ex-tabelle td.ex-auffaellig { min-width: 7rem; }
 .ex-warteraum-spalten .ex-tabelle td, .ex-warteraum-spalten .ex-tabelle th { padding: .25rem .4rem; }
 .ex-start.zu > :not(h2):not(.ex-start-auf) { display: none; }
 .ex-start.zu { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: .8rem; padding-bottom: .8rem; }
