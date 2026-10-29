@@ -848,9 +848,12 @@ const ExAuswertung = {
     return `<div class="ex-sitzungen-liste"><h4>Sitzungen <span class="hint">(spätere zählen als Nachschreiben)</span></h4><ul>${codes.map((code, n) => {
       const s = a.sitzungen[code], i = s.info, abg = Object.keys(s.abgaben || {}).length;
       const datum = new Date(i.startzeit || i.erstellt).toLocaleDateString('de-DE');
-      return `<li><span>${esc(datum)}${i.nachschreiben ? ' · Nachschreiben' : ''} · ${abg} ${abg === 1 ? 'Abgabe' : 'Abgaben'}</span>` +
+      return `<li><span>${esc(datum)}${i.nachschreiben ? ' · Nachschreiben' : ''} · ${abg} ${abg === 1 ? 'Abgabe' : 'Abgaben'}</span>
+        <span class="btn-row">` +
         (n ? `<button class="small" data-aktion="abtrennen" data-code="${esc(code)}"
-          title="Diese Sitzung als eigene Ex mit eigener Nummer führen">Als eigene Ex abtrennen</button>` : '') + '</li>';
+          title="Diese Sitzung als eigene Ex mit eigener Nummer führen">Als eigene Ex abtrennen</button>` : '') +
+        `<button class="small danger" data-aktion="sitzung-loeschen" data-code="${esc(code)}" data-icon="trash"
+          title="Etwa einen Probelauf: Abgaben dieser Sitzung löschen, die anderen bleiben">Sitzung löschen</button></span></li>`;
     }).join('')}</ul></div>`;
   },
 
@@ -877,6 +880,34 @@ const ExAuswertung = {
     this.oeffnen(key);
   },
 
+  /* Eine Sitzung aus der Auswertung löschen (z. B. ein Probelauf) – die übrigen bleiben */
+  async sitzungLoeschen(code) {
+    const a = this.a;
+    if (!a || !a.sitzungen[code] || a.gruppe.codes.length < 2) return;
+    const s = a.sitzungen[code], i = s.info, abg = Object.keys(s.abgaben || {}).length;
+    const datum = new Date(i.startzeit || i.erstellt).toLocaleDateString('de-DE');
+    if (!confirm(`Die Sitzung vom ${datum} löschen (${abg} ${abg === 1 ? 'Abgabe' : 'Abgaben'})?\n\n` +
+      'Ihre Abgaben sind dann weg, die übrigen Sitzungen bleiben. Das lässt sich nicht rückgängig machen.')) return;
+    const w = { [`exsessions/${code}`]: null };
+    for (const uid of Object.keys(s.teilnehmer || {})) {
+      const z = await FB.get(FB.ref(FB.db, `schoolTool/exzugang/${uid}`)).catch(() => null);
+      if (z && z.val() === code) w[`exzugang/${uid}`] = null;
+    }
+    try {
+      await FB.update(FB.ref(FB.db, 'schoolTool'), w);
+    } catch (e) {
+      alert('Löschen in der Datenbank fehlgeschlagen: ' + e.message);
+      return;
+    }
+    if (ExSitzung.code === code) ExSitzung.vergessen();
+    delete (Classes.data.exSitzungen || {})[code];
+    // War die Auswertung wegen der gelöschten Sitzung archiviert, gehört der Rest wieder in die Liste
+    if (a.d.archiviert) delete a.d.archiviert;
+    Classes.persist();
+    document.dispatchEvent(new CustomEvent('ex-sitzungen'));
+    this.oeffnen(a.key);
+  },
+
   klick(e) {
     const k = e.target.closest('[data-korrektur]');
     if (k) { this.korrekturOeffnen(k.dataset.korrektur); return; }
@@ -899,6 +930,7 @@ const ExAuswertung = {
       case 'noten-entfernen': this.notenEntfernen(); this.listeFuellen(); break;
       case 'archivieren': this.archivieren(); break;
       case 'abtrennen': this.abtrennen(b.dataset.code); break;
+      case 'sitzung-loeschen': this.sitzungLoeschen(b.dataset.code); break;
       case 'endgueltig-loeschen': this.endgueltigLoeschen(); break;
       case 'schueleransicht': this.schueleransicht(); break;
       case 'schueleransicht-voll': this.schueleransicht(); this.vollbild(); break;
