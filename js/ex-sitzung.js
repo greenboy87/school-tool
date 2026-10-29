@@ -581,28 +581,36 @@ const ExSitzung = {
       // Falschen Namen erwischt: vor dem Start zurück zur Namensauswahl, ohne das Gerät zu sperren
       if (vorher && z.uid && (z.status === 'freigegeben' || z.status === 'entfernt')) k.push(knopf('neu-waehlen', 'Neu wählen', z));
       let ns = '';
-      if (z.uid && z.notenschutz) ns = `<span class="ex-ns an">Notenschutz ✓</span> ${i.status === 'beendet' ? '' : knopf('ns-aus', 'zurücknehmen', z)}`;
-      else if (z.uid && z.notenschutzAngefragt) ns = `<span class="ex-ns">angefragt</span> ${knopf('ns-an', 'bestätigen', z, 'primary')} ${knopf('ns-ab', 'ablehnen', z)}`;
+      if (z.uid && z.notenschutz) ns = `<span class="ex-ns an">Notenschutz ✓ ${i.status === 'beendet' ? '' : knopf('ns-aus', 'zurücknehmen', z)}</span>`;
+      else if (z.uid && z.notenschutzAngefragt) ns = `<span class="ex-ns">Notenschutz angefragt ${knopf('ns-an', 'bestätigen', z, 'primary')} ${knopf('ns-ab', 'ablehnen', z)}</span>`;
       const ab = z.uid ? this.abgaben[z.uid] : null;
       const f = ab && ab.fortschritt;
       const fortschritt = f && f.gesamt
         ? `<span class="ex-balken"><span style="width:${Math.round(100 * f.erledigt / f.gesamt)}%"></span></span> ${f.erledigt}/${f.gesamt}` : '';
-      const zuschlag = z.zuschlagMin ? ` <span class="hint">(+${z.zuschlagMin} min)</span>` : '';
+      const zuschlag = z.zuschlagMin ? ` <span class="hint">+${z.zuschlagMin} min</span>` : '';
       // Was der Steckbrief beim Freigeben mitbringt – vorher sichtbar machen
       const sb = z.uid && z.status === 'wartet' ? this.steckbriefAusgleich(z.nr) : {};
       const sbText = [sb.notenschutz ? 'Notenschutz' : '', sb.zuschlagMin ? `+${sb.zuschlagMin} min` : ''].filter(Boolean).join(', ');
-      const sbHinweis = sbText ? ` <span class="hint" title="Wird beim Freigeben aus dem Steckbrief übernommen">(Steckbrief: ${esc(sbText)})</span>` : '';
+      const sbHinweis = sbText ? `<span class="hint" title="Wird beim Freigeben aus dem Steckbrief übernommen">(Steckbrief: ${esc(sbText)})</span>` : '';
       const zeit = laeuft && !i.ohneLimit && z.status === 'freigegeben' && z.anzeige !== 'abgegeben' ? this.zeitText(this.restSek(z)) : '';
+      // Kompakt, damit zwei Tabellen nebeneinander passen: Notenschutz, Auffälliges und
+      // Steckbrief stehen klein unter dem Namen, Status und Fortschritt teilen sich eine Spalte
+      const auff = esc(this.auffaelliges(ab));
+      const details = [ns, auff ? `<span class="ex-auffaellig">${auff}</span>` : '', sbHinweis].filter(Boolean);
+      const pille = `<span class="ex-status st-${z.anzeige}">${STATUS[z.anzeige] || esc(z.anzeige)}</span>`;
+      // Wer schreibt, bekommt den Balken; jeder andere Stand die Pille (dahinter der Zähler, falls es einen gibt)
+      const stand = vorher ? pille : (z.anzeige === 'schreibt' && fortschritt ? fortschritt
+        : pille + (f && f.gesamt ? ` ${f.erledigt}/${f.gesamt}` : ''));
       return `<tr class="st-${z.anzeige}${z.doppelt ? ' doppelt' : ''}">
-        <td class="nr">${esc(z.nr)}</td><td>${esc(this.name(z.nr))}${sbHinweis}</td>
-        <td><span class="ex-status st-${z.anzeige}">${STATUS[z.anzeige] || esc(z.anzeige)}</span>${z.doppelt ? ' <span class="ex-warnung">2 Geräte!</span>' : ''}</td>
-        ${vorher ? '' : `<td class="ex-fortschritt">${fortschritt}</td><td class="ex-zeit">${zeit}${zuschlag}</td><td class="ex-auffaellig">${esc(this.auffaelliges(ab))}</td>`}
-        <td>${ns}</td><td class="aktionen">${k.join(' ')}</td></tr>`;
+        <td class="nr">${esc(z.nr)}</td>
+        <td class="ex-name"><span class="ex-name-text">${esc(this.name(z.nr))}</span>${details.length ? `<div class="ex-details">${details.join('')}</div>` : ''}</td>
+        <td class="ex-stand">${stand}${z.doppelt ? ' <span class="ex-warnung">2 Geräte!</span>' : ''}</td>
+        ${vorher ? '' : `<td class="ex-zeit">${zeit}${zuschlag}</td>`}
+        <td class="aktionen">${k.join(' ')}</td></tr>`;
     };
     // Lange Listen in zwei Spalten (nebeneinander, wenn Platz ist)
-    const tabelle = liste => `<table class="ex-tabelle"><thead><tr><th>Nr.</th><th>Name</th><th>Status</th>
-        ${vorher ? '' : '<th>Fortschritt</th><th>Zeit</th><th>Auffälliges</th>'}
-        <th>${zeilen.some(z => z.uid && (z.notenschutz || z.notenschutzAngefragt)) ? 'Notenschutz' : ''}</th><th></th></tr></thead>
+    const tabelle = liste => `<table class="ex-tabelle"><thead><tr><th>Nr.</th><th>Name</th><th>${vorher ? 'Status' : 'Stand'}</th>
+        ${vorher ? '' : '<th>Zeit</th>'}<th></th></tr></thead>
         <tbody>${liste.map(zeileHtml).join('')}</tbody></table>`;
     const haelfte = Math.ceil(zeilen.length / 2);
     const tabellen = zeilen.length > 8

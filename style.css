@@ -1802,8 +1802,8 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 #tab-exen button:disabled, .ex-seite button:disabled { opacity: .45; cursor: not-allowed; }
 .ex-balken { display: inline-block; width: 4.5rem; height: .45rem; border-radius: 999px; background: var(--border); vertical-align: middle; overflow: hidden; margin-right: .3rem; }
 .ex-balken span { display: block; height: 100%; background: var(--accent); }
-.ex-tabelle td.ex-fortschritt, .ex-tabelle td.ex-zeit { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.ex-tabelle td.ex-auffaellig { font-size: .82rem; color: var(--danger); }
+.ex-tabelle td.ex-zeit { font-variant-numeric: tabular-nums; }
+.ex-tabelle td.ex-zeit .hint { display: block; font-size: .72rem; white-space: nowrap; }
 .ex-status.st-schreibt { border-color: var(--accent); color: var(--accent); }
 .ex-status.st-abgegeben { background: var(--accent-grad); border-color: transparent; color: var(--on-accent); }
 .ex-status.st-zeit-um, .ex-status.st-nicht-abgegeben { border-color: var(--danger); color: var(--danger); }
@@ -2086,17 +2086,24 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 .ex-sitzung-rechts > p { margin: 0 0 .4rem; }
 .ex-warteraum-kopf:empty { display: none; }
 .ex-warteraum-kopf > span:first-child { font-weight: 600; }
-.ex-warteraum-spalten { display: flex; flex-wrap: wrap; gap: 0 1.4rem; align-items: flex-start; }
+.ex-warteraum-spalten { display: flex; flex-wrap: wrap; gap: 0 1rem; align-items: flex-start; }
 /* Jede Tabelle mindestens so breit wie ihr Inhalt: passt die zweite nicht daneben, rutscht sie darunter statt überzulaufen */
 .ex-warteraum-spalten > .ex-tabelle { flex: 1 1 24rem; width: auto; min-width: min-content; }
-.ex-warteraum-spalten .ex-tabelle td.ex-auffaellig { min-width: 7rem; }
-.ex-warteraum-spalten .ex-tabelle td, .ex-warteraum-spalten .ex-tabelle th { padding: .25rem .4rem; }
+.ex-warteraum-spalten .ex-tabelle td.nr { width: 1.6rem; }
+.ex-warteraum-spalten .ex-name-text { white-space: nowrap; }
+.ex-details { display: flex; flex-direction: column; gap: .1rem; margin-top: .1rem; font-size: .78rem; line-height: 1.25; }
+.ex-details .ex-ns .small { padding: .05rem .35rem; font-size: .72rem; margin-left: .2rem; }
+.ex-details .ex-auffaellig { color: var(--danger); }
+.ex-tabelle td.ex-stand { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ex-warteraum-spalten .ex-balken { width: 3rem; }
+.ex-warteraum-spalten .ex-status { padding: 0 .4rem; font-size: .74rem; }
+.ex-warteraum-spalten .ex-tabelle td, .ex-warteraum-spalten .ex-tabelle th { padding: .25rem .3rem; }
 .ex-start.zu > :not(h2):not(.ex-start-auf) { display: none; }
 .ex-start.zu { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: .8rem; padding-bottom: .8rem; }
 .ex-start.zu h2 { margin: 0; font-size: 1rem; color: var(--muted); }
 .ex-schreiben-raster.ohne-seite { grid-template-columns: minmax(0, 1fr); }
 .ex-schreiben-raster.ohne-seite > .ex-schnellwahl { display: none; }
-.ex-warteraum-spalten .ex-tabelle td.aktionen .small { padding: .2rem .45rem; }
+.ex-warteraum-spalten .ex-tabelle td.aktionen .small { padding: .15rem .35rem; }
 .ex-schreiben-haupt > .card { max-width: none; }
 
 /* Gesichter in der Ex-Auswertung */
