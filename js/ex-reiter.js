@@ -97,6 +97,7 @@ const ExReiter = {
       start.dispatchEvent(new Event('change'));
     }
     if (typeof ExAuswertung !== 'undefined') ExAuswertung.klasseGewechselt();
+    if (typeof ExSitzung !== 'undefined') ExSitzung.klasseGewechselt();
     if (!stumm) document.getElementById('ex-klasse').blur();
   },
 

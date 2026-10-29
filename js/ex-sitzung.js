@@ -45,6 +45,10 @@ const ExSitzung = {
     document.getElementById('btn-ex-warteraum').addEventListener('click', () => this.warteraumOeffnen());
     document.getElementById('btn-ex-nach-abbrechen').addEventListener('click', () => this.nachschreibenAbbrechen());
     document.getElementById('btn-ex-start-auf').addEventListener('click', () => { this.startOffen = true; this.startKarte(); });
+    document.getElementById('btn-ex-zur-klasse').addEventListener('click', () => {
+      const lokal = this.lokal();
+      if (lokal) ExReiter.klasseSetzen(lokal.klasseId);
+    });
     document.getElementById('ex-warteraum-kopf').addEventListener('click', e => {
       const b = e.target.closest('button[data-aktion]');
       if (b) this.aktion(b.dataset.aktion, b.dataset.uid, b.dataset.nr);
@@ -291,7 +295,10 @@ const ExSitzung = {
     const ex = Exen.index[exId];
     if (!cls || !ex) { alert('Bitte Klasse und Ex wählen.'); return; }
     if (this.code && this.info && this.info.status !== 'beendet' &&
-        !confirm('Auf diesem Gerät ist noch eine Sitzung offen. Trotzdem eine neue starten?')) return;
+        !confirm(`Für ${this.info.klasse} ist auf diesem Gerät noch „${this.info.titel}“ offen ` +
+          `(${this.info.status === 'laeuft' ? 'läuft' : 'Warteraum'}).\n\nDie läuft zwar weiter, lässt sich hier ` +
+          'danach aber nicht mehr steuern oder beenden. Besser zuerst dort „Ex beenden“ bzw. „Sitzung abbrechen“.' +
+          '\n\nTrotzdem den neuen Warteraum öffnen?')) return;
 
     const nach = this.nach;
     const nummern = nach ? { ...nach.nummern } : {}, erlaubt = {}, fehlt = {};
@@ -383,6 +390,7 @@ const ExSitzung = {
     this.schliessen();
     localStorage.removeItem(this.AKTIV_KEY);
     document.getElementById('ex-sitzung').hidden = true;
+    document.getElementById('ex-sitzung').classList.remove('fremd');
     ExReiter.laeuft(false);
     this.startOffen = false;
     document.getElementById('ex-start').classList.remove('zu');
@@ -421,9 +429,29 @@ const ExSitzung = {
     return namen;
   },
 
+  /* Gehört die Sitzung zu einer anderen Klasse als der oben gewählten? */
+  fremd() {
+    const lokal = this.lokal(), kid = typeof ExReiter !== 'undefined' ? ExReiter.klasseId() : '';
+    return !!(lokal && kid && lokal.klasseId !== kid);
+  },
+
+  /* Oben wurde eine andere Klasse gewählt */
+  klasseGewechselt() { if (this.info) this.zeichnen(); },
+
   zeichnen() {
     const i = this.info, lokal = this.lokal();
-    document.getElementById('ex-sitzung').hidden = false;
+    const fremd = this.fremd();
+    // Eine beendete Ex einer anderen Klasse hat beim Schreiben nichts mehr zu suchen –
+    // ihre Ergebnisse stehen unter „Korrigieren“
+    if (fremd && i.status === 'beendet') { this.vergessen(); return; }
+    const karte = document.getElementById('ex-sitzung');
+    karte.hidden = false;
+    karte.classList.toggle('fremd', fremd);
+    if (fremd) {
+      const status = i.status === 'warteraum' ? 'Warteraum offen' : 'läuft noch';
+      document.getElementById('ex-sitzung-fremd-text').textContent = `Klasse ${i.klasse}: ${i.titel} · ${status}`;
+      document.getElementById('btn-ex-zur-klasse').textContent = `Zu ${i.klasse} wechseln`;
+    }
     // Grüner Punkt am Reiter nur, solange Warteraum offen ist oder die Ex läuft
     ExReiter.laeuft(i.status === 'warteraum' || i.status === 'laeuft');
     document.getElementById('ex-sitzung-titel').textContent = `${i.exNummer}. ${i.art || 'Ex'}: ${i.titel}${i.nachschreiben ? ' – Nachschreiben' : ''}`;
@@ -663,7 +691,7 @@ const ExSitzung = {
   /* Solange Warteraum offen ist oder die Ex läuft, ist „Ex starten“ eingeklappt */
   startOffen: false,
   startKarte() {
-    const aktiv = !!(this.info && (this.info.status === 'warteraum' || this.info.status === 'laeuft'));
+    const aktiv = !!(this.info && (this.info.status === 'warteraum' || this.info.status === 'laeuft')) && !this.fremd();
     const zu = aktiv && !this.startOffen && !this.nach;
     document.getElementById('ex-start').classList.toggle('zu', zu);
     // Während der Sitzung braucht die Liste die Breite – die Ex-Spalte rechts verschwindet
