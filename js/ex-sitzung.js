@@ -28,14 +28,15 @@ const ExSitzung = {
 
   init() {
     if (!document.getElementById('ex-start')) return;
-    document.getElementById('ex-start-klasse').addEventListener('change', () => this.anwesenheitZeichnen());
+    document.getElementById('ex-start-klasse').addEventListener('change', () => { this.anwesenheitZeichnen(); this.nummerVorbelegen(); });
     const anzahl = document.getElementById('ex-test-anzahl');
     try { if (localStorage.getItem('ex-test-anzahl')) anzahl.value = localStorage.getItem('ex-test-anzahl'); } catch (e) { /* egal */ }
     anzahl.addEventListener('input', () => {
       try { localStorage.setItem('ex-test-anzahl', String(this.testAnzahl())); } catch (e) { /* egal */ }
       this.anwesenheitZeichnen();
     });
-    document.getElementById('ex-start-ex').addEventListener('change', () => { this.dauerVorbelegen(); this.vorschauText(); });
+    document.getElementById('ex-start-ex').addEventListener('change', () => { this.dauerVorbelegen(); this.nummerVorbelegen(); });
+    document.addEventListener('ex-sitzungen', () => this.nummerVorbelegen());
     document.getElementById('ex-start-dauer').addEventListener('input', () => this.vorschauText());
     ['ex-start-timer', 'ex-start-ohnelimit'].forEach(id =>
       document.getElementById(id).addEventListener('change', () => this.zeitOptionenStellen()));
@@ -176,6 +177,15 @@ const ExSitzung = {
       : 'Zuerst eine Ex in die Bibliothek ziehen.';
   },
 
+  /* Vorschlag: die nächste freie Nummer der Klasse (beim Nachschreiben steht sie fest) */
+  nummerVorbelegen() {
+    const cls = this.klasse(), exId = document.getElementById('ex-start-ex').value;
+    if (!this.nach && cls && exId && typeof ExAuswertung !== 'undefined') {
+      document.getElementById('ex-start-nummer').value = ExAuswertung.naechsteNummer(cls.id, exId);
+    }
+    this.vorschauText();
+  },
+
   exNummer() {
     const n = parseInt(document.getElementById('ex-start-nummer').value, 10);
     return n >= 1 && n <= 9 ? n : 1;
@@ -301,6 +311,17 @@ const ExSitzung = {
           '\n\nTrotzdem den neuen Warteraum öffnen?')) return;
 
     const nach = this.nach;
+    // Dieselbe Ex mit derselben Nummer gibt es schon: sonst landet die neue Sitzung in deren Auswertung
+    const alt = !nach && ExAuswertung.gruppen().find(g =>
+      g.key === ExAuswertung.schluesselVon({ exId, klasseId: cls.id, exNummer: this.exNummer() }));
+    if (alt) {
+      const frei = ExAuswertung.naechsteNummer(cls.id, exId);
+      if (!confirm(`In ${cls.name} gibt es schon die ${alt.exNummer}. Ex „${alt.titel}“ vom ` +
+        `${new Date(alt.erstellt).toLocaleDateString('de-DE')}.\n\nOK: als ${frei}. Ex starten\n` +
+        'Abbrechen: zurück (fürs Nachschreiben unter „Korrigieren“ → „Nachschreiben vorbereiten“)')) return;
+      document.getElementById('ex-start-nummer').value = frei;
+      this.vorschauText();
+    }
     const nummern = nach ? { ...nach.nummern } : {}, erlaubt = {}, fehlt = {};
     document.querySelectorAll('#ex-anwesend input').forEach(b => {
       const nr = b.dataset.nr;

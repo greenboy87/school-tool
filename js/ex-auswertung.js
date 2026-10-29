@@ -80,6 +80,15 @@ const ExAuswertung = {
     return Object.values(g).sort((a, b) => b.erstellt - a.erstellt);
   },
 
+  /* Nächste freie Ex-Nummer einer Klasse im laufenden Schuljahr (höchstens 9) */
+  naechsteNummer(klasseId, exId) {
+    const jahr = this.schuljahr(Date.now());
+    const gruppen = this.gruppen().filter(g => g.klasseId === klasseId);
+    let n = Math.max(0, ...gruppen.filter(g => this.schuljahr(g.erstellt) === jahr).map(g => Number(g.exNummer) || 0)) + 1;
+    while (n < 9 && gruppen.some(g => g.exId === exId && Number(g.exNummer) === n)) n++;
+    return Math.min(n, 9);
+  },
+
   istArchiviert(key) {
     const d = (Classes.data.exAuswertungen || {})[key];
     return !!(d && d.archiviert);
@@ -428,6 +437,7 @@ const ExAuswertung = {
         <div id="ex-notenbild" class="ex-notenbild"></div>
       </div>
       <div id="ex-uebersicht"></div>
+      ${this.sitzungenHtml()}
       ${this.selbstHtml()}
       <div class="btn-row ex-auswertung-aktionen">
         <button class="primary" data-aktion="export-notenliste" data-icon="book">In die Notenliste übernehmen</button>
@@ -828,6 +838,45 @@ const ExAuswertung = {
     return bloecke ? `<h4>Selbsteinschätzung <span class="hint">(${werte.length} Antworten)</span></h4><div class="ex-selbst">${bloecke}</div>` : '';
   },
 
+  /* Mehrere Sitzungen in einer Auswertung: gewollt beim Nachschreiben, aus Versehen,
+     wenn eine Ex mit derselben Nummer noch einmal gestartet wurde – dann abtrennen */
+  sitzungenHtml() {
+    const a = this.a, esc = s => Band.esc(s);
+    const codes = Object.keys(a.sitzungen).sort((x, y) =>
+      (a.sitzungen[x].info.erstellt || 0) - (a.sitzungen[y].info.erstellt || 0));
+    if (codes.length < 2) return '';
+    return `<div class="ex-sitzungen-liste"><h4>Sitzungen <span class="hint">(spätere zählen als Nachschreiben)</span></h4><ul>${codes.map((code, n) => {
+      const s = a.sitzungen[code], i = s.info, abg = Object.keys(s.abgaben || {}).length;
+      const datum = new Date(i.startzeit || i.erstellt).toLocaleDateString('de-DE');
+      return `<li><span>${esc(datum)}${i.nachschreiben ? ' · Nachschreiben' : ''} · ${abg} ${abg === 1 ? 'Abgabe' : 'Abgaben'}</span>` +
+        (n ? `<button class="small" data-aktion="abtrennen" data-code="${esc(code)}"
+          title="Diese Sitzung als eigene Ex mit eigener Nummer führen">Als eigene Ex abtrennen</button>` : '') + '</li>';
+    }).join('')}</ul></div>`;
+  },
+
+  async abtrennen(code) {
+    const a = this.a, lokal = (Classes.data.exSitzungen || {})[code];
+    if (!a || !lokal || !a.sitzungen[code]) return;
+    const i = a.sitzungen[code].info;
+    const datum = new Date(i.startzeit || i.erstellt).toLocaleDateString('de-DE');
+    const ein = prompt(`Die Sitzung vom ${datum} als eigene Ex führen.\n\nAls wievielte Ex der Klasse ${lokal.klasse}?`,
+      this.naechsteNummer(lokal.klasseId, lokal.exId));
+    if (ein === null) return;
+    const n = parseInt(ein, 10);
+    if (!(n >= 1 && n <= 9)) { alert('Bitte eine Zahl von 1 bis 9 angeben.'); return; }
+    const key = this.schluesselVon({ ...lokal, exNummer: n });
+    if (this.gruppen().some(g => g.key === key)) {
+      alert(`Die ${n}. Ex „${lokal.titel}“ gibt es in ${lokal.klasse} schon. Bitte eine andere Nummer.`);
+      return;
+    }
+    lokal.exNummer = n;
+    Classes.persist();
+    // Auch in der Datenbank, damit Kopf und Ausdruck die neue Nummer zeigen
+    try { await FB.set(FB.ref(FB.db, `schoolTool/exsessions/${code}/info/exNummer`), n); } catch (e) { console.error(e); }
+    document.dispatchEvent(new CustomEvent('ex-sitzungen'));
+    this.oeffnen(key);
+  },
+
   klick(e) {
     const k = e.target.closest('[data-korrektur]');
     if (k) { this.korrekturOeffnen(k.dataset.korrektur); return; }
@@ -849,6 +898,7 @@ const ExAuswertung = {
       case 'export-notenliste': this.exportNotenliste(); this.knoepfeAktualisieren(); this.listeFuellen(); break;
       case 'noten-entfernen': this.notenEntfernen(); this.listeFuellen(); break;
       case 'archivieren': this.archivieren(); break;
+      case 'abtrennen': this.abtrennen(b.dataset.code); break;
       case 'endgueltig-loeschen': this.endgueltigLoeschen(); break;
       case 'schueleransicht': this.schueleransicht(); break;
       case 'schueleransicht-voll': this.schueleransicht(); this.vollbild(); break;

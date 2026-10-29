@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
   Stundenplan.init();
   Ablage.init();
 
+  /* Höhe der oberen Leiste für alles, was darunter stehen bleibt (Steckbrief) */
+  const leiste = document.querySelector('.topbar');
+  if (leiste && window.ResizeObserver) {
+    new ResizeObserver(() => document.documentElement.style.setProperty('--topbar-h', leiste.offsetHeight + 'px')).observe(leiste);
+  }
+
   /* ----- Haupttabs ----- */
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
