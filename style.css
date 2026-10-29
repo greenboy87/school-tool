@@ -2146,6 +2146,11 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 .plan-naechste-klapp { margin-bottom: .6rem; }
 .plan-liste li.plan-kl { color: var(--accent); font-weight: 600; }
 .plan-kl-marke { font-size: .72em; font-weight: 700; padding: .05em .4em; border-radius: .4em; background: var(--accent-soft); color: #4c1d95; margin-left: .3em; }
+.plan-kl-kasten {
+  margin-top: auto; padding: .15rem .4rem; border-radius: var(--radius-sm); font-size: .7rem; line-height: 1.25;
+  background: var(--accent-soft); color: #4c1d95; border: 1px solid var(--accent);
+}
+.plan-kl-kasten strong { font-weight: 800; margin-right: .2em; }
 button.plan-kl-an { border-color: var(--accent); }
 .plan-naechste-klapp > summary { cursor: pointer; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: .2rem 0; }
 .plan-naechste-klapp[open] > summary { margin-bottom: .4rem; }

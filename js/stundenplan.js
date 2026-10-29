@@ -2111,10 +2111,13 @@ const Stundenplan = {
         // Ferien und Feiertage: Spalte markiert, in der ersten Zeile der Name
         const frei = this.istFrei(tag) && !hier.length;
         const name = frei && z === zeiten[0] ? `<div class="plan-ferien">${this.esc(this.ferienName(tag) || 'unterrichtsfrei')}</div>` : '';
+        // KL-Freitag: die Klassenleiterstunde liegt zwischen 4. und 5. Stunde – als Kasten unter der 4.
+        const kl = z === '10:45' && this.istKL(tag)
+          ? '<div class="plan-kl-kasten" title="Klassenleiterstunde nach der 4. Stunde, an diesem Tag Kurzstunden"><strong>KL</strong> 11:10–11:40 Klassenleiterstunde</div>' : '';
         return `<div class="plan-zelle${tag === heute ? ' heute' : ''}${frei ? ' frei' : ''}"${leer}>${name}${hier.map(t => {
           const b = this.baustein(t, jetzt, 'start');
           return `<div class="${b.klassenName}"${b.attr}><span class="plan-wer">${b.wer}</span>${b.raum}${b.marken}</div>`;
-        }).join('')}</div>`;
+        }).join('')}${kl}</div>`;
       }).join('');
       const nr = this.STUNDEN[z];
       return `<div class="plan-uhr">${nr ? `<strong class="plan-nr${nr === 'Pause' ? ' pause' : ''}">${nr}</strong>` : ''}${z}</div>${zeile}`;
