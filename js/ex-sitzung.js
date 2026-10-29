@@ -10,7 +10,7 @@
      info/       status (warteraum|laeuft|beendet), exId, titel, art, klasse,
                  exNummer, wiedergabe, dauerMinuten, zuschlagMin, erstellt,
                  startzeit, erlaubt/{n<Nr>: true}, fehlt/{n<Nr>: true}
-     teilnehmer/<uid>  nummer, status, notenschutzAngefragt, notenschutz, zuschlagMin, ts
+     teilnehmer/<uid>  nummer, status, notenschutzAngefragt, notenschutz, krankAngefragt, krank, zuschlagMin, ts
      abgaben/<uid>     antworten (JSON-Text), fortschritt, stand, abgegeben, ereignisse
    Siehe docs/ex/bauplan.md und die Regeln in firebase-regeln.md. */
 const ExSitzung = {
@@ -583,6 +583,10 @@ const ExSitzung = {
       let ns = '';
       if (z.uid && z.notenschutz) ns = `<span class="ex-ns an">Notenschutz ✓ ${i.status === 'beendet' ? '' : knopf('ns-aus', 'zurücknehmen', z)}</span>`;
       else if (z.uid && z.notenschutzAngefragt) ns = `<span class="ex-ns">Notenschutz angefragt ${knopf('ns-an', 'bestätigen', z, 'primary')} ${knopf('ns-ab', 'ablehnen', z)}</span>`;
+      // „Letzte Stunde krank“: meldet das iPad, die Lehrkraft bestätigt; zählt in der Auswertung dann erst einmal nicht
+      let kr = '';
+      if (z.uid && z.krank) kr = `<span class="ex-ns an">letzte Std. krank ✓ ${i.status === 'beendet' ? '' : knopf('krank-aus', 'zurücknehmen', z)}</span>`;
+      else if (z.uid && z.krankAngefragt) kr = `<span class="ex-ns">letzte Std. krank? ${knopf('krank-an', 'bestätigen', z, 'primary')} ${knopf('krank-ab', 'ablehnen', z)}</span>`;
       const ab = z.uid ? this.abgaben[z.uid] : null;
       const f = ab && ab.fortschritt;
       const fortschritt = f && f.gesamt
@@ -596,7 +600,7 @@ const ExSitzung = {
       // Kompakt, damit zwei Tabellen nebeneinander passen: Notenschutz, Auffälliges und
       // Steckbrief stehen klein unter dem Namen, Status und Fortschritt teilen sich eine Spalte
       const auff = esc(this.auffaelliges(ab));
-      const details = [ns, auff ? `<span class="ex-auffaellig">${auff}</span>` : '', sbHinweis].filter(Boolean);
+      const details = [ns, kr, auff ? `<span class="ex-auffaellig">${auff}</span>` : '', sbHinweis].filter(Boolean);
       const pille = `<span class="ex-status st-${z.anzeige}">${STATUS[z.anzeige] || esc(z.anzeige)}</span>`;
       // Wer schreibt, bekommt den Balken; jeder andere Stand die Pille (dahinter der Zähler, falls es einen gibt)
       const stand = vorher ? pille : (z.anzeige === 'schreibt' && fortschritt ? fortschritt
@@ -706,6 +710,12 @@ const ExSitzung = {
           break;
         case 'ns-an': w[`${s}/teilnehmer/${uid}/notenschutz`] = true; break;
         case 'ns-aus': w[`${s}/teilnehmer/${uid}/notenschutz`] = false; break;
+        case 'krank-an': w[`${s}/teilnehmer/${uid}/krank`] = true; break;
+        case 'krank-aus': w[`${s}/teilnehmer/${uid}/krank`] = false; break;
+        case 'krank-ab':
+          w[`${s}/teilnehmer/${uid}/krank`] = false;
+          w[`${s}/teilnehmer/${uid}/krankAngefragt`] = false;
+          break;
         case 'ns-ab':
           w[`${s}/teilnehmer/${uid}/notenschutz`] = false;
           w[`${s}/teilnehmer/${uid}/notenschutzAngefragt`] = false;
@@ -897,6 +907,7 @@ const ExSitzung = {
       [`${s}/teilnehmer/${neuUid}/status`]: alt.status === 'entfernt' ? 'entfernt' : 'freigegeben',
       [`${s}/teilnehmer/${neuUid}/zuschlagMin`]: alt.zuschlagMin || 0,
       [`${s}/teilnehmer/${neuUid}/notenschutz`]: !!(alt.notenschutz || neu.notenschutz),
+      ...(alt.krank || neu.krank ? { [`${s}/teilnehmer/${neuUid}/krank`]: true } : {}),
       [`exzugang/${neuUid}`]: this.code,
     };
     if (abgabe) { w[`${s}/abgaben/${neuUid}`] = abgabe; w[`${s}/abgaben/${alt.uid}`] = null; }
@@ -928,36 +939,46 @@ const ExSitzung = {
   },
 
   /* ---------- Großansicht für die Leinwand ---------- */
+  /* Beamer: nur der QR-Code, so groß wie es geht, im Farbschimmer der Seite.
+     Kein Titel – die Klasse soll vorher nicht sehen, was drankommt. Klick schaltet Vollbild. */
   beamer() {
     if (!this.code || !this.info) return;
     const w = window.open('', 'ex-beamer', 'width=900,height=900');
     if (!w) { alert('Das Fenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben.'); return; }
     this.beamerFenster = w;
-    const esc = s => Band.esc(s);
-    const i = this.info, link = this.link();
+    const link = this.link();
+    const thema = document.documentElement.dataset.theme === 'light' ? 'light' : '';
+    const css = getComputedStyle(document.documentElement);
+    // Dunkle Punkte für den Scanner: im dunklen Thema die Grundfarbe, im hellen die Schriftfarbe
+    const dunkel = css.getPropertyValue(thema ? '--text' : '--bg').trim();
+    const stil = document.querySelector('link[href*="style.css"]').href;
     w.document.open();
-    w.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
-      <title>${esc(i.titel)}</title><style>
-      body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;
-        justify-content:center;gap:1.2rem;background:#faf9f5;color:#1f1e1d;
-        font-family:system-ui,-apple-system,"Segoe UI",sans-serif;}
-      h1{font-size:2.4rem;margin:0;text-align:center;}
-      p{font-size:1.5rem;margin:0;color:#6b6a62;text-align:center;}
-      .code{font-size:3.4rem;font-weight:800;letter-spacing:.14em;color:#c2603f;}
-      #qr{background:#fff;padding:1.5rem;border-radius:1rem;box-shadow:0 2px 20px rgba(0,0,0,.12);}
+    w.document.write(`<!DOCTYPE html><html lang="de"${thema ? ` data-theme="${thema}"` : ''}><head><meta charset="UTF-8">
+      <title>QR-Code</title>
+      <link rel="stylesheet" href="${stil}">
+      <style>
+      html, body { height: 100%; }
+      body { margin: 0; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
+      #qr { width: min(86vw, 86vh); aspect-ratio: 1; box-sizing: border-box; padding: min(3.5vw, 3.5vh); background: #fff;
+        border-radius: min(3vw, 3vh); box-shadow: 0 0 0 2px var(--accent), 0 0 80px color-mix(in srgb, var(--accent) 45%, transparent); }
+      #qr canvas, #qr img { display: block; width: 100% !important; height: auto !important; image-rendering: pixelated; }
+      #tipp { position: fixed; bottom: 1rem; left: 0; right: 0; text-align: center; color: var(--muted); font-size: .9rem; transition: opacity 1s; }
       </style></head><body>
-      <h1>${esc(i.exNummer + '. ' + (i.art || 'Ex'))} · ${esc(i.titel)}</h1>
-      <div id="qr"></div>
-      <p>Code: <span class="code">${esc(this.code)}</span></p>
-      <p>${esc(link.replace(/\?s=.*$/, ''))}</p>
+      <div id="qr"></div><div id="tipp">Klicken für Vollbild</div>
       </body></html>`);
     w.document.close();
+    w.document.body.addEventListener('click', () => {
+      const d = w.document;
+      if (d.fullscreenElement) d.exitFullscreen(); else d.documentElement.requestFullscreen().catch(() => {});
+    });
+    w.setTimeout(() => { const t = w.document.getElementById('tipp'); if (t) t.style.opacity = '0'; }, 4000);
     const skript = w.document.createElement('script');
     skript.src = new URL('js/vendor/qrcode.min.js', location.href).href;
     skript.onload = () => {
       new w.QRCode(w.document.getElementById('qr'), {
-        text: link, width: 460, height: 460,
-        colorDark: '#000000', colorLight: '#ffffff', correctLevel: w.QRCode.CorrectLevel.L,
+        text: link, width: 1024, height: 1024,
+        colorDark: dunkel.startsWith('#') && dunkel.length === 7 ? dunkel : '#120f26', colorLight: '#ffffff',
+        correctLevel: w.QRCode.CorrectLevel.L,
       });
     };
     w.document.head.appendChild(skript);

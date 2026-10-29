@@ -1012,15 +1012,24 @@ const ExAuswertung = {
   },
   /* ---------- Letzte Stunde krank ----------
      Ein Klick schaltet weiter: – → krank, zählt nicht → krank, zählt (gute Note) → –.
-     Nur lokal (Classes.data.exAuswertungen[key].krank), reist mit dem Sync */
+     Bestätigt die Lehrkraft es schon in der Ex (teilnehmer/krank), steht es hier auf „zählt nicht“.
+     Änderungen nur lokal (Classes.data.exAuswertungen[key].krank), reisen mit dem Sync */
   KRANK: { nicht: 'krank, zählt nicht', zaehlt: 'krank, zählt' },
-  krankVon(nr) { return (this.a.d.krank || {})[nr] || ''; },
+  /* Vorgabe: in der Ex bestätigt → „zählt nicht“. Was hier geklickt wird, geht vor ('kein' = nicht krank) */
+  krankAusEx(nr) {
+    const s = this.a.schueler.find(x => x.nr === nr);
+    return s && s.t && s.t.krank ? 'nicht' : '';
+  },
+  krankVon(nr) {
+    const hier = (this.a.d.krank || {})[nr];
+    return hier == null ? this.krankAusEx(nr) : hier === 'kein' ? '' : hier;
+  },
   zaehltNicht(nr) { return this.krankVon(nr) === 'nicht'; },
   krankWeiter(nr) {
     const d = this.a.d;
     d.krank = d.krank || {};
     const neu = { '': 'nicht', nicht: 'zaehlt', zaehlt: '' }[this.krankVon(nr)];
-    if (neu) d.krank[nr] = neu; else delete d.krank[nr];
+    if (neu === this.krankAusEx(nr)) delete d.krank[nr]; else d.krank[nr] = neu || 'kein';
     Classes.persist();
     this.notenAktualisieren();
   },

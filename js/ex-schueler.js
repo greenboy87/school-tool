@@ -186,8 +186,13 @@ const ExSchueler = {
     document.getElementById('btn-andere-nummer').textContent = name ? 'Nicht du? Neu wählen' : 'Andere Nummer wählen';
     document.getElementById('warten-text').textContent = text;
     const ich = this.ich;
-    document.getElementById('warten-ns').textContent = ich.notenschutz ? 'Notenschutz ist bestätigt.'
-      : ich.notenschutzAngefragt ? 'Notenschutz angefragt – deine Lehrkraft bestätigt ihn noch.' : '';
+    document.getElementById('warten-ns').textContent = [
+      ich.notenschutz ? 'Notenschutz ist bestätigt.'
+        : ich.notenschutzAngefragt ? 'Notenschutz angefragt – deine Lehrkraft bestätigt ihn noch.' : '',
+      ich.krank ? '„Letzte Stunde krank“ ist bestätigt.'
+        : ich.krankAngefragt ? '„Letzte Stunde krank“ gemeldet – deine Lehrkraft bestätigt das noch.' : '',
+      this.krankAbgelehnt ? '„Letzte Stunde krank“ ging nicht durch – sag es deiner Lehrkraft.' : '',
+    ].filter(Boolean).join(' ');
     document.getElementById('btn-andere-nummer').hidden = ich.status !== 'wartet';
     this.zeigeNur('s-warten');
   },
@@ -223,6 +228,8 @@ const ExSchueler = {
       else if (gemerkt.nummer && nummern.includes(gemerkt.nummer)) this.gewaehlt = gemerkt.nummer;
       document.getElementById('notenschutz-schalter').checked =
         this.ich ? !!this.ich.notenschutzAngefragt : !!gemerkt.notenschutz;
+      // Krank gilt nur für diese Ex – wird nicht gemerkt
+      document.getElementById('krank-schalter').checked = !!(this.ich && this.ich.krankAngefragt);
     }
     this.rasterMarkieren();
     document.getElementById('nummer-fehler').textContent = i.status === 'laeuft'
@@ -258,7 +265,18 @@ const ExSchueler = {
       const eintrag = { nummer: nr, status: 'wartet', notenschutzAngefragt: notenschutz, ts: FB.serverTimestamp() };
       // Im Testraum geht der Name nur verschlüsselt in die Datenbank
       if (testName) eintrag.nameV = await ExNamen.verschluesseln(this.namensSchluessel, testName);
-      await FB.update(this.ref('teilnehmer/' + this.uid), eintrag);
+      const krank = document.getElementById('krank-schalter').checked;
+      if (krank || (this.ich && this.ich.krankAngefragt)) eintrag.krankAngefragt = krank;
+      this.krankAbgelehnt = false;
+      try {
+        await FB.update(this.ref('teilnehmer/' + this.uid), eintrag);
+      } catch (e) {
+        // Kennt die Datenbank „krank“ noch nicht, soll die Anmeldung trotzdem klappen
+        if (!('krankAngefragt' in eintrag)) throw e;
+        delete eintrag.krankAngefragt;
+        await FB.update(this.ref('teilnehmer/' + this.uid), eintrag);
+        this.krankAbgelehnt = krank;
+      }
       try { localStorage.setItem(this.merkKey(), JSON.stringify({ nummer: nr, notenschutz, testName })); } catch (e) {}
       this.nummerWaehlen = false;
     } catch (e) {
