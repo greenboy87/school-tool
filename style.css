@@ -625,6 +625,10 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .lesson-states .lesson-pfeil { padding-left: .4rem; padding-right: .4rem; }
 .lesson-states .lesson-pfeil .icon { margin: 0; }
 .lesson-states .lesson-pfeil:disabled { opacity: .3; }
+.lesson-vorschlaege { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: .6rem; }
+.lesson-vorschlaege > summary { cursor: pointer; font-weight: 700; padding: .3rem 0; }
+.lesson-vorschlaege > summary .hint { font-weight: 400; margin-left: .3rem; }
+.lesson-vorschlaege .lesson-item { opacity: .85; }
 .lesson-material { display: flex; gap: .3rem; flex: 0 0 auto; flex-wrap: wrap; }
 .lesson-material button:last-child .icon { margin: 0; }
 .lesson-schlagwort { display: flex; gap: .3rem; flex: 0 0 auto; }

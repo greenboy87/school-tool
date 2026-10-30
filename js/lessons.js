@@ -29,6 +29,10 @@ const Lessons = {
     document.getElementById('lesson-only-grade').addEventListener('input', () => this.fillTopicOptions());
     document.getElementById('lesson-tag').addEventListener('input', () => this.fillTopicOptions());
     document.getElementById('btn-katalog').addEventListener('click', () => this.katalogFenster());
+    document.getElementById('lesson-vorschlaege-alle').addEventListener('click', () => {
+      const cls = Classes.currentClass();
+      if (cls) this.vorschlaegeHinzufuegen(cls, this.vorschlaege(cls).map(t => t.id));
+    });
     window.addEventListener('message', e => this.katalogNachricht(e));
   },
 
@@ -434,6 +438,73 @@ const Lessons = {
       .map(x => x.topic);
   },
 
+  /* Vorschläge: fertig überarbeitete Katalogstunden (Ordner endet auf „+“ oder
+     „c+“) für die Jahrgangsstufe der Klasse, die sie noch nicht hat – sortiert
+     nach Ordnernamen („1a_…“, „1b_…“, „2_…“), wie Tom sie angeordnet hat */
+  vorschlaege(cls) {
+    if (!this.katalog) return [];
+    const da = this.lessonsOf(cls);
+    return this.katalog.stunden
+      .filter(s => /\s+c?\+$/i.test(s.id) && !da['kat:' + s.id] &&
+        (!cls.grade || (s.klassen || []).includes(cls.grade)))
+      .sort((a, b) => a.titel.localeCompare(b.titel, 'de', { numeric: true, sensitivity: 'base' }))
+      .map(s => this.topicById('kat:' + s.id));
+  },
+
+  /* Vorschläge der Reihe nach unten an die Liste der Klasse hängen */
+  vorschlaegeHinzufuegen(cls, ids) {
+    const l = this.lessonsOf(cls);
+    let zeit = Date.now();
+    for (const id of ids) {
+      if (l[id]) continue;
+      const t = this.topicById(id);
+      l[id] = { s: 'open', added: zeit++, t: t ? t.name : id.slice(4) };
+    }
+    Classes.persist();
+    this.render();
+    if (typeof Stundenplan !== 'undefined') Stundenplan._cache = null;
+  },
+
+  vorschlaegeZeigen(cls) {
+    const liste = document.getElementById('lesson-vorschlaege-liste');
+    const vs = this.vorschlaege(cls);
+    document.getElementById('lesson-vorschlaege-zahl').textContent = vs.length ? `(${vs.length})` : '';
+    document.getElementById('lesson-vorschlaege-alle').hidden = vs.length < 2;
+    liste.innerHTML = '';
+    if (!vs.length) {
+      liste.innerHTML = this.katalog
+        ? '<p class="hint">Keine weiteren überarbeiteten Stunden für diese Jahrgangsstufe.</p>'
+        : '<p class="hint">Der Stundenkatalog ist noch nicht geladen.</p>';
+      return;
+    }
+    for (const t of vs) {
+      const li = document.createElement('li');
+      li.className = 'lesson-item';
+      const main = document.createElement('div');
+      main.className = 'lesson-main';
+      const name = document.createElement('span');
+      name.className = 'lesson-name';
+      name.textContent = t.name;
+      name.title = 'Ordner: ' + t.ordner;
+      const meta = document.createElement('span');
+      meta.className = 'lesson-meta';
+      const bits = [];
+      if (t.grades && t.grades.length) bits.push('Kl. ' + this.gradeLabel(t.grades));
+      if (t.tags && t.tags.length) bits.push(t.tags.slice(0, 3).join(', '));
+      const hist = this.historyFor(t.id, cls.id);
+      if (hist.length) bits.push('schon gemacht: ' + hist.join(', '));
+      meta.textContent = bits.join(' · ');
+      main.append(name, meta);
+      const dazu = document.createElement('button');
+      dazu.className = 'small';
+      dazu.innerHTML = Icons.raw('plus') + 'hinzufügen';
+      dazu.title = 'Unten an die Stundenthemen dieser Klasse hängen';
+      dazu.addEventListener('click', () => this.vorschlaegeHinzufuegen(cls, [t.id]));
+      li.append(main, dazu);
+      liste.appendChild(li);
+    }
+  },
+
   /* Das nächste offene Thema der Klasse – ohne die genannten */
   naechstesOffenes(cls, ausser = []) {
     return this.assignedTopics(cls).find(t => this.stateOf(cls, t.id) === 'open' && !ausser.includes(t.id)) || null;
@@ -465,6 +536,7 @@ const Lessons = {
     const cls = Classes.currentClass();
     if (!cls) return;
     this.fillTopicOptions();
+    this.vorschlaegeZeigen(cls);
     const list = document.getElementById('lesson-list');
     const topics = this.visibleTopics(cls);
 
