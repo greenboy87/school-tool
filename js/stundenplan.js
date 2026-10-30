@@ -173,6 +173,8 @@ const Stundenplan = {
       if (nehmen) { this.uebernehmen(...nehmen.dataset.uebernehmen.split('|')); return; }
       const ja = e.target.closest('[data-bestaetigen]');
       if (ja) { this.bestaetigen(...ja.dataset.bestaetigen.split('|')); return; }
+      const wechsel = e.target.closest('[data-wechseln]');
+      if (wechsel) { this.wechseln(...wechsel.dataset.wechseln.split('|')); return; }
       const raus = e.target.closest('[data-rausnehmen]');
       if (raus) { this.rausnehmen(...raus.dataset.rausnehmen.split('|')); return; }
       const stand = e.target.closest('[data-stand]');
@@ -753,10 +755,12 @@ const Stundenplan = {
     const jetzt = new Date();
     const stunden = this.klassenStunden(cls);
     const stand = id => Lessons.stateOf(cls, id);
-    // Was läuft ohne weitere Angabe: laufende Themen, sonst das nächste offene als Vorschlag
+    // Was läuft ohne weitere Angabe: laufende Themen – auch schon beendete, deren
+    // Zeitraum (ab … bis) diese Stunde einschließt –, sonst das nächste offene als Vorschlag
     const ersatz = key => {
       const laufend = Object.entries(Lessons.lessonsOf(cls))
-        .filter(([id, e]) => e && e.s === 'progress' && this.giltIn(cls, id, key)).map(([id]) => id);
+        .filter(([id, e]) => e && (e.s === 'progress' || (e.s === 'done' && e.ab && e.bis && e.ab <= key)) &&
+          this.giltIn(cls, id, key)).map(([id]) => id);
       if (laufend.length) return { ids: this.einThema(cls, laufend), art: 'laeuft' };
       const offen = Lessons.assignedTopics(cls).find(tp => stand(tp.id) === 'open');
       return { ids: offen ? [offen.id] : [], art: 'vorschlag' };
@@ -827,18 +831,55 @@ const Stundenplan = {
     this.render();
   },
 
-  /* Folgestunde rausnehmen: Die Stunde bekommt kein Thema, das Thema rückt
-     in die nächste Stunde weiter */
+  /* Folgestunde rausnehmen (✕): Das bisherige Thema ist mit der Stunde davor
+     fertig. Hier steht danach als Vorschlag das nächste offene Thema der Klasse
+     (Reihenfolge wie im Reiter Stunden). Gibt es keine Stunde davor, bekommt
+     die Stunde wie früher kein Thema und das Thema rückt weiter. */
   rausnehmen(klasseId, key) {
     const cls = this.klasseFinden(klasseId);
     if (!cls || cls.ohne) return;
-    this.merken('Folgestunde rausgenommen');
+    this._cache = null;
+    const t = this.klassenStunden(cls).find(x => this.buchSchluessel(x) === key);
+    const ids = t ? this.themenDerStunde(cls, t).themen.map(x => x.topic.id).filter(Boolean) : [];
+    const davor = this.klassenStunden(cls).map(x => this.buchSchluessel(x)).filter(k => k < key).pop();
+    this.merken('Thema beendet');
     const buch = cls.stundenbuch || (cls.stundenbuch = {});
-    const rec = buch[key] || (buch[key] = {});
-    rec.th = [];
-    rec.m = 1;
-    delete rec.z;
-    delete rec.b;
+    if (!davor || !ids.length) {
+      const rec = buch[key] || (buch[key] = {});
+      rec.th = [];
+      rec.m = 1;
+      delete rec.z;
+      delete rec.b;
+    } else {
+      this.themaEndet(cls, ids, davor);
+      if (buch[key]) { delete buch[key].b; if (!Object.keys(buch[key]).length) delete buch[key]; }
+    }
+    this._cache = null;
+    Classes.persist();
+    this.render();
+  },
+
+  /* Themen sind mit der Stunde „davor“ (Schlüssel) fertig */
+  themaEndet(cls, ids, davor) {
+    for (const id of ids) {
+      const e = Lessons.lessonsOf(cls)[id];
+      if (!e) continue;
+      Lessons.setState(cls, id, 'done');
+      e.d2 = davor.split(' ')[0];
+      e.bis = davor;
+    }
+  },
+
+  /* Folgestunde: statt weiterzuführen gleich mit dem nächsten Thema beginnen –
+     das bisherige ist mit der Stunde davor fertig, die Stunde gilt als bestätigt */
+  wechseln(klasseId, key, id) {
+    const cls = this.klasseFinden(klasseId);
+    if (!cls || cls.ohne || !Lessons.lessonsOf(cls)[id]) return;
+    this.merken('Nächstes Thema begonnen');
+    this.themaBeginnt(cls, id, key);
+    const buch = cls.stundenbuch || (cls.stundenbuch = {});
+    (buch[key] || (buch[key] = {})).b = id;
+    this._cache = null;
     Classes.persist();
     this.render();
   },
@@ -1553,9 +1594,15 @@ const Stundenplan = {
         teile.push(`<button type="button" class="plan-uebernehmen" data-uebernehmen="${this.esc(cls.id + '|' + key + '|' + ids.join(','))}" title="Vorschlag übernehmen – das Thema steht danach in der Klasse auf „Läuft“">${Icons.raw('check')}übernehmen</button>`);
       }
       if (folge) {
+        // Zur Wahl: weiterführen oder gleich das nächste vorgemerkte Thema der Klasse
+        const naechstes = Lessons.naechstesOffenes(cls, p.ids);
+        const wahl = naechstes
+          ? `<span class="plan-oder">oder</span><button type="button" class="plan-uebernehmen plan-naechstes" data-wechseln="${this.esc(cls.id + '|' + key + '|' + naechstes.id)}" title="Stattdessen mit dem nächsten Thema der Klasse beginnen – das bisherige ist mit der Stunde davor fertig">${Icons.raw('check')}${this.esc(Lessons.schlagwort(naechstes))}</button>`
+          : '';
         teile.push(`<span class="plan-folge-knoepfe">` +
           `<button type="button" class="plan-uebernehmen" data-bestaetigen="${this.esc(cls.id + '|' + key + '|' + p.ids.join(','))}" title="Folgestunde bestätigen – das Thema läuft hier weiter">${Icons.raw('check')}bestätigen</button>` +
-          `<button type="button" class="plan-rausnehmen" data-rausnehmen="${this.esc(cls.id + '|' + key)}" title="Folgestunde rausnehmen – die Stunde bekommt kein Thema, das Thema rückt in die nächste">${Icons.raw('x')}</button></span>`);
+          wahl +
+          `<button type="button" class="plan-rausnehmen" data-rausnehmen="${this.esc(cls.id + '|' + key)}" title="Thema beenden – es ist mit der Stunde davor fertig; hier wird das nächste Thema der Klasse vorgeschlagen">${Icons.raw('x')}</button></span>`);
       }
     } else if (!themen.length && zeigeWort && rec.m) {
       teile.push(`<button type="button" class="plan-thema-wort manuell" data-thema="${ziel}" title="Von Hand: kein Thema – klicken zum Ändern">kein Thema</button>`);

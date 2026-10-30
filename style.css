@@ -622,6 +622,9 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 .lesson-states { display: flex; gap: .3rem; flex: 0 0 auto; }
 .lesson-states .state-btn.active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .lesson-states .danger .icon { margin: 0; }
+.lesson-states .lesson-pfeil { padding-left: .4rem; padding-right: .4rem; }
+.lesson-states .lesson-pfeil .icon { margin: 0; }
+.lesson-states .lesson-pfeil:disabled { opacity: .3; }
 .lesson-material { display: flex; gap: .3rem; flex: 0 0 auto; flex-wrap: wrap; }
 .lesson-material button:last-child .icon { margin: 0; }
 .lesson-schlagwort { display: flex; gap: .3rem; flex: 0 0 auto; }
@@ -2404,6 +2407,7 @@ button.plan-thema-wort.laeuft { color: var(--text); font-style: normal; font-wei
 /* Folgestunde („Rhythmus II“), noch nicht bestätigt: dünn, bis ✓ geklickt ist */
 button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-weight: 400; }
 .plan-folge-knoepfe { display: inline-flex; align-items: center; gap: .25rem; }
+.plan-oder { font-size: .7rem; color: var(--muted); }
 .plan-rausnehmen {
   border: 1px solid var(--border); background: var(--panel); color: var(--muted); font: inherit; line-height: 1;
   padding: .15rem .3rem; border-radius: 999px; cursor: pointer; display: inline-flex; align-items: center;
@@ -2465,6 +2469,7 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 /* Klassen → Stunden: Stand nur als Anzeige (gesetzt wird im Plan) */
 .lesson-stand { font-size: .78rem; font-weight: 700; padding: .15rem .55rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; align-self: center; cursor: help; }
 .lesson-stand.stand-progress { color: var(--accent); border-color: var(--accent); }
+.lesson-stand.stand-naechstes { color: var(--text); border-style: dashed; }
 .lesson-stand.stand-done { color: var(--green); border-color: currentColor; }
 /* Leeres Feld im Wochenraster: Stunde anlegen */
 .plan-zelle[data-leer] { cursor: pointer; position: relative; }

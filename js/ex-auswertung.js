@@ -29,6 +29,13 @@ const ExAuswertung = {
     };
     document.getElementById('ex-auswertung-liste').addEventListener('click', liste);
     document.getElementById('ex-auswertung-archiv-liste').addEventListener('click', liste);
+    // Archiv zugeklappt: eine offene archivierte Ex klappt mit zu
+    document.getElementById('ex-auswertung-archiv').addEventListener('toggle', e => {
+      if (e.target.open || !this.a || !this.istArchiviert(this.a.key)) return;
+      this.a = null;
+      document.getElementById('ex-auswertung-inhalt').innerHTML = '';
+      this.listeFuellen();
+    });
     document.addEventListener('ex-anmeldung', e => this.schalten(e.detail.lehrer));
     document.addEventListener('ex-sitzungen', () => this.listeFuellen());
     const sa = document.getElementById('ex-schueleransicht');

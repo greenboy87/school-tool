@@ -419,14 +419,40 @@ const Lessons = {
       .map(c => `${c.name}${c.year ? ' (' + c.year + ')' : ''}`);
   },
 
-  /* Nur die Themen, die dieser Klasse zugeordnet sind – in der Reihenfolge des Hinzufügens */
+  /* Nur die Themen, die dieser Klasse zugeordnet sind: erst die fertigen, dann
+     die laufenden, dann die offenen – je in der Reihenfolge des Hinzufügens.
+     Die offenen lassen sich mit den Pfeilen umsortieren (tauscht „added“);
+     das erste offene schlägt der Plan als nächstes Thema vor. */
+  RANG: { done: 0, progress: 1, open: 2 },
   assignedTopics(cls) {
     const l = this.lessonsOf(cls);
+    const rang = e => this.RANG[e.s || 'open'] ?? 2;
     return Object.keys(l)
       .map(id => ({ topic: this.topicById(id, l[id]), eintrag: l[id] }))
       .filter(x => x.topic)
-      .sort((a, b) => (a.eintrag.added || 0) - (b.eintrag.added || 0))
+      .sort((a, b) => rang(a.eintrag) - rang(b.eintrag) || (a.eintrag.added || 0) - (b.eintrag.added || 0))
       .map(x => x.topic);
+  },
+
+  /* Das nächste offene Thema der Klasse – ohne die genannten */
+  naechstesOffenes(cls, ausser = []) {
+    return this.assignedTopics(cls).find(t => this.stateOf(cls, t.id) === 'open' && !ausser.includes(t.id)) || null;
+  },
+
+  /* Offenes Thema eins nach oben (-1) oder unten (+1) – nur unter den offenen */
+  verschieben(cls, topicId, richtung) {
+    const l = this.lessonsOf(cls);
+    const offen = this.assignedTopics(cls).filter(t => this.stateOf(cls, t.id) === 'open');
+    const i = offen.findIndex(t => t.id === topicId);
+    const j = i + richtung;
+    if (i < 0 || j < 0 || j >= offen.length) return;
+    const a = l[offen[i].id], b = l[offen[j].id];
+    let [x, y] = [a.added || 0, b.added || 0];
+    if (x === y) y = x + richtung;                  // gleiche Zeit: sonst tauscht sich nichts
+    [a.added, b.added] = [y, x];
+    Classes.persist();
+    this.render();
+    if (typeof Stundenplan !== 'undefined') Stundenplan._cache = null;
   },
 
   visibleTopics(cls) {
@@ -500,6 +526,27 @@ const Lessons = {
         : st === 'done' ? 'fertig' + (e.d2 ? ' am ' + tagText(e.d2) : '') : 'offen';
       stand.title = 'Wird im Stundenplan gesetzt: Thema einer Stunde wählen – es läuft ab dort; ein anderes Thema danach beendet es.';
       btns.appendChild(stand);
+      // Offene Themen umsortieren: das oberste kommt im Plan als nächstes dran
+      if (st === 'open') {
+        const offen = zugeordnet.filter(x => this.stateOf(cls, x.id) === 'open');
+        const pos = offen.findIndex(x => x.id === t.id);
+        if (pos === 0) {
+          const naechstes = document.createElement('span');
+          naechstes.className = 'lesson-stand stand-naechstes';
+          naechstes.textContent = 'als Nächstes';
+          naechstes.title = 'Dieses Thema schlägt der Plan als nächstes vor';
+          btns.replaceChild(naechstes, stand);
+        }
+        for (const [richtung, icon, titel] of [[-1, 'chevronUp', 'Früher drannehmen'], [1, 'chevronDown', 'Später drannehmen']]) {
+          const b = document.createElement('button');
+          b.className = 'small lesson-pfeil';
+          b.innerHTML = Icons.raw(icon);
+          b.title = titel;
+          b.disabled = richtung < 0 ? pos === 0 : pos === offen.length - 1;
+          b.addEventListener('click', () => this.verschieben(cls, t.id, richtung));
+          btns.appendChild(b);
+        }
+      }
       let mat = null;
       if (t.ordner) {
         mat = document.createElement('div');
