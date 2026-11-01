@@ -206,6 +206,7 @@ const Musiktrainer = {
             .map(([v, t]) => `<option value="${v}" ${this.filter.sortierung === v ? 'selected' : ''}>${t}</option>`).join('')}
         </select></label>
         <label class="mt-haken"><input type="checkbox" data-mt-option="fehltAls6" ${mt.fehltAls6 ? 'checked' : ''}> Nicht gespielt zählt als 6</label>
+        <button class="small primary" data-mt="vorschlagen" data-icon="pen" title="Schnitt als neue Notenspalte unter „Projekte & Noten“ eintragen">Noten vorschlagen</button>
         <button class="small" data-mt="kopieren" data-icon="clipboard" title="Name und Schnitt als Liste kopieren">Kopieren</button>` : `
         <label>Bereich <select data-filter="bereich"><option value="">Alle</option>
           ${[...new Set(MT_SPIELE.map(s => s.bereich))].map(b => `<option ${this.filter.bereich === b ? 'selected' : ''}>${b}</option>`).join('')}
@@ -251,6 +252,7 @@ const Musiktrainer = {
       return this.render();
     }
     if (aktion === 'kopieren') return this.kopieren(cls);
+    if (aktion === 'vorschlagen') return this.notenVorschlagen(cls);
     if (aktion === 'qr') {
       // Am Beamer nur Vornamen; bei gleichen Vornamen den Anfangsbuchstaben des Nachnamens dazu
       // Alphabetisch, damit jedes Kind seine Seite schnell findet
@@ -498,7 +500,7 @@ const Musiktrainer = {
       });
       const zaehlen = noten.map(n => (n === null && mt.fehltAls6 ? 6 : n)).filter(n => n !== null);
       return {
-        name: this.name(s), noten,
+        s, name: this.name(s), noten,
         gespielt: noten.filter(n => n !== null).length,
         schnitt: zaehlen.length ? zaehlen.reduce((a, n) => a + n, 0) / zaehlen.length : null,
       };
@@ -538,6 +540,30 @@ const Musiktrainer = {
       </div>
       <p class="hint">Gelb markiert: hat nicht alle gewählten Aufgaben gespielt. „Kopieren“ legt Name und Schnitt
         als Liste in die Zwischenablage, z. B. zum Einfügen in eine Notenliste.</p>`;
+  },
+
+  /* Gesamtnotenvorschlag: legt unter „Projekte & Noten“ eine neue Notenspalte
+     an, je Kind der Schnitt der ausgewählten Aufgaben (z. B. „2,3“). Die Noten
+     lassen sich dort wie jede andere Note ändern. */
+  notenVorschlagen(cls) {
+    if (!this.ergebnis) return;
+    const { auswahl, zeilen } = this.notenZeilen(cls);
+    if (!auswahl.length) return alert('Erst Spiele und Stufen für die Note auswählen.');
+    const mit = zeilen.filter(z => z.schnitt !== null);
+    if (!mit.length) return alert('Noch hat niemand eine der ausgewählten Aufgaben gespielt.');
+    const tage = Number(this.filter.zeitraum);
+    const zeitraum = tage ? `letzte ${tage} Tage` : 'gesamt';
+    const ohne = zeilen.length - mit.length;
+    if (!confirm(`Neue Notenspalte unter „Projekte & Noten“ anlegen?\n\n` +
+      `${mit.length} Kinder bekommen ihren Schnitt aus ${auswahl.length} Aufgaben (${zeitraum}) als Notenvorschlag.` +
+      (ohne ? `\n${ohne} ${ohne === 1 ? 'Kind hat' : 'Kinder haben'} nichts davon gespielt und bleibt leer.` : '') +
+      `\n\nDie Noten kannst du dort danach noch ändern.`)) return;
+    const heute = new Date().toISOString().slice(0, 10);
+    const p = Classes.createProject(`music-trainer (${auswahl.length} Aufgaben, ${zeitraum})`, heute, null);
+    mit.forEach(z => { p.grades[z.s.id] = this.komma(z.schnitt); });
+    Classes.persist();
+    Classes.renderProjects();
+    document.querySelector('.subtab-btn[data-subtab="projekte"]').click();
   },
 
   async kopieren(cls) {
