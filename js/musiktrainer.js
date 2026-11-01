@@ -222,7 +222,7 @@ const Musiktrainer = {
           ${this.stufenNamen().map((n, i) => `<option value="${i}" ${this.filter.stufe === String(i) ? 'selected' : ''}>${this.esc(n)}</option>`).join('')}
         </select></label>
         <label>Sortieren <select data-filter="sortierung">
-          ${[['name', 'Name'], ['sterne', 'Sterne'], ['runden', 'Runden'], ['zuletzt', 'Zuletzt aktiv']]
+          ${[['name', 'Name'], ['sterne', 'Gesamt'], ['runden', 'Runden'], ['zuletzt', 'Zuletzt aktiv']]
             .map(([v, t]) => `<option value="${v}" ${this.filter.sortierung === v ? 'selected' : ''}>${t}</option>`).join('')}
         </select></label>`}
         <button class="small" data-mt="laden" data-icon="reset">Aktualisieren</button>
@@ -412,11 +412,18 @@ const Musiktrainer = {
       : spiele.map(s => ({ titel: s.titel, kurz: s.bereich, spiel: s.id, stufen: stufe === null ? s.stufen.map((_, i) => i) : [stufe] }));
 
     const werte = this.werte(tage);
+    // Je Feld: beste Sterne aller Stufen zusammen, geteilt durch das Mögliche (6 je Stufe) → Prozent
+    const nachSpiel = MT_SPIELE.reduce((m, s) => (m[s.id] = s, m), {});
     const zelle = (id, sp) => sp.stufen.reduce((a, i) => {
       const v = werte[id]?.[`${sp.spiel}|${i}`];
-      if (v) { a.sterne += v.sterne; a.runden += v.runden; }
+      a.max += this.STERNE;
+      if (v) {
+        a.sterne += v.sterne; a.runden += v.runden;
+        a.info.push(`${nachSpiel[sp.spiel].stufen[i]}: ${v.sterne} von ${this.STERNE} Sternen (Note ${7 - v.sterne}), ${v.runden}× gespielt`);
+      }
       return a;
-    }, { sterne: 0, runden: 0 });
+    }, { sterne: 0, runden: 0, max: 0, info: [] });
+    const prozent = (sterne, max) => Math.round(100 * sterne / max);
 
     const nachId = new Map(cls.students.filter(s => s.mt).map(s => [s.mt.id, s]));
     const zeilen = daten.schueler.map(k => {
@@ -426,18 +433,24 @@ const Musiktrainer = {
         k, s,
         name: s ? this.name(s) : null,
         zellen,
-        sterne: zellen.reduce((a, z) => a + z.sterne, 0),
         runden: zellen.reduce((a, z) => a + z.runden, 0),
       };
     });
+    // „Gesamt“ nur über Spalten, die in der Klasse schon jemand gespielt hat –
+    // sonst drücken Spiele, die noch gar nicht dran waren, alle gleich nach unten
+    const aktiv = spalten.map((_, i) => zeilen.some(z => z.zellen[i].runden));
+    zeilen.forEach(z => {
+      z.sterne = z.zellen.reduce((a, c, i) => a + (aktiv[i] ? c.sterne : 0), 0);
+      z.max = z.zellen.reduce((a, c, i) => a + (aktiv[i] ? c.max : 0), 0) || 1;
+    });
+    const nAktiv = aktiv.filter(Boolean).length;
     const sortierer = {
       name: (a, b) => (a.name || '~' + a.k.benutzername).localeCompare(b.name || '~' + b.k.benutzername, 'de'),
-      sterne: (a, b) => b.sterne - a.sterne,
+      sterne: (a, b) => b.sterne / b.max - a.sterne / a.max,
       runden: (a, b) => b.runden - a.runden,
       zuletzt: (a, b) => b.k.zuletzt - a.k.zuletzt,
     };
     zeilen.sort(sortierer[this.filter.sortierung]);
-    const maxSterne = spalten.map(sp => sp.stufen.length * this.STERNE);
     const zuletzt = t => {
       if (!t) return 'noch nie';
       const d = Math.floor((Date.now() / 1000 - t) / 86400);
@@ -446,25 +459,27 @@ const Musiktrainer = {
     const ohneUebung = zeilen.filter(z => z.name && !z.runden).length;
 
     ziel.innerHTML = `
-      <p class="hint">${tage ? `Sterne und Runden der letzten ${tage} Tage.` : 'Beste Sterne insgesamt, Runden insgesamt.'}
+      <p class="hint">${tage ? `Ergebnisse der letzten ${tage} Tage.` : 'Beste Ergebnisse insgesamt.'}
         ${ohneUebung ? `<strong>${ohneUebung}</strong> ${ohneUebung === 1 ? 'Kind hat' : 'Kinder haben'} ${tage ? 'in dieser Zeit' : 'noch'} nicht gespielt (gelb).` : ''}</p>
       <div class="mt-tabelle-rahmen">
       <table class="mt-tabelle">
         <thead><tr><th>Name</th>
           ${spalten.map(sp => `<th title="${this.esc(sp.kurz ? `${sp.kurz}: ${sp.titel}` : sp.titel)}">${sp.kurz ? `<span class="mt-kurz">${this.esc(sp.kurz)}</span>` : ''}${this.esc(sp.titel)}</th>`).join('')}
-          <th>Sterne</th><th>Runden</th><th>Zuletzt</th></tr></thead>
+          <th>Gesamt</th><th>Runden</th><th>Zuletzt</th></tr></thead>
         <tbody>
           ${zeilen.map(z => `<tr class="${z.name && !z.runden ? 'mt-ohne' : ''}${z.name ? '' : ' mt-fremd'}">
             <td>${z.name ? this.esc(z.name) : `<span class="hint">${this.esc(z.k.benutzername)} – nicht mehr in der Klasse</span>
               <button class="small danger" data-mt="kind-loeschen" data-id="${z.k.id}" data-name="${this.esc(z.k.benutzername)}" title="Vom Server löschen">${Icons.raw('trash')}</button>`}</td>
-            ${z.zellen.map((c, i) => `<td class="mt-zelle" style="--anteil:${c.sterne / maxSterne[i]}" title="${c.runden} Runden">${c.sterne || (c.runden ? '0' : '–')}</td>`).join('')}
-            <td class="mt-summe">${z.sterne}</td><td>${z.runden}</td><td class="hint">${zuletzt(z.k.zuletzt)}</td>
+            ${z.zellen.map(c => `<td class="mt-zelle" style="--anteil:${c.sterne / c.max}" title="${this.esc(c.info.join('\n') || 'noch nicht gespielt')}">${c.runden ? `${prozent(c.sterne, c.max)}&nbsp;%` : '–'}</td>`).join('')}
+            <td class="mt-summe">${z.runden ? `${prozent(z.sterne, z.max)}&nbsp;%` : '–'}</td><td>${z.runden}</td><td class="hint">${zuletzt(z.k.zuletzt)}</td>
           </tr>`).join('')}
         </tbody>
       </table>
       </div>
-      <p class="hint">Zahl = Sterne (höchstens 6 je Stufe; 6 Sterne = Note 1). Fahre über ein Feld für die Zahl der Runden.
-        Für Noten: Ansicht „Benotung“.</p>`;
+      <p class="hint">Prozent = erreichte Sterne von allen möglichen: 100&nbsp;% heißt jede Stufe mit 6 Sternen (Note 1) geschafft;
+        nicht gespielte Stufen zählen als 0. „Gesamt“ rechnet so über die ${nAktiv} ${nAktiv === 1 ? 'Spalte' : 'Spalten'},
+        in denen die Klasse schon gespielt hat. Fahre über ein Feld
+        für die Stufen im Einzelnen. Für Noten: Ansicht „Benotung“.</p>`;
   },
 
   /* ---------- Benotung: nur ausgewählte Spiele/Stufen, Note je Aufgabe und Schnitt ---------- */
