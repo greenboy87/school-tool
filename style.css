@@ -2571,7 +2571,8 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-auswahl summary { cursor: pointer; font-weight: 600; }
 .mt-auswahl-bereich { margin-top: .6rem; }
 .mt-auswahl-spiel { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin: .3rem 0 0 .6rem; }
-.mt-auswahl-spiel > span, .mt-auswahl-spiel > .mt-ganz { min-width: 9rem; font-size: .9rem; }
+.mt-auswahl-spiel > .mt-wahl-schalter { min-width: 12rem; font-size: .9rem; }
+.mt-auswahl summary .hint { font-weight: 400; margin-left: .3rem; }
 .mt-chip { display: inline-flex; align-items: center; gap: .25rem; font-size: .8rem; padding: .15rem .5rem; border: 1px solid var(--border); border-radius: 99px; cursor: pointer; }
 .mt-chip:has(input:checked) { background: var(--active-soft); border-color: var(--accent); }
 .mt-eigen-erg:not(:empty) { margin: .6rem 0; }
@@ -2595,10 +2596,14 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-kreis.offen { border: 1.5px dashed var(--muted); color: var(--muted); font-size: .56rem; font-weight: 700; }
 .mt-gesamtnote { display: inline-block; min-width: 2.9rem; padding: .2rem .45rem; border-radius: 8px; text-align: center;
   font-size: 1.1rem; font-weight: 800; }
-.mt-kreis.n1, .mt-kreis.n2, .mt-gesamtnote.n1, .mt-gesamtnote.n2, .mt-balken.n1, .mt-balken.n2 { background: #86efac; color: #14532d; }
-.mt-kreis.n3, .mt-gesamtnote.n3, .mt-balken.n3 { background: #fde047; color: #713f12; }
-.mt-kreis.n4, .mt-gesamtnote.n4, .mt-balken.n4 { background: #fdba74; color: #7c2d12; }
-.mt-kreis.n5, .mt-kreis.n6, .mt-gesamtnote.n5, .mt-gesamtnote.n6, .mt-balken.n5, .mt-balken.n6 { background: #fca5a5; color: #7f1d1d; }
+/* Score statt Note: Sterne (5/6), Prozent richtig oder Punkte als Pille */
+.mt-wert { display: inline-block; min-width: 2.6rem; padding: .25rem .45rem; border-radius: 99px; text-align: center; white-space: nowrap;
+  font-size: .85rem; font-weight: 800; background: var(--panel); border: 1px solid var(--border); }
+.mt-wert.gesamt { min-width: 3.4rem; border-radius: 8px; font-size: 1rem; }
+.mt-kreis.n1, .mt-kreis.n2, .mt-gesamtnote.n1, .mt-gesamtnote.n2, .mt-balken.n1, .mt-balken.n2, .mt-wert.n1, .mt-wert.n2 { background: #86efac; color: #14532d; border-color: transparent; }
+.mt-kreis.n3, .mt-gesamtnote.n3, .mt-balken.n3, .mt-wert.n3 { background: #fde047; color: #713f12; border-color: transparent; }
+.mt-kreis.n4, .mt-gesamtnote.n4, .mt-balken.n4, .mt-wert.n4 { background: #fdba74; color: #7c2d12; border-color: transparent; }
+.mt-kreis.n5, .mt-kreis.n6, .mt-gesamtnote.n5, .mt-gesamtnote.n6, .mt-balken.n5, .mt-balken.n6, .mt-wert.n5, .mt-wert.n6 { background: #fca5a5; color: #7f1d1d; border-color: transparent; }
 .mt-legende { margin-top: .5rem; }
 
 /* Für die Klasse am Beamer: Notenschlüssel, was zählt, Notenspiegel ohne Namen */
@@ -2620,5 +2625,6 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-spiegel b { font-size: 1.4rem; }
 .mt-balken { display: block; width: 100%; max-width: 6.5rem; height: calc(var(--hoehe) * 9rem); min-height: 4px; border-radius: 8px 8px 0 0; }
 .mt-balken.offen { background: var(--hover); outline: 1.5px dashed var(--muted); outline-offset: -1.5px; }
-.mt-ganz { display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
-.mt-auswahl-bereich > .mt-ganz { margin-bottom: .25rem; }
+.mt-auswahl-bereich > .mt-wahl-schalter { margin-bottom: .2rem; font-size: .95rem; }
+/* Schalter Noten ⟷ Score in der Filterzeile (sonst wären Filter-Labels zweizeilig) */
+.mt-filter .schalter { flex-direction: row; align-items: center; gap: .4rem; font-size: .88rem; color: var(--text); align-self: flex-end; padding-bottom: .45rem; }
