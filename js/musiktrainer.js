@@ -28,7 +28,7 @@ const MT_SPIELE = (() => {
     { id: 'hoch-tief', bereich: 'Hören', titel: 'Hoch oder tief?', stufen: ['Große Sprünge', 'Kleine Schritte', 'Ganz knapp'] },
     { id: 'intervall', bereich: 'Hören', titel: 'Intervall-Ohr', stufen: ['Prime, Quinte, Oktave', 'Dazu Terz und Quarte', 'Alle Intervalle'] },
     { id: 'dur-moll', bereich: 'Hören', titel: 'Dur oder Moll?', stufen: ['Akkord zusammen', 'Akkord gebrochen', 'Kurze Melodie'] },
-    { id: 'hoerdiktat', bereich: 'Hören', titel: 'Hördiktat', stufen: ['Drei Töne, Schritte', 'Vier Töne, dazu Terzen', 'Fünf Töne, auch Sprünge'] },
+    { id: 'hoerdiktat', bereich: 'Hören', titel: 'Hördiktat', stufen: ['Junior', 'Anfänger', 'Fortgeschritten', 'Profi'] },
     { id: 'rhythmus-detektiv', bereich: 'Rhythmus', titel: 'Rhythmus-Detektiv', stufen: ['Halbe und Viertel', 'Dazu Achtel', 'Dazu Viertelpausen'] },
     { id: 'rhythmus-echo', bereich: 'Rhythmus', titel: 'Rhythmus-Echo', stufen: ['Halbe und Viertel', 'Dazu Achtel', 'Nur nach Gehör'] },
     { id: 'taktfuehler', bereich: 'Rhythmus', titel: 'Taktgefühl', stufen: ['Mit Betonung', 'Mit Begleitung', 'Schnell'] },
@@ -181,6 +181,7 @@ const Musiktrainer = {
         <h3 data-icon="music">music-trainer</h3>
         <div class="btn-row">
           <button class="primary" data-mt="qr" data-icon="expand">QR-Anmeldung am Beamer</button>
+          <button data-mt="namen" data-icon="list">Namensliste am Beamer</button>
           <button data-mt="drucken" data-icon="printer">Kärtchen drucken</button>
         </div>
       </div>
@@ -252,13 +253,16 @@ const Musiktrainer = {
     if (aktion === 'kopieren') return this.kopieren(cls);
     if (aktion === 'qr') {
       // Am Beamer nur Vornamen; bei gleichen Vornamen den Anfangsbuchstaben des Nachnamens dazu
-      const mit = cls.students.filter(s => s.mt);
+      // Alphabetisch, damit jedes Kind seine Seite schnell findet
+      const mit = cls.students.filter(s => s.mt).sort((a, c) => this.name(a).localeCompare(this.name(c), 'de'));
       const doppelt = n => mit.filter(x => x.first === n).length > 1;
       return this.qrZeigen(cls.name, cls.musiktrainer.passwort, mit.map(s => ({
         name: this.name(s), benutzer: s.mt.name,
         vorname: doppelt(s.first) && s.last ? `${s.first} ${s.last[0]}.` : s.first,
       })));
     }
+    if (aktion === 'namen') return this.namenslisteZeigen(cls.name, cls.musiktrainer.passwort,
+      cls.students.filter(s => s.mt).map(s => ({ name: this.name(s), benutzer: s.mt.name })));
     if (aktion === 'drucken') return this.drucken(cls.name, cls.musiktrainer.passwort,
       cls.students.filter(s => s.mt).map(s => ({ name: this.name(s), benutzer: s.mt.name })));
     if (aktion === 'pw') {
@@ -553,16 +557,59 @@ const Musiktrainer = {
     return `${this.SPIEL_URL}#/anmelden?u=${encodeURIComponent(benutzer)}&p=${encodeURIComponent(passwort)}`;
   },
 
-  /* Ein QR-Code je Kind. Scannen meldet an; Antippen vergrößert einen Code. */
-  qrZeigen(titel, passwort, kinder) {
+  /* Vollbild-Ebene für den Beamer; Esc schließt, Pfeiltasten blättern */
+  beamerEbene() {
     let b = document.getElementById('mt-beamer');
     if (!b) {
       b = document.createElement('div');
       b.id = 'mt-beamer';
       b.className = 'mt-beamer';
       document.body.appendChild(b);
-      document.addEventListener('keydown', e => { if (e.key === 'Escape') b.hidden = true; });
+      document.addEventListener('keydown', e => {
+        if (b.hidden) return;
+        if (e.key === 'Escape') b.hidden = true;
+        if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); this.qrBlaettern(1); }
+        if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); this.qrBlaettern(-1); }
+      });
+      b.addEventListener('click', e => {
+        if (e.target.closest('.mt-beamer-zu')) b.hidden = true;
+        else if (e.target.closest('[data-blaettern]')) this.qrBlaettern(+e.target.closest('[data-blaettern]').dataset.blaettern);
+      });
+      b.addEventListener('change', e => {
+        if (!e.target.matches('.mt-pro-seite')) return;
+        localStorage.setItem('schooltool-mt-pro-seite', e.target.value);
+        this.qrSeite.proSeite = +e.target.value;
+        this.qrSeite.seite = 0;
+        this.qrZeichnen();
+      });
     }
+    b.hidden = false;
+    return b;
+  },
+
+  /* QR-Codes seitenweise: wenige große Codes je Seite, damit die Kamera
+     von hinten den eigenen Code sicher erkennt und nicht den Nachbarcode. */
+  qrZeigen(titel, passwort, kinder) {
+    const gemerkt = Number(localStorage.getItem('schooltool-mt-pro-seite')) || 4;
+    this.qrSeite = { titel, passwort, kinder, seite: 0, proSeite: gemerkt };
+    this.qrZeichnen();
+  },
+
+  qrBlaettern(r) {
+    const q = this.qrSeite;
+    if (!q || document.getElementById('mt-beamer')?.querySelector('.mt-namensliste')) return;
+    const seiten = Math.ceil(q.kinder.length / q.proSeite);
+    const neu = Math.max(0, Math.min(seiten - 1, q.seite + r));
+    if (neu === q.seite) return;
+    q.seite = neu;
+    this.qrZeichnen();
+  },
+
+  qrZeichnen() {
+    const b = this.beamerEbene();
+    const { titel, passwort, kinder, seite, proSeite } = this.qrSeite;
+    const seiten = Math.max(1, Math.ceil(kinder.length / proSeite));
+    const teil = kinder.slice(seite * proSeite, (seite + 1) * proSeite);
     b.innerHTML = `
       <div class="mt-beamer-kopf">
         <div>
@@ -572,26 +619,50 @@ const Musiktrainer = {
         <div class="mt-beamer-pw"><span>Passwort</span><code>${this.esc(passwort)}</code></div>
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
-      <div class="mt-qr-raster">
-        ${kinder.map((k, i) => `
-          <button class="mt-qr-karte" data-i="${i}">
+      <div class="mt-qr-raster" style="--spalten:${Math.min(teil.length, Math.ceil(Math.sqrt(proSeite)))}">
+        ${teil.map((k, i) => `
+          <div class="mt-qr-karte">
             <span class="mt-qr-bild" id="mt-qr-${i}"></span>
             <span class="mt-qr-name">${this.esc(k.vorname || k.name)}</span>
             <span class="mt-qr-benutzer">${this.esc(k.benutzer)}</span>
-          </button>`).join('')}
+          </div>`).join('')}
       </div>
-      <p class="mt-beamer-fuss">Ohne Kamera: ${this.esc(this.SPIEL_URL.replace(/^https:\/\//, ''))} öffnen, „Anmelden“, Benutzername steht unter deinem Code.</p>`;
-    b.style.setProperty('--qr', (kinder.length > 24 ? 120 : kinder.length > 15 ? 140 : 170) + 'px');
-    b.hidden = false;
-    kinder.forEach((k, i) => new QRCode(document.getElementById(`mt-qr-${i}`), {
-      text: this.anmeldeLink(k.benutzer, passwort), width: 400, height: 400, correctLevel: QRCode.CorrectLevel.M,
+      <div class="mt-beamer-fuss">
+        <button data-blaettern="-1" ${seite ? '' : 'disabled'} title="Zurück (Pfeil links)">${Icons.raw('chevronUp', 'mt-links')}</button>
+        <span>Seite ${seite + 1} von ${seiten}</span>
+        <button data-blaettern="1" ${seite < seiten - 1 ? '' : 'disabled'} title="Weiter (Pfeil rechts oder Leertaste)">${Icons.raw('chevronUp', 'mt-rechts')}</button>
+        <label>Codes je Seite <select class="mt-pro-seite">
+          ${[1, 2, 4, 6, 9].map(n => `<option ${n === proSeite ? 'selected' : ''}>${n}</option>`).join('')}
+        </select></label>
+      </div>`;
+    // So groß wie möglich: Platz je Code aus Fenstergröße, Spalten und Zeilen
+    const spalten = Math.min(teil.length, Math.ceil(Math.sqrt(proSeite)));
+    const zeilen = Math.ceil(teil.length / spalten);
+    const breit = (window.innerWidth - 80) / spalten - 60;
+    const hoch = (window.innerHeight - 260) / zeilen - 90;
+    b.style.setProperty('--qr', Math.max(120, Math.min(breit, hoch, 520)) + 'px');
+    teil.forEach((k, i) => new QRCode(document.getElementById(`mt-qr-${i}`), {
+      text: this.anmeldeLink(k.benutzer, passwort), width: 520, height: 520, correctLevel: QRCode.CorrectLevel.M,
     }));
-    b.querySelector('.mt-beamer-zu').addEventListener('click', () => { b.hidden = true; });
-    b.querySelectorAll('.mt-qr-karte').forEach(k => k.addEventListener('click', () => {
-      const war = k.classList.contains('gross');
-      b.querySelectorAll('.mt-qr-karte.gross').forEach(x => x.classList.remove('gross'));
-      if (!war) k.classList.add('gross');
-    }));
+  },
+
+  /* Alle Namen mit Benutzernamen zum Abschreiben; das Passwort einmal groß */
+  namenslisteZeigen(titel, passwort, kinder) {
+    this.qrSeite = null;
+    const b = this.beamerEbene();
+    const sortiert = [...kinder].sort((a, c) => a.name.localeCompare(c.name, 'de'));
+    b.innerHTML = `
+      <div class="mt-beamer-kopf">
+        <div>
+          <h2>${this.esc(titel)}: deine Anmeldung</h2>
+          <p>${this.esc(this.SPIEL_URL.replace(/^https:\/\//, '').replace(/\/$/, ''))} öffnen, „Anmelden“ – schreib dir deinen Benutzernamen auf.</p>
+        </div>
+        <div class="mt-beamer-pw"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
+        <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
+      </div>
+      <div class="mt-namensliste" style="--zeilen:${Math.ceil(sortiert.length / (sortiert.length > 16 ? 2 : 1))}">
+        ${sortiert.map(k => `<div class="mt-namenszeile"><span>${this.esc(k.name)}</span><code>${this.esc(k.benutzer)}</code></div>`).join('')}
+      </div>`;
   },
 
   /* Kärtchen zum Ausschneiden, zwei je Zeile */
