@@ -1286,6 +1286,7 @@ const Classes = {
     if (typeof Lessons !== 'undefined') Lessons.render();
     if (typeof Stundenplan !== 'undefined') Stundenplan.klassenbuchZeigen();
     if (typeof Ablage !== 'undefined') Ablage.render();
+    if (typeof Musiktrainer !== 'undefined') { Musiktrainer.ergebnis = null; Musiktrainer.render(); }
   },
 
   /* ---------- Schüler ---------- */

@@ -36,3 +36,10 @@ aktuell war.
 Die Seite ist öffentlich erreichbar. Klassenlisten, Gruppeneinteilungen,
 Sitzpläne und Notenlisten bleiben lokal; `.gitignore` hält `*.pdf`, `*.csv`,
 `*.doc` und `*.docx` bewusst draußen.
+
+## music-trainer
+
+`js/musiktrainer.js` verbindet Klassen mit dem music-trainer (eigenes
+Repository `music-trainer`, Cloudflare-Worker). Die Zuordnung Pseudonym → Kind
+steht nur hier (`cls.musiktrainer`, `schueler.mt`) und darf nie zum Worker
+gehen. `MT_SPIELE` muss zur Spielliste im music-trainer passen.

@@ -2490,3 +2490,64 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .plan-ferien { font-size: .82rem; font-weight: 700; color: var(--green); padding: .3rem .4rem; }
 .plan-tagkopf .plan-frei { display: block; font-size: .7rem; color: var(--green); opacity: 1; }
 .plan-tagkopf.heute .plan-frei { color: inherit; }
+
+/* ---------- music-trainer (Klassen → music-trainer, Extras) ---------- */
+.mt-zugang { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.mt-zugang code { font-size: 1.15rem; font-weight: 700; }
+.mt-filter { margin: .8rem 0; gap: .6rem; }
+.mt-filter label { display: inline-flex; flex-direction: column; gap: .2rem; font-size: .78rem; color: var(--muted); }
+.mt-tabelle-rahmen { overflow-x: auto; }
+.mt-tabelle { border-collapse: collapse; width: 100%; font-size: .9rem; }
+.mt-tabelle th, .mt-tabelle td { border-bottom: 1px solid var(--border); padding: .4rem .5rem; text-align: center; white-space: nowrap; }
+.mt-tabelle th { font-size: .78rem; vertical-align: bottom; }
+.mt-tabelle th:first-child, .mt-tabelle td:first-child { text-align: left; }
+.mt-kurz { display: block; font-weight: 400; color: var(--muted); font-size: .7rem; }
+.mt-zelle { font-weight: 700; background: color-mix(in srgb, var(--yellow) calc(var(--anteil) * 45%), transparent); }
+.mt-summe { font-weight: 800; }
+.mt-ohne td:first-child { box-shadow: inset 4px 0 0 var(--yellow); }
+.mt-fremd { opacity: .7; }
+.mt-tabelle .small .icon, .mt-zugaenge .small .icon { margin: 0; }
+.mt-gruppe { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .7rem; margin-bottom: .8rem; }
+.mt-zugaenge { list-style: none; padding: 0; margin: .4rem 0; display: flex; flex-wrap: wrap; gap: .4rem; }
+.mt-zugaenge li { display: inline-flex; align-items: center; gap: .3rem; }
+.mt-gruppe-neu input { flex: 1 1 140px; }
+
+/* Beamer: ein QR-Code je Kind */
+.mt-beamer { position: fixed; inset: 0; z-index: 200; overflow-y: auto; padding: 1.2rem 1.6rem 2rem;
+  background: var(--page-bg); background-color: var(--bg); color: var(--text); }
+.mt-beamer-kopf { display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.2rem; }
+.mt-beamer-kopf > div:first-child { flex: 1; }
+.mt-beamer-kopf h2 { font-size: 1.6rem; margin: 0 0 .2rem; }
+.mt-beamer-kopf p { margin: 0; color: var(--muted); font-size: 1.1rem; }
+.mt-beamer-pw { display: flex; flex-direction: column; align-items: flex-end; }
+.mt-beamer-pw span { color: var(--muted); font-size: .9rem; }
+.mt-beamer-pw code { font-size: 2.4rem; font-weight: 800; color: var(--accent-soft); background: none; }
+.mt-beamer-zu .icon { margin: 0; }
+.mt-qr-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(var(--qr) + 24px), 1fr)); gap: .8rem; }
+.mt-qr-karte { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .7rem .5rem; background: var(--card); border-radius: var(--radius); }
+/* Weißer Rand: Kameras erkennen den Code nur mit hellem Rand */
+.mt-qr-bild { background: #fff; padding: 8px; border-radius: 8px; line-height: 0; }
+.mt-qr-bild img, .mt-qr-bild canvas { width: var(--qr); height: var(--qr); display: block; }
+.mt-qr-name { font-size: 1.1rem; font-weight: 700; }
+.mt-qr-benutzer { font-family: ui-monospace, Menlo, monospace; font-size: .8rem; color: var(--muted); font-weight: 400; }
+.mt-qr-karte.gross { position: fixed; top: 5vh; left: 50%; transform: translateX(-50%); z-index: 5;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .6); background: var(--card-solid); padding: 1.2rem; }
+.mt-qr-karte.gross .mt-qr-bild img, .mt-qr-karte.gross .mt-qr-bild canvas { width: min(70vh, 80vw); height: min(70vh, 80vw); }
+.mt-qr-karte.gross .mt-qr-name { font-size: 2rem; }
+.mt-beamer-fuss { color: var(--muted); margin-top: 1.2rem; }
+
+/* Kärtchen drucken: nur sie, alles andere ausgeblendet */
+#mt-druck { display: none; }
+@media print {
+  body.mt-drucken > *:not(#mt-druck) { display: none !important; }
+  body.mt-drucken { background: #fff !important; color: #000; }
+  body.mt-drucken #mt-druck { display: block; }
+  .mt-karten { display: grid; grid-template-columns: 1fr 1fr; }
+  .mt-karte { border: 1px dashed #999; padding: 5mm 6mm; break-inside: avoid; font-size: 11pt; color: #000; }
+  .mt-karte-kopf { font-weight: 800; font-size: 13pt; }
+  .mt-karte-kopf span { font-weight: 400; font-size: 9pt; color: #555; }
+  .mt-karte-name { font-size: 10pt; color: #333; margin-bottom: 3mm; }
+  .mt-karte-zeile { display: flex; justify-content: space-between; gap: 4mm; padding: 1mm 0; border-top: 1px solid #ddd; }
+  .mt-karte-zeile span { color: #555; font-size: 9pt; }
+  .mt-karte-zeile b { font-family: Menlo, monospace; font-size: 12pt; }
+}
