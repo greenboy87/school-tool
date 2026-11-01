@@ -44,4 +44,6 @@ Repository `music-trainer`, Cloudflare-Worker). Die Zuordnung Pseudonym → Kind
 steht nur hier (`cls.musiktrainer`, `schueler.mt`) und darf nie zum Worker
 gehen. `MT_SPIELE` muss zur Spielliste im music-trainer passen. Zum Worker geht
 dagegen die Auswahl für die Note (`benotung`: nur `spiel|stufe`), damit jedes
-Kind im music-trainer unter „Meine Note“ seine eigene Note sieht.
+Kind im music-trainer unter „Meine Note“ seine eigene Note sieht. Festgelegt
+wird sie beim Übertragen in die Klassenliste, nicht beim Umschalten der
+Kategorien (`kategorien`: Bereiche × Spiele × Stufen der Tabelle).

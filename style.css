@@ -2565,14 +2565,14 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 }
 
 /* Benotung */
-.mt-ansicht { display: flex; gap: .3rem; margin-top: .6rem; }
 .mt-haken { flex-direction: row !important; align-items: center; gap: .35rem !important; font-size: .85rem !important; color: var(--text) !important; }
-.mt-auswahl { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .5rem .8rem; margin-bottom: .8rem; }
-.mt-auswahl summary { cursor: pointer; font-weight: 600; }
-.mt-auswahl-bereich { margin-top: .6rem; }
-.mt-auswahl-spiel { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin: .3rem 0 0 .6rem; }
-.mt-auswahl-spiel > .mt-wahl-schalter { min-width: 12rem; font-size: .9rem; }
-.mt-auswahl summary .hint { font-weight: 400; margin-left: .3rem; }
+/* Kategorien: Bereich × Spiel × Stufe bestimmen Spalten und Note */
+.mt-kategorien { display: flex; flex-direction: column; gap: .4rem; margin: .9rem 0 .2rem; }
+.mt-kat-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
+.mt-kat-titel { min-width: 4.5rem; font-size: .78rem; color: var(--muted); }
+.mt-chip .hint { font-size: .72rem; }
+.mt-knoepfe { margin: 0 0 .6rem; }
+.mt-meine-note { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0 0 .4rem; }
 .mt-chip { display: inline-flex; align-items: center; gap: .25rem; font-size: .8rem; padding: .15rem .5rem; border: 1px solid var(--border); border-radius: 99px; cursor: pointer; }
 .mt-chip:has(input:checked) { background: var(--active-soft); border-color: var(--accent); }
 .mt-eigen-erg:not(:empty) { margin: .6rem 0; }
@@ -2594,6 +2594,7 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-kreis.klein { width: 1.5rem; height: 1.5rem; font-size: .8rem; }
 .mt-kreis.gross { width: 2.8rem; height: 2.8rem; font-size: 1.4rem; }
 .mt-kreis.offen { border: 1.5px dashed var(--muted); color: var(--muted); font-size: .56rem; font-weight: 700; }
+.mt-kreis.dezimal { font-size: .74rem; letter-spacing: -.02em; }
 .mt-gesamtnote { display: inline-block; min-width: 2.9rem; padding: .2rem .45rem; border-radius: 8px; text-align: center;
   font-size: 1.1rem; font-weight: 800; }
 /* Score statt Note: Sterne (5/6), Prozent richtig oder Punkte als Pille */
@@ -2605,6 +2606,18 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-kreis.n4, .mt-gesamtnote.n4, .mt-balken.n4, .mt-wert.n4 { background: #fdba74; color: #7c2d12; border-color: transparent; }
 .mt-kreis.n5, .mt-kreis.n6, .mt-gesamtnote.n5, .mt-gesamtnote.n6, .mt-balken.n5, .mt-balken.n6, .mt-wert.n5, .mt-wert.n6 { background: #fca5a5; color: #7f1d1d; border-color: transparent; }
 .mt-legende { margin-top: .5rem; }
+
+/* Scoreboard im Vollbild: Schriftgröße setzt der Code, alles andere wächst mit (em) */
+.mt-scoreboard th, .mt-scoreboard td { padding: .12em .3em; line-height: 1.2; }
+.mt-scoreboard th { font-size: .55em; }
+.mt-scoreboard .mt-kurz { font-size: .85em; }
+.mt-scoreboard .mt-kreis { width: 1.9em; height: 1.9em; font-size: .8em; }
+.mt-scoreboard .mt-kreis.dezimal { font-size: .7em; width: 2.2em; height: 2.2em; }
+.mt-scoreboard .mt-wert { font-size: .75em; }
+.mt-scoreboard .mt-gesamtnote, .mt-scoreboard .mt-wert.gesamt { font-size: 1em; padding: .08em .4em; min-width: 2.8em; }
+.mt-platz { font-weight: 800; color: var(--muted); text-align: right !important; }
+.mt-scoreboard th:nth-child(2), .mt-sb-name { font-weight: 700; text-align: left !important; }
+.mt-scoreboard th:first-child { text-align: right !important; }
 
 /* Für die Klasse am Beamer: Notenschlüssel, was zählt, Notenspiegel ohne Namen */
 .mt-klasse { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 1.2rem; }
@@ -2625,6 +2638,5 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-spiegel b { font-size: 1.4rem; }
 .mt-balken { display: block; width: 100%; max-width: 6.5rem; height: calc(var(--hoehe) * 9rem); min-height: 4px; border-radius: 8px 8px 0 0; }
 .mt-balken.offen { background: var(--hover); outline: 1.5px dashed var(--muted); outline-offset: -1.5px; }
-.mt-auswahl-bereich > .mt-wahl-schalter { margin-bottom: .2rem; font-size: .95rem; }
 /* Schalter Noten ⟷ Score in der Filterzeile (sonst wären Filter-Labels zweizeilig) */
 .mt-filter .schalter { flex-direction: row; align-items: center; gap: .4rem; font-size: .88rem; color: var(--text); align-self: flex-end; padding-bottom: .45rem; }
