@@ -59,6 +59,13 @@ const Musiktrainer = {
     }
     if (this.eigeneEl) {
       this.eigeneEl.addEventListener('click', e => this.klickEigene(e));
+      this.eigeneEl.addEventListener('change', e => {
+        const id = e.target.dataset.eigenBereich;
+        if (!id || !this.eigenErg[id]) return;
+        this.eigenErg[id].bereich = e.target.value;
+        const gi = this.gruppen().findIndex(g => String(g.id) === id);
+        this.eigeneErgebnisse(this.gruppen()[gi], this.eigeneEl.querySelector(`[data-erg="${gi}"]`));
+      });
       this.renderEigene();
     }
   },
@@ -591,17 +598,28 @@ const Musiktrainer = {
   drucken(titel, passwort, kinder) {
     let d = document.getElementById('mt-druck');
     if (!d) { d = document.createElement('div'); d.id = 'mt-druck'; document.body.appendChild(d); }
-    d.innerHTML = `<div class="mt-karten">${kinder.map(k => `
+    // Mit QR-Code je Kärtchen: das Kind scannt am Platz seine eigene Karte –
+    // sicherer als 26 Codes am Beamer, wo die Kamera leicht den Nachbarcode erwischt
+    d.innerHTML = `<div class="mt-karten">${kinder.map((k, i) => `
       <div class="mt-karte">
-        <div class="mt-karte-kopf">music-trainer <span>by greenboy</span></div>
-        <div class="mt-karte-name">${this.esc(k.name)} · ${this.esc(titel)}</div>
-        <div class="mt-karte-zeile"><span>Adresse</span><b>${this.esc(this.SPIEL_URL.replace(/^https:\/\//, ''))}</b></div>
-        <div class="mt-karte-zeile"><span>Benutzername</span><b>${this.esc(k.benutzer)}</b></div>
-        <div class="mt-karte-zeile"><span>Passwort</span><b>${this.esc(passwort)}</b></div>
+        <div class="mt-karte-text">
+          <div class="mt-karte-kopf">music-trainer</div>
+          <div class="mt-karte-name">${this.esc(k.name)} · ${this.esc(titel)}</div>
+          <div class="mt-karte-zeile adresse"><span>Adresse</span><b>${this.esc(this.SPIEL_URL.replace(/^https:\/\//, '').replace(/\/$/, ''))}</b></div>
+          <div class="mt-karte-zeile"><span>Benutzername</span><b>${this.esc(k.benutzer)}</b></div>
+          <div class="mt-karte-zeile"><span>Passwort</span><b>${this.esc(passwort)}</b></div>
+        </div>
+        <div class="mt-karte-qr" id="mt-karte-qr-${i}"></div>
       </div>`).join('')}</div>`;
+    kinder.forEach((k, i) => {
+      const feld = document.getElementById(`mt-karte-qr-${i}`);
+      new QRCode(feld, { text: this.anmeldeLink(k.benutzer, passwort), width: 300, height: 300, correctLevel: QRCode.CorrectLevel.M });
+      feld.insertAdjacentHTML('beforeend', '<span>Scannen zum Anmelden</span>');
+    });
     document.body.classList.add('mt-drucken');
     window.addEventListener('afterprint', () => document.body.classList.remove('mt-drucken'), { once: true });
-    window.print();
+    // Kurz warten, bis die QR-Bilder fertig sind
+    setTimeout(() => window.print(), 300);
   },
 
   /* ---------- Eigene Zugänge (Extras) ---------- */
@@ -624,7 +642,9 @@ const Musiktrainer = {
             <strong>${this.esc(g.name)}</strong>
             <span class="hint">Passwort <code>${this.esc(g.passwort)}</code></span>
             <div class="btn-row">
+              <button class="small" data-eigen="ergebnisse" data-g="${gi}" data-icon="list" ${g.kinder.length ? '' : 'disabled'}>Ergebnisse</button>
               <button class="small" data-eigen="qr" data-g="${gi}" data-icon="expand" ${g.kinder.length ? '' : 'disabled'}>QR-Codes</button>
+              <button class="small" data-eigen="drucken" data-g="${gi}" data-icon="printer" ${g.kinder.length ? '' : 'disabled'}>Kärtchen</button>
               <button class="small danger" data-eigen="gruppe-weg" data-g="${gi}" data-icon="trash">Gruppe löschen</button>
             </div>
           </div>
@@ -632,6 +652,7 @@ const Musiktrainer = {
             ${g.kinder.map((k, ki) => `<li><code>${this.esc(k.name)}</code>
               <button class="small danger" data-eigen="kind-weg" data-g="${gi}" data-k="${ki}" title="Zugang löschen">${Icons.raw('x')}</button></li>`).join('') || '<li class="hint">Noch keine Zugänge.</li>'}
           </ul>
+          <div class="mt-eigen-erg" data-erg="${gi}"></div>
           <div class="inline-form">
             <input type="text" data-neu-kind="${gi}" placeholder="Benutzername, z. B. Emil" maxlength="30" spellcheck="false">
             <button class="small" data-eigen="kind-neu" data-g="${gi}" data-icon="plus">Zugang anlegen</button>
@@ -644,6 +665,57 @@ const Musiktrainer = {
       </div>
       <div id="mt-eigene-login"></div>`;
     Icons.hydrate(this.eigeneEl);
+  },
+
+  eigenErg: {},   // Gruppen-ID → { daten, bereich } – nur solange die Ergebnisse offen sind
+
+  /* Sterne der eigenen Zugänge: ohne Bereich je Bereich zusammengefasst,
+     mit Bereich je Spiel; im Tooltip die Note je Stufe */
+  eigeneErgebnisse(g, ziel) {
+    const { daten, bereich } = this.eigenErg[g.id];
+    const bereiche = [...new Set(MT_SPIELE.map(s => s.bereich))];
+    const spalten = bereich
+      ? MT_SPIELE.filter(s => s.bereich === bereich).map(s => ({ titel: s.titel, spiele: [s] }))
+      : bereiche.map(b => ({ titel: b, spiele: MT_SPIELE.filter(s => s.bereich === b) }));
+    const zelle = (k, sp) => {
+      let sterne = 0, runden = 0;
+      const info = [];
+      sp.spiele.forEach(spiel => spiel.stufen.forEach((n, i) => {
+        const v = k.fortschritt[spiel.id]?.[i];
+        if (!v) return;
+        sterne += v.sterne; runden += v.runden;
+        info.push(`${spiel.titel} – ${n}: Note ${7 - v.sterne} (${v.runden}× gespielt)`);
+      }));
+      const max = sp.spiele.reduce((a, spiel) => a + spiel.stufen.length * this.STERNE, 0);
+      return { sterne, runden, max, info: info.join('\n') || 'noch nicht gespielt' };
+    };
+    const zuletzt = t => {
+      if (!t) return 'noch nie';
+      const d = Math.floor((Date.now() / 1000 - t) / 86400);
+      return d <= 0 ? 'heute' : d === 1 ? 'gestern' : `vor ${d} Tagen`;
+    };
+    ziel.innerHTML = `
+      <div class="inline-form mt-filter">
+        <label>Bereich <select data-eigen-bereich="${g.id}"><option value="">Alle Bereiche</option>
+          ${bereiche.map(b => `<option ${b === bereich ? 'selected' : ''}>${b}</option>`).join('')}
+        </select></label>
+      </div>
+      <div class="mt-tabelle-rahmen">
+      <table class="mt-tabelle">
+        <thead><tr><th>Zugang</th>${spalten.map(sp => `<th>${this.esc(sp.titel)}</th>`).join('')}<th>Sterne</th><th>Runden</th><th>Zuletzt</th></tr></thead>
+        <tbody>
+          ${daten.schueler.map(k => {
+            const zellen = spalten.map(sp => zelle(k, sp));
+            return `<tr><td>${this.esc(k.benutzername)}</td>
+              ${zellen.map(c => `<td class="mt-zelle" style="--anteil:${c.max ? c.sterne / c.max : 0}" title="${this.esc(c.info)}">${c.sterne || (c.runden ? '0' : '–')}</td>`).join('')}
+              <td class="mt-summe">${zellen.reduce((a, c) => a + c.sterne, 0)}</td>
+              <td>${zellen.reduce((a, c) => a + c.runden, 0)}</td>
+              <td class="hint">${zuletzt(k.zuletzt)}</td></tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      </div>
+      <p class="hint">Zahl = Sterne (6 je Stufe = Note 1). Fahre über ein Feld für die Note je Stufe.</p>`;
   },
 
   async klickEigene(e) {
@@ -683,6 +755,17 @@ const Musiktrainer = {
       }
       if (b.dataset.eigen === 'qr') {
         return this.qrZeigen(g.name, g.passwort, g.kinder.map(k => ({ name: k.name, benutzer: k.name })));
+      }
+      if (b.dataset.eigen === 'drucken') {
+        return this.drucken(g.name, g.passwort, g.kinder.map(k => ({ name: k.name, benutzer: k.name })));
+      }
+      if (b.dataset.eigen === 'ergebnisse') {
+        const ziel = this.eigeneEl.querySelector(`[data-erg="${b.dataset.g}"]`);
+        if (ziel.innerHTML) { ziel.innerHTML = ''; delete this.eigenErg[g.id]; return; }   // zweiter Klick schließt
+        ziel.innerHTML = '<p class="hint">Lade Ergebnisse …</p>';
+        const daten = await this.api(`/api/lehrer/klassen/${g.id}`);
+        this.eigenErg[g.id] = { daten, bereich: this.eigenErg[g.id]?.bereich || '' };
+        return this.eigeneErgebnisse(g, ziel);
       }
       Classes.persist();
       this.renderEigene();

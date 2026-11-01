@@ -2543,13 +2543,20 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
   body.mt-drucken { background: #fff !important; color: #000; }
   body.mt-drucken #mt-druck { display: block; }
   .mt-karten { display: grid; grid-template-columns: 1fr 1fr; }
-  .mt-karte { border: 1px dashed #999; padding: 5mm 6mm; break-inside: avoid; font-size: 11pt; color: #000; }
+  .mt-karte { border: 1px dashed #999; padding: 5mm 6mm; break-inside: avoid; font-size: 11pt; color: #000;
+    display: flex; gap: 4mm; align-items: center; }
+  .mt-karte-text { flex: 1; min-width: 0; }
+  .mt-karte-qr { width: 26mm; flex: 0 0 26mm; line-height: 0; text-align: center; }
+  .mt-karte-qr span { display: block; line-height: 1.2; font-size: 7pt; color: #555; margin-top: 1mm; }
+  .mt-karte-qr img, .mt-karte-qr canvas { width: 26mm !important; height: 26mm !important; }
   .mt-karte-kopf { font-weight: 800; font-size: 13pt; }
   .mt-karte-kopf span { font-weight: 400; font-size: 9pt; color: #555; }
   .mt-karte-name { font-size: 10pt; color: #333; margin-bottom: 3mm; }
-  .mt-karte-zeile { display: flex; justify-content: space-between; gap: 4mm; padding: 1mm 0; border-top: 1px solid #ddd; }
-  .mt-karte-zeile span { color: #555; font-size: 9pt; }
-  .mt-karte-zeile b { font-family: Menlo, monospace; font-size: 12pt; }
+  /* Beschriftung über dem Wert – neben dem QR-Code ist für beides nebeneinander kein Platz */
+  .mt-karte-zeile { padding: .8mm 0; border-top: 1px solid #ddd; }
+  .mt-karte-zeile span { display: block; color: #555; font-size: 8pt; }
+  .mt-karte-zeile b { display: block; font-family: Menlo, monospace; font-size: 11pt; overflow-wrap: anywhere; }
+  .mt-karte-zeile.adresse b { font-family: inherit; font-size: 9pt; font-weight: 600; }
 }
 
 /* Benotung */
@@ -2566,3 +2573,4 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-note.n1, .mt-note.n2 { background: color-mix(in srgb, var(--green) 22%, transparent); }
 .mt-note.n3, .mt-note.n4 { background: color-mix(in srgb, var(--yellow) 18%, transparent); }
 .mt-note.n5, .mt-note.n6 { background: var(--danger-bg); }
+.mt-eigen-erg:not(:empty) { margin: .6rem 0; }
