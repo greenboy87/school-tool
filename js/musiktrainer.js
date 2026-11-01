@@ -300,10 +300,11 @@ const Musiktrainer = {
 
   aenderung(e) {
     const cls = this.klasse();
-    if (e.target.dataset.wahl !== undefined) {
-      // Spiel/Stufe für die Benotung an- oder abwählen
+    if (e.target.dataset.wahl !== undefined || e.target.dataset.wahlGruppe !== undefined) {
+      // Stufe, ganzes Spiel oder ganzen Bereich für die Benotung an- oder abwählen
       const liste = new Set(cls.musiktrainer.benotung || []);
-      e.target.checked ? liste.add(e.target.dataset.wahl) : liste.delete(e.target.dataset.wahl);
+      const ids = e.target.dataset.wahlGruppe?.split(',') || [e.target.dataset.wahl];
+      ids.forEach(id => e.target.checked ? liste.add(id) : liste.delete(id));
       cls.musiktrainer.benotung = [...liste];
       Classes.persist();
       return this.laden();
@@ -468,13 +469,18 @@ const Musiktrainer = {
   auswahlHtml(mt) {
     const gewaehlt = new Set(mt.benotung || []);
     const bereiche = [...new Set(MT_SPIELE.map(s => s.bereich))];
+    // Sammelhaken für einen Bereich oder ein Spiel: an, wenn alle Stufen gewählt sind
+    const gruppe = spiele => {
+      const ids = spiele.flatMap(sp => sp.stufen.map((_, i) => `${sp.id}|${i}`));
+      return `data-wahl-gruppe="${ids.join(',')}" ${ids.every(id => gewaehlt.has(id)) ? 'checked' : ''}`;
+    };
     return `
       <details class="mt-auswahl" ${gewaehlt.size ? '' : 'open'}>
         <summary>Spiele für die Note (${gewaehlt.size} gewählt)</summary>
         ${bereiche.map(b => `
-          <div class="mt-auswahl-bereich"><strong>${b}</strong>
+          <div class="mt-auswahl-bereich"><label class="mt-ganz"><input type="checkbox" ${gruppe(MT_SPIELE.filter(s => s.bereich === b))}><strong>${b}</strong> <span class="hint">ganzer Bereich</span></label>
             ${MT_SPIELE.filter(s => s.bereich === b).map(sp => `
-              <div class="mt-auswahl-spiel"><span>${this.esc(sp.titel)}</span>
+              <div class="mt-auswahl-spiel"><label class="mt-ganz" title="Alle Stufen dieses Spiels"><input type="checkbox" ${gruppe([sp])}>${this.esc(sp.titel)}</label>
                 ${sp.stufen.map((n, i) => `<label class="mt-chip"><input type="checkbox" data-wahl="${sp.id}|${i}" ${gewaehlt.has(`${sp.id}|${i}`) ? 'checked' : ''}>${this.esc(n)}</label>`).join('')}
               </div>`).join('')}
           </div>`).join('')}
@@ -775,18 +781,27 @@ const Musiktrainer = {
     const spalten = bereich
       ? MT_SPIELE.filter(s => s.bereich === bereich).map(s => ({ titel: s.titel, spiele: [s] }))
       : bereiche.map(b => ({ titel: b, spiele: MT_SPIELE.filter(s => s.bereich === b) }));
+    // je Stufe die Note der besten Runde (null = noch nicht gespielt)
     const zelle = (k, sp) => {
-      let sterne = 0, runden = 0;
-      const info = [];
+      let runden = 0;
+      const noten = [], info = [];
       sp.spiele.forEach(spiel => spiel.stufen.forEach((n, i) => {
         const v = k.fortschritt[spiel.id]?.[i];
+        const note = v?.sterne ? 7 - v.sterne : null;
+        noten.push({ note, stufe: n });
         if (!v) return;
-        sterne += v.sterne; runden += v.runden;
-        info.push(`${spiel.titel} – ${n}: Note ${7 - v.sterne} (${v.runden}× gespielt)`);
+        runden += v.runden;
+        info.push(`${spiel.titel} – ${n}: Note ${note ?? 6} (${v.runden}× gespielt)`);
       }));
-      const max = sp.spiele.reduce((a, spiel) => a + spiel.stufen.length * this.STERNE, 0);
-      return { sterne, runden, max, info: info.join('\n') || 'noch nicht gespielt' };
+      const gespielt = noten.map(n => n.note).filter(n => n !== null);
+      const schnitt = gespielt.length ? gespielt.reduce((a, n) => a + n, 0) / gespielt.length : null;
+      return { noten, gespielt, schnitt, runden, info: info.join('\n') || 'noch nicht gespielt' };
     };
+    const note = n => n === null ? '<span class="hint">–</span>' : `<span class="mt-note n${Math.round(n)}">${this.komma(n).replace(',0', '')}</span>`;
+    // Ein Bereich gewählt: Noten aller Stufen nebeneinander; sonst der Schnitt des Bereichs
+    const inhalt = c => bereich
+      ? `<span class="mt-stufennoten">${c.noten.map(n => `<span title="${this.esc(n.stufe)}">${note(n.note)}</span>`).join('')}</span>`
+      : note(c.schnitt) + (c.gespielt.length ? ` <span class="hint">(${c.gespielt.length} ${c.gespielt.length === 1 ? 'Stufe' : 'Stufen'})</span>` : '');
     const zuletzt = t => {
       if (!t) return 'noch nie';
       const d = Math.floor((Date.now() / 1000 - t) / 86400);
@@ -800,20 +815,24 @@ const Musiktrainer = {
       </div>
       <div class="mt-tabelle-rahmen">
       <table class="mt-tabelle">
-        <thead><tr><th>Zugang</th>${spalten.map(sp => `<th>${this.esc(sp.titel)}</th>`).join('')}<th>Sterne</th><th>Runden</th><th>Zuletzt</th></tr></thead>
+        <thead><tr><th>Zugang</th>${spalten.map(sp => `<th>${this.esc(sp.titel)}</th>`).join('')}<th>Schnitt</th><th>Runden</th><th>Zuletzt</th></tr></thead>
         <tbody>
           ${daten.schueler.map(k => {
             const zellen = spalten.map(sp => zelle(k, sp));
+            const alle = zellen.flatMap(c => c.gespielt);
             return `<tr><td>${this.esc(k.benutzername)}</td>
-              ${zellen.map(c => `<td class="mt-zelle" style="--anteil:${c.max ? c.sterne / c.max : 0}" title="${this.esc(c.info)}">${c.sterne || (c.runden ? '0' : '–')}</td>`).join('')}
-              <td class="mt-summe">${zellen.reduce((a, c) => a + c.sterne, 0)}</td>
+              ${zellen.map(c => `<td class="mt-noten-zelle" title="${this.esc(c.info)}">${inhalt(c)}</td>`).join('')}
+              <td class="mt-summe">${note(alle.length ? alle.reduce((a, n) => a + n, 0) / alle.length : null)}</td>
               <td>${zellen.reduce((a, c) => a + c.runden, 0)}</td>
               <td class="hint">${zuletzt(k.zuletzt)}</td></tr>`;
           }).join('')}
         </tbody>
       </table>
       </div>
-      <p class="hint">Zahl = Sterne (6 je Stufe = Note 1). Fahre über ein Feld für die Note je Stufe.</p>`;
+      <p class="hint">Note der besten Runde je Stufe (6 Sterne = Note 1). ${bereich
+        ? 'Je Spiel stehen die Stufen von leicht nach schwer nebeneinander; – = noch nicht gespielt.'
+        : 'Je Bereich der Schnitt der gespielten Stufen. Wähle einen Bereich für die Noten je Stufe.'}
+        Fahre über ein Feld für Einzelheiten.</p>`;
   },
 
   async klickEigene(e) {

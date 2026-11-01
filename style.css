@@ -2572,7 +2572,7 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-auswahl summary { cursor: pointer; font-weight: 600; }
 .mt-auswahl-bereich { margin-top: .6rem; }
 .mt-auswahl-spiel { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin: .3rem 0 0 .6rem; }
-.mt-auswahl-spiel > span { min-width: 9rem; font-size: .9rem; }
+.mt-auswahl-spiel > span, .mt-auswahl-spiel > .mt-ganz { min-width: 9rem; font-size: .9rem; }
 .mt-chip { display: inline-flex; align-items: center; gap: .25rem; font-size: .8rem; padding: .15rem .5rem; border: 1px solid var(--border); border-radius: 99px; cursor: pointer; }
 .mt-chip:has(input:checked) { background: var(--active-soft); border-color: var(--accent); }
 .mt-noten .mt-note { font-weight: 700; }
@@ -2580,3 +2580,9 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-note.n3, .mt-note.n4 { background: color-mix(in srgb, var(--yellow) 18%, transparent); }
 .mt-note.n5, .mt-note.n6 { background: var(--danger-bg); }
 .mt-eigen-erg:not(:empty) { margin: .6rem 0; }
+.mt-noten-zelle { white-space: nowrap; }
+.mt-noten-zelle .mt-note, .mt-summe .mt-note { display: inline-block; min-width: 1.7em; padding: .05rem .3rem; border-radius: 6px; text-align: center; font-weight: 700; }
+.mt-stufennoten { display: inline-flex; gap: .2rem; }
+.mt-stufennoten .hint { display: inline-block; min-width: 1.7em; text-align: center; }
+.mt-ganz { display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
+.mt-auswahl-bereich > .mt-ganz { margin-bottom: .25rem; }
