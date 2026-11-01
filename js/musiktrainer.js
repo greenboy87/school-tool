@@ -36,7 +36,7 @@ const MT_SPIELE = (() => {
 
 const Musiktrainer = {
   /* Adresse des Workers – dieselbe wie in music-trainer/js/konto.js. Leer = Reiter zeigt nur einen Hinweis. */
-  API: '',
+  API: 'https://music-trainer.tomgruenig87.workers.dev',
   SPIEL_URL: 'https://greenboy87.github.io/music-trainer/',
   TOKEN_KEY: 'schooltool-musiktrainer-lehrer',
 
