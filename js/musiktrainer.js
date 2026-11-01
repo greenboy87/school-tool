@@ -29,6 +29,7 @@ const MT_SPIELE = (() => {
     { id: 'intervall', bereich: 'Hören', titel: 'Intervall-Ohr', stufen: ['Prime, Quinte, Oktave', 'Dazu Terz und Quarte', 'Alle Intervalle'] },
     { id: 'dur-moll', bereich: 'Hören', titel: 'Dur oder Moll?', stufen: ['Akkord zusammen', 'Akkord gebrochen', 'Kurze Melodie'] },
     { id: 'hoerdiktat', bereich: 'Hören', titel: 'Hördiktat', stufen: ['Junior', 'Anfänger', 'Fortgeschritten', 'Profi'] },
+    { id: 'instrumente', bereich: 'Hören', titel: 'Instrumente erkennen', stufen: ['Junior', 'Anfänger', 'Fortgeschritten', 'Profi'] },
     { id: 'rhythmus-detektiv', bereich: 'Rhythmus', titel: 'Rhythmus-Detektiv', stufen: ['Halbe und Viertel', 'Dazu Achtel', 'Dazu Viertelpausen'] },
     { id: 'rhythmus-echo', bereich: 'Rhythmus', titel: 'Rhythmus-Echo', stufen: ['Halbe und Viertel', 'Dazu Achtel', 'Nur nach Gehör'] },
     { id: 'taktfuehler', bereich: 'Rhythmus', titel: 'Taktgefühl', stufen: ['Mit Betonung', 'Mit Begleitung', 'Schnell'] },
