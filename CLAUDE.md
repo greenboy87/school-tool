@@ -42,4 +42,6 @@ Sitzpläne und Notenlisten bleiben lokal; `.gitignore` hält `*.pdf`, `*.csv`,
 `js/musiktrainer.js` verbindet Klassen mit dem music-trainer (eigenes
 Repository `music-trainer`, Cloudflare-Worker). Die Zuordnung Pseudonym → Kind
 steht nur hier (`cls.musiktrainer`, `schueler.mt`) und darf nie zum Worker
-gehen. `MT_SPIELE` muss zur Spielliste im music-trainer passen.
+gehen. `MT_SPIELE` muss zur Spielliste im music-trainer passen. Zum Worker geht
+dagegen die Auswahl für die Note (`benotung`: nur `spiel|stufe`), damit jedes
+Kind im music-trainer unter „Meine Note“ seine eigene Note sieht.

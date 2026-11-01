@@ -2502,7 +2502,6 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-tabelle th { font-size: .78rem; vertical-align: bottom; }
 .mt-tabelle th:first-child, .mt-tabelle td:first-child { text-align: left; }
 .mt-kurz { display: block; font-weight: 400; color: var(--muted); font-size: .7rem; }
-.mt-zelle { font-weight: 700; background: color-mix(in srgb, var(--yellow) calc(var(--anteil) * 45%), transparent); }
 .mt-summe { font-weight: 800; }
 .mt-ohne td:first-child { box-shadow: inset 4px 0 0 var(--yellow); }
 .mt-fremd { opacity: .7; }
@@ -2575,14 +2574,51 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-auswahl-spiel > span, .mt-auswahl-spiel > .mt-ganz { min-width: 9rem; font-size: .9rem; }
 .mt-chip { display: inline-flex; align-items: center; gap: .25rem; font-size: .8rem; padding: .15rem .5rem; border: 1px solid var(--border); border-radius: 99px; cursor: pointer; }
 .mt-chip:has(input:checked) { background: var(--active-soft); border-color: var(--accent); }
-.mt-noten .mt-note { font-weight: 700; }
-.mt-note.n1, .mt-note.n2 { background: color-mix(in srgb, var(--green) 22%, transparent); }
-.mt-note.n3, .mt-note.n4 { background: color-mix(in srgb, var(--yellow) 18%, transparent); }
-.mt-note.n5, .mt-note.n6 { background: var(--danger-bg); }
 .mt-eigen-erg:not(:empty) { margin: .6rem 0; }
 .mt-noten-zelle { white-space: nowrap; }
-.mt-noten-zelle .mt-note, .mt-summe .mt-note { display: inline-block; min-width: 1.7em; padding: .05rem .3rem; border-radius: 6px; text-align: center; font-weight: 700; }
 .mt-stufennoten { display: inline-flex; gap: .2rem; }
-.mt-stufennoten .hint { display: inline-block; min-width: 1.7em; text-align: center; }
+.mt-stufennoten .hint { display: inline-block; min-width: 1.5rem; text-align: center; }
+
+/* Notentabellen: je Spiel und Stufe ein Notenkreis. Ampelfarben wie im music-trainer
+   („Meine Note“): 1–2 grün, 3 gelb, 4 orange, 5–6 rot, hell mit dunkler Schrift –
+   gut lesbar im hellen und im dunklen Design; gestrichelt = noch offen */
+.mt-notentabelle th, .mt-notentabelle td { padding: .3rem .25rem; }
+.mt-notentabelle th:first-child, .mt-notentabelle td:first-child { padding-right: .9rem; }
+.mt-notentabelle th[rowspan] { vertical-align: bottom; }
+.mt-spielkopf { padding: .3rem .5rem !important; border-bottom: 2px solid var(--border) !important; white-space: normal !important; min-width: 4.5rem; }
+.mt-stufenkopf { color: var(--muted); font-weight: 600; cursor: help; }
+.mt-gesamtkopf { font-size: .9rem !important; }
+.mt-kreis { display: inline-flex; align-items: center; justify-content: center; width: 1.9rem; height: 1.9rem; border-radius: 50%;
+  font-weight: 800; font-size: .95rem; }
+.mt-kreis.klein { width: 1.5rem; height: 1.5rem; font-size: .8rem; }
+.mt-kreis.gross { width: 2.8rem; height: 2.8rem; font-size: 1.4rem; }
+.mt-kreis.offen { border: 1.5px dashed var(--muted); color: var(--muted); font-size: .56rem; font-weight: 700; }
+.mt-gesamtnote { display: inline-block; min-width: 2.9rem; padding: .2rem .45rem; border-radius: 8px; text-align: center;
+  font-size: 1.1rem; font-weight: 800; }
+.mt-kreis.n1, .mt-kreis.n2, .mt-gesamtnote.n1, .mt-gesamtnote.n2, .mt-balken.n1, .mt-balken.n2 { background: #86efac; color: #14532d; }
+.mt-kreis.n3, .mt-gesamtnote.n3, .mt-balken.n3 { background: #fde047; color: #713f12; }
+.mt-kreis.n4, .mt-gesamtnote.n4, .mt-balken.n4 { background: #fdba74; color: #7c2d12; }
+.mt-kreis.n5, .mt-kreis.n6, .mt-gesamtnote.n5, .mt-gesamtnote.n6, .mt-balken.n5, .mt-balken.n6 { background: #fca5a5; color: #7f1d1d; }
+.mt-legende { margin-top: .5rem; }
+
+/* Für die Klasse am Beamer: Notenschlüssel, was zählt, Notenspiegel ohne Namen */
+.mt-klasse { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 1.2rem; }
+.mt-klasse-block { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.3rem; font-size: 1.15rem; }
+.mt-klasse-block h3 { margin: 0 0 .8rem; font-size: 1.4rem; }
+.mt-klasse-block p { margin: .8rem 0 0; color: var(--muted); line-height: 1.45; }
+.mt-klasse-block p b { color: var(--text); }
+.mt-schluessel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem 1.6rem; }
+.mt-schluessel > div { display: flex; align-items: center; justify-content: space-between; gap: .8rem; }
+.mt-sterne { color: var(--yellow); font-size: 1.35rem; letter-spacing: .04em; white-space: nowrap; }
+.mt-sterne span { color: var(--track); }
+.mt-zaehlt { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+.mt-zaehlt li { display: flex; flex-wrap: wrap; gap: .1rem .7rem; align-items: baseline; }
+.mt-zaehlt span { color: var(--muted); }
+.mt-spiegel-block { grid-column: 1 / -1; }
+.mt-spiegel { display: flex; align-items: flex-end; gap: 1.2rem; }
+.mt-spiegel > div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: .35rem; }
+.mt-spiegel b { font-size: 1.4rem; }
+.mt-balken { display: block; width: 100%; max-width: 6.5rem; height: calc(var(--hoehe) * 9rem); min-height: 4px; border-radius: 8px 8px 0 0; }
+.mt-balken.offen { background: var(--hover); outline: 1.5px dashed var(--muted); outline-offset: -1.5px; }
 .mt-ganz { display: inline-flex; align-items: center; gap: .35rem; cursor: pointer; }
 .mt-auswahl-bereich > .mt-ganz { margin-bottom: .25rem; }
