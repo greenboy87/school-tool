@@ -46,6 +46,8 @@ const Musiktrainer = {
 
   ergebnis: null,          // { klasseId, daten, seit } – zuletzt geladene Auswertung
   filter: { zeitraum: '0', bereich: '', spiel: '', stufe: '', sortierung: 'name' },
+  ansicht: 'uebersicht',   // oder 'benotung'
+  STERNE: 6,               // 6 Sterne = Note 1 … 1 Stern = Note 6
 
   init() {
     this.el = document.getElementById('subtab-musiktrainer');
@@ -181,11 +183,22 @@ const Musiktrainer = {
         <button class="small danger" data-mt="loeschen" data-icon="trash" title="Klasse samt Ergebnissen vom Server löschen – etwa am Schuljahresende">Vom Server löschen</button>
       </p>
       <div id="mt-login"></div>
+      <div class="mt-ansicht">
+        <button class="subtab-btn ${this.ansicht === 'uebersicht' ? 'active' : ''}" data-mt="ansicht" data-wert="uebersicht">Übersicht</button>
+        <button class="subtab-btn ${this.ansicht === 'benotung' ? 'active' : ''}" data-mt="ansicht" data-wert="benotung">Benotung</button>
+      </div>
       <div class="mt-filter inline-form">
         <label>Zeitraum <select data-filter="zeitraum">
           ${[['0', 'Gesamt (Bestwerte)'], ['7', 'Letzte 7 Tage'], ['14', 'Letzte 14 Tage'], ['30', 'Letzte 30 Tage'], ['90', 'Letzte 90 Tage']]
             .map(([v, t]) => `<option value="${v}" ${this.filter.zeitraum === v ? 'selected' : ''}>${t}</option>`).join('')}
         </select></label>
+        ${this.ansicht === 'benotung' ? `
+        <label>Sortieren <select data-filter="sortierung">
+          ${[['name', 'Name'], ['schnitt', 'Schnitt']]
+            .map(([v, t]) => `<option value="${v}" ${this.filter.sortierung === v ? 'selected' : ''}>${t}</option>`).join('')}
+        </select></label>
+        <label class="mt-haken"><input type="checkbox" data-mt-option="fehltAls6" ${mt.fehltAls6 ? 'checked' : ''}> Nicht gespielt zählt als 6</label>
+        <button class="small" data-mt="kopieren" data-icon="clipboard" title="Name und Schnitt als Liste kopieren">Kopieren</button>` : `
         <label>Bereich <select data-filter="bereich"><option value="">Alle</option>
           ${[...new Set(MT_SPIELE.map(s => s.bereich))].map(b => `<option ${this.filter.bereich === b ? 'selected' : ''}>${b}</option>`).join('')}
         </select></label>
@@ -199,9 +212,10 @@ const Musiktrainer = {
         <label>Sortieren <select data-filter="sortierung">
           ${[['name', 'Name'], ['sterne', 'Sterne'], ['runden', 'Runden'], ['zuletzt', 'Zuletzt aktiv']]
             .map(([v, t]) => `<option value="${v}" ${this.filter.sortierung === v ? 'selected' : ''}>${t}</option>`).join('')}
-        </select></label>
+        </select></label>`}
         <button class="small" data-mt="laden" data-icon="reset">Aktualisieren</button>
       </div>
+      ${this.ansicht === 'benotung' ? this.auswahlHtml(mt) : ''}
       <div id="mt-auswertung"><p class="hint">Lade Ergebnisse …</p></div>`;
     Icons.hydrate(this.el);
     // Nur holen, wenn der Reiter offen ist – nicht bei jedem Klassenwechsel
@@ -222,6 +236,13 @@ const Musiktrainer = {
     if (aktion === 'einrichten') return this.einrichten(cls);
     if (aktion === 'nachtragen') return this.nachtragen(cls);
     if (aktion === 'laden') { this.ergebnis = null; return this.laden(); }
+    if (aktion === 'ansicht') {
+      this.ansicht = b.dataset.wert;
+      // Sortierungen der beiden Ansichten sind verschieden
+      this.filter.sortierung = 'name';
+      return this.render();
+    }
+    if (aktion === 'kopieren') return this.kopieren(cls);
     if (aktion === 'qr') {
       // Am Beamer nur Vornamen; bei gleichen Vornamen den Anfangsbuchstaben des Nachnamens dazu
       const mit = cls.students.filter(s => s.mt);
@@ -264,6 +285,20 @@ const Musiktrainer = {
   },
 
   aenderung(e) {
+    const cls = this.klasse();
+    if (e.target.dataset.wahl !== undefined) {
+      // Spiel/Stufe für die Benotung an- oder abwählen
+      const liste = new Set(cls.musiktrainer.benotung || []);
+      e.target.checked ? liste.add(e.target.dataset.wahl) : liste.delete(e.target.dataset.wahl);
+      cls.musiktrainer.benotung = [...liste];
+      Classes.persist();
+      return this.laden();
+    }
+    if (e.target.dataset.mtOption) {
+      cls.musiktrainer[e.target.dataset.mtOption] = e.target.checked;
+      Classes.persist();
+      return this.laden();
+    }
     const f = e.target.dataset.filter;
     if (!f) return;
     this.filter[f] = e.target.value;
@@ -321,22 +356,14 @@ const Musiktrainer = {
         return this.fehler(err, document.getElementById('mt-login'), () => this.render());
       }
     }
-    this.tabelle(cls, ziel);
+    this.ansicht === 'benotung' ? this.benotung(cls, ziel) : this.tabelle(cls, ziel);
   },
 
-  tabelle(cls, ziel) {
+  /* Bestwerte je Kind und „spiel|stufe“: Gesamt aus den Bestwerten, sonst aus
+     dem Verlauf im Zeitraum (beste Runde und Zahl der Runden darin) */
+  werte(tage) {
     const { daten } = this.ergebnis;
-    const tage = Number(this.filter.zeitraum);
     const seit = tage ? Date.now() / 1000 - tage * 86400 : 0;
-    const spiele = MT_SPIELE.filter(s => (!this.filter.bereich || s.bereich === this.filter.bereich) && (!this.filter.spiel || s.id === this.filter.spiel));
-    const einSpiel = this.filter.spiel ? spiele[0] : null;
-    const stufe = this.filter.stufe === '' ? null : Number(this.filter.stufe);
-    // Spalten: bei einem Spiel dessen Stufen, sonst die Spiele
-    const spalten = einSpiel
-      ? einSpiel.stufen.map((n, i) => ({ titel: n, spiel: einSpiel.id, stufen: [i] })).filter(sp => stufe === null || sp.stufen[0] === stufe)
-      : spiele.map(s => ({ titel: s.titel, kurz: s.bereich, spiel: s.id, stufen: stufe === null ? s.stufen.map((_, i) => i) : [stufe] }));
-
-    // Werte je Kind: Gesamt = Bestwerte, sonst aus dem Verlauf im Zeitraum
     const werte = {};
     if (!tage) {
       daten.schueler.forEach(k => {
@@ -353,6 +380,21 @@ const Musiktrainer = {
         w.runden++;
       });
     }
+    return werte;
+  },
+
+  tabelle(cls, ziel) {
+    const { daten } = this.ergebnis;
+    const tage = Number(this.filter.zeitraum);
+    const spiele = MT_SPIELE.filter(s => (!this.filter.bereich || s.bereich === this.filter.bereich) && (!this.filter.spiel || s.id === this.filter.spiel));
+    const einSpiel = this.filter.spiel ? spiele[0] : null;
+    const stufe = this.filter.stufe === '' ? null : Number(this.filter.stufe);
+    // Spalten: bei einem Spiel dessen Stufen, sonst die Spiele
+    const spalten = einSpiel
+      ? einSpiel.stufen.map((n, i) => ({ titel: n, spiel: einSpiel.id, stufen: [i] })).filter(sp => stufe === null || sp.stufen[0] === stufe)
+      : spiele.map(s => ({ titel: s.titel, kurz: s.bereich, spiel: s.id, stufen: stufe === null ? s.stufen.map((_, i) => i) : [stufe] }));
+
+    const werte = this.werte(tage);
     const zelle = (id, sp) => sp.stufen.reduce((a, i) => {
       const v = werte[id]?.[`${sp.spiel}|${i}`];
       if (v) { a.sterne += v.sterne; a.runden += v.runden; }
@@ -378,7 +420,7 @@ const Musiktrainer = {
       zuletzt: (a, b) => b.k.zuletzt - a.k.zuletzt,
     };
     zeilen.sort(sortierer[this.filter.sortierung]);
-    const maxSterne = spalten.map(sp => sp.stufen.length * 3);
+    const maxSterne = spalten.map(sp => sp.stufen.length * this.STERNE);
     const zuletzt = t => {
       if (!t) return 'noch nie';
       const d = Math.floor((Date.now() / 1000 - t) / 86400);
@@ -404,7 +446,99 @@ const Musiktrainer = {
         </tbody>
       </table>
       </div>
-      <p class="hint">Zahl = Sterne (höchstens 3 je Stufe). Fahre über ein Feld für die Zahl der Runden.</p>`;
+      <p class="hint">Zahl = Sterne (höchstens 6 je Stufe; 6 Sterne = Note 1). Fahre über ein Feld für die Zahl der Runden.
+        Für Noten: Ansicht „Benotung“.</p>`;
+  },
+
+  /* ---------- Benotung: nur ausgewählte Spiele/Stufen, Note je Aufgabe und Schnitt ---------- */
+  auswahlHtml(mt) {
+    const gewaehlt = new Set(mt.benotung || []);
+    const bereiche = [...new Set(MT_SPIELE.map(s => s.bereich))];
+    return `
+      <details class="mt-auswahl" ${gewaehlt.size ? '' : 'open'}>
+        <summary>Spiele für die Note (${gewaehlt.size} gewählt)</summary>
+        ${bereiche.map(b => `
+          <div class="mt-auswahl-bereich"><strong>${b}</strong>
+            ${MT_SPIELE.filter(s => s.bereich === b).map(sp => `
+              <div class="mt-auswahl-spiel"><span>${this.esc(sp.titel)}</span>
+                ${sp.stufen.map((n, i) => `<label class="mt-chip"><input type="checkbox" data-wahl="${sp.id}|${i}" ${gewaehlt.has(`${sp.id}|${i}`) ? 'checked' : ''}>${this.esc(n)}</label>`).join('')}
+              </div>`).join('')}
+          </div>`).join('')}
+      </details>`;
+  },
+
+  /* Zeilen für die Benotung: je gewählter Aufgabe die Note (7 − beste Sterne) und der Schnitt */
+  notenZeilen(cls) {
+    const mt = cls.musiktrainer;
+    const auswahl = (mt.benotung || []).map(w => {
+      const [id, i] = w.split('|');
+      const sp = MT_SPIELE.find(s => s.id === id);
+      return sp ? { schluessel: w, spiel: sp, stufe: Number(i) } : null;
+    }).filter(Boolean);
+    // Reihenfolge wie in der Spielliste, nicht wie angeklickt
+    auswahl.sort((a, b) => MT_SPIELE.indexOf(a.spiel) - MT_SPIELE.indexOf(b.spiel) || a.stufe - b.stufe);
+    const werte = this.werte(Number(this.filter.zeitraum));
+    const nachId = new Map(cls.students.filter(s => s.mt).map(s => [s.mt.id, s]));
+    const zeilen = this.ergebnis.daten.schueler.filter(k => nachId.has(k.id)).map(k => {
+      const s = nachId.get(k.id);
+      const noten = auswahl.map(a => {
+        const v = werte[k.id]?.[a.schluessel];
+        return v && v.sterne ? 7 - v.sterne : null;
+      });
+      const zaehlen = noten.map(n => (n === null && mt.fehltAls6 ? 6 : n)).filter(n => n !== null);
+      return {
+        name: this.name(s), noten,
+        gespielt: noten.filter(n => n !== null).length,
+        schnitt: zaehlen.length ? zaehlen.reduce((a, n) => a + n, 0) / zaehlen.length : null,
+      };
+    });
+    zeilen.sort(this.filter.sortierung === 'schnitt'
+      ? (a, b) => (a.schnitt ?? 99) - (b.schnitt ?? 99)
+      : (a, b) => a.name.localeCompare(b.name, 'de'));
+    return { auswahl, zeilen };
+  },
+
+  komma(x) { return x === null ? '–' : x.toFixed(1).replace('.', ','); },
+
+  benotung(cls, ziel) {
+    const { auswahl, zeilen } = this.notenZeilen(cls);
+    const tage = Number(this.filter.zeitraum);
+    if (!auswahl.length) {
+      ziel.innerHTML = '<p class="hint">Wähle oben die Spiele und Stufen aus, die in die Note einfließen sollen.</p>';
+      return;
+    }
+    ziel.innerHTML = `
+      <p class="hint">Note je Aufgabe aus der besten Runde ${tage ? `der letzten ${tage} Tage` : 'insgesamt'}
+        (6 Sterne = 1 … 1 Stern = 6). ${cls.musiktrainer.fehltAls6 ? 'Nicht Gespieltes zählt als 6.' : 'Nicht Gespieltes zählt nicht mit.'}</p>
+      <div class="mt-tabelle-rahmen">
+      <table class="mt-tabelle mt-noten">
+        <thead><tr><th>Name</th>
+          ${auswahl.map(a => `<th title="${this.esc(`${a.spiel.bereich}: ${a.spiel.titel} – ${a.spiel.stufen[a.stufe]}`)}"><span class="mt-kurz">${this.esc(a.spiel.titel)}</span>${this.esc(a.spiel.stufen[a.stufe])}</th>`).join('')}
+          <th>Schnitt</th><th>Gespielt</th></tr></thead>
+        <tbody>
+          ${zeilen.map(z => `<tr class="${z.gespielt < auswahl.length ? 'mt-ohne' : ''}">
+            <td>${this.esc(z.name)}</td>
+            ${z.noten.map(n => `<td class="mt-note${n ? ` n${n}` : ''}">${n ?? '–'}</td>`).join('')}
+            <td class="mt-summe">${this.komma(z.schnitt)}</td>
+            <td class="hint">${z.gespielt} / ${auswahl.length}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+      </div>
+      <p class="hint">Gelb markiert: hat nicht alle gewählten Aufgaben gespielt. „Kopieren“ legt Name und Schnitt
+        als Liste in die Zwischenablage, z. B. zum Einfügen in eine Notenliste.</p>`;
+  },
+
+  async kopieren(cls) {
+    if (!this.ergebnis) return;
+    const { zeilen } = this.notenZeilen(cls);
+    const text = zeilen.map(z => `${z.name}\t${this.komma(z.schnitt)}`).join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      alert(`${zeilen.length} Zeilen kopiert (Name und Schnitt).`);
+    } catch {
+      prompt('Kopieren ging nicht automatisch – hier markieren und kopieren:', text);
+    }
   },
 
   /* ---------- Beamer und Druck ---------- */

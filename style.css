@@ -2551,3 +2551,18 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
   .mt-karte-zeile span { color: #555; font-size: 9pt; }
   .mt-karte-zeile b { font-family: Menlo, monospace; font-size: 12pt; }
 }
+
+/* Benotung */
+.mt-ansicht { display: flex; gap: .3rem; margin-top: .6rem; }
+.mt-haken { flex-direction: row !important; align-items: center; gap: .35rem !important; font-size: .85rem !important; color: var(--text) !important; }
+.mt-auswahl { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .5rem .8rem; margin-bottom: .8rem; }
+.mt-auswahl summary { cursor: pointer; font-weight: 600; }
+.mt-auswahl-bereich { margin-top: .6rem; }
+.mt-auswahl-spiel { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; margin: .3rem 0 0 .6rem; }
+.mt-auswahl-spiel > span { min-width: 9rem; font-size: .9rem; }
+.mt-chip { display: inline-flex; align-items: center; gap: .25rem; font-size: .8rem; padding: .15rem .5rem; border: 1px solid var(--border); border-radius: 99px; cursor: pointer; }
+.mt-chip:has(input:checked) { background: var(--active-soft); border-color: var(--accent); }
+.mt-noten .mt-note { font-weight: 700; }
+.mt-note.n1, .mt-note.n2 { background: color-mix(in srgb, var(--green) 22%, transparent); }
+.mt-note.n3, .mt-note.n4 { background: color-mix(in srgb, var(--yellow) 18%, transparent); }
+.mt-note.n5, .mt-note.n6 { background: var(--danger-bg); }
