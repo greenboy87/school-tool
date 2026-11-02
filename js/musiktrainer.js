@@ -54,7 +54,7 @@ const Musiktrainer = {
   ergebnis: null,          // { klasseId, daten } – zuletzt geladene Auswertung (Verlauf eines Jahres)
   filter: { zeitraum: '0', sortierung: 'name' },
   score: false,            // Schalter Noten ⟷ Score
-  scoreArt: 'sterne',      // Score: 'sterne' (5/6), 'prozent' (richtig) oder 'punkte'
+  scoreArt: 'sterne',      // Score: 'sterne' (5/6), 'prozent' (richtig), 'richtige' (beste Runde) oder 'punkte'
   STERNE: 6,               // 6 Sterne = Note 1 … 1 Stern = Note 6
 
   init() {
@@ -210,7 +210,7 @@ const Musiktrainer = {
           <span>Score</span>
         </label>
         ${this.score ? `<label>Score <select data-score-art>
-          ${[['sterne', 'Sterne (z. B. 5/6)'], ['prozent', 'Prozent richtig'], ['punkte', 'Punkte']]
+          ${[['sterne', 'Sterne (z. B. 5/6)'], ['prozent', 'Prozent richtig'], ['richtige', 'Richtige (beste Runde)'], ['punkte', 'Punkte']]
             .map(([v, t]) => `<option value="${v}" ${this.scoreArt === v ? 'selected' : ''}>${t}</option>`).join('')}
         </select></label>` : ''}
         <label>Zeitraum <select data-filter="zeitraum">
@@ -489,6 +489,8 @@ const Musiktrainer = {
           beste: liste.map(v => v.sterne).sort((x, y) => y - x).slice(0, 3),
           prozent: mitAnteil.length ? schnitt3(mitAnteil.map(v => Math.min(100, 100 * v.richtig / v.von))) : null,
           punkte: Math.max(...liste.map(v => v.punkte)),
+          // Richtige der besten Runde; Blitzlesen gibt 10 Punkte je Note, das geht auch für ältere Runden
+          richtig: Math.max(-1, ...liste.map(v => v.richtig ?? (v.spiel.endsWith('-blitz') ? Math.round(v.punkte / 10) : -1))),
           runden: liste.length,
         };
       });
@@ -555,10 +557,15 @@ const Musiktrainer = {
     if (!v?.sterne) return leer === 'offen' ? `<span class="mt-kreis offen" title="${this.esc(`${was}: noch nicht gespielt`)}">offen</span>` : '<span class="hint">·</span>';
     const note = Math.min(6, 7 - v.sterne);
     const titel = this.esc(`${was}: beste Runden ${v.beste.join(', ')} Sterne → Note ${this.kurz(note)}${
-      v.prozent !== null ? `, ${Math.round(v.prozent)} % richtig` : ''}, Rekord ${v.punkte} Punkte, ${v.runden}× gespielt`);
+      v.prozent !== null ? `, ${Math.round(v.prozent)} % richtig` : ''}${v.richtig >= 0 ? `, beste Runde ${v.richtig} richtig` : ''}, Rekord ${v.punkte} Punkte, ${v.runden}× gespielt`);
     const modus = this.modus();
     if (modus === 'sterne') return `<span class="mt-wert n${Math.round(note)}" title="${titel}">${this.kurz(v.sterne)}/${this.STERNE}</span>`;
     if (modus === 'punkte') return `<span class="mt-wert" title="${titel}">${v.punkte}</span>`;
+    if (modus === 'richtige') {
+      if (v.richtig < 0) return `<span class="hint" title="${this.esc(`${was}: vor dem Update am 01.11.2026 gespielt`)}">–</span>`;
+      const blitz = spiel.id.endsWith('-blitz');
+      return `<span class="mt-wert" title="${titel}">${v.richtig}${blitz ? '' : '/10'}</span>`;
+    }
     if (modus === 'prozent') {
       return v.prozent === null
         ? `<span class="hint" title="${this.esc(`${was}: vor dem Update am 01.11.2026 gespielt – da wurden die richtigen Antworten noch nicht gespeichert`)}">–</span>`
@@ -582,6 +589,10 @@ const Musiktrainer = {
       const st = z.bestwerte.reduce((a, v) => a + (v?.sterne || 0), 0);
       return { html: `<span class="mt-wert gesamt">${this.kurz(st)}/${spalten.length * this.STERNE}</span>`, zahl: z.gespielt ? st : null };
     }
+    if (modus === 'richtige') {
+      const n = z.bestwerte.reduce((a, v) => a + (v?.sterne && v.richtig > 0 ? v.richtig : 0), 0);
+      return { html: `<span class="mt-wert gesamt">${n}</span>`, zahl: z.gespielt ? n : null };
+    }
     if (modus === 'punkte') {
       const pk = z.bestwerte.reduce((a, v) => a + (v?.sterne ? v.punkte : 0), 0);
       return { html: `<span class="mt-wert gesamt">${pk}</span>`, zahl: z.gespielt ? pk : null };
@@ -601,6 +612,8 @@ const Musiktrainer = {
       sterne: 'Sterne im Schnitt der 3 besten Runden (6/6 = Note 1 … 1/6 = Note 6). Rechts alle zusammen von den möglichen.',
       prozent: `Richtig beantwortet im Schnitt der 3 besten Runden, von 10 Aufgaben (Blitzlesen: richtige Noten vom Ziel für
         die 1, höchstens 100&nbsp;%). Gespeichert erst seit dem Update vom 01.11.2026 – ältere Runden zeigen –. Rechts der Durchschnitt.`,
+      richtige: `Richtige Antworten der besten Runde, von 10 (Blitzlesen: Noten in 60 Sekunden – auch für ältere Runden,
+        aus den Punkten). Rechts alle zusammen.`,
       punkte: `Punkte-Rekord: die beste Runde, 10 je richtige Antwort und ein Bonus für Serien, höchstens 170 (Blitzlesen:
         10 je Note). Rechts alle zusammen.`,
     }[this.modus()];
@@ -825,7 +838,7 @@ const Musiktrainer = {
       <div class="mt-beamer-kopf">
         <div>
           <h2>${this.esc(cls.name)} · ${this.esc(this.kategorienText(mt, true))}</h2>
-          <p>${{ note: 'Note', sterne: 'Sterne', prozent: 'Prozent richtig', punkte: 'Punkte-Rekord' }[modus]} je Aufgabe${modus === 'punkte' ? '' : ' – Schnitt deiner 3 besten Runden'}. Üben lohnt sich!</p>
+          <p>${{ note: 'Note', sterne: 'Sterne', prozent: 'Prozent richtig', richtige: 'Richtige der besten Runde', punkte: 'Punkte-Rekord' }[modus]} je Aufgabe${['punkte', 'richtige'].includes(modus) ? '' : ' – Schnitt deiner 3 besten Runden'}. Üben lohnt sich!</p>
         </div>
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
@@ -847,7 +860,7 @@ const Musiktrainer = {
       </div>
       <div class="mt-beamer-fuss">
         <label>Anzeige <select class="mt-sb-anzeige">
-          ${[['note', 'Noten'], ['sterne', 'Sterne'], ['prozent', 'Prozent richtig'], ['punkte', 'Punkte']]
+          ${[['note', 'Noten'], ['sterne', 'Sterne'], ['prozent', 'Prozent richtig'], ['richtige', 'Richtige'], ['punkte', 'Punkte']]
             .map(([v, t]) => `<option value="${v}" ${modus === v ? 'selected' : ''}>${t}</option>`).join('')}
         </select></label>
         <label><input type="checkbox" class="mt-sb-namen" ${vornamen ? 'checked' : ''}> Vornamen (sonst Benutzernamen)</label>
