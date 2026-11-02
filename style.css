@@ -2570,6 +2570,7 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-kategorien { display: flex; flex-direction: column; gap: .4rem; margin: .9rem 0 .2rem; }
 .mt-kat-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
 .mt-kat-titel { min-width: 4.5rem; font-size: .78rem; color: var(--muted); }
+.mt-kat-bereich { min-width: 5.2rem; font-size: .75rem; font-weight: 600; color: var(--muted); }
 .mt-chip .hint { font-size: .72rem; }
 .mt-knoepfe { margin: 0 0 .6rem; }
 .mt-meine-note { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: 0 0 .4rem; }

@@ -15,16 +15,20 @@
    Gelesen wird nur auf Knopfdruck bzw. beim Öffnen des Reiters, je Klasse
    wenige Kilobyte; Firebase ist nicht beteiligt. */
 
-/* Muss zur Spielliste in music-trainer/js/spiele.js und notenspiele.js passen */
+/* Muss zur Spielliste in music-trainer/js/spiele.js und notenspiele.js passen. Neue Stufen
+   hängen hinten an, weil Ergebnisse und „benotung“ an der Stufennummer hängen; „reihe“
+   gibt wie im music-trainer die Reihenfolge zum Anzeigen. */
 const MT_SPIELE = (() => {
-  const vier = ['Junior', 'Anfänger', 'Fortgeschritten', 'Profi'];
-  const noten = (art, bereich) => [
+  const vier = { stufen: ['Junior', 'Anfänger', 'Fortgeschritten', 'Profi'] };
+  // Stammtöne: Junior 2 und Anfänger 2 kamen im November 2026 dazu
+  const sechs = { stufen: ['Junior 1', 'Anfänger 1', 'Fortgeschritten', 'Profi', 'Junior 2', 'Anfänger 2'], reihe: [0, 4, 1, 5, 2, 3] };
+  const noten = (art, bereich, stufen) => [
     ['lesen', 'Noten lesen'], ['blitz', 'Blitzlesen'], ['taste', 'Note → Taste'],
     ['schreiben', 'Noten schreiben'], ['kette', 'Notenkette'],
-  ].map(([id, titel]) => ({ id: `${art}-${id}`, bereich, titel, stufen: vier }));
+  ].map(([id, titel]) => ({ id: `${art}-${id}`, bereich, titel, ...stufen }));
   return [
-    ...noten('stamm', 'Stammtöne'),
-    ...noten('vz', 'Vorzeichen'),
+    ...noten('stamm', 'Stammtöne', sechs),
+    ...noten('vz', 'Vorzeichen', vier),
     { id: 'hoch-tief', bereich: 'Hören', titel: 'Hoch oder tief?', stufen: ['Große Sprünge', 'Kleine Schritte', 'Ganz knapp'] },
     { id: 'intervall', bereich: 'Hören', titel: 'Intervall-Ohr', stufen: ['Prime, Quinte, Oktave', 'Dazu Terz und Quarte', 'Alle Intervalle', 'In Noten: Sekunde bis Quinte', 'In Noten: bis zur Oktave'] },
     { id: 'dur-moll', bereich: 'Hören', titel: 'Akkorde hören', stufen: ['Junior', 'Anfänger', 'Fortgeschritten', 'Profi', 'Profi 2', 'Profi 3'] },
@@ -233,30 +237,52 @@ const Musiktrainer = {
   },
 
   /* ---------- Kategorien: welche Spiele und Stufen die Tabelle zeigt und benotet ---------- */
-  /* Je Klasse gemerkt: { bereiche, ohne (abgewählte Spiele), stufen }. Ohne gespeicherte Wahl:
-     aus der bisherigen Auswahl für die Note, sonst Stammtöne Junior und Anfänger. */
+  /* Je Klasse gemerkt: { bereiche, ohne (abgewählte Spiele), stufenJe: { Bereich: [Stufennummern] } };
+     ein Bereich ohne eigene Wahl nimmt „stufen“ (bis November 2026 galt das für alle). Ohne
+     gespeicherte Wahl: aus der bisherigen Auswahl für die Note, sonst Stammtöne Junior 1 und Anfänger 1. */
   kategorien(mt) {
     if (!mt.kategorien) {
       const alt = (mt.benotung || []).map(w => w.split('|')).filter(([id]) => MT_SPIELE.some(sp => sp.id === id));
       const spiele = new Set(alt.map(([id]) => id));
       const bereiche = [...new Set(MT_SPIELE.filter(sp => spiele.has(sp.id)).map(sp => sp.bereich))];
+      const bereichVon = id => MT_SPIELE.find(sp => sp.id === id).bereich;
       mt.kategorien = alt.length
         ? {
           bereiche,
           ohne: MT_SPIELE.filter(sp => bereiche.includes(sp.bereich) && !spiele.has(sp.id)).map(sp => sp.id),
-          stufen: [...new Set(alt.map(([, i]) => Number(i)))].sort((x, y) => x - y),
+          stufen: [0, 1],
+          stufenJe: Object.fromEntries(bereiche.map(b =>
+            [b, [...new Set(alt.filter(([id]) => bereichVon(id) === b).map(([, i]) => Number(i)))]])),
         }
         : { bereiche: ['Stammtöne'], ohne: [], stufen: [0, 1] };
     }
     return mt.kategorien;
   },
 
-  /* Die Spalten: gewählte Bereiche × Spiele × Stufen, in der Reihenfolge der Spielliste */
+  /* Die gewählten Stufen eines Bereichs */
+  stufenVon(k, bereich) { return k.stufenJe?.[bereich] || k.stufen || []; },
+
+  /* Die Spalten: gewählte Bereiche × Spiele × Stufen, in der Reihenfolge der Spielliste und der Stufen */
   spalten(mt) {
     const k = this.kategorien(mt);
     return MT_SPIELE.filter(sp => k.bereiche.includes(sp.bereich) && !k.ohne.includes(sp.id))
-      .flatMap(sp => [...k.stufen].sort((x, y) => x - y).filter(i => i < sp.stufen.length)
+      .flatMap(sp => this.reihe(sp).filter(i => this.stufenVon(k, sp.bereich).includes(i))
         .map(i => ({ spiel: sp, stufe: i, schluessel: `${sp.id}|${i}` })));
+  },
+
+  /* Stufennummern eines Spiels in der Reihenfolge zum Spielen */
+  reihe(sp) { return sp.reihe || sp.stufen.map((_, i) => i); },
+
+  /* Die Stufen der Spiele eines Bereichs als Liste [{ i, name, titel }]: beim Namen, wenn die Spiele
+     ihre Stufen gleich nennen, in der Reihenfolge zum Spielen; sonst „Stufe 1, 2 …“ (Namen im Tooltip) */
+  stufenListe(spiele) {
+    const zahl = Math.max(0, ...spiele.map(sp => sp.stufen.length));
+    const namen = i => [...new Set(spiele.map(sp => sp.stufen[i]).filter(Boolean))];
+    const nummern = Array.from({ length: zahl }, (_, i) => i);
+    if (nummern.some(i => namen(i).length > 1))
+      return nummern.map(i => ({ i, name: `Stufe ${i + 1}`, titel: namen(i).join(' · ') }));
+    const lang = [...spiele].sort((a, b) => b.stufen.length - a.stufen.length);
+    return [...new Set(lang.flatMap(sp => this.reihe(sp)))].map(i => ({ i, name: namen(i)[0], titel: '' }));
   },
 
   kategorienHtml(mt) {
@@ -264,12 +290,11 @@ const Musiktrainer = {
     const bereiche = [...new Set(MT_SPIELE.map(sp => sp.bereich))];
     const spiele = MT_SPIELE.filter(sp => k.bereiche.includes(sp.bereich));
     const aktiv = spiele.filter(sp => !k.ohne.includes(sp.id));
-    const stufenZahl = Math.max(0, ...aktiv.map(sp => sp.stufen.length));
-    // Stufen beim Namen nennen, wenn alle gewählten Spiele dieselben haben (Stammtöne, Vorzeichen)
-    const gleich = aktiv.length && aktiv.every(sp => sp.stufen.join() === aktiv[0].stufen.join());
+    // Stufen je Bereich, bei mehreren Bereichen eine Zeile für jeden
+    const mitStufen = bereiche.filter(b => aktiv.some(sp => sp.bereich === b));
     const doppelt = sp => spiele.filter(x => x.titel === sp.titel).length > 1;
-    const chip = (art, wert, an, text, titel = '') => `<label class="mt-chip"${titel ? ` title="${this.esc(titel)}"` : ''}>
-      <input type="checkbox" data-kat="${art}" value="${this.esc(wert)}" ${an ? 'checked' : ''}>${text}</label>`;
+    const chip = (art, wert, an, text, titel = '', bereich = '') => `<label class="mt-chip"${titel ? ` title="${this.esc(titel)}"` : ''}>
+      <input type="checkbox" data-kat="${art}" value="${this.esc(wert)}"${bereich ? ` data-bereich="${this.esc(bereich)}"` : ''} ${an ? 'checked' : ''}>${text}</label>`;
     return `
       <div class="mt-kategorien">
         <div class="mt-kat-zeile"><span class="mt-kat-titel">Bereich</span>
@@ -277,24 +302,26 @@ const Musiktrainer = {
         ${spiele.length ? `
         <div class="mt-kat-zeile"><span class="mt-kat-titel">Spiel</span>
           ${spiele.map(sp => chip('spiel', sp.id, !k.ohne.includes(sp.id),
-            this.esc(sp.titel) + (doppelt(sp) ? ` <span class="hint">${this.esc(sp.bereich)}</span>` : ''), `${sp.bereich}: ${sp.titel}`)).join('')}</div>
-        <div class="mt-kat-zeile"><span class="mt-kat-titel">Stufe</span>
-          ${Array.from({ length: stufenZahl }, (_, i) => chip('stufe', i, k.stufen.includes(i),
-            gleich ? this.esc(aktiv[0].stufen[i]) : `Stufe ${i + 1}`,
-            [...new Set(aktiv.map(sp => sp.stufen[i]).filter(Boolean))].join(' · '))).join('')}</div>` : ''}
+            this.esc(sp.titel) + (doppelt(sp) ? ` <span class="hint">${this.esc(sp.bereich)}</span>` : ''), `${sp.bereich}: ${sp.titel}`)).join('')}</div>` : ''}
+        ${mitStufen.map((b, n) => `
+        <div class="mt-kat-zeile"><span class="mt-kat-titel">${n ? '' : 'Stufe'}</span>
+          ${mitStufen.length > 1 ? `<span class="mt-kat-bereich">${this.esc(b)}</span>` : ''}
+          ${this.stufenListe(aktiv.filter(sp => sp.bereich === b)).map(s =>
+            chip('stufe', s.i, this.stufenVon(k, b).includes(s.i), this.esc(s.name), s.titel, b)).join('')}</div>`).join('')}
       </div>`;
   },
 
-  /* Kurzbeschreibung der Wahl, z. B. „Stammtöne · Junior, Anfänger“ – für Scoreboard und Notenspalte;
+  /* Kurzbeschreibung der Wahl, z. B. „Stammtöne · Junior 1, Junior 2“ – für Scoreboard und Notenspalte;
      kurz: ohne die Liste abgewählter Spiele (Überschrift am Beamer) */
   kategorienText(mt, kurz) {
     const k = this.kategorien(mt);
     const spalten = this.spalten(mt);
-    const spiele = [...new Set(spalten.map(s => s.spiel))];
-    const gleich = spiele.length && spiele.every(sp => sp.stufen.join() === spiele[0].stufen.join());
-    const stufen = [...k.stufen].sort((x, y) => x - y).map(i => (gleich ? spiele[0].stufen[i] : `Stufe ${i + 1}`)).filter(Boolean);
+    const teile = [...new Set(spalten.map(s => s.spiel.bereich))].map(b => {
+      const spiele = [...new Set(spalten.filter(s => s.spiel.bereich === b).map(s => s.spiel))];
+      return `${b} · ${this.stufenListe(spiele).filter(s => this.stufenVon(k, b).includes(s.i)).map(s => s.name).join(', ')}`;
+    });
     const ohne = MT_SPIELE.filter(sp => k.bereiche.includes(sp.bereich) && k.ohne.includes(sp.id)).map(sp => sp.titel);
-    return `${k.bereiche.join(' + ')} · ${stufen.join(', ')}${ohne.length && !kurz ? ` (ohne ${ohne.join(', ')})` : ''}`;
+    return `${teile.join(' + ') || k.bereiche.join(' + ')}${ohne.length && !kurz ? ` (ohne ${ohne.join(', ')})` : ''}`;
   },
 
   async klick(e) {
@@ -362,7 +389,10 @@ const Musiktrainer = {
       const { kat } = e.target.dataset, wert = e.target.value, an = e.target.checked;
       if (kat === 'bereich') k.bereiche = an ? [...k.bereiche, wert] : k.bereiche.filter(x => x !== wert);
       if (kat === 'spiel') k.ohne = an ? k.ohne.filter(x => x !== wert) : [...k.ohne, wert];
-      if (kat === 'stufe') k.stufen = an ? [...k.stufen, Number(wert)] : k.stufen.filter(x => x !== Number(wert));
+      if (kat === 'stufe') {
+        const b = e.target.dataset.bereich, alt = this.stufenVon(k, b);
+        k.stufenJe = { ...k.stufenJe, [b]: an ? [...alt, Number(wert)] : alt.filter(x => x !== Number(wert)) };
+      }
       Classes.persist();
       return this.render();
     }
@@ -491,10 +521,13 @@ const Musiktrainer = {
   },
 
   /* ---------- Notentabelle: je Spiel und Stufe ein Feld ---------- */
-  STUFE_KURZ: { Junior: 'J', Anfänger: 'A', Fortgeschritten: 'F', Profi: 'P', 'Profi 2': 'P2', 'Profi 3': 'P3' },
+  STUFE_KURZ: {
+    Junior: 'J', 'Junior 1': 'J1', 'Junior 2': 'J2', Anfänger: 'A', 'Anfänger 1': 'A1', 'Anfänger 2': 'A2',
+    Fortgeschritten: 'F', Profi: 'P', 'Profi 2': 'P2', 'Profi 3': 'P3',
+  },
 
   /* Zwei Kopfzeilen: oben das Spiel über seinen Stufen, darunter die Stufe kurz
-     (J, A, F, P; sonst die Nummer, der Name steht im Tooltip). spalten = [{ spiel, stufe }] */
+     (J1, J2, A1 …; sonst die Nummer, der Name steht im Tooltip). spalten = [{ spiel, stufe }] */
   kopf(spalten) {
     const gruppen = [];
     spalten.forEach(s => {
@@ -505,7 +538,7 @@ const Musiktrainer = {
     return {
       oben: gruppen.map(g => `<th colspan="${g.n}" class="mt-spielkopf" title="${this.esc(`${g.spiel.bereich}: ${g.spiel.titel}`)}">
         <span class="mt-kurz">${this.esc(g.spiel.bereich)}</span>${this.esc(g.spiel.titel)}</th>`).join(''),
-      unten: spalten.map(s => `<th class="mt-stufenkopf" title="${this.esc(s.spiel.stufen[s.stufe])}">${this.STUFE_KURZ[s.spiel.stufen[s.stufe]] || s.stufe + 1}</th>`).join(''),
+      unten: spalten.map(s => `<th class="mt-stufenkopf" title="${this.esc(s.spiel.stufen[s.stufe])}">${this.STUFE_KURZ[s.spiel.stufen[s.stufe]] || this.reihe(s.spiel).indexOf(s.stufe) + 1}</th>`).join(''),
     };
   },
 
@@ -559,8 +592,9 @@ const Musiktrainer = {
   },
 
   legende(spalten) {
-    const kurz = spalten.some(s => this.STUFE_KURZ[s.spiel.stufen[s.stufe]]);
-    const nummer = spalten.some(s => !this.STUFE_KURZ[s.spiel.stufen[s.stufe]]);
+    const namen = [...new Set(spalten.map(s => s.spiel.stufen[s.stufe]))];
+    const kurz = namen.filter(n => this.STUFE_KURZ[n]).map(n => `${this.STUFE_KURZ[n]} = ${n}`);
+    const nummer = namen.some(n => !this.STUFE_KURZ[n]);
     const text = {
       note: `Note je Aufgabe aus dem Schnitt der 3 besten Runden (wer weniger gespielt hat: der gespielten);
         6&nbsp;Sterne = 1 · 5 = 2 · 4 = 3 · 3 = 4 · 2 = 5 · 1&nbsp;Stern = 6. Rechts der Durchschnitt.`,
@@ -571,7 +605,7 @@ const Musiktrainer = {
         10 je Note). Rechts alle zusammen.`,
     }[this.modus()];
     return `<p class="hint mt-legende">${text}
-      ${kurz ? 'J, A, F, P = Junior, Anfänger, Fortgeschritten, Profi.' : ''} ${nummer ? 'Zahlen = Stufe 1, 2, 3 …' : ''}
+      ${kurz.length ? `${kurz.join(', ')}.` : ''} ${nummer ? 'Zahlen = Stufe 1, 2, 3 …' : ''}
       Runden, Tage und Zeit zählen alle Spiele im Zeitraum; Tage = an wie vielen Tagen angemeldet im music-trainer,
       Zeit = Dauer der Runden (gemessen seit 01.11.2026). Fahre über ein Feld für die Einzelheiten.</p>`;
   },
@@ -1103,7 +1137,8 @@ const Musiktrainer = {
     const zelle = (k, sp) => {
       let runden = 0;
       const noten = [], info = [];
-      sp.spiele.forEach(spiel => spiel.stufen.forEach((n, i) => {
+      sp.spiele.forEach(spiel => this.reihe(spiel).forEach(i => {
+        const n = spiel.stufen[i];
         const v = k.fortschritt[spiel.id]?.[i];
         const note = v?.sterne ? 7 - v.sterne : null;
         noten.push({ note, stufe: n });
