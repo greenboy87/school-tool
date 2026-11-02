@@ -591,11 +591,11 @@ const Musiktrainer = {
     }
     if (modus === 'richtige') {
       const n = z.bestwerte.reduce((a, v) => a + (v?.sterne && v.richtig > 0 ? v.richtig : 0), 0);
-      return { html: `<span class="mt-wert gesamt">${n}</span>`, zahl: z.gespielt ? n : null };
+      return { html: z.gespielt ? `<span class="mt-wert gesamt">${n}</span>` : '<span class="hint">–</span>', zahl: z.gespielt ? n : null };
     }
     if (modus === 'punkte') {
       const pk = z.bestwerte.reduce((a, v) => a + (v?.sterne ? v.punkte : 0), 0);
-      return { html: `<span class="mt-wert gesamt">${pk}</span>`, zahl: z.gespielt ? pk : null };
+      return { html: z.gespielt ? `<span class="mt-wert gesamt">${pk}</span>` : '<span class="hint">–</span>', zahl: z.gespielt ? pk : null };
     }
     const liste = z.bestwerte.map(v => (v?.sterne ? v.prozent : mt.fehltAls6 ? 0 : null)).filter(p => p !== null);
     const p = liste.length ? Math.round(liste.reduce((a, x) => a + x, 0) / liste.length) : null;
@@ -687,7 +687,7 @@ const Musiktrainer = {
       <table class="mt-tabelle mt-notentabelle">
         <thead>
           <tr><th rowspan="2">Name</th>${oben}
-            <th rowspan="2" class="mt-gesamtkopf">${{ note: 'Note', sterne: 'Sterne', prozent: 'Ø %', punkte: 'Punkte' }[modus]}</th>
+            <th rowspan="2" class="mt-gesamtkopf">${{ note: 'Note', sterne: 'Sterne', prozent: 'Ø %', richtige: 'Richtige', punkte: 'Punkte' }[modus]}</th>
             <th rowspan="2" title="Runden in allen Spielen">Runden</th><th rowspan="2" title="Tage, an denen das Kind angemeldet im music-trainer war">Tage</th>
             <th rowspan="2" title="Übungszeit (gemessen seit 01.11.2026)">Zeit</th><th rowspan="2">Zuletzt</th></tr>
           <tr>${unten}</tr>
@@ -846,7 +846,7 @@ const Musiktrainer = {
       <table class="mt-tabelle mt-notentabelle mt-scoreboard">
         <thead>
           <tr><th rowspan="2">Platz</th><th rowspan="2">Name</th>${oben}
-            <th rowspan="2" class="mt-gesamtkopf">${{ note: 'Note', sterne: 'Sterne', prozent: 'Ø %', punkte: 'Punkte' }[modus]}</th></tr>
+            <th rowspan="2" class="mt-gesamtkopf">${{ note: 'Note', sterne: 'Sterne', prozent: 'Ø %', richtige: 'Richtige', punkte: 'Punkte' }[modus]}</th></tr>
           <tr>${unten}</tr>
         </thead>
         <tbody>
