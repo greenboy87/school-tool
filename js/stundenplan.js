@@ -185,6 +185,8 @@ const Stundenplan = {
       if (e.target.closest('.plan-notiz')) return;      // ins Notizfeld klicken = schreiben
       const link = e.target.closest('[data-klasse]');
       if (link) { this.klasseOeffnen(link.dataset.klasse); return; }
+      const bild = e.target.closest('[data-bilder]');
+      if (bild) { this.bilderZeigen(bild.dataset.bilder.split(',')); return; }
       const thema = e.target.closest('[data-thema]');
       if (thema) { this.themaBearbeiten(thema.dataset.thema); return; }
       const nehmen = e.target.closest('[data-uebernehmen]');
@@ -1022,7 +1024,7 @@ const Stundenplan = {
     this.merken('Verschieben auf die nächste Stunde');
     const k = this.buchSchluessel(ziel);
     const neu = buch[k] || (buch[k] = {});
-    for (const feld of ['th', 'm', 'g', 's', 'i', 'p']) if (rec[feld] !== undefined) { neu[feld] = rec[feld]; delete rec[feld]; }
+    for (const feld of ['th', 'm', 'g', 's', 'i', 'p', 'bi']) if (rec[feld] !== undefined) { neu[feld] = rec[feld]; delete rec[feld]; }
     if (!Object.keys(rec).length) delete buch[key];
     Classes.persist();
     this.render();
@@ -1168,10 +1170,45 @@ const Stundenplan = {
   /* Vergangene Stunden ins Stundenbuch schreiben. Läuft nach jedem Holen und
      Zeichnen; was sich nicht geändert hat, wird nicht gespeichert. Gibt es zur
      selben Zeit Entfall und Ersatzstunde derselben Klasse, zählt die Ersatzstunde. */
+  /* Gehört eine Stunde inzwischen zu einer anderen Klasse (z. B. Sport, seit
+     „5bd Sp“ eigens erkannt wird, lag vorher bei der Musikklasse 5b), zieht ihr
+     Eintrag dorthin um – sonst stünde er als „nicht mehr im Plan“ bei der alten.
+     Erkannt an Fach und Klassen, die beim Eintrag mitgeschrieben wurden. */
+  buchUmziehen() {
+    let geaendert = false;
+    const buecher = [...Classes.data.classes, this.ohneKlasse()];
+    const belegt = new Set();
+    for (const t of this.termine) {
+      if (t.aufsicht) continue;
+      const c = this.buchKlasse(t);
+      if (c) belegt.add(c.id + '|' + this.buchSchluessel(t));
+    }
+    for (const t of this.termine) {
+      if (t.aufsicht || !t.fach) continue;
+      const ziel = this.buchKlasse(t);
+      if (!ziel) continue;
+      const key = this.buchSchluessel(t), k = this.klassenText(t);
+      for (const c of buecher) {
+        if (c === ziel || belegt.has(c.id + '|' + key)) continue;
+        const rec = (c.stundenbuch || {})[key];
+        if (!rec || rec.f !== t.fach || (rec.k && rec.k !== k)) continue;
+        const mit = { ...rec };
+        // Von selbst eingetragene Themen stammen aus der alten Klasse – weg damit; von Hand Geplantes bleibt
+        if (!mit.m) { delete mit.th; delete mit.z; }
+        delete mit.b;
+        const buch = ziel.stundenbuch || (ziel.stundenbuch = {});
+        buch[key] = { ...mit, ...(buch[key] || {}) };
+        delete c.stundenbuch[key];
+        geaendert = true;
+      }
+    }
+    return geaendert;
+  },
+
   buchFuehren(heuteMit) {
     if (!Classes.data || typeof Lessons === 'undefined') return;
     const jetzt = new Date(), heute = this.tagSchluessel(jetzt);
-    let geaendert = false;
+    let geaendert = this.buchUmziehen();
     const jeStunde = new Map();
     for (const t of this.termine) {
       if (t.aufsicht || t.ende > jetzt) continue;
@@ -1422,6 +1459,64 @@ const Stundenplan = {
     wahlKlasse.onchange = fuellen;
     fuellen();
 
+    /* Bilder zur Stunde: liegen erst beim Speichern in IndexedDB (und damit im
+       Sync-Ast „fotos“) – Abbrechen hinterlässt nichts. Im Stundenbuch steht nur
+       die Kennung (rec.bi). */
+    const bildBox = document.getElementById('plan-dialog-bilder');
+    const bildDatei = document.getElementById('plan-dialog-bilddatei');
+    const bilder = (((cls.stundenbuch || {})[key] || {}).bi || []).map(id => ({ id }));
+    const weg = [];
+    const bilderZeichnen = async () => {
+      (this._dlgUrls || []).forEach(u => URL.revokeObjectURL(u));
+      this._dlgUrls = [];
+      bildBox.innerHTML = '';
+      for (const b of bilder) {
+        if (!b.blob) {
+          const e = await Store.getFoto(b.id).catch(() => null);
+          if (e && e.blob) b.blob = e.blob;
+        }
+        const kachel = document.createElement('div');
+        kachel.className = 'plan-dialog-bild';
+        if (b.blob) {
+          const url = URL.createObjectURL(b.blob);
+          this._dlgUrls.push(url);
+          const img = document.createElement('img');
+          img.src = url; img.alt = 'Bild zur Stunde'; img.title = 'Groß zeigen';
+          img.onclick = () => this.bilderZeigen(bilder.filter(x => x.blob).map(x => x.blob), bilder.filter(x => x.blob).indexOf(b));
+          kachel.appendChild(img);
+        } else {
+          kachel.textContent = 'Bild fehlt auf diesem Gerät';
+        }
+        const x = document.createElement('button');
+        x.type = 'button'; x.className = 'del'; x.innerHTML = Icons.raw('x'); x.title = 'Bild entfernen';
+        x.onclick = () => {
+          bilder.splice(bilder.indexOf(b), 1);
+          if (b.id) weg.push(b.id);
+          bilderZeichnen();
+        };
+        kachel.appendChild(x);
+        bildBox.appendChild(kachel);
+      }
+      bildBox.hidden = !bilder.length;
+    };
+    const bilderDazu = async dateien => {
+      for (const f of dateien) {
+        try { bilder.push({ blob: await this.bildVerkleinern(f) }); }
+        catch (e) { alert('Das Bild konnte nicht gelesen werden.'); }
+      }
+      bilderZeichnen();
+    };
+    dlg.onpaste = e => {
+      const dateien = [...(e.clipboardData ? e.clipboardData.items : [])]
+        .filter(i => i.type && i.type.startsWith('image/')).map(i => i.getAsFile()).filter(Boolean);
+      if (!dateien.length) return;              // Text einfügen wie immer
+      e.preventDefault();
+      bilderDazu(dateien);
+    };
+    bildDatei.value = '';
+    bildDatei.onchange = () => bilderDazu([...bildDatei.files]);
+    bilderZeichnen();
+
     // Gespeichert wird beim Absenden (Knopf oder Enter) – das kommt sofort,
     // das close-Ereignis des Fensters nicht in jedem Browser verlässlich
     // Stunde streichen / wieder einsetzen, zusätzliche Stunde löschen
@@ -1529,6 +1624,16 @@ const Stundenplan = {
       const info = infoFeld.value.trim().slice(0, 200);
       if (info) rec.i = info; else delete rec.i;
       delete rec.p;                                // früherer iPad-Merker, entfällt
+      for (const b of bilder) if (!b.id) {
+        b.id = 'plan-' + Store.uid();
+        Store.putFoto(b.id, new File([b.blob], 'Stundenbild.jpg', { type: b.blob.type || 'image/jpeg' }))
+          .catch(e => alert('Bild nicht gespeichert: ' + (e.message || e)));
+      }
+      for (const id of weg) {
+        Store.deleteFoto(id).catch(() => {});
+        if (window.Tresor && Tresor.dateiEntfernen) Tresor.dateiEntfernen('fotos', id);
+      }
+      if (bilder.length) rec.bi = bilder.map(b => b.id); else delete rec.bi;
       if (t.extra) {
         // Damit sie im Klassenbuch steht wie eine Stunde aus dem Abo
         rec.e = this.uhr(t.ende);
@@ -1868,6 +1973,59 @@ const Stundenplan = {
   },
 
   /* Ein Termin als Baustein – in der Tagesliste wie im Wochenraster */
+  /* Eingefügte Bilder klein machen: lange Seite höchstens 1600 px, JPEG –
+     aus einem Bildschirmfoto mit mehreren MB werden so meist 150–300 KB. */
+  async bildVerkleinern(datei) {
+    const MAX = 1600;
+    const bild = await createImageBitmap(datei);
+    const f = Math.min(1, MAX / Math.max(bild.width, bild.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bild.width * f); c.height = Math.round(bild.height * f);
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);   // Transparentes nicht schwarz
+    g.drawImage(bild, 0, 0, c.width, c.height);
+    if (bild.close) bild.close();
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+    // War das Original schon kleiner (z. B. ein kleines JPEG), das Original nehmen
+    return blob && (blob.size < datei.size || !/^image\/(jpeg|png|webp)$/.test(datei.type)) ? blob : datei;
+  },
+
+  /* Bilder groß zeigen – Kennungen aus dem Stundenbuch oder schon geladene Blobs.
+     ←/→ blättern, Esc oder Klick schließt. */
+  async bilderZeigen(quellen, start = 0) {
+    const dlg = document.getElementById('plan-bild');
+    const img = document.getElementById('plan-bild-img');
+    const blobs = [];
+    for (const q of quellen) {
+      if (q instanceof Blob) { blobs.push(q); continue; }
+      const e = await Store.getFoto(q).catch(() => null);
+      if (e && e.blob) blobs.push(e.blob);
+    }
+    if (!blobs.length) { alert('Das Bild ist auf diesem Gerät (noch) nicht da – erst nach dem nächsten Abgleich.'); return; }
+    const urls = blobs.map(b => URL.createObjectURL(b));
+    let i = Math.max(0, Math.min(start, urls.length - 1));
+    const zeigen = () => {
+      img.src = urls[i];
+      document.getElementById('plan-bild-zahl').textContent = urls.length > 1 ? `${i + 1} / ${urls.length}` : '';
+      document.getElementById('plan-bild-zurueck').hidden = document.getElementById('plan-bild-weiter').hidden = urls.length < 2;
+    };
+    const blaettern = s => { i = (i + s + urls.length) % urls.length; zeigen(); };
+    document.getElementById('plan-bild-zurueck').onclick = () => blaettern(-1);
+    document.getElementById('plan-bild-weiter').onclick = () => blaettern(1);
+    document.getElementById('plan-bild-zu').onclick = () => dlg.close();
+    img.onclick = () => dlg.close();
+    dlg.onclick = e => { if (e.target === dlg) dlg.close(); };
+    dlg.onkeydown = e => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault(); e.stopPropagation();
+        if (urls.length > 1) blaettern(e.key === 'ArrowRight' ? 1 : -1);
+      }
+    };
+    dlg.onclose = () => { urls.forEach(u => URL.revokeObjectURL(u)); img.removeAttribute('src'); };
+    zeigen();
+    dlg.showModal();
+  },
+
   baustein(t, jetzt, mitKnoepfen) {
     const cls = this.klasseZu(t);
     const getauscht = this.raumGetauscht(t);
@@ -1903,6 +2061,11 @@ const Stundenplan = {
     if (kb) marken.push(`<span class="plan-kb-zeile">${kb}</span>`);
     const info = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).i;
     if (info) marken.push(`<span class="plan-info" title="Info zu dieser Stunde – klicken zum Ändern">${Icons.raw('alert')}${this.esc(info)}</span>`);
+    const bilder = buchCls && !t.entfaellt && ((buchCls.stundenbuch || {})[this.buchSchluessel(t)] || {}).bi;
+    let bildKnopf = '';
+    if (bilder && bilder.length) {
+      bildKnopf = (`<button type="button" class="plan-bild-knopf" data-bilder="${this.esc(bilder.join(','))}" title="${bilder.length > 1 ? bilder.length + ' Bilder' : 'Bild'} zur Stunde groß zeigen">${Icons.raw('image')}${bilder.length > 1 ? bilder.length : ''}</button>`);
+    }
     // iPads: gebucht (aus dem Schulmanager abgeglichen) – oder nötig, aber noch nicht gebucht
     const gebucht = !t.aufsicht && ((Classes.data && Classes.data.planIpads) || {})[this.buchSchluessel(t)];
     const koffer = id => (this.KOFFER.find(k => k.id === id) || { raum: id }).raum;
@@ -1919,7 +2082,7 @@ const Stundenplan = {
     const gruppe = t.aufsicht ? '' : cls ? cls.id : klassen ? 'abo:' + klassen : '';
     const attr = ((!t.entfaellt || t.vonHandAus) && !t.aufsicht ? ` data-stunde="${this.esc(this.buchSchluessel(t))}"` : '') +
       (gruppe ? ` data-gruppe="${this.esc(gruppe)}"` : '');
-    return { klassenName, attr, wer, raum, marken: marken.join('') };
+    return { klassenName, attr, wer, raum: raum + bildKnopf, marken: marken.join('') };
   },
 
   /* Höhe nach Inhalt – wo der Browser field-sizing nicht kann */
@@ -2025,6 +2188,7 @@ const Stundenplan = {
     if (!['ArrowLeft', 'ArrowRight', 'ArrowDown'].includes(e.key)) return false;
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return false;
     if (!this.el || !this.el.classList.contains('active')) return false;
+    if (document.getElementById('plan-bild').open) return false;
     const ziel = e.target;
     if (ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]')) return false;
     const html = document.documentElement;

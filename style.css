@@ -2652,3 +2652,36 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-balken.offen { background: var(--hover); outline: 1.5px dashed var(--muted); outline-offset: -1.5px; }
 /* Schalter Noten ⟷ Score in der Filterzeile (sonst wären Filter-Labels zweizeilig) */
 .mt-filter .schalter { flex-direction: row; align-items: center; gap: .4rem; font-size: .88rem; color: var(--text); align-self: flex-end; padding-bottom: .45rem; }
+
+/* Bilder zur Stunde: kleines Symbol an der Stunde, groß im eigenen Fenster */
+.plan-bild-knopf {
+  display: inline-flex; align-items: center; gap: .15rem; padding: .05rem .3rem;
+  font-size: .75rem; font-weight: 700; line-height: 1.2; color: var(--accent);
+  background: transparent; border: 1px solid currentColor; border-radius: 6px; cursor: zoom-in;
+}
+.plan-bild-knopf .icon { width: 1em; height: 1em; margin: 0; }
+.plan-bild-knopf:hover { background: color-mix(in srgb, currentColor 15%, transparent); }
+.plan-dialog-bilder { display: flex; flex-wrap: wrap; gap: .5rem; margin: .2rem 0 .3rem; }
+.plan-dialog-bilder[hidden] { display: none; }
+.plan-dialog-bild { position: relative; font-size: .8rem; color: var(--muted); }
+.plan-dialog-bild img {
+  display: block; height: 72px; max-width: 140px; object-fit: cover;
+  border-radius: 6px; border: 1px solid var(--border); cursor: zoom-in;
+}
+.plan-dialog-bild .del {
+  position: absolute; top: -.4rem; right: -.4rem; width: 1.4rem; height: 1.4rem; padding: 0;
+  display: grid; place-items: center; border-radius: 50%;
+}
+.plan-dialog-bild .del .icon { width: .8rem; height: .8rem; margin: 0; }
+.plan-bild-hinweis kbd { font: inherit; font-size: .85em; padding: 0 .3em; border: 1px solid var(--border); border-radius: 4px; }
+.plan-bild-waehlen { display: inline; text-decoration: underline; cursor: pointer; }
+dialog.plan-bild {
+  max-width: 96vw; max-height: 96vh; padding: .5rem; border: none; border-radius: 10px;
+  background: var(--card-solid); color: inherit;
+}
+dialog.plan-bild::backdrop { background: rgba(0, 0, 0, .8); }
+.plan-bild img { display: block; max-width: calc(96vw - 1rem); max-height: calc(96vh - 3.6rem); margin: 0 auto; cursor: zoom-out; }
+.plan-bild-leiste { display: flex; justify-content: center; align-items: center; gap: .6rem; margin-top: .4rem; }
+.plan-bild-leiste [hidden] { display: none; }
+.plan-termin .plan-bild-knopf { margin-left: .35rem; vertical-align: .1em; }
+.plan-dialog label.plan-bild-waehlen { display: inline; margin: 0; font-weight: inherit; font-size: inherit; }

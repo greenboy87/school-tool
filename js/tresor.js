@@ -600,6 +600,20 @@ const Tresor = {
       legen: (id, datei) => Store.putFoto(id, datei), standard: 'Foto', typ: 'image/jpeg' },
   ],
 
+  /* Eine Datei auch auf dem Server löschen – sonst holte „Vom Server holen“
+     sie auf jedes Gerät zurück. Ohne Sync oder offline: still übergehen. */
+  async dateiEntfernen(knoten, id) {
+    const schluessel = knoten + ':' + id;
+    const merker = this.merker(), holMerker = this.holMerker();
+    delete merker[schluessel]; delete holMerker[schluessel];
+    localStorage.setItem(this.PLAN_MERKER, JSON.stringify(merker));
+    localStorage.setItem(this.HOL_MERKER, JSON.stringify(holMerker));
+    if (!this.aktiv() || !window.FB || !window.FB.db) return;
+    const { db, ref, remove } = window.FB;
+    try { await remove(ref(db, `schoolTool/tresor/${this.id}/${knoten}/${id}`)); }
+    catch (e) { console.error('Datei auf dem Server nicht gelöscht:', knoten, id, e); }
+  },
+
   async dateienHochladen() {
     if (!this.aktiv()) return;
     const merker = this.merker();

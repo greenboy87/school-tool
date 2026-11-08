@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=352">
+<link rel="stylesheet" href="style.css?v=353">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Plan">
-<script src="js/icons.js?v=352"></script>
-<script src="js/theme.js?v=352"></script>
-<script src="js/auswahl.js?v=352"></script>
-<script src="js/metronom.js?v=352"></script>
-<script src="js/klang.js?v=352"></script>
-<script src="js/schwebe.js?v=352"></script>
-<script src="js/auth.js?v=352"></script>
+<script src="js/icons.js?v=353"></script>
+<script src="js/theme.js?v=353"></script>
+<script src="js/auswahl.js?v=353"></script>
+<script src="js/metronom.js?v=353"></script>
+<script src="js/klang.js?v=353"></script>
+<script src="js/schwebe.js?v=353"></script>
+<script src="js/auth.js?v=353"></script>
 </head>
 <body>
 
@@ -221,6 +221,8 @@
         <label>Info
           <input type="text" id="plan-dialog-info" autocomplete="off" maxlength="200" placeholder="z. B. Geld einsammeln, Elternbrief austeilen">
         </label>
+        <div class="plan-dialog-bilder" id="plan-dialog-bilder"></div>
+        <p class="plan-dialog-hinweis plan-bild-hinweis">Bild einfügen: <kbd>⌘V</kbd> oder <label class="plan-bild-waehlen">Bild wählen<input type="file" id="plan-dialog-bilddatei" accept="image/*" multiple hidden></label></p>
         <p class="plan-dialog-ipad-links" id="plan-dialog-ipad-links"></p>
         <div id="plan-dialog-material" class="plan-dialog-material" hidden></div>
         <details class="plan-dialog-klasse">
@@ -238,6 +240,15 @@
           <button type="button" id="plan-dialog-loeschen" class="danger" hidden>Stunde löschen</button>
         </div>
       </form>
+    </dialog>
+    <dialog id="plan-bild" class="plan-bild" aria-label="Bild zur Stunde">
+      <img id="plan-bild-img" alt="">
+      <div class="plan-bild-leiste">
+        <button type="button" class="small" id="plan-bild-zurueck" aria-label="Voriges Bild">←</button>
+        <span id="plan-bild-zahl"></span>
+        <button type="button" class="small" id="plan-bild-weiter" aria-label="Nächstes Bild">→</button>
+        <button type="button" class="small" id="plan-bild-zu">Schließen</button>
+      </div>
     </dialog>
   </section>
 </main>
@@ -1469,40 +1480,40 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=352"></script>
-<script src="js/firebase-config.js?v=352"></script>
-<script type="module" src="js/live-firebase.js?v=352"></script>
-<script src="js/ai-import.js?v=352"></script>
-<script src="js/store.js?v=352"></script>
-<script src="js/noise.js?v=352"></script>
-<script src="js/classes.js?v=352"></script>
-<script src="js/sitzplan.js?v=352"></script>
-<script src="js/schueler.js?v=352"></script>
-<script src="js/tasten.js?v=352"></script>
-<script src="js/lessons.js?v=352"></script>
-<script src="js/band.js?v=352"></script>
-<script src="js/notes.js?v=352"></script>
-<script src="js/tresor.js?v=352"></script>
-<script src="js/erklaerungen.js?v=352"></script>
-<script src="js/setlisten.js?v=352"></script>
-<script src="js/einklappen.js?v=352"></script>
-<script src="js/tinyband-instrumente.js?v=352"></script>
-<script src="js/live-groups.js?v=352"></script>
-<script src="js/tinyband-lehrer.js?v=352"></script>
-<script src="js/tipps.js?v=352"></script>
-<script src="js/sport-tabellen.js?v=352"></script>
-<script src="js/sport.js?v=352"></script>
-<script src="js/ex-import.js?v=352"></script>
-<script src="js/exen.js?v=352"></script>
-<script src="js/ex-namen.js?v=352"></script>
-<script src="js/ex-sitzung.js?v=352"></script>
-<script src="js/ex-auswertung.js?v=352"></script>
-<script src="js/ex-reiter.js?v=352"></script>
-<script src="js/tools.js?v=352"></script>
-<script src="js/ablage.js?v=352"></script>
-<script src="js/musiktrainer.js?v=352"></script>
-<script src="js/ipad-buchen.js?v=352"></script>
-<script src="js/stundenplan.js?v=352"></script>
-<script src="js/app.js?v=352"></script>
+<script src="js/vendor/qrcode.min.js?v=353"></script>
+<script src="js/firebase-config.js?v=353"></script>
+<script type="module" src="js/live-firebase.js?v=353"></script>
+<script src="js/ai-import.js?v=353"></script>
+<script src="js/store.js?v=353"></script>
+<script src="js/noise.js?v=353"></script>
+<script src="js/classes.js?v=353"></script>
+<script src="js/sitzplan.js?v=353"></script>
+<script src="js/schueler.js?v=353"></script>
+<script src="js/tasten.js?v=353"></script>
+<script src="js/lessons.js?v=353"></script>
+<script src="js/band.js?v=353"></script>
+<script src="js/notes.js?v=353"></script>
+<script src="js/tresor.js?v=353"></script>
+<script src="js/erklaerungen.js?v=353"></script>
+<script src="js/setlisten.js?v=353"></script>
+<script src="js/einklappen.js?v=353"></script>
+<script src="js/tinyband-instrumente.js?v=353"></script>
+<script src="js/live-groups.js?v=353"></script>
+<script src="js/tinyband-lehrer.js?v=353"></script>
+<script src="js/tipps.js?v=353"></script>
+<script src="js/sport-tabellen.js?v=353"></script>
+<script src="js/sport.js?v=353"></script>
+<script src="js/ex-import.js?v=353"></script>
+<script src="js/exen.js?v=353"></script>
+<script src="js/ex-namen.js?v=353"></script>
+<script src="js/ex-sitzung.js?v=353"></script>
+<script src="js/ex-auswertung.js?v=353"></script>
+<script src="js/ex-reiter.js?v=353"></script>
+<script src="js/tools.js?v=353"></script>
+<script src="js/ablage.js?v=353"></script>
+<script src="js/musiktrainer.js?v=353"></script>
+<script src="js/ipad-buchen.js?v=353"></script>
+<script src="js/stundenplan.js?v=353"></script>
+<script src="js/app.js?v=353"></script>
 </body>
 </html>
