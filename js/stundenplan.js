@@ -39,6 +39,7 @@ const Stundenplan = {
   THEMEN_KEY: 'stundenplan-themen',
   STAND_KEY: 'stundenplan-stand',
   PLANEN_KEY: 'stundenplan-planen',
+  NACHMITTAG_KEY: 'stundenplan-nachmittag',
   NEU_HOLEN_MS: 15 * 60 * 1000,
 
   /* iPad-Koffer im Schulmanager (Ressourcen → Koffer = Kategorie 1682). Die
@@ -85,6 +86,13 @@ const Stundenplan = {
     this.planenSchalter.checked = localStorage.getItem(this.PLANEN_KEY) === 'an';
     this.planenSchalter.addEventListener('change', () => {
       localStorage.setItem(this.PLANEN_KEY, this.planenSchalter.checked ? 'an' : 'aus');
+      this.render();
+    });
+    // Nachmittag (ab der 7. Stunde) in der Woche – von Haus aus aus, damit das Raster Platz hat
+    this.nachmittagSchalter = document.getElementById('plan-nachmittag');
+    this.nachmittagSchalter.checked = localStorage.getItem(this.NACHMITTAG_KEY) === 'an';
+    this.nachmittagSchalter.addEventListener('change', () => {
+      localStorage.setItem(this.NACHMITTAG_KEY, this.nachmittagSchalter.checked ? 'an' : 'aus');
       this.render();
     });
     this.karte = this.el.querySelector('.plan-card');
@@ -1938,6 +1946,18 @@ const Stundenplan = {
     const voll = (document.fullscreenElement || document.webkitFullscreenElement) === k;
     k.style.zoom = '';
     if (!voll) return;
+    // „Planen“ soll das Raster nicht verschieben: den Zoom so rechnen wie ohne Planen
+    const inhalt = document.getElementById('plan-inhalt');
+    let mitPlanen = null;
+    if (this.planenSchalter.checked) {
+      mitPlanen = inhalt.innerHTML;
+      this.planenSchalter.checked = false;
+      this._cache = null;
+      inhalt.innerHTML = this.schalter.checked ? this.wocheHtml() : this.heuteHtml();
+      inhalt.querySelectorAll('.plan-notiz').forEach(f => this.notizHoehe(f));
+      this.planenSchalter.checked = true;
+      this._cache = null;
+    }
     /* Größter Zoom, bei dem alles ohne Rollen passt – auch größer als 1, damit
        auf einem großen Bildschirm nicht alles winzig in der oberen Hälfte steht.
        Das Raster ist flüssig, die Höhe hängt also vom Zoom ab: darum ausprobieren. */
@@ -1946,9 +1966,14 @@ const Stundenplan = {
       return k.scrollHeight <= k.clientHeight + 1 && k.scrollWidth <= k.clientWidth + 1;
     };
     let lo = 0.4, hi = 2.2;
-    if (passt(hi)) return;
-    for (let i = 0; i < 9; i++) { const mitte = (lo + hi) / 2; if (passt(mitte)) lo = mitte; else hi = mitte; }
-    k.style.zoom = lo.toFixed(3);
+    if (!passt(hi)) {
+      for (let i = 0; i < 9; i++) { const mitte = (lo + hi) / 2; if (passt(mitte)) lo = mitte; else hi = mitte; }
+      k.style.zoom = lo.toFixed(3);
+    }
+    if (mitPlanen !== null) {
+      inhalt.innerHTML = mitPlanen;
+      inhalt.querySelectorAll('.plan-notiz').forEach(f => this.notizHoehe(f));
+    }
   },
 
   vollbild() {
@@ -2154,7 +2179,8 @@ const Stundenplan = {
 
     // Alle Stunden 1–6 als Zeilen – auch leere, damit man dort eine Stunde anlegen kann
     const regulaer = Object.entries(this.STUNDEN).filter(([z, n]) => /^[1-6]\./.test(n)).map(([z]) => z);
-    const zeiten = [...new Set([...woche.map(t => this.uhr(t.beginn)), ...regulaer])].sort();
+    const zeiten = [...new Set([...woche.map(t => this.uhr(t.beginn)), ...regulaer])].sort()
+      .filter(z => this.nachmittagSchalter.checked || z < '13:00');
     const heute = this.tagSchluessel(jetzt);
     const tage = [0, 1, 2, 3, 4].map(i => { const d = new Date(mo); d.setDate(d.getDate() + i); return d; });
     const kopf = '<div class="plan-ecke"></div>' + tage.map(d =>
