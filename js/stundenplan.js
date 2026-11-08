@@ -939,9 +939,12 @@ const Stundenplan = {
      Offen sind außerdem Stunden ohne Thema und bloße Vorschläge. Vergangene
      Stunden und Stunden ohne Klasse im School-Tool zählen nicht. */
   planung(cls, t) {
-    if (!cls || cls.ohne || t.entfaellt || t.aufsicht || t.ende <= new Date()) return null;
+    if (!cls || t.entfaellt || t.aufsicht || t.ende <= new Date()) return null;
     const key = this.buchSchluessel(t);
     const rec = (cls.stundenbuch || {})[key] || {};
+    // Klasse, die man sonst nicht hat (Vertretung): eigene Markierung, geplant ist
+    // sie, sobald dort ein Thema, eigener Text oder eine Notiz steht
+    if (cls.ohne) return { fremd: true, folge: false, bestaetigt: false, ids: [], offen: !(rec.th && rec.th.length) && !rec.s && !rec.g };
     const roh = this.themenDerStunde(cls, t);
     const ids = roh.themen.map(x => x.topic.id).filter(Boolean);
     const nr = this.nummern(cls)[key] || {};
@@ -1892,7 +1895,7 @@ const Stundenplan = {
     }
     const klassenName = ['plan-termin',
       t.entfaellt && 'entfaellt', t.sonder && 'sonder', getauscht && 'getauscht', t.aufsicht && 'aufsicht',
-      t.vorschau && 'vorschau', planung && (planung.offen ? 'planen-offen' : 'planen-fertig'), (!t.entfaellt || t.vonHandAus) && !t.aufsicht && 'klickbar',
+      t.vorschau && 'vorschau', planung && (planung.offen ? 'planen-offen' : 'planen-fertig'), planung && planung.fremd && 'planen-fremd', (!t.entfaellt || t.vonHandAus) && !t.aufsicht && 'klickbar',
       jetzt && t.beginn <= jetzt && jetzt < t.ende && !t.entfaellt && 'laeuft'].filter(Boolean).join(' ');
     // Gruppe für das Hervorheben: dieselbe Klasse – ohne Klasse im School-Tool die aus dem Abo
     const gruppe = t.aufsicht ? '' : cls ? cls.id : klassen ? 'abo:' + klassen : '';

@@ -2430,6 +2430,11 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
   outline: 2px dashed var(--yellow); outline-offset: -2px;
   background: color-mix(in srgb, var(--yellow) 14%, transparent);
 }
+/* … in einer Klasse, die man sonst nicht hat (Vertretung): blau statt gelb */
+.plan-termin.planen-offen.planen-fremd {
+  outline-color: #60a5fa;
+  background: color-mix(in srgb, #60a5fa 14%, transparent);
+}
 
 /* Arbeitsphasen-Timer: Zeit oben, Knöpfe darunter; im Vollbild riesig */
 .timer-buehne .timer-display { margin: .4rem 0 .8rem; }
