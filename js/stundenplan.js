@@ -1489,7 +1489,8 @@ const Stundenplan = {
           .sort((a, b) => b.wort.length - a.wort.length);
         const x = passend[0] || null;
         if (x) {
-          if (!cls.ohne && x.quelle === 'katalog') {
+          // Aus dem Katalog: kommt zur Klasse dazu – nicht aus einer Sonderstunde, dort gilt es nur einmal
+          if (!cls.ohne && x.quelle === 'katalog' && !this.sonderStunde(cls, t)) {
             const l = Lessons.lessonsOf(cls);
             if (!l[x.id]) { l[x.id] = { s: 'open', added: Date.now() }; if (x.id.startsWith('kat:')) l[x.id].t = x.titel; }
           }
@@ -1513,7 +1514,8 @@ const Stundenplan = {
         rec.k = cls.ohne ? '' : (this.klassenSchluessel(cls.name) || cls.name);
       }
       if (Object.keys(rec).length) buch[key] = rec; else delete buch[key];
-      if (neuesThema) this.themaBeginnt(cls, neuesThema, key);
+      // In einer Sonderstunde gilt das Thema nur dort – das laufende der Klasse bleibt
+      if (neuesThema && !this.sonderStunde(cls, t)) this.themaBeginnt(cls, neuesThema, key);
       Classes.persist();
       this.buchFuehren();
       this.render();
@@ -1680,6 +1682,7 @@ const Stundenplan = {
       const ids = themen.map(x => x.topic.id).filter(Boolean);
       if (roh.sonder && ids.length && !cls.ohne) {
         teile.push(`<button type="button" class="plan-uebernehmen" data-fortfuehren="${this.esc(cls.id + '|' + key + '|' + ids.join(','))}" title="Das Thema der Klasse in dieser Sonderstunde fortführen – zählt dann in die Reihe">${Icons.raw('check')}fortführen</button>`);
+        teile.push(`<button type="button" class="plan-uebernehmen" data-thema="${ziel}" title="Etwas anderes in dieser Sonderstunde – Thema aus dem Katalog oder eigener Text („Ei…“ → Eigenes); die regulären Stunden bleiben davon unberührt">${Icons.raw('pen')}anderes Thema</button>`);
       } else if (vorschlag && ids.length && !cls.ohne) {
         teile.push(`<button type="button" class="plan-uebernehmen" data-uebernehmen="${this.esc(cls.id + '|' + key + '|' + ids.join(','))}" title="Vorschlag übernehmen – das Thema steht danach in der Klasse auf „Läuft“">${Icons.raw('check')}übernehmen</button>`);
       }
