@@ -37,8 +37,8 @@ const MT_SPIELE = (() => {
     { id: 'stilrichtungen', bereich: 'Hören', titel: 'Stilrichtungen', stufen: ['Junior', 'Anfänger', 'Fortgeschritten', 'Profi'] },
     { id: 'spielweisen', bereich: 'Hören', titel: 'Wie entsteht der Ton?', stufen: ['Junior', 'Anfänger', 'Fortgeschritten'] },
     // Rhythmus-Detektiv: seit November 2026 je sechs Stufen für Klasse 5, Klasse 6 und Profi (die ersten drei gab es schon)
-    { id: 'rhythmus-detektiv', bereich: 'Rhythmus', titel: 'Rhythmus-Detektiv', stufen: [1, 2, 3, 4, 5, 7].map(n => `Klasse 5 · ${n}`).concat([1, 2, 3, 4, 5, 6].map(n => `Klasse 6 · ${n}`), [1, 2, 3, 4, 5, 6].map(n => `Profi · ${n}`), ['Klasse 5 · 6']),
-      reihe: [0, 1, 2, 3, 4, 18, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17] },
+    { id: 'rhythmus-detektiv', bereich: 'Rhythmus', titel: 'Rhythmus-Detektiv', stufen: [1, 2, 3, 4, 5, 7].map(n => `Klasse 5 · ${n}`).concat([1, 2, 3, 4, 5, 6].map(n => `Klasse 6 · ${n}`), [1, 2, 3, 4, 5, 6].map(n => `Profi · ${n}`), ['Klasse 5 · 6', 'Profi · 7']),
+      reihe: [0, 1, 2, 3, 4, 18, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19] },
     { id: 'rhythmus-bauen', bereich: 'Rhythmus', titel: 'Rhythmus nachbauen', stufen: ['Eine Lücke', 'Zwei Lücken', 'Ein halber Takt', 'Ein ganzer Takt', 'Zwei ganze Takte', 'Ohne Hilfe: ein Takt', 'Ohne Hilfe: zwei Takte', 'Ohne Hilfe: drei Takte'] },
     { id: 'rhythmus-echo', bereich: 'Rhythmus', titel: 'Rhythmus-Echo', stufen: ['Halbe und Viertel', 'Dazu Achtel', 'Nur nach Gehör'] },
     { id: 'taktfuehler', bereich: 'Rhythmus', titel: 'Taktgefühl', stufen: ['Mit Betonung', 'Mit Begleitung', 'Schnell'] },
@@ -530,7 +530,7 @@ const Musiktrainer = {
     Junior: 'J', 'Junior 1': 'J1', 'Junior 2': 'J2', Anfänger: 'A', 'Anfänger 1': 'A1', 'Anfänger 2': 'A2',
     Fortgeschritten: 'F', Profi: 'P', 'Profi 2': 'P2', 'Profi 3': 'P3',
     ...Object.fromEntries([5, 6].flatMap(k => [1, 2, 3, 4, 5, 6, 7].map(n => [`Klasse ${k} · ${n}`, `${k}.${n}`]))),
-    ...Object.fromEntries([1, 2, 3, 4, 5, 6].map(n => [`Profi · ${n}`, `P${n}`])),
+    ...Object.fromEntries([1, 2, 3, 4, 5, 6, 7].map(n => [`Profi · ${n}`, `P${n}`])),
   },
 
   /* Zwei Kopfzeilen: oben das Spiel über seinen Stufen, darunter die Stufe kurz
