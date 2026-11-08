@@ -21,7 +21,8 @@
        „Schulaufgabe“), m: 1 (Thema von Hand gesetzt), s: 'bis Folie 15' (eigener Stand),
        i: 'Geld einsammeln' (Info zu dieser Stunde), z: 'Praxisnote' (Zusatz zum Thema
        nur dieser Stunde – „Musik und Werbung III Praxisnote“),
-       b: 'id1,id2' (Folgestunde bestätigt – mit genau diesen Themen) }
+       b: 'id1,id2' (Folgestunde bestätigt – mit genau diesen Themen),
+       g: 1 (ohne Thema, aber geplant – was stattdessen läuft, steht in der Notiz) }
    Stunden ohne Klasse im School-Tool (Vertretung in einer fremden Klasse) haben
    ihr eigenes Buch, Classes.data.planStunden – die Klasse steht dort aus dem Abo.
    Die Themen werden am Tag nach der Stunde festgeschrieben; bis dahin folgen sie
@@ -193,6 +194,8 @@ const Stundenplan = {
       if (wechsel) { this.wechseln(...wechsel.dataset.wechseln.split('|')); return; }
       const raus = e.target.closest('[data-rausnehmen]');
       if (raus) { this.rausnehmen(...raus.dataset.rausnehmen.split('|')); return; }
+      const geplant = e.target.closest('[data-ohne-thema]');
+      if (geplant) { this.ohneThemaGeplant(...geplant.dataset.ohneThema.split('|')); return; }
       const stand = e.target.closest('[data-stand]');
       if (stand) { this.standAendern(stand.dataset.stand.split('|')[0], stand.dataset.stand.split('|')[1]); return; }
       const kb = e.target.closest('[data-klassenbuch]');
@@ -915,7 +918,24 @@ const Stundenplan = {
     const nr = this.nummern(cls)[key] || {};
     const folge = !rec.m && !rec.th && !roh.vorschlag && ids.some(id => nr[id] > 1);
     const bestaetigt = folge && rec.b === ids.join(',');
-    return { folge, bestaetigt, ids, offen: !roh.themen.length || roh.vorschlag || (folge && !bestaetigt) };
+    return { folge, bestaetigt, ids, offen: (!roh.themen.length && !rec.g) || roh.vorschlag || (folge && !bestaetigt) };
+  },
+
+  /* Stunde ohne Thema als geplant abhaken: Hier läuft bewusst etwas anderes
+     (steht in der Notiz). Wird zu „kein Thema“, ein laufendes Thema rückt weiter. */
+  ohneThemaGeplant(klasseId, key) {
+    const cls = this.klasseFinden(klasseId);
+    if (!cls || cls.ohne) return;
+    this.merken('Ohne Thema geplant');
+    const buch = cls.stundenbuch || (cls.stundenbuch = {});
+    const rec = buch[key] || (buch[key] = {});
+    rec.th = [];
+    rec.m = 1;
+    rec.g = 1;
+    delete rec.z;
+    delete rec.b;
+    Classes.persist();
+    this.render();
   },
 
   /* Von Hand Geplantes einer entfallenen Stunde auf die nächste Stunde der
@@ -936,7 +956,7 @@ const Stundenplan = {
     this.merken('Verschieben auf die nächste Stunde');
     const k = this.buchSchluessel(ziel);
     const neu = buch[k] || (buch[k] = {});
-    for (const feld of ['th', 'm', 's', 'i', 'p']) if (rec[feld] !== undefined) { neu[feld] = rec[feld]; delete rec[feld]; }
+    for (const feld of ['th', 'm', 'g', 's', 'i', 'p']) if (rec[feld] !== undefined) { neu[feld] = rec[feld]; delete rec[feld]; }
     if (!Object.keys(rec).length) delete buch[key];
     Classes.persist();
     this.render();
@@ -1408,7 +1428,7 @@ const Stundenplan = {
       const bisher = basisThemen.map(x => x.wort).join(' · ');
       if (kein) { rec.th = []; rec.m = 1; delete rec.z; }
       else if (roh === start) { /* Thema unverändert */ }
-      else if (!text) { delete rec.th; delete rec.m; delete rec.z; }
+      else if (!text) { delete rec.th; delete rec.m; delete rec.z; delete rec.g; }
       else if (bisher && zusatzNach(bisher) !== null) {
         zusatzSetzen(zusatzNach(bisher));          // gleiches Thema, nur der Zusatz ist neu
       } else {
@@ -1623,9 +1643,15 @@ const Stundenplan = {
           `<button type="button" class="plan-rausnehmen" data-rausnehmen="${this.esc(cls.id + '|' + key)}" title="Thema beenden – es ist mit der Stunde davor fertig; hier wird das nächste Thema der Klasse vorgeschlagen">${Icons.raw('x')}</button></span>`);
       }
     } else if (!themen.length && zeigeWort && rec.m) {
-      teile.push(`<button type="button" class="plan-thema-wort manuell" data-thema="${ziel}" title="Von Hand: kein Thema – klicken zum Ändern">kein Thema</button>`);
+      teile.push(rec.g
+        ? `<button type="button" class="plan-thema-wort manuell" data-thema="${ziel}" title="Ohne Thema, aber geplant – klicken zum Ändern">${Icons.raw('check')}geplant, kein Thema</button>`
+        : `<button type="button" class="plan-thema-wort manuell" data-thema="${ziel}" title="Von Hand: kein Thema – klicken zum Ändern">kein Thema</button>`);
     } else if (!themen.length && zeigeWort) {
       teile.push(`<button type="button" class="plan-thema-plus" data-thema="${ziel}" title="Thema für diese Stunde eintragen">${Icons.raw('plus')}Thema</button>`);
+    }
+    // Ohne Thema, aber trotzdem geplant (etwas anderes, steht in der Notiz): abhaken
+    if (!themen.length && zeigeWort && !rec.g && !cls.ohne && this.planung(cls, t)) {
+      teile.push(`<button type="button" class="plan-uebernehmen" data-ohne-thema="${this.esc(cls.id + '|' + key)}" title="Diese Stunde ist auch ohne Thema geplant – was stattdessen läuft, in die Notiz schreiben">${Icons.raw('check')}geplant</button>`);
     }
     if (!teile.length && !(themen.length && (zeigeStand || mitKnoepfen === 'start'))) return '';
     if (mitKnoepfen && themen.length && (zeigeStand || mitKnoepfen === 'start')) {

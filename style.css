@@ -2278,6 +2278,7 @@ button.plan-thema-wort, .plan-thema-plus {
 button.plan-thema-wort { color: var(--muted); font-style: italic; }
 button.plan-thema-wort:hover, .plan-thema-plus:hover { background: var(--hover); color: var(--text); }
 button.plan-thema-wort.manuell { color: var(--accent); font-style: normal; font-weight: 600; opacity: 1; }
+button.plan-thema-wort .icon { width: .9em; height: .9em; margin: 0 .2em 0 0; vertical-align: -.1em; }
 .plan-thema-plus { color: var(--muted); opacity: .55; display: inline-flex; align-items: center; gap: .2rem; font-size: .8rem; }
 .plan-thema-plus .icon { width: .9em; height: .9em; margin: 0; }
 .plan-dialog {
