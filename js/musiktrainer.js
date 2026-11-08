@@ -36,7 +36,8 @@ const MT_SPIELE = (() => {
     { id: 'instrumente', bereich: 'Hören', titel: 'Instrumente erkennen', stufen: ['Junior', 'Anfänger', 'Fortgeschritten', 'Profi'] },
     { id: 'stilrichtungen', bereich: 'Hören', titel: 'Stilrichtungen', stufen: ['Junior', 'Anfänger', 'Fortgeschritten', 'Profi'] },
     { id: 'spielweisen', bereich: 'Hören', titel: 'Wie entsteht der Ton?', stufen: ['Junior', 'Anfänger', 'Fortgeschritten'] },
-    { id: 'rhythmus-detektiv', bereich: 'Rhythmus', titel: 'Rhythmus-Detektiv', stufen: ['Halbe und Viertel', 'Dazu Achtel', 'Dazu Viertelpausen'] },
+    // Rhythmus-Detektiv: seit November 2026 je sechs Stufen für Klasse 5 und 6 (die ersten drei gab es schon)
+    { id: 'rhythmus-detektiv', bereich: 'Rhythmus', titel: 'Rhythmus-Detektiv', stufen: [1, 2, 3, 4, 5, 6].map(n => `Klasse 5 · ${n}`).concat([1, 2, 3, 4, 5, 6].map(n => `Klasse 6 · ${n}`)) },
     { id: 'rhythmus-echo', bereich: 'Rhythmus', titel: 'Rhythmus-Echo', stufen: ['Halbe und Viertel', 'Dazu Achtel', 'Nur nach Gehör'] },
     { id: 'taktfuehler', bereich: 'Rhythmus', titel: 'Taktgefühl', stufen: ['Mit Betonung', 'Mit Begleitung', 'Schnell'] },
   ];
@@ -526,6 +527,7 @@ const Musiktrainer = {
   STUFE_KURZ: {
     Junior: 'J', 'Junior 1': 'J1', 'Junior 2': 'J2', Anfänger: 'A', 'Anfänger 1': 'A1', 'Anfänger 2': 'A2',
     Fortgeschritten: 'F', Profi: 'P', 'Profi 2': 'P2', 'Profi 3': 'P3',
+    ...Object.fromEntries([5, 6].flatMap(k => [1, 2, 3, 4, 5, 6].map(n => [`Klasse ${k} · ${n}`, `${k}.${n}`]))),
   },
 
   /* Zwei Kopfzeilen: oben das Spiel über seinen Stufen, darunter die Stufe kurz
