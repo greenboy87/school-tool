@@ -22,7 +22,8 @@
        i: 'Geld einsammeln' (Info zu dieser Stunde), z: 'Praxisnote' (Zusatz zum Thema
        nur dieser Stunde – „Musik und Werbung III Praxisnote“),
        b: 'id1,id2' (Folgestunde bestätigt – mit genau diesen Themen),
-       g: 1 (ohne Thema, aber geplant – was stattdessen läuft, steht in der Notiz) }
+       g: 1 (ohne Thema, aber geplant – was stattdessen läuft, steht in der Notiz),
+       so: 1 (Sonderstunde – bleibt so, auch wenn sie aus dem Abo verschwunden ist) }
    Stunden ohne Klasse im School-Tool (Vertretung in einer fremden Klasse) haben
    ihr eigenes Buch, Classes.data.planStunden – die Klasse steht dort aus dem Abo.
    Die Themen werden am Tag nach der Stunde festgeschrieben; bis dahin folgen sie
@@ -194,6 +195,8 @@ const Stundenplan = {
       if (wechsel) { this.wechseln(...wechsel.dataset.wechseln.split('|')); return; }
       const raus = e.target.closest('[data-rausnehmen]');
       if (raus) { this.rausnehmen(...raus.dataset.rausnehmen.split('|')); return; }
+      const weiter = e.target.closest('[data-fortfuehren]');
+      if (weiter) { this.fortfuehren(...weiter.dataset.fortfuehren.split('|')); return; }
       const geplant = e.target.closest('[data-ohne-thema]');
       if (geplant) { this.ohneThemaGeplant(...geplant.dataset.ohneThema.split('|')); return; }
       const stand = e.target.closest('[data-stand]');
@@ -677,6 +680,12 @@ const Stundenplan = {
     const key = this.buchSchluessel(t);
     const rec = (cls.stundenbuch || {})[key];
     if (rec && rec.th) return { themen: rec.th.map(x => this.themaAus(cls, x.id, x.w)), vorschlag: false, manuell: !!rec.m };
+    // Sonderstunden bekommen kein Thema von selbst: Das laufende steht dort nur als
+    // Vorschlag („fortführen“) und zählt nicht mit, bis man es übernimmt
+    if (this.sonderStunde(cls, t)) {
+      const k = t.ende > jetzt && this.kette(cls)[key];
+      return k && k.themen.length ? { themen: k.themen, vorschlag: true, sonder: true } : { themen: [], vorschlag: false };
+    }
     if (t.ende > jetzt) {
       const k = this.kette(cls)[key];
       return k ? { themen: k.themen, vorschlag: k.art !== 'laeuft' } : { themen: [], vorschlag: false };
@@ -685,6 +694,15 @@ const Stundenplan = {
     const ids = Object.entries(Lessons.lessonsOf(cls)).filter(([id, e]) => e && e.d1 && e.d1 <= tag &&
       (e.s === 'progress' || e.s === 'done') && this.giltIn(cls, id, key)).map(([id]) => id);
     return { themen: this.einThema(cls, ids).map(id => this.themaAus(cls, id)), vorschlag: false };
+  },
+
+  /* Sonderstunde (statt einer anderen Klasse o. Ä.): Sie führt das Thema der
+     Klasse nicht von selbst fort und zählt nicht in die Reihe – das laufende
+     Thema steht dort als Vorschlag mit „fortführen“. Was man dort von Hand
+     einträgt – fortgeführtes Thema, eines aus dem Katalog oder eigener Text –,
+     gilt nur dort; die regulären Stunden machen mit ihrem Thema weiter. */
+  sonderStunde(cls, t) {
+    return !!t.sonder || !!((cls.stundenbuch || {})[this.buchSchluessel(t)] || {}).so;
   },
 
   /* Zwischenspeicher für einen Zeichendurchgang – Termine, Stunden je Klasse
@@ -706,7 +724,9 @@ const Stundenplan = {
     for (const t of this.klassenStunden(cls)) {
       const key = this.buchSchluessel(t);
       erg[key] = {};
-      for (const { topic } of this.themenDerStunde(cls, t).themen) {
+      const roh = this.themenDerStunde(cls, t);
+      if (roh.sonder) continue;                         // bloßer Vorschlag in einer Sonderstunde
+      for (const { topic } of roh.themen) {
         if (!topic.id) continue;
         zaehler[topic.id] = (zaehler[topic.id] || 0) + 1;
         erg[key][topic.id] = zaehler[topic.id];
@@ -787,6 +807,7 @@ const Stundenplan = {
     // Fortführung: die letzte vergangene Stunde mit einem Thema der Klasse
     let carry = [], art = 'weiter';
     for (const t of stunden.filter(x => x.ende <= jetzt).reverse()) {
+      if (this.sonderStunde(cls, t)) continue;
       const ids = this.themenDerStunde(cls, t, jetzt).themen.map(x => x.topic.id)
         .filter(id => id && Lessons.lessonsOf(cls)[id]);        // aus der Klasse genommen: nicht fortführen
       if (ids.length) { carry = ids; break; }
@@ -796,6 +817,14 @@ const Stundenplan = {
       if (t.ende <= jetzt) continue;
       const key = this.buchSchluessel(t);
       const rec = (cls.stundenbuch || {})[key];
+      // Sonderstunde: nur als Vorschlag, was gerade liefe – die Kette ändert sie nicht
+      if (this.sonderStunde(cls, t)) {
+        if (!(rec && rec.th)) {
+          const gilt = this.einThema(cls, carry.filter(id => this.giltIn(cls, id, key)));
+          erg[key] = { themen: gilt.map(id => this.themaAus(cls, id)), art: 'sonder' };
+        }
+        continue;
+      }
       if (rec && rec.m && rec.th) {
         const ids = rec.th.map(x => x.id).filter(id => id && Lessons.lessonsOf(cls)[id]);
         if (ids.length) { carry = ids; art = 'weiter'; }
@@ -919,6 +948,22 @@ const Stundenplan = {
     const folge = !rec.m && !rec.th && !roh.vorschlag && ids.some(id => nr[id] > 1);
     const bestaetigt = folge && rec.b === ids.join(',');
     return { folge, bestaetigt, ids, offen: (!roh.themen.length && !rec.g) || roh.vorschlag || (folge && !bestaetigt) };
+  },
+
+  /* Sonderstunde: das laufende Thema hier doch fortführen – von Hand gesetzt,
+     zählt damit in die Reihe */
+  fortfuehren(klasseId, key, ids) {
+    const cls = this.klasseFinden(klasseId);
+    if (!cls || cls.ohne) return;
+    this.merken('Thema in der Sonderstunde fortgeführt');
+    const buch = cls.stundenbuch || (cls.stundenbuch = {});
+    const rec = buch[key] || (buch[key] = {});
+    rec.th = ids.split(',').map(id => ({ id, w: this.themaAus(cls, id).wort }));
+    rec.m = 1;
+    delete rec.g;
+    this._cache = null;
+    Classes.persist();
+    this.render();
   },
 
   /* Stunde ohne Thema als geplant abhaken: Hier läuft bewusst etwas anderes
@@ -1119,7 +1164,7 @@ const Stundenplan = {
       const buch = cls.stundenbuch || (cls.stundenbuch = {});
       const key = this.buchSchluessel(t);
       const rec = buch[key] || (buch[key] = {});
-      const soll = { e: this.uhr(t.ende), f: t.fach, k: this.klassenText(t), r: t.raum, x: t.entfaellt ? 1 : 0 };
+      const soll = { e: this.uhr(t.ende), f: t.fach, k: this.klassenText(t), r: t.raum, x: t.entfaellt ? 1 : 0, so: t.sonder ? 1 : 0 };
       for (const [feld, wert] of Object.entries(soll)) {
         if (wert && rec[feld] !== wert) { rec[feld] = wert; geaendert = true; }
         if (!wert && rec[feld] !== undefined) { delete rec[feld]; geaendert = true; }
@@ -1625,14 +1670,17 @@ const Stundenplan = {
       const p = this.planung(cls, t);
       const folge = p && p.folge && !p.bestaetigt;
       const art = vorschlag ? ' vorschlag' : rec.m ? ' manuell' : folge ? ' folge' : p && p.bestaetigt ? ' laeuft bestaetigt' : ' laeuft';
-      const titel = vorschlag ? 'Vorschlag: Fortführung der vorigen Stunde bzw. nächstes offenes Thema – klicken zum Ändern'
+      const titel = roh.sonder ? 'Sonderstunde – das Thema der Klasse läuft hier nicht von selbst weiter: „fortführen“, oder klicken für etwas anderes'
+        : vorschlag ? 'Vorschlag: Fortführung der vorigen Stunde bzw. nächstes offenes Thema – klicken zum Ändern'
         : rec.m ? 'Von Hand gesetzt – klicken zum Ändern'
         : folge ? 'Folgestunde – läuft aus der Stunde davor weiter, noch nicht bestätigt. Klicken zum Ändern'
         : 'Thema dieser Stunde – klicken zum Ändern';
       teile.push(`<button type="button" class="plan-thema-wort${art}" data-thema="${ziel}" title="${titel}">${vorschlag ? 'Vorschlag: ' : ''}${this.esc(worte)}</button>`);
       // Vorschlag mit einem Klick annehmen: Thema läuft ab dieser Stunde
       const ids = themen.map(x => x.topic.id).filter(Boolean);
-      if (vorschlag && ids.length && !cls.ohne) {
+      if (roh.sonder && ids.length && !cls.ohne) {
+        teile.push(`<button type="button" class="plan-uebernehmen" data-fortfuehren="${this.esc(cls.id + '|' + key + '|' + ids.join(','))}" title="Das Thema der Klasse in dieser Sonderstunde fortführen – zählt dann in die Reihe">${Icons.raw('check')}fortführen</button>`);
+      } else if (vorschlag && ids.length && !cls.ohne) {
         teile.push(`<button type="button" class="plan-uebernehmen" data-uebernehmen="${this.esc(cls.id + '|' + key + '|' + ids.join(','))}" title="Vorschlag übernehmen – das Thema steht danach in der Klasse auf „Läuft“">${Icons.raw('check')}übernehmen</button>`);
       }
       if (folge) {
