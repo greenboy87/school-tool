@@ -464,8 +464,26 @@ const Stundenplan = {
 
   FAECHER: [
     { re: /^mu/i, name: /mus/i },
-    { re: /^s[mwp]?$|^sport/i, name: /sport|\bs[mw]\b/i },
+    { re: /^s[mwp]?$|^sport/i, name: /sport|\bs[mwp]\b/i, sport: true },
   ],
+
+  /* Klassen im Namen: „5a Musik“ → 5a, „5b/5d Sport“ → 5b, 5d, „5bd Sp“ → 5b, 5d */
+  klassenImNamen(name) {
+    const erg = new Set();
+    for (const m of String(name).toLowerCase().matchAll(/(10|[5-9])\s*([a-z]{1,3})(?![a-zäöüß])/g)) {
+      for (const b of m[2]) erg.add(m[1] + b);
+    }
+    return erg;
+  },
+
+  /* Fach einer Klasse aus ihrem Namen – ohne Angabe ist es Musik */
+  fachDerKlasse(c) {
+    return this.FAECHER.find(f => f.name.test(String((c && c.name) || ''))) || this.FAECHER[0];
+  },
+
+  sportKlasse(c) {
+    return !!(c && !c.ohne && this.fachDerKlasse(c).sport);
+  },
 
   /* Von Hand gewählte Klasse (Classes.data.planKlassen): je Stunde unter
      „2026-10-22 09:30“ – gilt nicht für Entfall zur selben Zeit – oder für
@@ -490,11 +508,10 @@ const Stundenplan = {
     let beste = null, besteWertung = 0;
     for (const c of Classes.data.classes) {
       const name = String(c.name || '');
-      const eigene = new Set([...name.toLowerCase().matchAll(/(10|[5-9])\s*([a-z])(?![a-zäöüß])/g)]
-        .map(m => m[1] + m[2]));
+      const eigene = this.klassenImNamen(name);
       const treffer = [...gesucht].filter(k => eigene.has(k)).length;
       if (!treffer) continue;
-      const fachImNamen = this.FAECHER.find(f => f.name.test(name));
+      const fachImNamen = this.fachDerKlasse(c);
       if (fach && fachImNamen && fachImNamen !== fach) continue;
       const wertung = treffer * 10 + (fach && fachImNamen === fach ? 5 : 0) +
         (c.year === jahr ? 2 : 0) - Math.abs(eigene.size - gesucht.size);
@@ -940,6 +957,7 @@ const Stundenplan = {
      Stunden und Stunden ohne Klasse im School-Tool zählen nicht. */
   planung(cls, t) {
     if (!cls || t.entfaellt || t.aufsicht || t.ende <= new Date()) return null;
+    if (this.sportKlasse(cls)) return null;        // Sport wird hier nicht geplant
     const key = this.buchSchluessel(t);
     const rec = (cls.stundenbuch || {})[key] || {};
     // Klasse, die man sonst nicht hat (Vertretung): eigene Markierung, geplant ist
