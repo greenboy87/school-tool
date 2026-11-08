@@ -2185,6 +2185,7 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
   background: var(--accent-soft); color: #4c1d95; border: 1px solid var(--accent);
 }
 .plan-kl-kasten strong { font-weight: 800; margin-right: .2em; }
+.plan-kurz-zeit { flex-basis: 100%; font-size: .68rem; font-weight: 700; color: var(--accent); line-height: 1; }
 button.plan-kl-an { border-color: var(--accent); }
 .plan-naechste-klapp > summary { cursor: pointer; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: .2rem 0; }
 .plan-naechste-klapp[open] > summary { margin-bottom: .4rem; }
@@ -2410,7 +2411,11 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 button.plan-thema-wort.laeuft { color: var(--text); font-style: normal; font-weight: 500; }
 /* Folgestunde („Rhythmus II“), noch nicht bestätigt: dünn, bis ✓ geklickt ist */
 button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-weight: 400; }
-.plan-folge-knoepfe { display: inline-flex; align-items: center; gap: .25rem; }
+.plan-folge-knoepfe { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .25rem; max-width: 100%; min-width: 0; }
+/* Nächstes Thema zur Wahl: lange Schlagwörter umbrechen statt aus der Zelle zu ragen */
+.plan-uebernehmen.plan-naechstes { white-space: normal; text-align: left; border-radius: .6rem; max-width: 100%; min-width: 0; overflow-wrap: anywhere; }
+.plan-uebernehmen.plan-naechstes .icon { flex: none; }
+.plan-zelle .plan-termin { min-width: 0; overflow-wrap: anywhere; }
 .plan-oder { font-size: .7rem; color: var(--muted); }
 .plan-rausnehmen {
   border: 1px solid var(--border); background: var(--panel); color: var(--muted); font: inherit; line-height: 1;

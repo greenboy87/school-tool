@@ -1175,8 +1175,11 @@ const Stundenplan = {
     const standFeld = document.getElementById('plan-dialog-stand');
     const infoFeld = document.getElementById('plan-dialog-info');
     const nr = this.STUNDEN[this.uhr(t.beginn)];
+    const zeit = this.istKL(this.tagSchluessel(t.beginn)) && this.KURZ[this.uhr(t.beginn)] || this.uhr(t.beginn);
+    const sonst = this.raumGetauscht(t);
     document.getElementById('plan-dialog-titel').textContent =
-      `${t.fach} ${this.klassenText(t)} · ${this.tagName(t.beginn)} · ${nr && nr !== 'Pause' ? nr + ' Stunde' : this.uhr(t.beginn)}` +
+      `${t.fach} ${this.klassenText(t)} · ${this.tagName(t.beginn)} · ${nr && nr !== 'Pause' ? nr + ' Stunde, ' + zeit : zeit}` +
+      (t.raum ? ` · ${t.raum}${sonst ? ' (sonst ' + sonst + ')' : ''}` : '') +
       (t.vorschau ? ' (Vorschau)' : '');
 
     // iPads: gebucht zeigen, sonst (bzw. für einen weiteren Koffer) die Buchungslinks
@@ -1935,9 +1938,17 @@ const Stundenplan = {
     const voll = (document.fullscreenElement || document.webkitFullscreenElement) === k;
     k.style.zoom = '';
     if (!voll) return;
-    const hoch = k.scrollHeight, breit = k.scrollWidth;
-    const faktor = Math.min(1, window.innerHeight / hoch, window.innerWidth / breit);
-    if (faktor < 1) k.style.zoom = Math.max(0.4, faktor * 0.98).toFixed(3);
+    /* Größter Zoom, bei dem alles ohne Rollen passt – auch größer als 1, damit
+       auf einem großen Bildschirm nicht alles winzig in der oberen Hälfte steht.
+       Das Raster ist flüssig, die Höhe hängt also vom Zoom ab: darum ausprobieren. */
+    const passt = z => {
+      k.style.zoom = z;
+      return k.scrollHeight <= k.clientHeight + 1 && k.scrollWidth <= k.clientWidth + 1;
+    };
+    let lo = 0.4, hi = 2.2;
+    if (passt(hi)) return;
+    for (let i = 0; i < 9; i++) { const mitte = (lo + hi) / 2; if (passt(mitte)) lo = mitte; else hi = mitte; }
+    k.style.zoom = lo.toFixed(3);
   },
 
   vollbild() {
@@ -2161,9 +2172,12 @@ const Stundenplan = {
         // KL-Freitag: die Klassenleiterstunde liegt zwischen 4. und 5. Stunde – als Kasten unter der 4.
         const kl = z === '10:45' && this.istKL(tag)
           ? '<div class="plan-kl-kasten" title="Klassenleiterstunde nach der 4. Stunde, an diesem Tag Kurzstunden"><strong>KL</strong> 11:10–11:40 Klassenleiterstunde</div>' : '';
+        // KL-Freitag: Kurzstunden – die echte Anfangszeit steht an jeder Stunde
+        const kurz = this.istKL(tag) && this.KURZ[z];
+        const ab = kurz ? `<span class="plan-kurz-zeit" title="Kurzstunde ${kurz}">${kurz.split('–')[0]}</span>` : '';
         return `<div class="plan-zelle${tag === heute ? ' heute' : ''}${frei ? ' frei' : ''}"${leer}>${name}${hier.map(t => {
           const b = this.baustein(t, jetzt, 'start');
-          return `<div class="${b.klassenName}"${b.attr}><span class="plan-wer">${b.wer}</span>${b.raum}${b.marken}</div>`;
+          return `<div class="${b.klassenName}"${b.attr}>${t.aufsicht ? '' : ab}<span class="plan-wer">${b.wer}</span>${b.raum}${b.marken}</div>`;
         }).join('')}${kl}</div>`;
       }).join('');
       const nr = this.STUNDEN[z];
