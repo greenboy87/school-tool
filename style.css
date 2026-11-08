@@ -2716,3 +2716,8 @@ dialog.plan-bild::backdrop { background: rgba(0, 0, 0, .8); }
   .naechste-stunde { grid-template-columns: 1fr; }
   .ns-titel { grid-row: auto; }
 }
+
+/* − 100 % + für die Größe des Stundenplans */
+.plan-groesse { display: inline-flex; align-items: center; gap: .15rem; }
+.plan-groesse button { min-width: 2rem; font-variant-numeric: tabular-nums; }
+#plan-groesse-wert { min-width: 3.6rem; }

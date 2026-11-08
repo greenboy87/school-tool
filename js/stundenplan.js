@@ -42,6 +42,8 @@ const Stundenplan = {
   STAND_KEY: 'stundenplan-stand',
   PLANEN_KEY: 'stundenplan-planen',
   NACHMITTAG_KEY: 'stundenplan-nachmittag',
+  GROESSE_KEY: 'stundenplan-groesse',
+  GROESSEN: [0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 1, 1.1, 1.2, 1.3, 1.5, 1.75, 2],
   NEU_HOLEN_MS: 15 * 60 * 1000,
 
   /* iPad-Koffer im Schulmanager (Ressourcen → Koffer = Kategorie 1682). Die
@@ -104,6 +106,23 @@ const Stundenplan = {
       this.render();
     });
     this.karte = this.el.querySelector('.plan-card');
+    // Größe: − / + (auch Tasten), Klick auf die Zahl = 100 %. Gilt außerhalb des Vollbilds –
+    // im Vollbild füllt der Plan wie bisher den Bildschirm.
+    let groesse = parseFloat(localStorage.getItem(this.GROESSE_KEY));
+    this.groesse = this.GROESSEN.includes(groesse) ? groesse : 1;
+    document.getElementById('plan-kleiner').addEventListener('click', () => this.groesseStellen(-1));
+    document.getElementById('plan-groesser').addEventListener('click', () => this.groesseStellen(1));
+    document.getElementById('plan-groesse-wert').addEventListener('click', () => this.groesseStellen(0));
+    document.addEventListener('keydown', e => {
+      if (!['+', '-', '−'].includes(e.key) || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (!this.el.classList.contains('active')) return;
+      const ziel = e.target;
+      if (ziel && ziel.closest && ziel.closest('textarea, select, dialog, [contenteditable="true"], ' +
+        'input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button])')) return;
+      e.preventDefault();
+      this.groesseStellen(e.key === '+' ? 1 : -1);
+    });
+    this.groesseAnwenden();
     const einpassen = () => requestAnimationFrame(() => this.vollbildEinpassen());
     document.addEventListener('fullscreenchange', einpassen);
     document.addEventListener('webkitfullscreenchange', einpassen);
@@ -2263,11 +2282,32 @@ const Stundenplan = {
 
   /* Im Vollbild passt der ganze Plan auf den Bildschirm: zu groß → verkleinern,
      statt scrollen zu müssen. Außerhalb des Vollbilds normale Größe. */
+  /* schritt −1/+1: eine Stufe kleiner/größer, 0: zurück auf 100 % */
+  groesseStellen(schritt) {
+    const i = this.GROESSEN.indexOf(this.groesse);
+    const neu = schritt === 0 ? 1 : this.GROESSEN[Math.max(0, Math.min(this.GROESSEN.length - 1, (i < 0 ? this.GROESSEN.indexOf(1) : i) + schritt))];
+    this.groesse = neu;
+    try { localStorage.setItem(this.GROESSE_KEY, String(neu)); } catch (e) { /* egal */ }
+    this.groesseAnwenden();
+  },
+
+  groesseAnwenden() {
+    const inhalt = document.getElementById('plan-inhalt');
+    const voll = this.karte && (document.fullscreenElement || document.webkitFullscreenElement) === this.karte;
+    if (inhalt) inhalt.style.zoom = !voll && this.groesse !== 1 ? String(this.groesse) : '';
+    const wert = document.getElementById('plan-groesse-wert');
+    if (wert) wert.textContent = Math.round(this.groesse * 100) + ' %';
+    const kl = document.getElementById('plan-kleiner'), gr = document.getElementById('plan-groesser');
+    if (kl) kl.disabled = this.groesse <= this.GROESSEN[0];
+    if (gr) gr.disabled = this.groesse >= this.GROESSEN[this.GROESSEN.length - 1];
+  },
+
   vollbildEinpassen() {
     const k = this.karte;
     if (!k) return;
     const voll = (document.fullscreenElement || document.webkitFullscreenElement) === k;
     k.style.zoom = '';
+    this.groesseAnwenden();
     if (!voll) return;
     // „Planen“ soll das Raster nicht verschieben: den Zoom so rechnen wie ohne Planen
     const inhalt = document.getElementById('plan-inhalt');
