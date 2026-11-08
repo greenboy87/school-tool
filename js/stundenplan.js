@@ -84,8 +84,14 @@ const Stundenplan = {
     // „Planen“ ist anders als die beiden anderen Schalter von Haus aus aus
     this.planenSchalter = document.getElementById('plan-planen');
     this.planenSchalter.checked = localStorage.getItem(this.PLANEN_KEY) === 'an';
+    if (this.planenSchalter.checked) this.themenSchalter.checked = true;
     this.planenSchalter.addEventListener('change', () => {
       localStorage.setItem(this.PLANEN_KEY, this.planenSchalter.checked ? 'an' : 'aus');
+      // Planen braucht die Themen – also gleich mit einschalten
+      if (this.planenSchalter.checked && !this.themenSchalter.checked) {
+        this.themenSchalter.checked = true;
+        localStorage.setItem(this.THEMEN_KEY, 'an');
+      }
       this.render();
     });
     // Nachmittag (ab der 7. Stunde) in der Woche – von Haus aus aus, damit das Raster Platz hat
@@ -1566,8 +1572,7 @@ const Stundenplan = {
      „Stand“). Alle Knöpfe nur in der Tagesansicht; im Wochenraster ist nur
      Platz für den Start der Präsentation (mitKnoepfen = 'start'). */
   themenHtml(t, cls, mitKnoepfen) {
-    const planen = this.planenSchalter.checked;
-    const zeigeWort = this.themenSchalter.checked || planen, zeigeStand = this.standSchalter.checked;
+    const zeigeWort = this.themenSchalter.checked, zeigeStand = this.standSchalter.checked;
     // Der Start-Knopf im Wochenraster bleibt immer – auch bei ausgeschalteten Schaltern
     if (t.aufsicht || (!zeigeWort && !zeigeStand && mitKnoepfen !== 'start')) return '';
     const key = this.buchSchluessel(t);
