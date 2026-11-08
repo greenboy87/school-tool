@@ -1062,9 +1062,20 @@ const Stundenplan = {
         k: t.klassen.join(','), a: t.aufsicht ? 1 : 0, o: t.ort || '', zuletzt: this.tagSchluessel(t.beginn) });
       if (!t.entfaellt && t.raum) p.r = t.raum;
     }
-    // Plätze, die in der letzten Abo-Woche nicht mehr vorkommen, sind aus dem Plan
+    /* Plätze, die in der letzten Abo-Woche nicht mehr vorkommen, sind aus dem Plan –
+       außer der Tag war frei: Am Buß- und Bettag fehlen alle Mittwochsstunden, deshalb
+       fielen sonst sämtliche Mittwoche aus der Vorschau. Gezählt wird also nur, ob der
+       Platz an einem Schultag seines Wochentags nach dem letzten Vorkommen fehlte. */
+    const letzterTag = this.tagSchluessel(letzter);
+    const fehlte = zuletzt => {
+      const d = new Date(zuletzt + 'T12:00');
+      for (d.setDate(d.getDate() + 7); this.tagSchluessel(d) <= letzterTag; d.setDate(d.getDate() + 7)) {
+        if (!this.istFrei(this.tagSchluessel(d))) return true;
+      }
+      return false;
+    };
     for (const [id, p] of Object.entries(plaetze)) {
-      if (p.zuletzt < grenze) { delete plaetze[id]; continue; }
+      if (p.zuletzt < grenze && fehlte(p.zuletzt)) { delete plaetze[id]; continue; }
       delete p.zuletzt;
       if (!p.a) delete p.a;
       if (!p.o) delete p.o;

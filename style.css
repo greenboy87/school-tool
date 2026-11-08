@@ -1704,14 +1704,16 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 @media screen and (min-width: 721px) and (max-width: 1600px) {
   .topbar { gap: .75rem; padding: .7rem .8rem; }
   .main-tabs { gap: .15rem; }
-  .tab-btn { padding: .55rem .55rem; }
+  .tab-btn, .tab-link { padding: .55rem .55rem; }
   .backup-btns { gap: .3rem; }
   .backup-btns button { padding-left: .6rem; padding-right: .6rem; }
 }
 
 /* Noch enger: Der Name steht im Fenstertitel, die Knoepfe erklaeren sich
    ueber ihre Symbole und das title-Attribut. */
-@media screen and (min-width: 721px) and (max-width: 1440px) {
+/* 1520 statt 1440: Mit dem Link „Trainer“ und dem Sync-Status braucht die
+   Leiste rund 1480 px – ein MacBook Air (1470 px) lag knapp darunter. */
+@media screen and (min-width: 721px) and (max-width: 1520px) {
   .titel-text { display: none; }
   .knopf-text { display: none; }
   .backup-btns button:has(.knopf-text) .icon { margin-right: 0; }
@@ -1720,9 +1722,9 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 
 /* Zuletzt die Symbole der Reiter: Ihre Namen stehen daneben, das Symbol ist
    Zierde. Acht Reiter mal Symbol sind rund 200 px. */
-@media screen and (min-width: 721px) and (max-width: 1200px) {
-  .tab-btn .icon { display: none; }
-  .tab-btn { padding: .55rem .45rem; font-size: .9rem; }
+@media screen and (min-width: 721px) and (max-width: 1300px) {
+  .tab-btn .icon, .tab-link .icon { display: none; }
+  .tab-btn, .tab-link { padding: .55rem .45rem; font-size: .9rem; }
   .sync-status { max-width: 5.5rem; }
 }
 /* Bis rund 1100 px passt „gesichert 17:56“ nicht mehr in dieselbe Zeile */
@@ -1735,7 +1737,7 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 @media screen and (min-width: 721px) and (max-width: 900px) {
   .topbar { gap: .4rem; padding: .6rem .5rem; }
   .main-tabs { gap: 0; }
-  .tab-btn { font-size: .8rem; padding: .5rem .32rem; }
+  .tab-btn, .tab-link { font-size: .8rem; padding: .5rem .32rem; }
   .sync-status { display: none; }
   .backup-btns { gap: .2rem; }
   .backup-btns button { padding-left: .45rem; padding-right: .45rem; }
@@ -1749,7 +1751,8 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
   .topbar h1 { font-size: 1rem; margin: 0; }
   .main-tabs { order: 3; flex: 1 1 100%; gap: .2rem; }
   .tab-btn { flex: 1 1 0; min-width: 0; padding: .5rem .2rem; font-size: .8rem; text-align: center; }
-  .tab-btn .icon { display: none; }
+  .tab-btn .icon, .tab-link .icon { display: none; }
+  .tab-link { padding: .5rem .3rem; font-size: .8rem; }
   .backup-btns { margin-left: auto; gap: .3rem; }
   .backup-btns button { font-size: .8rem; padding: .4rem .55rem; }
   .nur-icon { padding-left: .45rem; padding-right: .45rem; }
@@ -2721,3 +2724,12 @@ dialog.plan-bild::backdrop { background: rgba(0, 0, 0, .8); }
 .plan-groesse { display: inline-flex; align-items: center; gap: .15rem; }
 .plan-groesse button { min-width: 2rem; font-variant-numeric: tabular-nums; }
 #plan-groesse-wert { min-width: 3.6rem; }
+
+/* Wochenansicht: den Platz links und rechts nutzen – breitere Spalten brechen
+   weniger um, die Kästchen werden dadurch niedriger */
+#tab-plan.plan-woche { max-width: 1800px; }
+/* Schmales Tablet: „Trainer“ nur als Symbol, sonst bricht die Leiste um */
+@media screen and (min-width: 721px) and (max-width: 900px) {
+  .tab-link .icon { display: inline-block; margin: 0; }
+  .tab-link-text { display: none; }
+}
