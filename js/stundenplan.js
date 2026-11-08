@@ -1257,12 +1257,16 @@ const Stundenplan = {
       const passt = x => !q || x.wort.toLowerCase().includes(q) || x.titel.toLowerCase().includes(q) || x.info.toLowerCase().includes(q);
       const e1 = eigene.filter(x => passt(x) && (q || !x.fertig));
       const k1 = q ? katalog.filter(passt).slice(0, 12) : [];
-      treffer = [...e1, ...k1];
+      // „Ei…“ getippt: „Eigenes“ vorschlagen – etwas anderes geplant, was, steht in der Notiz
+      const eig = q.length >= 2 && 'eigenes'.startsWith(q)
+        ? [{ id: null, wort: 'Eigenes', titel: 'Eigenes', quelle: 'eigen', info: 'eigene Stunde – was, in die Notiz' }] : [];
+      treffer = [...eig, ...e1, ...k1];
       markiert = -1;
       const zeile = (x, i) => `<li role="option" data-i="${i}" class="${x.quelle}"><span class="wort">${this.esc(x.wort)}</span>` +
         `<span class="info">${this.esc(x.info)}</span></li>`;
-      liste.innerHTML = (e1.length ? `<li class="kopf">Diese Klasse</li>${e1.map((x, i) => zeile(x, i)).join('')}` : '') +
-        (k1.length ? `<li class="kopf">Stundenkatalog</li>${k1.map((x, i) => zeile(x, e1.length + i)).join('')}` : '') +
+      liste.innerHTML = (eig.length ? zeile(eig[0], 0) : '') +
+        (e1.length ? `<li class="kopf">Diese Klasse</li>${e1.map((x, i) => zeile(x, eig.length + i)).join('')}` : '') +
+        (k1.length ? `<li class="kopf">Stundenkatalog</li>${k1.map((x, i) => zeile(x, eig.length + e1.length + i)).join('')}` : '') +
         (q && !treffer.length ? '<li class="kopf">Kein Treffer – wird als eigener Eintrag gespeichert</li>' : '');
       liste.hidden = !liste.innerHTML;
     };
@@ -1273,7 +1277,7 @@ const Stundenplan = {
     const waehlen = i => {
       const x = treffer[i];
       if (!x) return;
-      gewaehlt = x;
+      gewaehlt = x.quelle === 'eigen' ? null : x;    // „Eigenes“ ist ein eigener Eintrag, kein Thema
       feld.value = x.wort;
       liste.hidden = true;
       materialZeigen();
