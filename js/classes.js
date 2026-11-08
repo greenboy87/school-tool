@@ -1276,6 +1276,7 @@ const Classes = {
     // Die Bandzahl für Tiny Band richtet sich nach der Klassenstärke
     if (window.TinyBandLehrer) TinyBandLehrer.optionenStellen();
     this.fuelleMedienmanager();
+    if (typeof Stundenplan !== 'undefined') { try { Stundenplan.naechsteStundeZeigen(cls); } catch (e) { console.error('Nächste Stunde:', e); } }
     if (typeof Notes !== 'undefined') Notes.klassenNotizLaden();
     this.renderStudents();
     this.renderProjects();

@@ -1973,6 +1973,54 @@ const Stundenplan = {
   },
 
   /* Ein Termin als Baustein – in der Tagesliste wie im Wochenraster */
+  /* Kurzinfo „Nächste Stunde“ im Kopf einer Klasse (Reiter Klassen): Zeit,
+     Raum, Thema, Notiz, Info, iPads, Bilder – wie im Planer. Klick springt in
+     den Planer zu diesem Tag. */
+  naechsteStundeZeigen(cls = Classes.currentClass()) {
+    const box = document.getElementById('naechste-stunde');
+    if (!box) return;
+    const jetzt = new Date();
+    const t = cls && this.abo() && this.termine.length && this.klassenStunden(cls).find(x => x.ende > jetzt);
+    if (!t) { box.hidden = true; box.innerHTML = ''; return; }
+    const key = this.buchSchluessel(t);
+    const rec = (cls.stundenbuch || {})[key] || {};
+    const nr = this.STUNDEN[this.uhr(t.beginn)];
+    const zeit = this.istKL(this.tagSchluessel(t.beginn)) && this.KURZ[this.uhr(t.beginn)] || this.uhr(t.beginn);
+    const heute = this.tagSchluessel(t.beginn) === this.tagSchluessel(jetzt);
+    const laeuft = t.beginn <= jetzt;
+    const wann = (laeuft ? 'Jetzt' : heute ? 'Heute' : this.tagName(t.beginn)) +
+      (nr && nr !== 'Pause' ? ` · ${nr} Std.` : '') + ` · ${zeit}`;
+    const sonst = this.raumGetauscht(t);
+    const roh = this.themenDerStunde(cls, t);
+    const themen = this.nummeriert(cls, key, roh.themen).map(x => x.wort).join(' · ') + (rec.z && roh.themen.length ? ' ' + rec.z : '');
+    const ipads = ((Classes.data && Classes.data.planIpads) || {})[key] || [];
+    const koffer = id => (this.KOFFER.find(k => k.id === id) || { raum: id }).raum;
+    const teile = [];
+    teile.push(`<span class="ns-wann">${this.esc(wann)}</span>`);
+    if (t.raum) teile.push(`<span class="ns-raum${sonst ? ' getauscht' : ''}"${sonst ? ` title="Sonst ${this.esc(sonst)}"` : ''}>${this.esc(t.raum)}</span>`);
+    if (t.sonder) teile.push('<span class="plan-marke sonder">Sonderstunde</span>');
+    const zeile2 = [];
+    if (rec.g && !themen) zeile2.push('<span class="ns-thema">geplant, kein Thema</span>');
+    else zeile2.push(`<span class="ns-thema${roh.vorschlag ? ' vorschlag' : ''}">${themen ? this.esc(themen) + (roh.vorschlag ? ' <small>(Vorschlag)</small>' : '') : '<small>kein Thema</small>'}</span>`);
+    if (rec.s) zeile2.push(`<span class="ns-notiz">${this.esc(rec.s)}</span>`);
+    const zeile3 = [];
+    if (rec.i) zeile3.push(`<span class="plan-info">${Icons.raw('alert')}${this.esc(rec.i)}</span>`);
+    if (ipads.length) zeile3.push(`<span class="plan-ipads gebucht">${Icons.raw('check')}iPads: ${this.esc(ipads.map(koffer).join(', '))}</span>`);
+    if (rec.bi && rec.bi.length) zeile3.push(`<button type="button" class="plan-bild-knopf" data-bilder="${this.esc(rec.bi.join(','))}" title="Bild zur Stunde groß zeigen">${Icons.raw('image')}${rec.bi.length > 1 ? rec.bi.length : ''}</button>`);
+    box.innerHTML = `<span class="ns-titel">${Icons.raw('calendar')}Nächste Stunde</span>` +
+      `<span class="ns-zeile">${teile.join('')}</span>` +
+      `<span class="ns-zeile">${zeile2.join('')}</span>` +
+      (zeile3.length ? `<span class="ns-zeile">${zeile3.join('')}</span>` : '');
+    box.title = 'Im Planer öffnen';
+    box.hidden = false;
+    box.onclick = e => {
+      const bild = e.target.closest('[data-bilder]');
+      if (bild) { this.bilderZeigen(bild.dataset.bilder.split(',')); return; }
+      document.querySelector('.tab-btn[data-tab="plan"]').click();
+      this.ansicht('heute', this.tagSchluessel(t.beginn));
+    };
+  },
+
   /* Eingefügte Bilder klein machen: lange Seite höchstens 1600 px, JPEG –
      aus einem Bildschirmfoto mit mehreren MB werden so meist 150–300 KB. */
   async bildVerkleinern(datei) {
@@ -2094,6 +2142,8 @@ const Stundenplan = {
 
   render() {
     if (!this.el) return;
+    try { if (Classes.data && document.getElementById('class-detail') && !document.getElementById('class-detail').hidden) this.naechsteStundeZeigen(); }
+    catch (e) { console.error('Nächste Stunde:', e); }
     // Während im Notizfeld geschrieben wird, nicht neu zeichnen – sonst wäre das Getippte weg
     const aktiv = document.activeElement;
     if (aktiv && aktiv.classList && aktiv.classList.contains('plan-notiz') && this.el.contains(aktiv)) {

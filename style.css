@@ -2693,3 +2693,26 @@ dialog.plan-bild::backdrop { background: rgba(0, 0, 0, .8); }
   padding: .55rem .9rem; border-radius: var(--radius-sm); white-space: nowrap;
 }
 .tab-link:hover { background: var(--hover); color: var(--text); }
+
+/* Nächste Stunde einer Klasse – eigene Karte zwischen Kopf und Unterreitern */
+.naechste-stunde {
+  display: grid; grid-template-columns: auto 1fr; gap: .35rem 1.2rem; align-items: baseline;
+  margin-bottom: 1.2rem; cursor: pointer;
+}
+.naechste-stunde[hidden] { display: none; }
+.naechste-stunde:hover { border-color: var(--accent); }
+.ns-titel { grid-row: span 3; display: inline-flex; align-items: center; gap: .4rem; font-weight: 700; font-size: 1rem; }
+.ns-titel .icon { width: 1.05em; height: 1.05em; margin: 0; }
+.ns-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem 1rem; min-width: 0; }
+.ns-wann { font-weight: 700; }
+.ns-raum { color: var(--muted); }
+.ns-raum.getauscht { color: var(--yellow); font-weight: 700; }
+.ns-thema { font-weight: 700; color: var(--accent); overflow-wrap: anywhere; }
+.ns-thema.vorschlag { font-weight: 400; color: var(--muted); }
+.ns-notiz { color: var(--muted); overflow-wrap: anywhere; }
+.ns-notiz::before { content: 'Notiz: '; }
+.naechste-stunde .plan-info, .naechste-stunde .plan-ipads { flex-basis: auto; }
+@media (max-width: 600px) {
+  .naechste-stunde { grid-template-columns: 1fr; }
+  .ns-titel { grid-row: auto; }
+}
