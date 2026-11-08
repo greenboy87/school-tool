@@ -136,10 +136,10 @@ const Stundenplan = {
       e.preventDefault();
       this.rueckgaengig();
     });
-    // H = Heute (von jedem Reiter aus), W = Woche, S oder N = Notiz ein/aus, P = Planen – solange nicht getippt wird
+    // H = Heute (von jedem Reiter aus), W = Woche/Heute hin und her, T = Themen, S oder N = Notiz, P = Planen – solange nicht getippt wird
     document.addEventListener('keydown', e => {
       const k = e.key.toLowerCase();
-      if (!['h', 'w', 's', 'n', 'p'].includes(k) || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (!['h', 'w', 't', 's', 'n', 'p'].includes(k) || e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
       const ziel = e.target;
       // Schalter und Knöpfe behalten nach dem Klicken den Fokus – die sollen H nicht schlucken
       if (ziel && ziel.closest && ziel.closest('textarea, select, dialog, [contenteditable="true"], ' +
@@ -152,7 +152,9 @@ const Stundenplan = {
       e.preventDefault();
       if (k === 's' || k === 'n') { this.standSchalter.click(); return; }     // S/N: Notiz ein/aus
       if (k === 'p') { this.planenSchalter.click(); return; }
-      this.ansicht(k === 'w' ? 'woche' : 'heute');
+      if (k === 't') { this.themenSchalter.click(); return; }
+      if (k === 'w') { this.ansicht(this.schalter.checked ? 'heute' : 'woche'); return; }
+      this.ansicht('heute');
     });
     document.getElementById('btn-plan-voll').addEventListener('click', () => this.vollbild());
     // Klassenbuch unter Klassen: drucken, Zeile anklicken zum Bearbeiten
