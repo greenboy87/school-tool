@@ -49,7 +49,8 @@ const Musiktrainer = {
   /* Adresse des Workers – dieselbe wie in music-trainer/js/konto.js. Leer = Reiter zeigt nur einen Hinweis. */
   API: 'https://music-trainer.tomgruenig87.workers.dev',
   SPIEL_URL: 'https://greenboy87.github.io/music-trainer/',
-  // Kurzlink zum Abschreiben (is.gd, leitet fest auf SPIEL_URL weiter, ohne Zwischenseite)
+  // Kurzlink zum Abschreiben (is.gd, leitet fest auf SPIEL_URL weiter, ohne Zwischenseite).
+  // Vorsicht: Vertippt als „s.gd“ landet man auf einer fremden Seite.
   KURZ_URL: 'is.gd/rsamusik',
   TOKEN_KEY: 'schooltool-musiktrainer-lehrer',
 
@@ -1063,10 +1064,13 @@ const Musiktrainer = {
       <div class="mt-beamer-kopf">
         <div>
           <h2>${this.esc(titel)}: deine Anmeldung</h2>
-          <p>QR-Code scannen oder <b>${this.esc(this.KURZ_URL)}</b> öffnen, „Anmelden“ – Benutzername und Passwort selbst eintippen.</p>
+          <p>Schreib dir die Adresse, deinen Benutzernamen und das Passwort auf – dann kannst du auch zu Hause spielen. QR-Code scannen oder Adresse öffnen, „Anmelden“, selbst eintippen.</p>
         </div>
         <div class="mt-beamer-pw"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
-        <div class="mt-allgemein-qr" id="mt-allgemein-qr" title="Führt nur zur Anmeldeseite – Benutzername und Passwort tippt jedes Kind selbst"></div>
+        <div class="mt-allgemein" title="Führt nur zur Anmeldeseite – Benutzername und Passwort tippt jedes Kind selbst">
+          <div class="mt-allgemein-qr" id="mt-allgemein-qr"></div>
+          <code>${this.esc(this.KURZ_URL)}</code>
+        </div>
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
       <div class="mt-namensliste" style="--zeilen:${Math.ceil(sortiert.length / (sortiert.length > 16 ? 2 : 1))}">
@@ -1095,9 +1099,9 @@ const Musiktrainer = {
           <h1>music-trainer · ${this.esc(titel)}</h1>
           <div class="mt-liste-zeile"><span>Adresse</span><b>${this.esc(adresse)}</b></div>
           <div class="mt-liste-zeile"><span>Passwort für alle</span><b>${this.esc(passwort)}</b></div>
-          <p>Seite öffnen (oder QR-Code scannen), „Anmelden“ tippen, deinen Benutzernamen und das Passwort eingeben.</p>
+          <p>Seite öffnen (oder QR-Code scannen), „Anmelden“ tippen, deinen Benutzernamen und das Passwort eingeben. Schreib dir alles auf – dann kannst du auch zu Hause spielen.</p>
         </div>
-        <div class="mt-liste-qr" id="mt-liste-qr"></div>
+        <div class="mt-liste-qr"><div id="mt-liste-qr"></div><span>${this.esc(adresse)}</span></div>
       </div>
       <table class="mt-liste-tabelle">
         <thead><tr><th>Name</th><th>Benutzername</th></tr></thead>

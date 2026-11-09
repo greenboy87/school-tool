@@ -2555,6 +2555,8 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-namenszeile { display: flex; justify-content: space-between; gap: 2rem; padding: .25rem 0; border-bottom: 1px solid var(--border); }
 .mt-namenszeile code { font-weight: 800; color: var(--accent-soft); background: none; }
 /* Allgemeiner QR-Code: nur die Anmeldeseite, weiß hinterlegt, damit die Kamera ihn auch im Dunkelmodus liest */
+.mt-allgemein { display: flex; flex-direction: column; align-items: center; gap: .4rem; }
+.mt-allgemein code { font-size: 1.25rem; font-weight: 800; color: var(--accent-soft); background: none; white-space: nowrap; }
 .mt-allgemein-qr { background: #fff; padding: 8px; border-radius: 8px; line-height: 0; }
 .mt-allgemein-qr img, .mt-allgemein-qr canvas { width: 170px !important; height: 170px !important; }
 
@@ -2590,6 +2592,7 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
   .mt-liste p { margin: 3mm 0 0; font-size: 10pt; color: #333; }
   .mt-liste-qr { width: 32mm; flex: 0 0 32mm; line-height: 0; }
   .mt-liste-qr img, .mt-liste-qr canvas { width: 32mm !important; height: 32mm !important; }
+  .mt-liste-qr span { display: block; line-height: 1.2; font-size: 8pt; text-align: center; margin-top: 1.5mm; white-space: nowrap; }
   .mt-liste-tabelle { width: 100%; border-collapse: collapse; }
   .mt-liste-tabelle th { text-align: left; font-size: 9pt; color: #555; border-bottom: 1.5px solid #000; padding: 1mm 2mm; }
   .mt-liste-tabelle td { border-bottom: 1px solid #ccc; padding: 1.6mm 2mm; break-inside: avoid; }
