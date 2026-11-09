@@ -195,6 +195,7 @@ const Musiktrainer = {
         <div class="btn-row">
           <button class="primary" data-mt="qr" data-icon="expand">QR-Anmeldung am Beamer</button>
           <button data-mt="namen" data-icon="list">Namensliste am Beamer</button>
+          <button data-mt="liste" data-icon="printer">Liste drucken</button>
           <button data-mt="drucken" data-icon="printer">Kärtchen drucken</button>
         </div>
       </div>
@@ -351,6 +352,8 @@ const Musiktrainer = {
       })));
     }
     if (aktion === 'namen') return this.namenslisteZeigen(cls.name, cls.musiktrainer.passwort,
+      cls.students.filter(s => s.mt).map(s => ({ name: this.name(s), benutzer: s.mt.name })));
+    if (aktion === 'liste') return this.listeDrucken(cls.name, cls.musiktrainer.passwort,
       cls.students.filter(s => s.mt).map(s => ({ name: this.name(s), benutzer: s.mt.name })));
     if (aktion === 'drucken') return this.drucken(cls.name, cls.musiktrainer.passwort,
       cls.students.filter(s => s.mt).map(s => ({ name: this.name(s), benutzer: s.mt.name })));
@@ -1058,14 +1061,51 @@ const Musiktrainer = {
       <div class="mt-beamer-kopf">
         <div>
           <h2>${this.esc(titel)}: deine Anmeldung</h2>
-          <p>${this.esc(this.SPIEL_URL.replace(/^https:\/\//, '').replace(/\/$/, ''))} öffnen, „Anmelden“ – schreib dir deinen Benutzernamen auf.</p>
+          <p>QR-Code scannen oder ${this.esc(this.SPIEL_URL.replace(/^https:\/\//, '').replace(/\/$/, ''))} öffnen, „Anmelden“ – Benutzername und Passwort selbst eintippen.</p>
         </div>
         <div class="mt-beamer-pw"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
+        <div class="mt-allgemein-qr" id="mt-allgemein-qr" title="Führt nur zur Anmeldeseite – Benutzername und Passwort tippt jedes Kind selbst"></div>
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
       <div class="mt-namensliste" style="--zeilen:${Math.ceil(sortiert.length / (sortiert.length > 16 ? 2 : 1))}">
         ${sortiert.map(k => `<div class="mt-namenszeile"><span>${this.esc(k.name)}</span><code>${this.esc(k.benutzer)}</code></div>`).join('')}
       </div>`;
+    this.allgemeinQr(document.getElementById('mt-allgemein-qr'), 180);
+  },
+
+  /* Allgemeiner Link: nur zur Anmeldeseite, ohne Benutzername und Passwort */
+  allgemeinLink() { return this.SPIEL_URL + '#/anmelden'; },
+  allgemeinQr(feld, groesse) {
+    if (!feld || typeof QRCode === 'undefined') return;
+    new QRCode(feld, { text: this.allgemeinLink(), width: groesse, height: groesse, correctLevel: QRCode.CorrectLevel.M });
+  },
+
+  /* Eine Seite zum Aushängen oder Austeilen: Adresse mit QR-Code, Passwort einmal,
+     darunter alle Namen mit Benutzernamen – jedes Kind tippt seine Daten selbst ein */
+  listeDrucken(titel, passwort, kinder) {
+    let d = document.getElementById('mt-druck');
+    if (!d) { d = document.createElement('div'); d.id = 'mt-druck'; document.body.appendChild(d); }
+    const sortiert = [...kinder].sort((a, c) => a.name.localeCompare(c.name, 'de'));
+    const adresse = this.SPIEL_URL.replace(/^https:\/\//, '').replace(/\/$/, '');
+    d.innerHTML = `<div class="mt-liste">
+      <div class="mt-liste-kopf">
+        <div>
+          <h1>music-trainer · ${this.esc(titel)}</h1>
+          <div class="mt-liste-zeile"><span>Adresse</span><b>${this.esc(adresse)}</b></div>
+          <div class="mt-liste-zeile"><span>Passwort für alle</span><b>${this.esc(passwort)}</b></div>
+          <p>Seite öffnen (oder QR-Code scannen), „Anmelden“ tippen, deinen Benutzernamen und das Passwort eingeben.</p>
+        </div>
+        <div class="mt-liste-qr" id="mt-liste-qr"></div>
+      </div>
+      <table class="mt-liste-tabelle">
+        <thead><tr><th>Name</th><th>Benutzername</th></tr></thead>
+        <tbody>${sortiert.map(k => `<tr><td>${this.esc(k.name)}</td><td>${this.esc(k.benutzer)}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+    this.allgemeinQr(document.getElementById('mt-liste-qr'), 300);
+    document.body.classList.add('mt-drucken');
+    window.addEventListener('afterprint', () => document.body.classList.remove('mt-drucken'), { once: true });
+    setTimeout(() => window.print(), 300);
   },
 
   /* Kärtchen zum Ausschneiden, zwei je Zeile */

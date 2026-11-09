@@ -2554,6 +2554,9 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
   justify-content: center; font-size: clamp(1.1rem, 2.2vw, 1.9rem); }
 .mt-namenszeile { display: flex; justify-content: space-between; gap: 2rem; padding: .25rem 0; border-bottom: 1px solid var(--border); }
 .mt-namenszeile code { font-weight: 800; color: var(--accent-soft); background: none; }
+/* Allgemeiner QR-Code: nur die Anmeldeseite, weiß hinterlegt, damit die Kamera ihn auch im Dunkelmodus liest */
+.mt-allgemein-qr { background: #fff; padding: 8px; border-radius: 8px; line-height: 0; }
+.mt-allgemein-qr img, .mt-allgemein-qr canvas { width: 170px !important; height: 170px !important; }
 
 /* Kärtchen drucken: nur sie, alles andere ausgeblendet */
 #mt-druck { display: none; }
@@ -2576,6 +2579,21 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
   .mt-karte-zeile span { display: block; color: #555; font-size: 8pt; }
   .mt-karte-zeile b { display: block; font-family: Menlo, monospace; font-size: 11pt; overflow-wrap: anywhere; }
   .mt-karte-zeile.adresse b { font-family: inherit; font-size: 9pt; font-weight: 600; }
+  /* Liste: eine Seite mit Adresse, QR-Code, Passwort und allen Benutzernamen */
+  .mt-liste { color: #000; font-size: 11pt; }
+  .mt-liste-kopf { display: flex; gap: 8mm; align-items: flex-start; margin-bottom: 6mm; }
+  .mt-liste-kopf > div:first-child { flex: 1; }
+  .mt-liste h1 { font-size: 17pt; margin: 0 0 3mm; }
+  .mt-liste-zeile { display: flex; gap: 4mm; align-items: baseline; padding: 1mm 0; }
+  .mt-liste-zeile span { color: #555; font-size: 9pt; min-width: 32mm; }
+  .mt-liste-zeile b { font-family: Menlo, monospace; font-size: 15pt; }
+  .mt-liste p { margin: 3mm 0 0; font-size: 10pt; color: #333; }
+  .mt-liste-qr { width: 32mm; flex: 0 0 32mm; line-height: 0; }
+  .mt-liste-qr img, .mt-liste-qr canvas { width: 32mm !important; height: 32mm !important; }
+  .mt-liste-tabelle { width: 100%; border-collapse: collapse; }
+  .mt-liste-tabelle th { text-align: left; font-size: 9pt; color: #555; border-bottom: 1.5px solid #000; padding: 1mm 2mm; }
+  .mt-liste-tabelle td { border-bottom: 1px solid #ccc; padding: 1.6mm 2mm; break-inside: avoid; }
+  .mt-liste-tabelle td:last-child { font-family: Menlo, monospace; font-weight: 700; }
 }
 
 /* Benotung */
