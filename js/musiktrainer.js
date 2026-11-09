@@ -302,19 +302,32 @@ const Musiktrainer = {
     const doppelt = sp => spiele.filter(x => x.titel === sp.titel).length > 1;
     const chip = (art, wert, an, text, titel = '', bereich = '') => `<label class="mt-chip"${titel ? ` title="${this.esc(titel)}"` : ''}>
       <input type="checkbox" data-kat="${art}" value="${this.esc(wert)}"${bereich ? ` data-bereich="${this.esc(bereich)}"` : ''} ${an ? 'checked' : ''}>${text}</label>`;
+    // Zeilentitel als Knopf: wählt die ganze Zeile an – oder ab, wenn schon alles an ist
+    const titel = text => `<button type="button" class="mt-kat-titel" data-mt="kat-alle" title="Ganze Zeile an- oder abwählen">${this.esc(text)}</button>`;
+    // Stufen nach Gruppe teilen: „Klasse 5 · 3“ → Gruppe „Klasse 5“, Chip „3“
+    const gruppen = liste => {
+      const g = new Map();
+      for (const st of liste) {
+        const m = /^(.*\S)\s*·\s*(.+)$/.exec(st.name);
+        const name = m ? m[1] : 'Stufe';
+        if (!g.has(name)) g.set(name, []);
+        g.get(name).push({ ...st, kurz: m ? m[2] : st.name, titel: st.titel || st.name });
+      }
+      return [...g];
+    };
     return `
       <div class="mt-kategorien">
-        <div class="mt-kat-zeile"><span class="mt-kat-titel">Bereich</span>
+        <div class="mt-kat-zeile">${titel('Bereich')}
           ${bereiche.map(b => chip('bereich', b, k.bereiche.includes(b), this.esc(b))).join('')}</div>
         ${spiele.length ? `
-        <div class="mt-kat-zeile"><span class="mt-kat-titel">Spiel</span>
+        <div class="mt-kat-zeile">${titel('Spiel')}
           ${spiele.map(sp => chip('spiel', sp.id, !k.ohne.includes(sp.id),
             this.esc(sp.titel) + (doppelt(sp) ? ` <span class="hint">${this.esc(sp.bereich)}</span>` : ''), `${sp.bereich}: ${sp.titel}`)).join('')}</div>` : ''}
-        ${mitStufen.map((b, n) => `
-        <div class="mt-kat-zeile"><span class="mt-kat-titel">${n ? '' : 'Stufe'}</span>
-          ${mitStufen.length > 1 ? `<span class="mt-kat-bereich">${this.esc(b)}</span>` : ''}
-          ${this.stufenListe(aktiv.filter(sp => sp.bereich === b)).map(s =>
-            chip('stufe', s.i, this.stufenVon(k, b).includes(s.i), this.esc(s.name), s.titel, b)).join('')}</div>`).join('')}
+        ${mitStufen.map(b => gruppen(this.stufenListe(aktiv.filter(sp => sp.bereich === b))).map(([g, liste], n) => `
+        <div class="mt-kat-zeile">
+          ${mitStufen.length > 1 ? `<span class="mt-kat-bereich">${n ? '' : this.esc(b)}</span>` : ''}
+          ${titel(g)}
+          ${liste.map(s => chip('stufe', s.i, this.stufenVon(k, b).includes(s.i), this.esc(s.kurz), s.titel, b)).join('')}</div>`).join('')).join('')}
       </div>`;
   },
 
@@ -336,6 +349,15 @@ const Musiktrainer = {
     if (!b) return;
     const aktion = b.dataset.mt;
     const cls = this.klasse();
+    if (aktion === 'kat-alle') {
+      // Ganze Zeile: ist schon alles an, alles ab – sonst alles an
+      const felder = [...b.closest('.mt-kat-zeile').querySelectorAll('input[data-kat]')];
+      const an = !felder.every(f => f.checked);
+      const k = this.kategorien(cls.musiktrainer);
+      felder.forEach(f => this.katSetzen(k, f, an));
+      Classes.persist();
+      return this.render();
+    }
     if (aktion === 'einrichten') return this.einrichten(cls);
     if (aktion === 'nachtragen') return this.nachtragen(cls);
     if (aktion === 'laden') { this.ergebnis = null; return this.laden(); }
@@ -390,18 +412,22 @@ const Musiktrainer = {
     }
   },
 
+  /* Ein Häkchen bei Bereich, Spiel oder Stufe übernehmen */
+  katSetzen(k, feld, an) {
+    const kat = feld.dataset.kat, wert = feld.value;
+    if (kat === 'bereich') k.bereiche = an ? [...new Set([...k.bereiche, wert])] : k.bereiche.filter(x => x !== wert);
+    if (kat === 'spiel') k.ohne = an ? k.ohne.filter(x => x !== wert) : [...new Set([...k.ohne, wert])];
+    if (kat === 'stufe') {
+      const b = feld.dataset.bereich, alt = this.stufenVon(k, b);
+      k.stufenJe = { ...k.stufenJe, [b]: an ? [...new Set([...alt, Number(wert)])] : alt.filter(x => x !== Number(wert)) };
+    }
+  },
+
   aenderung(e) {
     const cls = this.klasse();
     if (e.target.dataset.kat) {
       // Bereich, Spiel oder Stufe an- oder abwählen; Spiele und Stufen hängen an den Bereichen
-      const k = this.kategorien(cls.musiktrainer);
-      const { kat } = e.target.dataset, wert = e.target.value, an = e.target.checked;
-      if (kat === 'bereich') k.bereiche = an ? [...k.bereiche, wert] : k.bereiche.filter(x => x !== wert);
-      if (kat === 'spiel') k.ohne = an ? k.ohne.filter(x => x !== wert) : [...k.ohne, wert];
-      if (kat === 'stufe') {
-        const b = e.target.dataset.bereich, alt = this.stufenVon(k, b);
-        k.stufenJe = { ...k.stufenJe, [b]: an ? [...alt, Number(wert)] : alt.filter(x => x !== Number(wert)) };
-      }
+      this.katSetzen(this.kategorien(cls.musiktrainer), e.target, e.target.checked);
       Classes.persist();
       return this.render();
     }
