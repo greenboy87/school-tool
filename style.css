@@ -2552,13 +2552,20 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 /* Namensliste zum Abschreiben */
 .mt-namensliste { display: grid; grid-auto-flow: column; grid-template-rows: repeat(var(--zeilen), auto); gap: .2rem 3rem;
   justify-content: center; font-size: clamp(1.1rem, 2.2vw, 1.9rem); }
+.mt-namensliste.drei { font-size: clamp(1rem, 1.55vw, 1.6rem); gap: .15rem 2.2rem; }
+.mt-namenszeile > * { white-space: nowrap; }
 .mt-namenszeile { display: flex; justify-content: space-between; gap: 2rem; padding: .25rem 0; border-bottom: 1px solid var(--border); }
 .mt-namenszeile code { font-weight: 800; color: var(--accent-soft); background: none; }
 /* Allgemeiner QR-Code: nur die Anmeldeseite, weiß hinterlegt, damit die Kamera ihn auch im Dunkelmodus liest */
-.mt-allgemein { display: flex; flex-direction: column; align-items: center; gap: .4rem; }
-.mt-allgemein code { font-size: 1.25rem; font-weight: 800; color: var(--accent-soft); background: none; white-space: nowrap; }
-.mt-allgemein-qr { background: #fff; padding: 8px; border-radius: 8px; line-height: 0; }
-.mt-allgemein-qr img, .mt-allgemein-qr canvas { width: 170px !important; height: 170px !important; }
+/* Zugangsblock der Namensliste: Seite und Passwort groß, QR-Code mit Luft daneben */
+.mt-zugangsblock { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1.5rem 4rem;
+  margin: 0 auto 2rem; padding: 1.4rem 2.5rem; border: 1px solid var(--border); border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent); width: fit-content; max-width: 100%; }
+.mt-zugangsfeld { display: flex; flex-direction: column; gap: .2rem; }
+.mt-zugangsfeld span { color: var(--muted); font-size: 1rem; }
+.mt-zugangsfeld code { font-size: clamp(2rem, 4.2vw, 3.6rem); font-weight: 800; color: var(--accent-soft); background: none; white-space: nowrap; line-height: 1.1; }
+.mt-allgemein-qr { background: #fff; padding: 12px; border-radius: 12px; line-height: 0; }
+.mt-allgemein-qr img, .mt-allgemein-qr canvas { width: clamp(150px, 16vw, 230px) !important; height: clamp(150px, 16vw, 230px) !important; }
 
 /* Kärtchen drucken: nur sie, alles andere ausgeblendet */
 #mt-druck { display: none; }

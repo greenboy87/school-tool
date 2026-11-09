@@ -1064,19 +1064,19 @@ const Musiktrainer = {
       <div class="mt-beamer-kopf">
         <div>
           <h2>${this.esc(titel)}: deine Anmeldung</h2>
-          <p>Schreib dir die Adresse, deinen Benutzernamen und das Passwort auf – dann kannst du auch zu Hause spielen. QR-Code scannen oder Adresse öffnen, „Anmelden“, selbst eintippen.</p>
-        </div>
-        <div class="mt-beamer-pw"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
-        <div class="mt-allgemein" title="Führt nur zur Anmeldeseite – Benutzername und Passwort tippt jedes Kind selbst">
-          <div class="mt-allgemein-qr" id="mt-allgemein-qr"></div>
-          <code>${this.esc(this.KURZ_URL)}</code>
+          <p>Schreib dir Adresse, Benutzername und Passwort auf – dann kannst du auch zu Hause spielen.</p>
         </div>
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
-      <div class="mt-namensliste" style="--zeilen:${Math.ceil(sortiert.length / (sortiert.length > 16 ? 2 : 1))}">
+      <div class="mt-zugangsblock" title="Der QR-Code führt nur zur Anmeldeseite – Benutzername und Passwort tippt jedes Kind selbst">
+        <div class="mt-zugangsfeld"><span>Seite</span><code>${this.esc(this.KURZ_URL)}</code></div>
+        <div class="mt-zugangsfeld"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
+        <div class="mt-allgemein-qr" id="mt-allgemein-qr"></div>
+      </div>
+      <div class="mt-namensliste${sortiert.length > 24 ? ' drei' : ''}" style="--zeilen:${Math.ceil(sortiert.length / (sortiert.length > 24 ? 3 : sortiert.length > 16 ? 2 : 1))}">
         ${sortiert.map(k => `<div class="mt-namenszeile"><span>${this.esc(k.name)}</span><code>${this.esc(k.benutzer)}</code></div>`).join('')}
       </div>`;
-    this.allgemeinQr(document.getElementById('mt-allgemein-qr'), 180);
+    this.allgemeinQr(document.getElementById("mt-allgemein-qr"), 460);
   },
 
   /* Allgemeiner Link: nur zur Anmeldeseite, ohne Benutzername und Passwort */
