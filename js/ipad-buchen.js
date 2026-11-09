@@ -11,8 +11,11 @@
    Schulmanagers – mit dessen Anmeldung – den Auftrag aus. Die eigenen Buchungen
    bringt es als Anker zurück ins School-Tool:
      …/school-tool/#plan&ipads=2026-10-19_2026-12-21~2026-10-23.4.66897~…
-   (Zeitraum, dann je Buchung Tag.Stunde.Koffer). Der Code des Lesezeichens ist
-   die Funktion unten; er steckt komplett im Lesezeichen und lädt nichts nach. */
+                        &belegt=2026-11-02_2026-12-21~2026-11-03.2.66893,66897~…
+   (Zeitraum, dann je Buchung Tag.Stunde.Koffer; unter „belegt“ ab heute, was
+   andere gebucht haben – nur Tag, Stunde und Koffer, keine Namen). Der Code des
+   Lesezeichens ist die Funktion unten; er steckt komplett im Lesezeichen und
+   lädt nichts nach. */
 const IpadBuchen = {
   /* Läuft im Schulmanager, nicht hier – darf deshalb nichts aus dem School-Tool
      benutzen. Alle Angaben stehen in der Funktion selbst. */
@@ -135,8 +138,15 @@ const IpadBuchen = {
       }
       const lehrer = new Set(alle.filter(x => x.v.lastUpdatedById === ich).map(x => x.v.teacherId));
       const eigene = alle.filter(x => x.v.lastUpdatedById === ich || lehrer.has(x.v.teacherId));
+      // Was andere ab heute gebucht haben – daraus zeigt der Plan die freien Koffer
+      const fremd = {};
+      for (const x of alle) {
+        if (x.tag < heute || eigene.includes(x)) continue;
+        (fremd[x.tag + '.' + x.std] = fremd[x.tag + '.' + x.std] || []).push(x.koffer);
+      }
       location.href = SCHOOLTOOL + '#plan&ipads=' + von + '_' + bis +
-        eigene.map(x => `~${x.tag}.${x.std}.${x.koffer}`).join('');
+        eigene.map(x => `~${x.tag}.${x.std}.${x.koffer}`).join('') +
+        '&belegt=' + heute + '_' + bis + Object.entries(fremd).map(([k, ids]) => `~${k}.${ids.join(',')}`).join('');
     };
 
     let auftrag = /^stbuchen\|(\d{4}-\d\d-\d\d)\|(\d)\|([\d,]+)\|(.*)$/.exec(window.name || '');
@@ -169,6 +179,10 @@ const IpadBuchen = {
     const wer = b => { const t = b && b.reservation && b.reservation.teacher; return t ? `${t.lastname}, ${t.firstname}` : 'belegt'; };
     let besetzt = await belegt(wunsch);
     let frei = wunsch.filter(id => !besetzt[id]);
+    // Der gewählte Koffer ist belegt: das sagen, statt still einen anderen zu nehmen
+    // (nicht, wenn ohnehin jeder Koffer recht war)
+    const statt = frei.length && besetzt[wunsch[0]] && wunsch.length < ALLE.length
+      ? `${KOFFER[wunsch[0]] || wunsch[0]} ist belegt (${wer(besetzt[wunsch[0]])}).\n\nStattdessen ` : '';
     if (!frei.length) {
       const liste1 = wunsch.map(id => `  ${KOFFER[id] || id}: ${wer(besetzt[id])}`).join('\n');
       if (!confirm(`${wann}\n\nAlle passenden Koffer sind belegt:\n${liste1}\n\nEinen Koffer aus einem anderen Stockwerk nehmen?`)) return;
@@ -178,7 +192,7 @@ const IpadBuchen = {
       if (!frei.length) { alert(`${wann}\n\nAlle iPad-Koffer sind belegt.`); return; }
     }
     const id = frei[0];
-    if (!confirm(`iPad-Koffer ${KOFFER[id] || id} buchen?\n\n${wann}`)) return;
+    if (!confirm(`${statt}iPad-Koffer ${KOFFER[id] || id} buchen?\n\n${wann}`)) return;
     const r = await anfrage(version, [{ moduleName: 'resources', endpointName: 'create-resource-reservation',
       parameters: { resourceId: id, comment: '', startDate: datum, endDate: datum,
         startClassHourId: stundeId(stunde), endClassHourId: stundeId(stunde), repeatUntilDate: null } }]);
@@ -205,12 +219,15 @@ const IpadBuchen = {
   ankerLesen() {
     const m = /(?:^|[#&])ipads=([^&]*)/.exec(location.hash);
     if (!m || !Classes.data) return 0;
+    const fremd = /(?:^|[#&])belegt=([^&]*)/.exec(location.hash);
     const teile = decodeURIComponent(m[1]).split('~');
     const zeitraum = /^(\d{4}-\d\d-\d\d)_(\d{4}-\d\d-\d\d)$/.exec(teile.shift() || '');
     // Anker gleich wieder entfernen, der Reiter bleibt
-    const rest = location.hash.replace(/^#/, '').split('&').filter(t => t && !/^ipads=/.test(t)).join('&');
+    const rest = location.hash.replace(/^#/, '').split('&').filter(t => t && !/^(ipads|belegt)=/.test(t)).join('&');
     history.replaceState(null, '', location.pathname + location.search + (rest ? '#' + rest : ''));
     if (!zeitraum) return 0;
+    // Ein älteres Lesezeichen bringt keine Belegung mit – dann bleibt die letzte
+    if (fremd) this.belegungMerken(decodeURIComponent(fremd[1]));
     const [, von, bis] = zeitraum;
     const zeit = Object.fromEntries(Object.entries(Stundenplan.STUNDEN).map(([z, n]) => [parseInt(n, 10), z]));
     const ipads = Classes.data.planIpads || (Classes.data.planIpads = {});
@@ -229,5 +246,32 @@ const IpadBuchen = {
     Classes.data.planIpadsStand = Date.now();
     Classes.persist();
     return n;
+  },
+
+  /* Was andere gebucht haben, aus dem Abgleich. Bleibt nur auf diesem Gerät und
+     geht nicht in den Sync: eine Momentaufnahme des Schulmanagers, die ohnehin
+     veraltet – vor dem Buchen prüft das Lesezeichen noch einmal.
+     { stand, von, bis, b: { '2026-11-03.2': [66893, 66897] } } */
+  BELEGT_KEY: 'plan-ipads-belegt',
+
+  belegungMerken(text) {
+    const teile = text.split('~');
+    const z = /^(\d{4}-\d\d-\d\d)_(\d{4}-\d\d-\d\d)$/.exec(teile.shift() || '');
+    if (!z) return;
+    const b = {};
+    for (const t of teile) {
+      const e = /^(\d{4}-\d\d-\d\d)\.(\d)\.([\d,]+)$/.exec(t);
+      if (e) b[e[1] + '.' + e[2]] = e[3].split(',').map(Number);
+    }
+    try { localStorage.setItem(this.BELEGT_KEY, JSON.stringify({ stand: Date.now(), von: z[1], bis: z[2], b })); }
+    catch (e) { /* Speicher voll – dann eben ohne Belegung */ }
+  },
+
+  /* Belegte Koffer zu Tag und Stunde – null, wenn der letzte Abgleich den Tag nicht abdeckt */
+  belegung(tag, nr) {
+    let x = null;
+    try { x = JSON.parse(localStorage.getItem(this.BELEGT_KEY)); } catch (e) { /* unlesbar */ }
+    if (!x || !x.b || tag < x.von || tag > x.bis) return null;
+    return { ids: x.b[tag + '.' + nr] || [], stand: x.stand };
   },
 };

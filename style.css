@@ -2357,7 +2357,8 @@ table.klassenbuch tr.entfallen:hover { background: none; }
   display: inline-block; padding: .55rem 1rem; border-radius: var(--radius-sm); font-weight: 700;
   background: var(--accent-grad); color: var(--on-accent); text-decoration: none; cursor: grab;
 }
-.plan-ipads a.plan-ipad-buchen { font-weight: 800; }
+/* Menü „bestimmter Koffer“ im Bearbeiten-Fenster: klein, in der Zeile */
+.plan-dialog .plan-ipad-wahl { display: inline-block; width: auto; margin: 0; padding: .1rem .5rem; font-size: .82rem; vertical-align: baseline; }
 /* Vorschlag übernehmen */
 .plan-uebernehmen {
   border: 1px solid var(--border); background: var(--panel); color: var(--accent); font: inherit; font-size: .78rem; font-weight: 700;
