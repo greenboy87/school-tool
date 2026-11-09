@@ -270,10 +270,20 @@ const Lessons = {
     const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
       (/Mac/.test(navigator.platform) && navigator.maxTouchPoints > 1);
     const mac = !ios && /Mac/i.test(navigator.platform || navigator.userAgent);
-    if (ios) {
-      try { navigator.clipboard.writeText(pfad); } catch (e) { /* Kurzbefehl bekommt den Pfad trotzdem */ }
-      location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Katalog öffnen iOS') +
-        '&input=text&text=' + encodeURIComponent(pfad);
+    if (ios && !/\.[a-z0-9]{2,5}$/i.test(pfad)) {
+      /* Ordner: Der Kurzbefehl lädt nur Dateien. Die Dateien-App öffnet iCloud-Ordner direkt
+         über shareddocuments:// – am iPad liegt iCloud Drive unter /private/var/mobile/… */
+      const basis = this.katalog ? this.katalog.macBasis.replace(/^\/Users\/[^/]+\//, '/private/var/mobile/')
+        : '/private/var/mobile/Library/Mobile Documents/com~apple~CloudDocs/3_Unterrichtsstunden/Musikseminarsave';
+      location.href = 'shareddocuments://' + (basis + '/' + pfad.replace(/\/$/, ''))
+        .split('/').map(encodeURIComponent).join('/');
+    } else if (ios) {
+      /* Erst die Zwischenablage füllen, dann springen – der Kurzbefehl liest den Pfad dort */
+      const los = () => {
+        location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Katalog öffnen iOS') +
+          '&input=text&text=' + encodeURIComponent(pfad);
+      };
+      try { navigator.clipboard.writeText(pfad).then(los, los); } catch (e) { los(); }
     } else if (mac && this.katalog) {
       location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent('Katalog öffnen') +
         '&input=text&text=' + encodeURIComponent(this.katalog.macBasis + '/' + pfad);
