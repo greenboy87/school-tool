@@ -49,6 +49,8 @@ const Musiktrainer = {
   /* Adresse des Workers – dieselbe wie in music-trainer/js/konto.js. Leer = Reiter zeigt nur einen Hinweis. */
   API: 'https://music-trainer.tomgruenig87.workers.dev',
   SPIEL_URL: 'https://greenboy87.github.io/music-trainer/',
+  // Kurzlink zum Abschreiben (is.gd, leitet fest auf SPIEL_URL weiter, ohne Zwischenseite)
+  KURZ_URL: 'is.gd/rsamusik',
   TOKEN_KEY: 'schooltool-musiktrainer-lehrer',
 
   TIERE: ['Panda', 'Fuchs', 'Tiger', 'Otter', 'Biber', 'Eule', 'Igel', 'Koala', 'Luchs', 'Wal', 'Adler', 'Dachs', 'Lama', 'Robbe', 'Zebra', 'Falke'],
@@ -1061,7 +1063,7 @@ const Musiktrainer = {
       <div class="mt-beamer-kopf">
         <div>
           <h2>${this.esc(titel)}: deine Anmeldung</h2>
-          <p>QR-Code scannen oder ${this.esc(this.SPIEL_URL.replace(/^https:\/\//, '').replace(/\/$/, ''))} öffnen, „Anmelden“ – Benutzername und Passwort selbst eintippen.</p>
+          <p>QR-Code scannen oder <b>${this.esc(this.KURZ_URL)}</b> öffnen, „Anmelden“ – Benutzername und Passwort selbst eintippen.</p>
         </div>
         <div class="mt-beamer-pw"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
         <div class="mt-allgemein-qr" id="mt-allgemein-qr" title="Führt nur zur Anmeldeseite – Benutzername und Passwort tippt jedes Kind selbst"></div>
@@ -1086,7 +1088,7 @@ const Musiktrainer = {
     let d = document.getElementById('mt-druck');
     if (!d) { d = document.createElement('div'); d.id = 'mt-druck'; document.body.appendChild(d); }
     const sortiert = [...kinder].sort((a, c) => a.name.localeCompare(c.name, 'de'));
-    const adresse = this.SPIEL_URL.replace(/^https:\/\//, '').replace(/\/$/, '');
+    const adresse = this.KURZ_URL;
     d.innerHTML = `<div class="mt-liste">
       <div class="mt-liste-kopf">
         <div>
@@ -1119,7 +1121,7 @@ const Musiktrainer = {
         <div class="mt-karte-text">
           <div class="mt-karte-kopf">music-trainer</div>
           <div class="mt-karte-name">${this.esc(k.name)} · ${this.esc(titel)}</div>
-          <div class="mt-karte-zeile adresse"><span>Adresse</span><b>${this.esc(this.SPIEL_URL.replace(/^https:\/\//, '').replace(/\/$/, ''))}</b></div>
+          <div class="mt-karte-zeile adresse"><span>Adresse</span><b>${this.esc(this.KURZ_URL)}</b></div>
           <div class="mt-karte-zeile"><span>Benutzername</span><b>${this.esc(k.benutzer)}</b></div>
           <div class="mt-karte-zeile"><span>Passwort</span><b>${this.esc(passwort)}</b></div>
         </div>
