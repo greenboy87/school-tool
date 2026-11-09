@@ -2351,14 +2351,15 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .plan-liste .plan-ipads { padding-left: 11.7rem; }
 @media (max-width: 600px) { .plan-liste .plan-ipads { padding-left: 0; } }
 .plan-zelle .plan-ipads { font-size: .72rem; }
-.plan-dialog-ipad-links { font-size: .85rem; color: var(--muted); margin: -.3rem 0 .6rem; }
+.plan-dialog-ipad-links { font-size: .85rem; color: var(--muted); line-height: 1.6; margin: .7rem 0 .9rem; }
+.plan-ipad-unten.eigene-zeile { display: block; margin-top: .45rem; }
 /* Lesezeichen zum Ziehen (Extras → iPad-Koffer) */
 .lesezeichen-knopf {
   display: inline-block; padding: .55rem 1rem; border-radius: var(--radius-sm); font-weight: 700;
   background: var(--accent-grad); color: var(--on-accent); text-decoration: none; cursor: grab;
 }
 /* Menü „bestimmter Koffer“ im Bearbeiten-Fenster: klein, in der Zeile */
-.plan-dialog .plan-ipad-wahl { display: inline-block; width: auto; margin: 0; padding: .1rem .5rem; font-size: .82rem; vertical-align: baseline; }
+.plan-dialog .plan-ipad-wahl { display: inline-block; width: auto; margin: 0 .15rem 0 0; padding: .25rem .6rem; font-size: .82rem; vertical-align: middle; }
 /* Vorschlag übernehmen */
 .plan-uebernehmen {
   border: 1px solid var(--border); background: var(--panel); color: var(--accent); font: inherit; font-size: .78rem; font-weight: 700;

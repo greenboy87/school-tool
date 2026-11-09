@@ -605,19 +605,20 @@ const Stundenplan = {
     const laut = belegung ? `Frei laut Abgleich vom ${new Date(belegung.stand).toLocaleString('de-DE', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })} – vor dem Buchen prüft das Lesezeichen noch einmal`
       : 'Welche davon frei sind, weiß der Plan nach „iPads abgleichen“';
     let teil = '';
-    if (stockwerk.length && !belegung) teil = `<span title="${this.esc(laut)}">Koffer im Stockwerk:</span> ${stockwerk.map(link).join(' ')} · `;
-    else if (frei.length) teil = `<span title="${this.esc(laut)}">freie Koffer im Stockwerk${stand}:</span> ${frei.map(link).join(' ')} · `;
-    else if (stockwerk.length) teil = `<span title="${this.esc(laut)}">im Stockwerk alles belegt${stand}</span> · `;
+    if (stockwerk.length && !belegung) teil = `<span title="${this.esc(laut)}">Koffer im Stockwerk:</span> ${stockwerk.map(link).join(' ')}`;
+    else if (frei.length) teil = `<span title="${this.esc(laut)}">freie Koffer im Stockwerk${stand}:</span> ${frei.map(link).join(' ')}`;
+    else if (stockwerk.length) teil = `<span title="${this.esc(laut)}">im Stockwerk alles belegt${stand}</span>`;
     // Alle Koffer zur Auswahl – gebucht wird der gewählte (belegt: der nächste freie auf dem Stockwerk)
     const wahl = this.KOFFER.filter(k => !ohne.includes(k.id)).map(k =>
       `<option value="${k.id}" data-href="${this.esc(this.ipadAdresse(t.beginn, k.id))}" data-ziel="${this.esc(auftrag(reihe(k)))}">` +
       `${this.esc(k.raum)} · ${k.ipads} iPads${belegt(k) ? ' · belegt' : ''}</option>`).join('');
-    return teil +
+    // Menü und „von Hand“ in eigener Zeile unter dem Stockwerk
+    return teil + `<span class="plan-ipad-unten${teil ? ' eigene-zeile' : ''}">` +
       `<select class="plan-ipad-wahl" data-nativ aria-label="Bestimmten Koffer buchen" title="Bestimmten Koffer buchen${this.esc(hinweis)}">` +
       `<option value="">${stockwerk.length ? 'bestimmter Koffer …' : 'Koffer wählen …'}</option>${wahl}</select>` +
       // Nur die Seite, ohne Auftrag – zum Buchen von Hand
       ` · <a href="${this.esc(this.ipadAdresse(t.beginn))}" target="schulmanager" rel="noopener" class="plan-ipad-hand"
-        title="Nur die Buchungsseite für ${this.esc(this.tagName(t.beginn))} öffnen – selbst buchen, ohne Lesezeichen">von Hand</a>`;
+        title="Nur die Buchungsseite für ${this.esc(this.tagName(t.beginn))} öffnen – selbst buchen, ohne Lesezeichen">von Hand</a></span>`;
   },
 
   /* Koffer aus dem Menü: die Buchungsseite mit dem Auftrag öffnen – über einen
