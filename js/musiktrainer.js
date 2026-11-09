@@ -902,12 +902,12 @@ const Musiktrainer = {
       document.body.appendChild(b);
       document.addEventListener('keydown', e => {
         if (b.hidden) return;
-        if (e.key === 'Escape') b.hidden = true;
+        if (e.key === 'Escape') this.beamerZu();
         if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); this.qrBlaettern(1); }
         if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); this.qrBlaettern(-1); }
       });
       b.addEventListener('click', e => {
-        if (e.target.closest('.mt-beamer-zu')) b.hidden = true;
+        if (e.target.closest('.mt-beamer-zu')) this.beamerZu();
         else if (e.target.closest('[data-blaettern]')) this.qrBlaettern(+e.target.closest('[data-blaettern]').dataset.blaettern);
       });
       b.addEventListener('change', e => {
@@ -933,9 +933,37 @@ const Musiktrainer = {
         this.qrSeite.seite = 0;
         this.qrZeichnen();
       });
+      // Verlässt man das Vollbild (Esc fängt der Browser selbst ab), geht die Ansicht mit zu
+      const raus = () => {
+        const voll = document.fullscreenElement || document.webkitFullscreenElement;
+        if (!voll && b.dataset.vollbild) { delete b.dataset.vollbild; b.hidden = true; }
+      };
+      document.addEventListener('fullscreenchange', raus);
+      document.addEventListener('webkitfullscreenchange', raus);
     }
     b.hidden = false;
+    this.beamerVollbild(b);
     return b;
+  },
+
+  /* Beamer-Ansichten gleich im Vollbild – nur aus einem Klick heraus erlaubt; klappt es nicht, bleibt die Ebene */
+  beamerVollbild(b) {
+    if (document.fullscreenElement || document.webkitFullscreenElement) return;
+    const rein = b.requestFullscreen || b.webkitRequestFullscreen;
+    if (!rein) return;
+    try {
+      const p = rein.call(b);
+      b.dataset.vollbild = '1';
+      if (p && p.catch) p.catch(() => { delete b.dataset.vollbild; });
+    } catch (e) { delete b.dataset.vollbild; }
+  },
+
+  beamerZu() {
+    const b = document.getElementById('mt-beamer');
+    if (b) { delete b.dataset.vollbild; b.hidden = true; }
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) { /* schon draußen */ }
+    }
   },
 
   /* QR-Codes seitenweise: wenige große Codes je Seite, damit die Kamera
