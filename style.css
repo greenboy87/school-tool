@@ -2557,15 +2557,26 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-namenszeile { display: flex; justify-content: space-between; gap: 2rem; padding: .25rem 0; border-bottom: 1px solid var(--border); }
 .mt-namenszeile code { font-weight: 800; color: var(--accent-soft); background: none; }
 /* Allgemeiner QR-Code: nur die Anmeldeseite, weiß hinterlegt, damit die Kamera ihn auch im Dunkelmodus liest */
-/* Zugangsblock der Namensliste: Seite und Passwort groß, QR-Code mit Luft daneben */
-.mt-zugangsblock { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1.5rem 4rem;
-  margin: 0 auto 2rem; padding: 1.4rem 2.5rem; border: 1px solid var(--border); border-radius: 18px;
-  background: color-mix(in srgb, var(--accent) 8%, transparent); width: fit-content; max-width: 100%; }
+/* Zugangsblock der Namensliste: Adresse groß in der Mitte, QR-Code links, rechts ein
+   gleich breiter Leerplatz – so steht die Adresse genau mittig. Passwort darunter. */
+.mt-zugangsblock { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .6rem 2.5rem;
+  margin: 0 0 1.4rem; padding: 1rem 2rem; border: 1px solid var(--border); border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.mt-adresse { text-align: center; font-family: var(--mono, Menlo, monospace); font-weight: 800; line-height: 1;
+  font-size: clamp(2.6rem, 7.5vw, 7rem); color: var(--accent-soft); white-space: nowrap; }
+.mt-qr-platz { visibility: hidden; }
+/* Passwort groß und mittig unter der Namensliste */
+.mt-passwort-gross { display: flex; flex-direction: column; align-items: center; gap: .2rem; margin-top: 1rem; }
+.mt-passwort-gross span { color: var(--muted); font-size: 1rem; }
+.mt-passwort-gross code { font-family: var(--mono, Menlo, monospace); font-weight: 800; line-height: 1; background: none;
+  font-size: clamp(2.2rem, 5vw, 4.6rem); color: var(--accent-soft); white-space: nowrap; }
 .mt-zugangsfeld { display: flex; flex-direction: column; gap: .2rem; }
-.mt-zugangsfeld span { color: var(--muted); font-size: 1rem; }
-.mt-zugangsfeld code { font-size: clamp(2rem, 4.2vw, 3.6rem); font-weight: 800; color: var(--accent-soft); background: none; white-space: nowrap; line-height: 1.1; }
+.mt-zugangsfeld span { color: var(--muted); font-size: 1.1rem; }
+.mt-zugangsfeld code { font-size: clamp(1.8rem, 3.4vw, 3rem); font-weight: 800; color: var(--text); background: none; white-space: nowrap; line-height: 1.1; }
 .mt-allgemein-qr { background: #fff; padding: 12px; border-radius: 12px; line-height: 0; }
-.mt-allgemein-qr img, .mt-allgemein-qr canvas { width: clamp(150px, 16vw, 230px) !important; height: clamp(150px, 16vw, 230px) !important; }
+.mt-allgemein-qr img, .mt-allgemein-qr canvas { width: clamp(140px, 13vw, 210px) !important; height: clamp(140px, 13vw, 210px) !important; }
+/* Leerplatz genau so breit wie der QR-Code samt Polster (2 × 12 px) */
+.mt-qr-platz { box-sizing: border-box; width: calc(clamp(140px, 13vw, 210px) + 24px); }
 
 /* Kärtchen drucken: nur sie, alles andere ausgeblendet */
 #mt-druck { display: none; }

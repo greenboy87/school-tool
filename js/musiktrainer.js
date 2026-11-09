@@ -1069,13 +1069,14 @@ const Musiktrainer = {
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
       <div class="mt-zugangsblock" title="Der QR-Code führt nur zur Anmeldeseite – Benutzername und Passwort tippt jedes Kind selbst">
-        <div class="mt-zugangsfeld"><span>Seite</span><code>${this.esc(this.KURZ_URL)}</code></div>
-        <div class="mt-zugangsfeld"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
         <div class="mt-allgemein-qr" id="mt-allgemein-qr"></div>
+        <div class="mt-adresse">${this.esc(this.KURZ_URL)}</div>
+        <div class="mt-allgemein-qr mt-qr-platz" aria-hidden="true"></div>
       </div>
       <div class="mt-namensliste${sortiert.length > 24 ? ' drei' : ''}" style="--zeilen:${Math.ceil(sortiert.length / (sortiert.length > 24 ? 3 : sortiert.length > 16 ? 2 : 1))}">
         ${sortiert.map(k => `<div class="mt-namenszeile"><span>${this.esc(k.name)}</span><code>${this.esc(k.benutzer)}</code></div>`).join('')}
-      </div>`;
+      </div>
+      <div class="mt-passwort-gross"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>      </div>`;
     this.allgemeinQr(document.getElementById("mt-allgemein-qr"), 460);
   },
 
