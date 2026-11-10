@@ -2817,3 +2817,45 @@ dialog.plan-bild.mit-text img { max-height: calc(96vh - 3.6rem - 7em); }
   .tab-link .icon { display: inline-block; margin: 0; }
   .tab-link-text { display: none; }
 }
+
+/* ---------- Notfallliste ---------- */
+.notfall-karte { max-width: 900px; margin: 0 auto; }
+.notfall-suche { max-width: 28rem; margin: .8rem 0 1rem; }
+.notfall-klasse { margin: 1.1rem 0 .5rem; font-size: 1rem; color: var(--muted); }
+.notfall-eintrag {
+  display: flex; gap: .9rem; align-items: flex-start;
+  padding: .75rem .85rem; margin-bottom: .6rem;
+  border: 1px solid var(--border); border-left: 4px solid var(--danger);
+  border-radius: var(--radius-sm); background: var(--panel);
+}
+.notfall-gesicht { width: 4rem; height: 4rem; font-size: 1.1rem; }
+.notfall-inhalt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .5rem; }
+.notfall-kopf { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.notfall-kopf strong { font-size: 1.08rem; margin-right: auto; }
+.notfall-weg { line-height: 0; padding: .3rem; }
+.notfall-weg .icon { margin: 0; }
+.notfall-weg:hover { color: var(--danger); }
+.notfall-eintrag textarea, #profil-notfall-text {
+  width: 100%; box-sizing: border-box; font: inherit; padding: .5rem .65rem; resize: vertical;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
+}
+.notfall-bilder { display: flex; flex-wrap: wrap; gap: .5rem; }
+.notfall-bild {
+  padding: 0; width: 7rem; height: 5.5rem; overflow: hidden; cursor: zoom-in;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--hover);
+}
+.notfall-bild img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.profil-notfall { display: flex; flex-direction: column; gap: .45rem; font-size: .92rem; }
+.profil-notfall label { display: flex; align-items: center; gap: .45rem; }
+#profil-notfall-text[hidden] { display: none; }
+/* Kleines Warnzeichen hinter dem Namen in der Klassenliste */
+.notfall-marke { color: var(--danger); display: inline-flex; vertical-align: -.1em; }
+.notfall-marke .icon { width: .95em; height: .95em; margin: 0; }
+@media screen and (max-width: 520px) {
+  .notfall-eintrag { gap: .6rem; padding: .6rem; }
+  .notfall-gesicht { width: 2.8rem; height: 2.8rem; }
+}
+@media print {
+  .notfall-suche, .notfall-kopf button { display: none; }
+  .notfall-eintrag { break-inside: avoid; }
+}

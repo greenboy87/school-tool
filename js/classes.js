@@ -572,6 +572,7 @@ const Classes = {
       students: cls.students.map(s => {
         const neu = { ...s, id: Store.uid() };
         if (Array.isArray(s.bilder)) neu.bilder = s.bilder.map(b => ({ ...b }));
+        if (s.notfall) neu.notfall = { ...s.notfall };
         return neu;
       }),
       projects: [], lessons: {},
@@ -1460,6 +1461,13 @@ const Classes = {
       span.textContent = this.studentName(s) + ' ';
       span.title = 'Steckbrief zeigen – nochmal tippen zum Abwählen';
       span.addEventListener('click', () => Schueler.umschalten(cls.id, s.id));
+      if (s.notfall) {
+        const marke = document.createElement('span');
+        marke.className = 'notfall-marke';
+        marke.innerHTML = Icons.raw('alert');
+        marke.title = 'Auf der Notfallliste' + (s.notfall.text ? ': ' + s.notfall.text : '');
+        span.appendChild(marke);
+      }
       const move = (dir) => {
         const j = idx + dir;
         if (j < 0 || j >= cls.students.length) return;

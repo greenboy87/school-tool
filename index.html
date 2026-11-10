@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=381">
+<link rel="stylesheet" href="style.css?v=382">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Plan">
-<script src="js/icons.js?v=381"></script>
-<script src="js/theme.js?v=381"></script>
-<script src="js/auswahl.js?v=381"></script>
-<script src="js/metronom.js?v=381"></script>
-<script src="js/klang.js?v=381"></script>
-<script src="js/schwebe.js?v=381"></script>
-<script src="js/auth.js?v=381"></script>
+<script src="js/icons.js?v=382"></script>
+<script src="js/theme.js?v=382"></script>
+<script src="js/auswahl.js?v=382"></script>
+<script src="js/metronom.js?v=382"></script>
+<script src="js/klang.js?v=382"></script>
+<script src="js/schwebe.js?v=382"></script>
+<script src="js/auth.js?v=382"></script>
 </head>
 <body>
 
@@ -24,6 +24,7 @@
     <button class="tab-btn active" data-tab="ampel" data-icon="gauge" title="Lärmampel und Metronom">Tools</button>
     <button class="tab-btn" data-tab="plan" data-icon="calendar" title="Stundenplan aus dem Schulmanager">Plan</button>
     <button class="tab-btn" data-tab="klassen" data-icon="book" title="Klassen &amp; Noten">Klassen</button>
+    <button class="tab-btn" data-tab="notfall" data-icon="alert" title="Schüler mit besonderen Medikamenten für Notsituationen">Notfall</button>
     <button class="tab-btn" data-tab="band" data-icon="music" title="Schulband">Band</button>
     <button class="tab-btn" data-tab="exen" data-icon="pen" title="Digitale Exen auf iPads">Exen</button>
     <button class="tab-btn" data-tab="sport" data-icon="timer" title="Sport">Sport</button>
@@ -384,6 +385,12 @@
                   <label>Zeitzuschlag <input type="number" id="profil-ex-zuschlag" min="0" max="120" step="1" placeholder="0">
                     <select id="profil-ex-einheit"><option value="min">Minuten</option><option value="%">% der Dauer</option></select></label>
                   <p class="hint">Wird beim Freigeben im Warteraum automatisch übernommen. Bleibt auf diesem Gerät.</p>
+                </div>
+                <h3>Notfall</h3>
+                <div class="profil-notfall">
+                  <label><input type="checkbox" id="profil-notfall"> Auf die Notfallliste (besondere Medikamente, Allergie …)</label>
+                  <textarea id="profil-notfall-text" rows="3" hidden
+                            placeholder="Was im Notfall? z.&thinsp;B. welches Medikament, wo es liegt, was zu tun ist, wen anrufen"></textarea>
                 </div>
                 <h3>Notizen</h3>
                 <textarea id="profil-notiz" rows="4"
@@ -1378,6 +1385,20 @@
   </div>
 </main>
 
+<!-- ========== NOTFALL ========== -->
+<main id="tab-notfall" class="tab-page">
+  <section class="card notfall-karte">
+    <h2 data-icon="alert">Notfallliste</h2>
+    <p class="hint">Schüler mit besonderen Medikamenten oder Hinweisen für Notsituationen – über alle Klassen.
+      Hinzufügen über die Suche hier oder im Steckbrief unter „Notfall“. Die Bilder aus dem Steckbrief stehen mit dabei.</p>
+    <div class="schueler-suche notfall-suche">
+      <input type="search" id="notfall-suche" autocomplete="off" placeholder="Schüler hinzufügen – Namen eingeben …">
+      <ul id="notfall-treffer" class="suche-treffer" hidden></ul>
+    </div>
+    <div id="notfall-liste" class="notfall-liste"></div>
+  </section>
+</main>
+
 <!-- ========== LEHRKRÄFTE ========== -->
 <main id="tab-lehrer" class="tab-page">
   <div class="lehrer-layout">
@@ -1504,40 +1525,41 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=381"></script>
-<script src="js/firebase-config.js?v=381"></script>
-<script type="module" src="js/live-firebase.js?v=381"></script>
-<script src="js/ai-import.js?v=381"></script>
-<script src="js/store.js?v=381"></script>
-<script src="js/noise.js?v=381"></script>
-<script src="js/classes.js?v=381"></script>
-<script src="js/sitzplan.js?v=381"></script>
-<script src="js/schueler.js?v=381"></script>
-<script src="js/tasten.js?v=381"></script>
-<script src="js/lessons.js?v=381"></script>
-<script src="js/band.js?v=381"></script>
-<script src="js/notes.js?v=381"></script>
-<script src="js/tresor.js?v=381"></script>
-<script src="js/erklaerungen.js?v=381"></script>
-<script src="js/setlisten.js?v=381"></script>
-<script src="js/einklappen.js?v=381"></script>
-<script src="js/tinyband-instrumente.js?v=381"></script>
-<script src="js/live-groups.js?v=381"></script>
-<script src="js/tinyband-lehrer.js?v=381"></script>
-<script src="js/tipps.js?v=381"></script>
-<script src="js/sport-tabellen.js?v=381"></script>
-<script src="js/sport.js?v=381"></script>
-<script src="js/ex-import.js?v=381"></script>
-<script src="js/exen.js?v=381"></script>
-<script src="js/ex-namen.js?v=381"></script>
-<script src="js/ex-sitzung.js?v=381"></script>
-<script src="js/ex-auswertung.js?v=381"></script>
-<script src="js/ex-reiter.js?v=381"></script>
-<script src="js/tools.js?v=381"></script>
-<script src="js/ablage.js?v=381"></script>
-<script src="js/musiktrainer.js?v=381"></script>
-<script src="js/ipad-buchen.js?v=381"></script>
-<script src="js/stundenplan.js?v=381"></script>
-<script src="js/app.js?v=381"></script>
+<script src="js/vendor/qrcode.min.js?v=382"></script>
+<script src="js/firebase-config.js?v=382"></script>
+<script type="module" src="js/live-firebase.js?v=382"></script>
+<script src="js/ai-import.js?v=382"></script>
+<script src="js/store.js?v=382"></script>
+<script src="js/noise.js?v=382"></script>
+<script src="js/classes.js?v=382"></script>
+<script src="js/sitzplan.js?v=382"></script>
+<script src="js/schueler.js?v=382"></script>
+<script src="js/tasten.js?v=382"></script>
+<script src="js/lessons.js?v=382"></script>
+<script src="js/band.js?v=382"></script>
+<script src="js/notes.js?v=382"></script>
+<script src="js/tresor.js?v=382"></script>
+<script src="js/erklaerungen.js?v=382"></script>
+<script src="js/setlisten.js?v=382"></script>
+<script src="js/einklappen.js?v=382"></script>
+<script src="js/tinyband-instrumente.js?v=382"></script>
+<script src="js/live-groups.js?v=382"></script>
+<script src="js/tinyband-lehrer.js?v=382"></script>
+<script src="js/tipps.js?v=382"></script>
+<script src="js/sport-tabellen.js?v=382"></script>
+<script src="js/sport.js?v=382"></script>
+<script src="js/ex-import.js?v=382"></script>
+<script src="js/exen.js?v=382"></script>
+<script src="js/ex-namen.js?v=382"></script>
+<script src="js/ex-sitzung.js?v=382"></script>
+<script src="js/ex-auswertung.js?v=382"></script>
+<script src="js/ex-reiter.js?v=382"></script>
+<script src="js/tools.js?v=382"></script>
+<script src="js/ablage.js?v=382"></script>
+<script src="js/musiktrainer.js?v=382"></script>
+<script src="js/ipad-buchen.js?v=382"></script>
+<script src="js/stundenplan.js?v=382"></script>
+<script src="js/notfall.js?v=382"></script>
+<script src="js/app.js?v=382"></script>
 </body>
 </html>

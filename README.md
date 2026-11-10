@@ -98,6 +98,13 @@ zeigt das Bild groß, mit dem Text darunter. Die Bilder werden auf 1600 px verkl
 laufen wie die Bilder zur Stunde einzeln verschlüsselt über den Sync; die Kopie fürs nächste
 Schuljahr nimmt sie mit. Wird ein Schüler entfernt, verschwinden seine Bilder mit.
 
+### 🚑 Notfallliste (eigener Reiter „Notfall“)
+Alle Schüler mit besonderen Medikamenten oder Hinweisen für Notsituationen auf einer Seite,
+nach Klassen geordnet: Gesicht, Name, Notfall-Text (was, wo, was tun, wen anrufen) und die
+Bilder aus dem Steckbrief. Hinzufügen über die Suche im Reiter oder im Steckbrief mit dem
+Häkchen „Auf die Notfallliste“; in der Klassenliste steht dann ein rotes Warnzeichen am Namen.
+Die Kopie fürs nächste Schuljahr nimmt den Eintrag mit, die Liste zeigt jedes Kind nur einmal.
+
 **Abwählen:** derselbe Name noch einmal, das **×** am Steckbrief, das **×** im Suchfeld oder
 **Esc**. Wer links eine andere Klasse wählt, lässt die Wahl ebenfalls hinter sich.
 

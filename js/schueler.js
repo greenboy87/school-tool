@@ -26,6 +26,35 @@ const Schueler = {
       });
     }
     this.bilderVerdrahten();
+    // Notfallliste: Häkchen setzt s.notfall = { text }, der Text steht darunter
+    const nf = document.getElementById('profil-notfall');
+    const nfText = document.getElementById('profil-notfall-text');
+    if (nf && nfText) {
+      nf.addEventListener('change', () => {
+        const t = this.gewaehlt();
+        if (!t) return;
+        if (nf.checked) {
+          t.s.notfall = t.s.notfall || { text: '' };
+        } else {
+          if (t.s.notfall && t.s.notfall.text && !confirm('Von der Notfallliste nehmen? Der Notfall-Text wird dabei gelöscht.')) {
+            nf.checked = true;
+            return;
+          }
+          delete t.s.notfall;
+        }
+        nfText.value = (t.s.notfall || {}).text || '';
+        nfText.hidden = !nf.checked;
+        if (nf.checked) nfText.focus();
+        Classes.persist();
+        try { Classes.renderStudents(); } catch (e) {}
+      });
+      nfText.addEventListener('input', () => {
+        const t = this.gewaehlt();
+        if (!t || !t.s.notfall) return;
+        t.s.notfall.text = nfText.value;
+        Classes.persist();
+      });
+    }
     // Nachteilsausgleich für Exen: Notenschutz und Zeitzuschlag, nur lokal
     ['profil-ex-ns', 'profil-ex-zuschlag', 'profil-ex-einheit'].forEach(id => {
       const el = document.getElementById(id);
@@ -354,6 +383,13 @@ const Schueler = {
     }
 
     document.getElementById('profil-notiz').value = s.notiz || '';
+    const nf = document.getElementById('profil-notfall');
+    if (nf) {
+      nf.checked = !!s.notfall;
+      const nfText = document.getElementById('profil-notfall-text');
+      if (document.activeElement !== nfText) nfText.value = (s.notfall || {}).text || '';
+      nfText.hidden = !s.notfall;
+    }
     this.bilderZeichnen();
     const ex = document.getElementById('profil-ex-ns');
     if (ex) {
