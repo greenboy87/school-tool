@@ -57,13 +57,14 @@ const IpadBuchen = {
       const knopf = text => [...document.querySelectorAll('button')].find(b => b.textContent.trim() === text);
       const bericht = [];
       for (const x of kb.s) {
-        // Die alte Seite markieren, um die neue zu erkennen – außer sie ist schon die richtige
-        const ziel = '#/modules/classbook/enter/my/lesson/' + kb.d + '?lessonId=' + x.p;
+        // Die alte Seite markieren, um die neue zu erkennen – außer sie ist schon die richtige.
+        // q: „lessonId=…“, bei Sonderstunden „substitutionId=…“ (ältere Aufträge nur p)
+        const ziel = '#/modules/classbook/enter/my/lesson/' + kb.d + '?' + (x.q || 'lessonId=' + x.p);
         const alt = document.querySelector('textarea.topic-textarea');
         if (alt && location.hash !== ziel) alt.dataset.stalt = '1';
         location.hash = ziel;
         const feld = await suchen(() => { const f = document.querySelector('textarea.topic-textarea'); return f && !f.dataset.stalt ? f : null; });
-        if (!feld) { bericht.push(`✗ ${x.n}: Seite nicht geladen`); continue; }
+        if (!feld) { bericht.push(`✗ ${x.n}: Seite nicht geladen – bitte von Hand eintragen`); continue; }
         await warten(800);
         const teile = [];
         if (feld.disabled) teile.push('Inhalt gesperrt');

@@ -639,6 +639,17 @@ const Stundenplan = {
      „Unterrichtsinhalte“ klicken und einfügen. Die Anwesenheit bleibt Handarbeit. */
   KLASSENBUCH: 'https://login.schulmanager-online.de/#/modules/classbook/enter/my/lesson/',
 
+  /* Sonderstunden („specialLesson“ im Abo) sind im Schulmanager Vertretungen:
+     ihre Seite heißt …?substitutionId=, nicht …?lessonId= – mit lessonId öffnet
+     sich für sie gar nichts */
+  klassenbuchAdresse(t) {
+    return this.KLASSENBUCH + this.tagSchluessel(t.beginn) + '?' + this.klassenbuchFrage(t);
+  },
+
+  klassenbuchFrage(t) {
+    return (t.sonder ? 'substitutionId=' : 'lessonId=') + t.platz;
+  },
+
   /* Was ins Feld „Unterrichtsinhalte“ kommt: das Thema samt Zusatz, ohne
      Thema (etwa Schulband) die Notiz der Stunde */
   klassenbuchText(t) {
@@ -656,7 +667,7 @@ const Stundenplan = {
     if (!t.platz || t.entfaellt || t.aufsicht || this.tagSchluessel(t.beginn) > this.tagSchluessel(new Date())) return '';
     const key = this.buchSchluessel(t);
     const { text, themen } = this.klassenbuchText(t);
-    const url = this.KLASSENBUCH + this.tagSchluessel(t.beginn) + '?lessonId=' + t.platz;
+    const url = this.klassenbuchAdresse(t);
     return `<button type="button" class="small plan-kb" data-klassenbuch="${this.esc(url)}" data-kopie="${this.esc(text)}"${themen.length ? '' : ` data-notiz="${this.esc(key)}"`}
       title="${this.esc(text ? `„${text}“${themen.length ? '' : ' (Notiz)'} kopieren und die Stunde im Klassenbuch öffnen – dort ins Feld Unterrichtsinhalte klicken und Cmd+V` : 'Die Stunde im Klassenbuch öffnen')}">${Icons.raw('book')}${kurz ? '' : 'Klassenbuch'}</button>`;
   },
@@ -664,7 +675,9 @@ const Stundenplan = {
   /* Alle Stunden eines Tags auf einmal ins Klassenbuch: Inhalte eintragen und
      die Anwesenheit bestätigen. Das erledigt das Lesezeichen im Schulmanager-Tab
      (IpadBuchen.lesezeichenCode) – der Auftrag reist wie beim iPad-Buchen im
-     Fensternamen: stklassenbuch|{"d":"2026-10-27","s":[{p,t,n}]} */
+     Fensternamen: stklassenbuch|{"d":"2026-10-27","s":[{p,q,t,n}]}
+     (q: „lessonId=…“ oder bei Sonderstunden „substitutionId=…“; p für ältere
+     Lesezeichen, die q noch nicht kennen) */
   /* Alle Stunden des Tags, auch die noch kommenden – Inhalte gehen schon vorher,
      die Anwesenheit lässt der Schulmanager erst ab Stundenbeginn bestätigen */
   klassenbuchStunden(tag) {
@@ -686,10 +699,10 @@ const Stundenplan = {
     if (!stunden.length) return;
     const auftrag = { d: tag, s: stunden.map(t => {
       const folge = this.doppelFolge(t, stunden);
-      return { p: t.platz, t: folge ? '' : this.klassenbuchText(t).text,
+      return { p: t.platz, q: this.klassenbuchFrage(t), t: folge ? '' : this.klassenbuchText(t).text,
         n: `${this.STUNDEN[this.uhr(t.beginn)] || this.uhr(t.beginn)} ${t.fach} ${this.klassenText(t)}${folge ? ' (Doppelstunde, Inhalt in der Stunde davor)' : ''}`.trim() };
     }) };
-    window.open(this.KLASSENBUCH + tag + '?lessonId=' + stunden[0].platz, 'stklassenbuch|' + JSON.stringify(auftrag));
+    window.open(this.klassenbuchAdresse(stunden[0]), 'stklassenbuch|' + JSON.stringify(auftrag));
   },
 
   /* Erst kopieren (solange dieses Fenster den Fokus hat), dann öffnen – ein
