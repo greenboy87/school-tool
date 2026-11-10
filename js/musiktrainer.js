@@ -58,7 +58,8 @@ const Musiktrainer = {
   INSTRUMENTE: ['Geige', 'Tuba', 'Harfe', 'Cello', 'Pauke', 'Banjo', 'Oboe', 'Horn', 'Gitarre', 'Bass', 'Trommel', 'Kazoo'],
 
   ergebnis: null,          // { klasseId, daten } – zuletzt geladene Auswertung (Verlauf eines Jahres)
-  filter: { zeitraum: '0', sortierung: 'name' },
+  filter: { zeitraum: '0', sortierung: 'name', umgekehrt: false },
+  detail: null,            // Einzelansicht: { ids (Reihenfolge der Tabelle), i }
   score: false,            // Schalter Noten ⟷ Score
   scoreArt: 'sterne',      // Score: 'sterne' (5/6), 'prozent' (richtig), 'richtige' (beste Runde) oder 'punkte'
   STERNE: 6,               // 6 Sterne = Note 1 … 1 Stern = Note 6
@@ -89,6 +90,27 @@ const Musiktrainer = {
   esc(s) { return Band.esc(s).replace(/"/g, '&quot;'); },
   klasse() { return Classes.currentClass(); },
   name(s) { return `${s.first || ''} ${s.last || ''}`.trim(); },
+  /* Für Tabelle und Einzelansicht: „Nachname, Vorname“, sortiert nach Nachnamen */
+  nachname(s) { return s.first ? `${s.last || ''}, ${s.first}`.replace(/^, /, '') : (s.last || ''); },
+  nachNachname(a, b) {
+    return (a.last || '').localeCompare(b.last || '', 'de', { sensitivity: 'base' })
+      || (a.first || '').localeCompare(b.first || '', 'de', { sensitivity: 'base' });
+  },
+
+  /* Kleines Gesicht aus dem Sitzplan (liegt nur lokal in IndexedDB, kein Firebase);
+     ohne Foto die Initialen. Eingesetzt wird es nach dem Zeichnen von gesichterEinsetzen(). */
+  gesichtHtml(s, extra = '') {
+    const ini = ((s.first || '')[0] || '') + ((s.last || '')[0] || '');
+    return `<span class="mini-gesicht ohne${extra}" data-mt-gesicht="${this.esc(s.id)}" data-initialen="${this.esc(ini)}"></span>`;
+  },
+  gesichterEinsetzen(cls, ziel, kante = 96) {
+    if (typeof Schueler === 'undefined' || typeof Sitzplan === 'undefined') return;
+    ziel.querySelectorAll('[data-mt-gesicht]').forEach(el => {
+      const s = cls.students.find(x => String(x.id) === el.dataset.mtGesicht);
+      const quelle = s && Schueler.fotoQuelle({ cls, s });
+      if (quelle) Schueler.gesichtEinsetzen(el, quelle.cls, quelle.s, kante);
+    });
+  },
 
   /* ---------- Verbindung zum Worker ---------- */
   token() {
@@ -225,7 +247,7 @@ const Musiktrainer = {
             .map(([v, t]) => `<option value="${v}" ${this.filter.zeitraum === v ? 'selected' : ''}>${t}</option>`).join('')}
         </select></label>
         <label>Sortieren <select data-filter="sortierung">
-          ${[['name', 'Name'], ['ergebnis', this.score ? 'Score' : 'Note'], ['tage', 'Übungstage'], ['zuletzt', 'Zuletzt aktiv']]
+          ${[['name', 'Nachname'], ['ergebnis', this.score ? 'Score' : 'Note'], ['runden', 'Runden'], ['tage', 'Übungstage'], ['zeit', 'Übungszeit'], ['zuletzt', 'Zuletzt aktiv']]
             .map(([v, t]) => `<option value="${v}" ${this.filter.sortierung === v ? 'selected' : ''}>${t}</option>`).join('')}
         </select></label>
         <label class="mt-haken"><input type="checkbox" data-mt-option="fehltAls6" ${mt.fehltAls6 ? 'checked' : ''}> Nicht gespielt zählt als 6</label>
@@ -345,6 +367,16 @@ const Musiktrainer = {
   },
 
   async klick(e) {
+    const kopf = e.target.closest('[data-sort]');
+    if (kopf) {
+      // Spaltenkopf: nach dieser Spalte sortieren, nochmal geklickt andersherum
+      const art = kopf.dataset.sort;
+      this.filter.umgekehrt = this.filter.sortierung === art ? !this.filter.umgekehrt : false;
+      this.filter.sortierung = art;
+      return this.render();
+    }
+    const zeile = e.target.closest('tr[data-kind]');
+    if (zeile && !e.target.closest('button')) return this.detailZeigen(zeile.dataset.kind);
     const b = e.target.closest('[data-mt]');
     if (!b) return;
     const aktion = b.dataset.mt;
@@ -449,6 +481,7 @@ const Musiktrainer = {
     const f = e.target.dataset.filter;
     if (!f) return;
     this.filter[f] = e.target.value;
+    if (f === 'sortierung') this.filter.umgekehrt = false;
     this.render();
   },
 
@@ -679,12 +712,12 @@ const Musiktrainer = {
       const noten = bestwerte.map(v => (v?.sterne ? Math.min(6, 7 - v.sterne) : null));
       const zaehlen = noten.map(n => (n === null && mt.fehltAls6 ? 6 : n)).filter(n => n !== null);
       return {
-        k, s, name: this.name(s), noten, bestwerte,
+        k, s, name: this.nachname(s), noten, bestwerte,
         gespielt: noten.filter(n => n !== null).length,
         schnitt: zaehlen.length ? zaehlen.reduce((a, n) => a + n, 0) / zaehlen.length : null,
       };
     });
-    zeilen.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    zeilen.sort((a, b) => this.nachNachname(a.s, b.s));
     return { auswahl, zeilen, werte };
   },
 
@@ -703,14 +736,27 @@ const Musiktrainer = {
     // Pseudonyme auf dem Server, die es in der Klasse nicht mehr gibt – zum Löschen am Ende
     const fremd = this.ergebnis.daten.schueler.filter(k => !zeilen.some(z => z.k === k));
     const reihen = zeilen.map(z => ({ ...z, gesamt: this.gesamt(z, auswahl, mt), u: uebung[z.k.id] }));
-    const sortierer = {
+    // Jede Spalte sortiert zuerst mit dem Besten oben (Name: A–Z); umgekehrt dreht das um.
+    // Wer keinen Wert hat, bleibt unten; bei Gleichstand nach Nachnamen.
+    const art = this.filter.sortierung;
+    const zahl = {
       name: () => 0,
-      ergebnis: (a, b) => (a.gesamt.zahl === null) - (b.gesamt.zahl === null)
-        || (modus === 'note' ? a.gesamt.zahl - b.gesamt.zahl : b.gesamt.zahl - a.gesamt.zahl),
-      tage: (a, b) => (b.u?.tage.size || 0) - (a.u?.tage.size || 0),
-      zuletzt: (a, b) => b.k.zuletzt - a.k.zuletzt,
-    };
-    reihen.sort(sortierer[this.filter.sortierung] || sortierer.name);
+      ergebnis: z => z.gesamt.zahl === null ? null : (modus === 'note' ? -z.gesamt.zahl : z.gesamt.zahl),
+      runden: z => z.u?.runden || 0,
+      tage: z => z.u?.tage.size || 0,
+      zeit: z => z.u?.sekunden || 0,
+      zuletzt: z => z.k.zuletzt || null,
+    }[art] || (() => 0);
+    const dreh = this.filter.umgekehrt ? -1 : 1;
+    reihen.sort((a, b) => {
+      const x = zahl(a), y = zahl(b);
+      return (x === null) - (y === null) || (x !== null && y !== null ? dreh * (y - x) : 0)
+        || (art === 'name' ? dreh : 1) * this.nachNachname(a.s, b.s);
+    });
+    this.reihenfolge = reihen.map(z => String(z.s.id));
+    const pfeil = a => (art === a ? `<span class="mt-sortpfeil">${this.filter.umgekehrt ? '▲' : '▼'}</span>` : '');
+    const sortKopf = (a, text, titel = '') => `<th rowspan="2" data-sort="${a}" class="mt-sortierbar${art === a ? ' aktiv' : ''}"
+      title="${this.esc(titel ? `${titel} – klicken zum Sortieren` : 'Klicken zum Sortieren')}">${text}${pfeil(a)}</th>`;
     const offen = zeilen.filter(z => z.gespielt < auswahl.length).length;
     const { oben, unten } = this.kopf(auswahl);
     const uebungZellen = (k, u) => `<td>${u?.runden || 0}</td><td>${u?.tage.size || 0}</td><td class="hint">${this.zeit(u?.sekunden)}</td>
@@ -723,15 +769,15 @@ const Musiktrainer = {
       <div class="mt-tabelle-rahmen">
       <table class="mt-tabelle mt-notentabelle">
         <thead>
-          <tr><th rowspan="2">Name</th>${oben}
-            <th rowspan="2" class="mt-gesamtkopf">${{ note: 'Note', sterne: 'Sterne', prozent: 'Ø %', richtige: 'Richtige', punkte: 'Punkte' }[modus]}</th>
-            <th rowspan="2" title="Runden in allen Spielen">Runden</th><th rowspan="2" title="Tage, an denen das Kind angemeldet im music-trainer war">Tage</th>
-            <th rowspan="2" title="Übungszeit (gemessen seit 01.11.2026)">Zeit</th><th rowspan="2">Zuletzt</th></tr>
+          <tr>${sortKopf('name', 'Name')}${oben}
+            ${sortKopf('ergebnis', { note: 'Note', sterne: 'Sterne', prozent: 'Ø %', richtige: 'Richtige', punkte: 'Punkte' }[modus]).replace('class="', 'class="mt-gesamtkopf ')}
+            ${sortKopf('runden', 'Runden', 'Runden in allen Spielen')}${sortKopf('tage', 'Tage', 'Tage, an denen das Kind angemeldet im music-trainer war')}
+            ${sortKopf('zeit', 'Zeit', 'Übungszeit (gemessen seit 01.11.2026)')}${sortKopf('zuletzt', 'Zuletzt')}</tr>
           <tr>${unten}</tr>
         </thead>
         <tbody>
-          ${reihen.map(z => `<tr class="${z.gespielt < auswahl.length ? 'mt-ohne' : ''}">
-            <td>${this.esc(z.name)}</td>
+          ${reihen.map(z => `<tr class="mt-kindzeile${z.gespielt < auswahl.length ? ' mt-ohne' : ''}" data-kind="${this.esc(z.s.id)}" title="Klicken für die Statistik">
+            <td class="mt-name-zelle">${this.gesichtHtml(z.s)}<span>${this.esc(z.name)}</span></td>
             ${z.bestwerte.map((v, i) => `<td>${this.zelle(v, auswahl[i].spiel, auswahl[i].stufe)}</td>`).join('')}
             <td>${z.gesamt.html}</td>${uebungZellen(z.k, z.u)}
           </tr>`).join('')}
@@ -745,6 +791,125 @@ const Musiktrainer = {
       </table>
       </div>
       ${this.legende(auswahl)}`;
+    this.gesichterEinsetzen(cls, ziel);
+    // Ist die Einzelansicht offen (etwa nach „Aktualisieren“), zeigt sie die neuen Zahlen
+    if (document.getElementById('mt-detail')?.open) this.detailZeichnen();
+  },
+
+  /* ---------- Einzelansicht: Statistik eines Kindes, Pfeiltasten blättern ---------- */
+  detailZeigen(id) {
+    const ids = this.reihenfolge || [];
+    const i = ids.indexOf(String(id));
+    if (i < 0) return;
+    this.detail = { ids, i };
+    let dlg = document.getElementById('mt-detail');
+    if (!dlg) {
+      dlg = document.createElement('dialog');
+      dlg.id = 'mt-detail';
+      dlg.className = 'mt-detail';
+      dlg.setAttribute('aria-label', 'Statistik eines Kindes');
+      document.body.appendChild(dlg);
+      dlg.addEventListener('keydown', e => {
+        if (e.target.matches('input, select, textarea')) return;
+        const r = { ArrowRight: 1, ArrowDown: 1, PageDown: 1, ArrowLeft: -1, ArrowUp: -1, PageUp: -1 }[e.key];
+        if (r) { e.preventDefault(); this.detailBlaettern(r); }
+      });
+      dlg.addEventListener('click', e => {
+        if (e.target === dlg || e.target.closest('.mt-detail-zu')) return dlg.close();
+        const b = e.target.closest('[data-detail]');
+        if (b) this.detailBlaettern(+b.dataset.detail);
+      });
+    }
+    this.detailZeichnen();
+    if (!dlg.open) dlg.showModal();
+    dlg.focus();
+  },
+
+  detailBlaettern(r) {
+    const d = this.detail;
+    if (!d) return;
+    const neu = Math.max(0, Math.min(d.ids.length - 1, d.i + r));
+    if (neu === d.i) return;
+    d.i = neu;
+    this.detailZeichnen();
+  },
+
+  detailZeichnen() {
+    const dlg = document.getElementById('mt-detail');
+    const cls = this.klasse();
+    const d = this.detail;
+    if (!dlg || !d || !cls?.musiktrainer || !this.ergebnis) return;
+    const mt = cls.musiktrainer;
+    const { auswahl, zeilen } = this.notenZeilen(cls);
+    const z = zeilen.find(x => String(x.s.id) === d.ids[d.i]);
+    if (!z) { dlg.close(); return; }
+    const tage = Number(this.filter.zeitraum);
+    const seit = tage ? Date.now() / 1000 - tage * 86400 : 0;
+    const u = this.uebung(tage)[z.k.id];
+    const w = this.werte(tage)[z.k.id] || {};
+    const gesamt = this.gesamt(z, auswahl, mt);
+    const runden = this.ergebnis.daten.verlauf.filter(v => v.schueler_id === z.k.id && v.zeit >= seit).sort((a, b) => b.zeit - a.zeit);
+    const spielVon = id => MT_SPIELE.find(sp => sp.id === id);
+    const stufeName = (sp, i) => sp?.stufen[i] ?? `Stufe ${Number(i) + 1}`;
+    // Eine Zeile je Aufgabe: was zählt (oben gewählt) und was das Kind sonst noch gespielt hat
+    const zeile = (sp, stufe, v, zaehlt) => `<tr class="${zaehlt ? '' : 'mt-detail-extra'}">
+      <td>${this.esc(sp?.titel || '?')} <span class="hint">${this.esc(stufeName(sp, stufe))}</span></td>
+      <td>${sp ? this.zelle(v, sp, stufe, zaehlt ? 'offen' : 'punkt') : ''}</td>
+      <td>${v?.beste?.length ? v.beste.map(n => `${n}`).join(' · ') : '<span class="hint">–</span>'}</td>
+      <td>${v?.prozent != null ? `${Math.round(v.prozent)}&nbsp;%` : '<span class="hint">–</span>'}</td>
+      <td>${v ? v.punkte : '<span class="hint">–</span>'}</td>
+      <td>${v?.runden || 0}</td></tr>`;
+    const gewaehlt = new Set(auswahl.map(a => a.schluessel));
+    const sonst = Object.keys(w).filter(k => !gewaehlt.has(k)).map(k => {
+      const [id, st] = k.split('|');
+      return { sp: spielVon(id), stufe: Number(st), v: w[k], k };
+    }).sort((a, b) => MT_SPIELE.indexOf(a.sp) - MT_SPIELE.indexOf(b.sp)
+      || (a.sp ? this.reihe(a.sp).indexOf(a.stufe) - this.reihe(a.sp).indexOf(b.stufe) : 0));
+    const datum = t => new Date(t * 1000).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    // Gleicher Platz bei gleicher (angezeigter) Note wie im Scoreboard
+    const wert = x => (x.zahl === null ? null : Math.round(x.zahl * 10));
+    const alle = zeilen.map(x => wert(this.gesamt(x, auswahl, mt))).filter(x => x !== null);
+    const meins = wert(gesamt);
+    const platz = meins === null ? null : 1 + alle.filter(x => (this.modus() === 'note' ? x < meins : x > meins)).length;
+    dlg.innerHTML = `
+      <div class="mt-detail-kopf">
+        ${this.gesichtHtml(z.s, ' mt-detail-gesicht')}
+        <div class="mt-detail-titel">
+          <h2>${this.esc(z.name)}</h2>
+          <p class="hint">${this.esc(z.s.mt?.name || '')} · ${this.esc(cls.name)} · ${tage ? `letzte ${tage} Tage` : 'gesamt'}</p>
+        </div>
+        <div class="mt-detail-gesamt">${gesamt.html}${platz ? `<span class="hint">Platz ${platz} von ${alle.length}</span>` : ''}</div>
+        <button class="mt-detail-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
+      </div>
+      <div class="mt-detail-zahlen">
+        <div><b>${u?.runden || 0}</b><span>Runden</span></div>
+        <div><b>${u?.tage.size || 0}</b><span>Tage</span></div>
+        <div><b>${this.zeit(u?.sekunden)}</b><span>Zeit</span></div>
+        <div><b>${this.zuletzt(z.k.zuletzt)}</b><span>zuletzt</span></div>
+      </div>
+      <div class="mt-tabelle-rahmen">
+      <table class="mt-tabelle mt-detail-tabelle">
+        <thead><tr><th>Aufgabe</th><th>${{ note: 'Note', sterne: 'Sterne', prozent: '%', richtige: 'Richtige', punkte: 'Punkte' }[this.modus()]}</th>
+          <th title="Sterne der 3 besten Runden">Beste Runden</th><th title="Richtig im Schnitt der 3 besten Runden">Ø richtig</th><th>Rekord</th><th>Runden</th></tr></thead>
+        <tbody>
+          ${auswahl.map((a, i) => zeile(a.spiel, a.stufe, z.bestwerte[i], true)).join('')}
+          ${sonst.length ? `<tr class="mt-detail-trenner"><td colspan="6">Außerdem gespielt (zählt nicht zur Note)</td></tr>
+            ${sonst.map(x => zeile(x.sp, x.stufe, x.v, false)).join('')}` : ''}
+        </tbody>
+      </table>
+      </div>
+      ${runden.length ? `<h3 class="mt-detail-h3">Letzte Runden</h3>
+      <ul class="mt-detail-runden">${runden.slice(0, 8).map(v => {
+        const sp = spielVon(v.spiel);
+        return `<li><span class="hint">${datum(v.zeit)}</span> ${this.esc(sp?.titel || v.spiel)} <span class="hint">${this.esc(stufeName(sp, v.stufe))}</span>
+          <b>${'★'.repeat(v.sterne)}<span class="mt-detail-leer">${'★'.repeat(Math.max(0, this.STERNE - v.sterne))}</span></b></li>`;
+      }).join('')}</ul>` : '<p class="hint">In diesem Zeitraum noch keine Runde gespielt.</p>'}
+      <div class="mt-detail-fuss">
+        <button data-detail="-1" ${d.i ? '' : 'disabled'} title="Voriges Kind (Pfeil links)">${Icons.raw('chevronUp', 'mt-links')}</button>
+        <span>${d.i + 1} von ${d.ids.length} <span class="hint">· Pfeiltasten blättern</span></span>
+        <button data-detail="1" ${d.i < d.ids.length - 1 ? '' : 'disabled'} title="Nächstes Kind (Pfeil rechts)">${Icons.raw('chevronUp', 'mt-rechts')}</button>
+      </div>`;
+    this.gesichterEinsetzen(cls, dlg, 240);
   },
 
   /* ---------- „Meine Note“ der Kinder ---------- */
