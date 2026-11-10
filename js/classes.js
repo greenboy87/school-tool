@@ -1913,9 +1913,21 @@ const Classes = {
       document.getElementById('ne-zurueck').addEventListener('click', () => blaettern(-1));
       document.getElementById('ne-weiter').addEventListener('click', () => blaettern(1));
       document.getElementById('ne-zu').addEventListener('click', () => dlg.close());
+      document.getElementById('ne-gesichter').addEventListener('click', () => {
+        Gesichter.set(!Gesichter.sichtbar());
+        this.gesichterKnopfStellen();
+      });
       dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
       dlg.addEventListener('keydown', e => {
         const feld = e.target.closest('input[type=text]');
+        // V schaltet die Gesichter – auch im Notenfeld, eine Note hat kein „v“
+        if ((e.key === 'v' || e.key === 'V') && !e.metaKey && !e.ctrlKey && !e.altKey && (!feld || feld.classList.contains('grade'))) {
+          e.preventDefault();
+          e.stopPropagation();
+          Gesichter.set(!Gesichter.sichtbar());
+          this.gesichterKnopfStellen();
+          return;
+        }
         // Enter im Textfeld: nächstes Kind – aus der Note heraus gleich wieder in die Note
         if (feld && e.key === 'Enter') { e.preventDefault(); blaettern(1, feld.classList.contains('grade')); return; }
         // ←/→ blättern, außer man steht in einem längeren Textfeld
@@ -1932,7 +1944,17 @@ const Classes = {
     }
   },
 
+  gesichterKnopfStellen() {
+    const k = document.getElementById('ne-gesichter');
+    if (!k) return;
+    const an = Gesichter.sichtbar();
+    k.innerHTML = Icons.raw(an ? 'eye' : 'eyeOff') + (an ? 'Gesichter' : 'Gesichter aus') + ' <kbd>V</kbd>';
+    k.classList.toggle('aus', !an);
+    k.setAttribute('aria-pressed', String(an));
+  },
+
   einzelnZeichnen(inDieNote) {
+    this.gesichterKnopfStellen();
     const cls = this.currentClass(), p = this.currentProject();
     const s = cls && p && cls.students.find(x => x.id === this._einzeln);
     if (!s) return;

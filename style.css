@@ -2934,3 +2934,7 @@ dialog.noten-einzeln::backdrop { background: rgba(0, 0, 0, .55); }
 .ne-leiste .unsichtbar { visibility: hidden; }
 .ne-leiste kbd { font: inherit; font-size: .75em; padding: 0 .35em; border: 1px solid currentColor; border-radius: 4px; opacity: .7; }
 @media screen and (max-width: 520px) { .ne-kopf .profil-foto { width: 6rem; height: 6rem; font-size: 2rem; } }
+.ne-gesichter { white-space: nowrap; align-self: flex-start; }
+.ne-gesichter .icon { margin-right: .25rem; }
+.ne-gesichter kbd { font: inherit; font-size: .75em; padding: 0 .3em; margin-left: .2em; border: 1px solid currentColor; border-radius: 4px; opacity: .7; }
+.ne-gesichter.aus { border-color: var(--accent); color: var(--accent); }
