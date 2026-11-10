@@ -47,6 +47,7 @@ const Schueler = {
         if (nf.checked) nfText.focus();
         Classes.persist();
         try { Classes.renderStudents(); } catch (e) {}
+        if (window.Notfall) Notfall.zahlStellen();
       });
       nfText.addEventListener('input', () => {
         const t = this.gewaehlt();

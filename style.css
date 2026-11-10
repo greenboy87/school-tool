@@ -2859,3 +2859,46 @@ dialog.plan-bild.mit-text img { max-height: calc(96vh - 3.6rem - 7em); }
   .notfall-suche, .notfall-kopf button { display: none; }
   .notfall-eintrag { break-inside: avoid; }
 }
+
+/* ---------- Eigene Spalten in Projekte & Noten ---------- */
+#noten-bereich { overflow-x: auto; }
+.grade-table.mit-spalten { max-width: none; width: auto; min-width: min(100%, 560px); }
+.grade-table .spalte-kopf { text-align: center; white-space: nowrap; font-size: .8rem; }
+.grade-table .spalte-zahl { font-weight: 400; color: var(--muted); font-size: .75rem; }
+.grade-table td.spalte-haken { text-align: center; cursor: pointer; min-width: 3.2rem; }
+.grade-table td.spalte-haken:hover { background: var(--hover); }
+.grade-table input.spalte-haken { width: 1.25rem; height: 1.25rem; accent-color: var(--accent); cursor: pointer; margin: 0; }
+.grade-table input.spalte-text {
+  width: 9rem; padding: .3rem .45rem; font: inherit; font-size: .9rem;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text);
+}
+.project-spalten { margin: .6rem 0 .4rem; padding: .5rem .75rem; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.project-spalten > summary { cursor: pointer; font-weight: 600; }
+.project-spalten[open] > summary { margin-bottom: .4rem; }
+.project-spalten .hint { margin: .3rem 0; }
+.spalten-liste { display: flex; flex-direction: column; gap: .35rem; margin: .4rem 0; }
+.spalte-zeile { display: flex; gap: .35rem; align-items: center; flex-wrap: wrap; }
+.spalte-zeile input[type=text] { flex: 1 1 10rem; min-width: 8rem; }
+.spalte-zeile input, .spalten-neu input, .spalte-zeile select, .spalten-neu select {
+  padding: .3rem .45rem; font: inherit; font-size: .9rem;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text);
+}
+.spalte-knopf { line-height: 0; padding: .3rem; }
+.spalte-knopf .icon { margin: 0; }
+.spalte-knopf:disabled { opacity: .35; cursor: default; }
+.spalte-weg:hover:not(:disabled) { color: var(--danger); }
+.spalten-neu { display: flex; gap: .5rem .7rem; align-items: flex-end; flex-wrap: wrap; margin-top: .5rem; }
+.spalten-neu label { display: flex; flex-direction: column; gap: .15rem; font-size: .8rem; color: var(--muted); }
+.spalten-neu input[type=number] { width: 4.5rem; }
+.spalten-neu input[type=text] { width: 10rem; }
+/* Knopf ganz unten in „Meine Klassen“ */
+.notfall-knopf {
+  display: flex; align-items: center; gap: .45rem; width: 100%; margin-top: .9rem;
+  padding: .55rem .75rem; font: inherit; font-weight: 600; text-align: left; cursor: pointer;
+  border: 1px solid var(--border); border-left: 4px solid var(--danger); border-radius: var(--radius-sm);
+  background: var(--panel); color: var(--text);
+}
+.notfall-knopf .icon { color: var(--danger); }
+.notfall-knopf:hover, .notfall-knopf.active { background: var(--active-soft); }
+.notfall-zahl { margin-left: auto; font-size: .8rem; font-weight: 700; color: var(--danger); }
+.notfall-karte { margin: 0 0 1.5rem; }

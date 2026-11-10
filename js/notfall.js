@@ -6,11 +6,13 @@ const Notfall = {
   _lauf: 0,
   _urls: [],
 
+  /* Unten in „Meine Klassen“: öffnet die Liste rechts anstelle einer Klasse */
   init() {
-    const knopf = document.querySelector('.tab-btn[data-tab="notfall"]');
+    const knopf = document.getElementById('btn-notfallliste');
     const feld = document.getElementById('notfall-suche');
     if (!knopf || !feld) return;
-    knopf.addEventListener('click', () => this.render());
+    knopf.addEventListener('click', () => this.zeigen());
+    this.zahlStellen();
     feld.addEventListener('input', () => this.suchen());
     feld.addEventListener('keydown', e => {
       if (e.key === 'Escape') { feld.value = ''; this.suchen(); }
@@ -19,6 +21,23 @@ const Notfall = {
         if (erste) { e.preventDefault(); erste.click(); }
       }
     });
+  },
+
+  zeigen() {
+    Classes.selectClass(null);
+    Classes.notfallOffen = true;
+    Classes.renderDetail();
+    this.render();
+    const ansicht = document.getElementById('notfall-ansicht');
+    if (window.innerWidth <= 800) ansicht.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  },
+
+  zahlStellen() {
+    const el = document.getElementById('notfall-zahl');
+    if (!el) return;
+    const n = this.eintraege().length;
+    el.textContent = n ? String(n) : '';
+    document.getElementById('btn-notfallliste').classList.toggle('active', !!Classes.notfallOffen);
   },
 
   /* Alle auf der Liste. Die Kopie fürs nächste Schuljahr trägt den Eintrag
@@ -48,6 +67,7 @@ const Notfall = {
     box.innerHTML = '';
     Schueler.neuerDurchgang();
     const liste = this.eintraege();
+    this.zahlStellen();
     if (!liste.length) {
       box.innerHTML = '<p class="hint notfall-leer">Noch niemand auf der Liste.</p>';
       return;

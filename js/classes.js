@@ -286,6 +286,18 @@ const Classes = {
       this.persist();
       this.renderProjects();
     });
+    document.getElementById('btn-spalten-dazu').addEventListener('click', () => this.spaltenAnlegen());
+    document.getElementById('spalten-name').addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); this.spaltenAnlegen(); }
+    });
+    document.getElementById('spalte-note-zeigen').addEventListener('change', e => {
+      const p = this.currentProject();
+      if (!p) return;
+      if (e.target.checked) delete p.ohneNote; else p.ohneNote = true;
+      this.persist();
+      this.renderGradeTable();
+      document.getElementById('grade-summary').textContent = this.summaryText(p);
+    });
     document.getElementById('btn-print-project').addEventListener('click', () => this.printProject());
     document.getElementById('btn-export-project').addEventListener('click', () => this.exportProjectCsv());
 
@@ -598,6 +610,7 @@ const Classes = {
     // Erst die offene Notiz der bisherigen Klasse festschreiben
     if (typeof Notes !== 'undefined') Notes.klassenNotizSichern();
     this.currentClassId = id;
+    this.notfallOffen = false;
     this.currentProjectId = null;
     this.gruppenBearbeiten = false;
     this.pendingGroups = null;
@@ -1278,8 +1291,13 @@ const Classes = {
 
   renderDetail() {
     const cls = this.currentClass();
-    document.getElementById('class-empty').hidden = !!cls;
+    // Statt einer Klasse kann rechts die Notfallliste stehen (Knopf unten links)
+    const notfall = !cls && !!this.notfallOffen;
+    document.getElementById('class-empty').hidden = !!cls || notfall;
     document.getElementById('class-detail').hidden = !cls;
+    const nfAnsicht = document.getElementById('notfall-ansicht');
+    if (nfAnsicht) nfAnsicht.hidden = !notfall;
+    if (window.Notfall) Notfall.zahlStellen();
     if (!cls) return;
     const sub = [cls.grade ? `Jgst. ${cls.grade}` : null,
                  this.SHOW_YEARS ? cls.year : null].filter(Boolean).join(' · ');
@@ -1808,15 +1826,141 @@ const Classes = {
       if (bearbeiten) groupsInfo.appendChild(zeile);
     }
 
+    this.renderSpaltenEditor();
     this.renderGradeTable();
     document.getElementById('grade-summary').textContent = this.summaryText(p);
     if (window.Einklappen) Einklappen.anwenden('noten');
   },
 
   summaryText(p) {
-    const graded = Object.values(p.grades).filter(g => g && String(g).trim()).length;
-    const avg = this.projectAverage(p);
-    return `${graded} von ${this.currentClass().students.length} benotet${avg ? ` · Schnitt: ${avg}` : ''}`;
+    const n = this.currentClass().students.length;
+    const teile = [];
+    if (!p.ohneNote) {
+      const graded = Object.values(p.grades).filter(g => g && String(g).trim()).length;
+      const avg = this.projectAverage(p);
+      teile.push(`${graded} von ${n} benotet${avg ? ` · Schnitt: ${avg}` : ''}`);
+    }
+    for (const sp of this.spalten(p)) {
+      if (sp.art === 'haken') teile.push(`${sp.name}: ${this.hakenZahl(p, sp)} von ${n}`);
+    }
+    return teile.join(' · ');
+  },
+
+  /* ---------- Eigene Spalten ----------
+     Je Projekt beliebig viele Spalten hinter den Namen: p.spalten =
+     [{ id, name, art: 'haken' | 'text' }], die Einträge in
+     p.werte[schülerId][spaltenId] (true bzw. Text). Leeres wird gar nicht
+     erst gespeichert. p.ohneNote blendet die Spalte „Note“ aus – für reine
+     Abhak-Listen. */
+  spalten(p) { return Array.isArray(p.spalten) ? p.spalten : []; },
+
+  wert(p, sid, spId) { return ((p.werte || {})[sid] || {})[spId]; },
+
+  wertSetzen(p, sid, spId, v) {
+    if (!p.werte) p.werte = {};
+    const z = p.werte[sid] || (p.werte[sid] = {});
+    if (v === '' || v === false || v == null) delete z[spId]; else z[spId] = v;
+    if (!Object.keys(z).length) delete p.werte[sid];
+    this.persist();
+  },
+
+  hakenZahl(p, sp) {
+    return this.currentClass().students.filter(s => this.wert(p, s.id, sp.id) === true).length;
+  },
+
+  /* Anzahl, Art und Name aus der Eingabezeile. Mehrere werden durchnummeriert
+     und zählen dort weiter, wo gleichnamige schon stehen. */
+  spaltenAnlegen() {
+    const p = this.currentProject();
+    if (!p) return;
+    const anzahl = Math.max(1, Math.min(30, parseInt(document.getElementById('spalten-anzahl').value, 10) || 1));
+    const art = document.getElementById('spalten-art').value === 'text' ? 'text' : 'haken';
+    const basis = document.getElementById('spalten-name').value.trim();
+    if (!Array.isArray(p.spalten)) p.spalten = [];
+    if (anzahl === 1 && basis) {
+      p.spalten.push({ id: Store.uid(), name: basis, art });
+    } else {
+      const stamm = basis || 'Spalte';
+      const muster = new RegExp('^' + stamm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' (\\d+)$');
+      let nr = p.spalten.reduce((m, x) => { const t = muster.exec(x.name); return t ? Math.max(m, +t[1]) : m; }, 0);
+      for (let i = 0; i < anzahl; i++) p.spalten.push({ id: Store.uid(), name: `${stamm} ${++nr}`, art });
+    }
+    this.persist();
+    this.renderSpaltenEditor();
+    this.renderGradeTable();
+    document.getElementById('grade-summary').textContent = this.summaryText(p);
+  },
+
+  renderSpaltenEditor() {
+    const p = this.currentProject();
+    const liste = document.getElementById('project-spalten-liste');
+    if (!p || !liste) return;
+    const sp = this.spalten(p);
+    document.getElementById('project-spalten-zahl').textContent = sp.length ? `(${sp.length})` : '';
+    document.getElementById('spalte-note-zeigen').checked = !p.ohneNote;
+    liste.innerHTML = '';
+    const neuZeichnen = () => {
+      this.persist();
+      this.renderSpaltenEditor();
+      this.renderGradeTable();
+      document.getElementById('grade-summary').textContent = this.summaryText(p);
+    };
+    sp.forEach((s, i) => {
+      const zeile = document.createElement('div');
+      zeile.className = 'spalte-zeile';
+      const name = document.createElement('input');
+      name.type = 'text';
+      name.maxLength = 40;
+      name.value = s.name;
+      name.setAttribute('aria-label', 'Name der Spalte');
+      name.addEventListener('change', () => {
+        const neu = name.value.trim();
+        if (!neu) { name.value = s.name; return; }
+        s.name = neu;
+        neuZeichnen();
+      });
+      const art = document.createElement('select');
+      art.innerHTML = '<option value="haken">Abhaken ✓</option><option value="text">Text</option>';
+      art.value = s.art;
+      art.setAttribute('aria-label', 'Art der Spalte');
+      art.addEventListener('change', () => {
+        // Was schon drinsteht, nimmt die neue Art mit: ✓ wird zu „✓“, Text zu einem Haken
+        for (const z of Object.values(p.werte || {})) {
+          if (!(s.id in z)) continue;
+          if (art.value === 'text') z[s.id] = '✓';
+          else z[s.id] = true;
+        }
+        s.art = art.value === 'text' ? 'text' : 'haken';
+        neuZeichnen();
+      });
+      const knopf = (icon, titel, f, aus) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'small spalte-knopf';
+        b.innerHTML = Icons.raw(icon);
+        b.title = titel;
+        b.setAttribute('aria-label', titel);
+        b.disabled = !!aus;
+        b.addEventListener('click', f);
+        return b;
+      };
+      const tauschen = j => { [sp[i], sp[j]] = [sp[j], sp[i]]; neuZeichnen(); };
+      const hoch = knopf('chevronUp', 'Nach vorn', () => tauschen(i - 1), i === 0);
+      const runter = knopf('chevronDown', 'Nach hinten', () => tauschen(i + 1), i === sp.length - 1);
+      const weg = knopf('trash', 'Spalte löschen', () => {
+        const belegt = Object.values(p.werte || {}).filter(z => s.id in z).length;
+        if (belegt && !confirm(`Spalte „${s.name}“ löschen? ${belegt} Einträge darin gehen verloren.`)) return;
+        p.spalten = sp.filter(x => x !== s);
+        for (const [sid, z] of Object.entries(p.werte || {})) {
+          delete z[s.id];
+          if (!Object.keys(z).length) delete p.werte[sid];
+        }
+        neuZeichnen();
+      });
+      weg.classList.add('spalte-weg');
+      zeile.append(name, art, hoch, runter, weg);
+      liste.appendChild(zeile);
+    });
   },
 
   /* Schueler in eine andere Gruppe haengen – oder mit null ganz heraus.
@@ -1833,7 +1977,33 @@ const Classes = {
   renderGradeTable() {
     const cls = this.currentClass(), p = this.currentProject();
     const table = document.getElementById('grade-table');
-    table.innerHTML = '<tr><th class="num">Nr.</th><th>Name</th><th>Note</th><th class="gname">Gruppe</th></tr>';
+    const spalten = this.spalten(p);
+    const mitNote = !p.ohneNote;
+    table.classList.toggle('mit-spalten', spalten.length > 0);
+    const kopf = document.createElement('tr');
+    kopf.innerHTML = '<th class="num">Nr.</th><th>Name</th>' + (mitNote ? '<th>Note</th>' : '');
+    const zaehler = {};
+    for (const sp of spalten) {
+      const th = document.createElement('th');
+      th.className = 'spalte-kopf spalte-' + sp.art;
+      th.textContent = sp.name;
+      if (sp.art === 'haken') {
+        const z = zaehler[sp.id] = document.createElement('span');
+        z.className = 'spalte-zahl';
+        z.textContent = this.hakenZahl(p, sp) + '/' + cls.students.length;
+        th.append(document.createElement('br'), z);
+      }
+      kopf.appendChild(th);
+    }
+    kopf.insertAdjacentHTML('beforeend', '<th class="gname">Gruppe</th>');
+    table.innerHTML = '';
+    table.appendChild(kopf);
+    // Enter springt in derselben Spalte eine Zeile tiefer
+    const weiter = (el, auswahl) => {
+      const alle = [...table.querySelectorAll(auswahl)];
+      const next = alle[alle.indexOf(el) + 1];
+      if (next) next.focus();
+    };
     // Nummer UND Name: „G1“ allein sagt beim Eintragen in den Notenmanager nicht,
     // um welche Gruppe es geht – der Name steht sonst nur im Gruppen-Reiter
     const groupOf = {};
@@ -1867,10 +2037,45 @@ const Classes = {
         }
       });
       tdGrade.appendChild(input);
+      tr.append(tdNum, tdName);
+      if (mitNote) tr.appendChild(tdGrade);
+      for (const sp of spalten) {
+        const td = document.createElement('td');
+        td.className = 'spalte-zelle spalte-' + sp.art;
+        if (sp.art === 'haken') {
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'spalte-haken';
+          cb.dataset.spalte = sp.id;
+          cb.checked = this.wert(p, s.id, sp.id) === true;
+          cb.setAttribute('aria-label', `${sp.name}: ${this.studentName(s)}`);
+          cb.addEventListener('change', () => {
+            this.wertSetzen(p, s.id, sp.id, cb.checked);
+            zaehler[sp.id].textContent = this.hakenZahl(p, sp) + '/' + cls.students.length;
+            document.getElementById('grade-summary').textContent = this.summaryText(p);
+          });
+          // Ein Tipp irgendwo in die Zelle hakt ab – große Fläche fürs iPad
+          td.addEventListener('click', e => { if (e.target !== cb) cb.click(); });
+          td.appendChild(cb);
+        } else {
+          const feld = document.createElement('input');
+          feld.type = 'text';
+          feld.className = 'spalte-text';
+          feld.dataset.spalte = sp.id;
+          feld.value = this.wert(p, s.id, sp.id) || '';
+          feld.setAttribute('aria-label', `${sp.name}: ${this.studentName(s)}`);
+          feld.addEventListener('input', () => this.wertSetzen(p, s.id, sp.id, feld.value.trim() ? feld.value : ''));
+          feld.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); weiter(feld, `input.spalte-text[data-spalte="${sp.id}"]`); }
+          });
+          td.appendChild(feld);
+        }
+        tr.appendChild(td);
+      }
       const tdGroup = document.createElement('td');
       tdGroup.className = 'gname';
       tdGroup.textContent = groupOf[s.id] || '';
-      tr.append(tdNum, tdName, tdGrade, tdGroup);
+      tr.appendChild(tdGroup);
       table.appendChild(tr);
     });
   },
@@ -1884,14 +2089,20 @@ const Classes = {
       gruppeVon[sid] = (p.groupNames && p.groupNames[i]) || 'Gruppe ' + (i + 1)));
     const mitGruppen = Object.keys(gruppeVon).length > 0;
 
+    const eigene = this.spalten(p);
     const spalten = [{ titel: 'Nr.', cls: 'num' }, { titel: 'Name' }];
     if (mitGruppen) spalten.push({ titel: 'Gruppe' });
-    spalten.push({ titel: 'Note' });
+    if (!p.ohneNote) spalten.push({ titel: 'Note' });
+    eigene.forEach(sp => spalten.push({ titel: sp.name, cls: sp.art === 'haken' ? 'haken' : '' }));
 
     const zeilen = cls.students.map((s, i) => {
       const z = [i + 1, `<strong>${Band.esc(this.studentName(s))}</strong>`];
       if (mitGruppen) z.push(Band.esc(gruppeVon[s.id] || ''));
-      z.push(p.grades[s.id] ? `<strong>${Band.esc(p.grades[s.id])}</strong>` : '<span class="kastl"></span>');
+      if (!p.ohneNote) z.push(p.grades[s.id] ? `<strong>${Band.esc(p.grades[s.id])}</strong>` : '<span class="kastl"></span>');
+      for (const sp of eigene) {
+        const w = this.wert(p, s.id, sp.id);
+        z.push(sp.art === 'haken' ? (w === true ? '<strong>✓</strong>' : '<span class="kastl"></span>') : Band.esc(w || ''));
+      }
       return z;
     });
 
@@ -1933,9 +2144,17 @@ const Classes = {
   exportProjectCsv() {
     const cls = this.currentClass(), p = this.currentProject();
     if (!p) return;
-    let csv = 'Nr;Name;Note\n';
+    const eigene = this.spalten(p);
+    const feld = v => /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    let csv = ['Nr', 'Name', ...(p.ohneNote ? [] : ['Note']), ...eigene.map(sp => feld(sp.name))].join(';') + '\n';
     cls.students.forEach((s, i) => {
-      csv += `${i + 1};${this.studentName(s)};${p.grades[s.id] || ''}\n`;
+      const z = [i + 1, feld(this.studentName(s))];
+      if (!p.ohneNote) z.push(feld(p.grades[s.id] || ''));
+      for (const sp of eigene) {
+        const w = this.wert(p, s.id, sp.id);
+        z.push(sp.art === 'haken' ? (w === true ? 'x' : '') : feld(w || ''));
+      }
+      csv += z.join(';') + '\n';
     });
     Band.download(csv, `${cls.name}-${p.name}.csv`.replace(/[^\wäöüÄÖÜß.-]+/g, '_'),
       'text/csv;charset=utf-8');
