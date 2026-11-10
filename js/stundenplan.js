@@ -2118,21 +2118,29 @@ const Stundenplan = {
   },
 
   /* Bilder groß zeigen – Kennungen aus dem Stundenbuch oder schon geladene Blobs.
+     texte (wahlweise): je Bild ein Text darunter, etwa aus dem Schüler-Steckbrief.
      ←/→ blättern, Esc oder Klick schließt. */
-  async bilderZeigen(quellen, start = 0) {
+  async bilderZeigen(quellen, start = 0, texte = null) {
     const dlg = document.getElementById('plan-bild');
     const img = document.getElementById('plan-bild-img');
-    const blobs = [];
-    for (const q of quellen) {
-      if (q instanceof Blob) { blobs.push(q); continue; }
+    const unterschrift = document.getElementById('plan-bild-text');
+    const blobs = [], zuTexten = [];
+    for (const [n, q] of quellen.entries()) {
+      const text = (texte && texte[n]) || '';
+      if (q instanceof Blob) { blobs.push(q); zuTexten.push(text); continue; }
       const e = await Store.getFoto(q).catch(() => null);
-      if (e && e.blob) blobs.push(e.blob);
+      if (e && e.blob) { blobs.push(e.blob); zuTexten.push(text); }
     }
     if (!blobs.length) { alert('Das Bild ist auf diesem Gerät (noch) nicht da – erst nach dem nächsten Abgleich.'); return; }
     const urls = blobs.map(b => URL.createObjectURL(b));
     let i = Math.max(0, Math.min(start, urls.length - 1));
     const zeigen = () => {
       img.src = urls[i];
+      if (unterschrift) {
+        unterschrift.textContent = zuTexten[i];
+        unterschrift.hidden = !zuTexten[i];
+        dlg.classList.toggle('mit-text', !!zuTexten[i]);
+      }
       document.getElementById('plan-bild-zahl').textContent = urls.length > 1 ? `${i + 1} / ${urls.length}` : '';
       document.getElementById('plan-bild-zurueck').hidden = document.getElementById('plan-bild-weiter').hidden = urls.length < 2;
     };
@@ -2148,7 +2156,12 @@ const Stundenplan = {
         if (urls.length > 1) blaettern(e.key === 'ArrowRight' ? 1 : -1);
       }
     };
-    dlg.onclose = () => { urls.forEach(u => URL.revokeObjectURL(u)); img.removeAttribute('src'); };
+    dlg.onclose = () => {
+      urls.forEach(u => URL.revokeObjectURL(u));
+      img.removeAttribute('src');
+      if (unterschrift) { unterschrift.textContent = ''; unterschrift.hidden = true; }
+      dlg.classList.remove('mit-text');
+    };
     zeigen();
     dlg.showModal();
   },

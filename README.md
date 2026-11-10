@@ -90,6 +90,14 @@ gespeichert. Hat ein Schüler in seiner Klasse kein Foto, aber in einer anderen 
 gleichen Namens (etwa der Kopie fürs nächste Schuljahr), wird das dortige genommen; „Auch in“
 verlinkt diese Klassen.
 
+**Bilder mit eigenem Text:** Unter den Notizen lassen sich Bilder anhängen – mit „Bild
+hinzufügen“ (am iPad auch direkt mit der Kamera), mit **⌘V / Strg+V** (etwa ein
+Bildschirmfoto, auch mitten im Notizfeld) oder durch Hineinziehen. Jedes Bild bekommt sein
+eigenes Textfeld, etwa das Foto der Medikamente und daneben, wann was zu nehmen ist. Ein Klick
+zeigt das Bild groß, mit dem Text darunter. Die Bilder werden auf 1600 px verkleinert und
+laufen wie die Bilder zur Stunde einzeln verschlüsselt über den Sync; die Kopie fürs nächste
+Schuljahr nimmt sie mit. Wird ein Schüler entfernt, verschwinden seine Bilder mit.
+
 **Abwählen:** derselbe Name noch einmal, das **×** am Steckbrief, das **×** im Suchfeld oder
 **Esc**. Wer links eine andere Klasse wählt, lässt die Wahl ebenfalls hinter sich.
 

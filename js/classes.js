@@ -63,6 +63,7 @@ const Classes = {
       const cls = this.currentClass();
       if (!cls) return;
       if (!confirm(`Klasse „${cls.name}“ mit allen Noten wirklich löschen?`)) return;
+      const bilder = Schueler.bildIds(cls.students);
       Store.deleteSeatplan(cls.id);
       // Das Klassenfoto der Sitzordnung liegt bei den Bildern und muss mit weg,
       // sonst bleibt es unauffindbar im Speicher liegen und wandert weiter mit
@@ -76,6 +77,7 @@ const Classes = {
       this.data.classes = this.data.classes.filter(c => c.id !== cls.id);
       this.currentClassId = null;
       this.persist();
+      Schueler.bilderAufraeumen(bilder);
       this.renderClassList();
       this.renderDetail();
     });
@@ -116,11 +118,14 @@ const Classes = {
       const cls = this.currentClass();
       if (!cls) return;
       if (!cls.students.length) { alert('Die Liste ist schon leer.'); return; }
+      const bilder = Schueler.bildIds(cls.students);
       if (!confirm(`Alle ${cls.students.length} Schüler aus „${cls.name}“ entfernen?\n\n` +
         'Projekte und Stunden der Klasse bleiben erhalten; bereits vergebene Noten ' +
-        'verlieren aber ihre Zuordnung.')) return;
+        'verlieren aber ihre Zuordnung.' +
+        (bilder.length ? `\n\nDie Bilder in den Steckbriefen (${bilder.length}) werden mitgelöscht.` : ''))) return;
       cls.students = [];
       this.persist();
+      Schueler.bilderAufraeumen(bilder);
       this.renderClassList();
       this.renderStudents();
       this.renderProjects();
@@ -158,6 +163,8 @@ const Classes = {
       // Beim Gesichterzuordnen ruecken die Pfeile den Rahmen, im Vollbild bleibt die Klasse
       if ((typeof Sitzplan !== 'undefined' && Sitzplan.gesichter) ||
           (document.fullscreenElement && document.fullscreenElement !== document.documentElement)) return;
+      // Ein Bild ist groß offen: dahinter nichts wechseln
+      if (document.querySelector('dialog[open]')) return;
       // Ist rechts ein Steckbrief offen, gehen die Pfeile durch die Schueler –
       // die Liste steht ja senkrecht. Esc waehlt ab, dann sind es wieder Klassen.
       if (typeof Schueler !== 'undefined' && Schueler.imSteckbrief()) {
@@ -439,20 +446,25 @@ const Classes = {
   makeDropZone(el, accepts, hint, onFile) {
     if (!el) return;
     let depth = 0; // zählt Ein-/Austritte, damit Kindelemente das Markieren nicht abbrechen
+    // Felder mit eigener Ablage darin (Foto und Bilder im Steckbrief) bedienen
+    // sich selbst – sonst käme dort zusätzlich „passt hier nicht“
+    const eigen = e => e.target && e.target.closest && e.target.closest('[data-eigene-ablage]');
     el.addEventListener('dragenter', e => {
-      if (!this._hasFiles(e)) return;
+      if (!this._hasFiles(e) || eigen(e)) return;
       e.preventDefault();
       if (++depth === 1) el.classList.add('drop-active');
     });
     el.addEventListener('dragover', e => {
-      if (!this._hasFiles(e)) return;
+      if (!this._hasFiles(e) || eigen(e)) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
     });
-    el.addEventListener('dragleave', () => {
+    el.addEventListener('dragleave', e => {
+      if (eigen(e)) return;
       if (--depth <= 0) { depth = 0; el.classList.remove('drop-active'); }
     });
     el.addEventListener('drop', e => {
+      if (eigen(e)) { depth = 0; el.classList.remove('drop-active'); return; }
       e.preventDefault();
       e.stopPropagation();
       depth = 0;
@@ -555,7 +567,13 @@ const Classes = {
       `„${cls.name}“ bleibt als Rückblick erhalten.`)) return;
     const copy = {
       id: Store.uid(), name, grade, year,
-      students: cls.students.map(s => ({ ...s, id: Store.uid() })),
+      // Bilder ziehen mit (dieselben Dateien), ihre Texte aber als eigene
+      // Kopie – sonst änderte ein Text im neuen Jahr auch den im alten
+      students: cls.students.map(s => {
+        const neu = { ...s, id: Store.uid() };
+        if (Array.isArray(s.bilder)) neu.bilder = s.bilder.map(b => ({ ...b }));
+        return neu;
+      }),
       projects: [], lessons: {},
     };
     this.data.classes.push(copy);
@@ -1464,9 +1482,12 @@ const Classes = {
       del.innerHTML = Icons.raw('x');
       del.title = 'Schüler entfernen';
       del.addEventListener('click', () => {
-        if (!confirm(`${this.studentName(s)} aus der Liste entfernen?`)) return;
+        const bilder = Schueler.bildIds([s]);
+        if (!confirm(`${this.studentName(s)} aus der Liste entfernen?` +
+          (bilder.length ? `\n\nDie Bilder im Steckbrief (${bilder.length}) werden mitgelöscht.` : ''))) return;
         cls.students = cls.students.filter(x => x.id !== s.id);
         this.persist();
+        Schueler.bilderAufraeumen(bilder);
         this.renderClassList();
         this.renderStudents();
       });

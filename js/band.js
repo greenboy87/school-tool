@@ -302,9 +302,11 @@ const Band = {
       this.fotosAufnehmen([...e.target.files]);
       e.target.value = '';
     });
-    // Einfügen aus der Zwischenablage – funktioniert nur, wenn ein Termin offen ist
+    // Einfügen aus der Zwischenablage – funktioniert nur, wenn ein Termin offen
+    // und zu sehen ist; sonst landete ein Bild für den Steckbrief auch hier
     document.addEventListener('paste', e => {
-      if (!this.currentGig()) return;
+      if (e.defaultPrevented || !this.currentGig()) return;
+      if (!document.getElementById('tab-band').classList.contains('active')) return;
       if (!document.getElementById('bandtab-termine').classList.contains('active')) return;
       const bilder = [...(e.clipboardData ? e.clipboardData.items : [])]
         .filter(i => i.type && i.type.startsWith('image/'))

@@ -1073,6 +1073,37 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
   width: 100%; box-sizing: border-box; font: inherit; padding: .5rem .65rem;
   border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
 }
+/* Bilder im Steckbrief: Vorschau links, eigener Text daneben, Papierkorb rechts */
+.profil-bilder-bereich { border-radius: var(--radius-sm); }
+.profil-bilder-bereich.drop-active { outline-offset: 3px; }
+.profil-bilder { display: grid; gap: .6rem; margin-bottom: .6rem; }
+.profil-bilder[hidden] { display: none; }
+.profil-bild { display: grid; grid-template-columns: 7.5rem 1fr auto; gap: .6rem; align-items: start; }
+.profil-bild-vorschau {
+  width: 7.5rem; height: 6.5rem; padding: 0; overflow: hidden;
+  display: grid; place-items: center; text-align: center;
+  font-size: .75rem; line-height: 1.25; color: var(--muted);
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--hover); cursor: zoom-in;
+}
+.profil-bild-vorschau.leer { cursor: default; padding: .35rem; }
+.profil-bild-vorschau img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.profil-bild textarea {
+  width: 100%; box-sizing: border-box; min-height: 6.5rem; resize: vertical; font: inherit; padding: .5rem .65rem;
+  border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--input-bg); color: var(--text);
+}
+.profil-bild .del {
+  border: none; background: none; padding: .3rem; line-height: 0; cursor: pointer;
+  color: var(--muted); border-radius: var(--radius-sm);
+}
+.profil-bild .del:hover { color: var(--danger); background: var(--hover); }
+.profil-bild .del .icon { margin: 0; }
+.profil-bild-hinweis { display: flex; align-items: center; gap: .3rem .6rem; flex-wrap: wrap; margin: 0; }
+.profil-bild-hinweis .hint { margin: 0; font-size: .85rem; }
+.profil-bild-hinweis kbd { font: inherit; font-size: .85em; padding: 0 .3em; border: 1px solid var(--border); border-radius: 4px; }
+@media screen and (max-width: 520px) {
+  .profil-bild { grid-template-columns: 6rem 1fr auto; gap: .45rem; }
+  .profil-bild-vorschau { width: 6rem; height: 5.5rem; }
+}
 /* Acht Reiter passen auf dem Handy nicht nebeneinander – zwei Zeilen à vier */
 @media screen and (max-width: 520px) {
   .main-tabs { flex-wrap: wrap; row-gap: .25rem; }
@@ -2188,6 +2219,9 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
   background: var(--accent-soft); color: #4c1d95; border: 1px solid var(--accent);
 }
 .plan-kl-kasten strong { font-weight: 800; margin-right: .2em; }
+/* Hell ist --accent-soft ein kräftiges Lila – dunkle Schrift ginge darin unter */
+:root[data-theme="light"] .plan-kl-kasten,
+:root[data-theme="light"] .plan-kl-marke { color: #fff; }
 .plan-kurz-zeit { flex-basis: 100%; font-size: .68rem; font-weight: 700; color: var(--accent); line-height: 1; }
 button.plan-kl-an { border-color: var(--accent); }
 .plan-naechste-klapp > summary { cursor: pointer; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: .2rem 0; }
@@ -2727,6 +2761,13 @@ dialog.plan-bild {
 }
 dialog.plan-bild::backdrop { background: rgba(0, 0, 0, .8); }
 .plan-bild img { display: block; max-width: calc(96vw - 1rem); max-height: calc(96vh - 3.6rem); margin: 0 auto; cursor: zoom-out; }
+/* Text zum Bild (aus dem Steckbrief) – das Bild rückt dafür etwas zusammen */
+.plan-bild-text {
+  max-width: min(70ch, calc(96vw - 1rem)); max-height: 6.2em; overflow-y: auto;
+  margin: .5rem auto 0; padding: 0 .3rem; white-space: pre-wrap; line-height: 1.4;
+}
+.plan-bild-text[hidden] { display: none; }
+dialog.plan-bild.mit-text img { max-height: calc(96vh - 3.6rem - 7em); }
 .plan-bild-leiste { display: flex; justify-content: center; align-items: center; gap: .6rem; margin-top: .4rem; }
 .plan-bild-leiste [hidden] { display: none; }
 .plan-termin .plan-bild-knopf { margin-left: .35rem; vertical-align: .1em; }

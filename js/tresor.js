@@ -687,13 +687,8 @@ const Tresor = {
           if (stand && holMerker[schluessel] === stand && lokal.has(id)) continue;   // unverändert
           const p = (await get(ref(db, `${basis}/${id}`))).val();
           if (!p) continue;
-          const iv = this.vonB64(p.iv);
-          const text = this.teileZusammensetzen(p, art.knoten, id);
-          if (text === null) continue;
-          const klar = await crypto.subtle.decrypt(
-            { name: 'AES-GCM', iv }, this.schluessel, this.vonB64(text));
-          const datei = new File([klar], p.name || art.standard, { type: p.typ || art.typ });
-          await art.legen(id, datei);
+          const datei = await this.dateiAblegen(art, id, p);
+          if (!datei) continue;
           merker[schluessel] = this.fingerabdruck(datei.name, datei.size);
           holMerker[schluessel] = p.stand;
           geholt++;
@@ -705,6 +700,38 @@ const Tresor = {
     localStorage.setItem(this.PLAN_MERKER, JSON.stringify(merker));
     localStorage.setItem(this.HOL_MERKER, JSON.stringify(holMerker));
     return geholt;
+  },
+
+  /* Eine Datei vom Server entschlüsseln und hier ablegen – oder null, wenn
+     sie unvollständig ist */
+  async dateiAblegen(art, id, p) {
+    const text = this.teileZusammensetzen(p, art.knoten, id);
+    if (text === null) return null;
+    const klar = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv: this.vonB64(p.iv) }, this.schluessel, this.vonB64(text));
+    const datei = new File([klar], p.name || art.standard, { type: p.typ || art.typ });
+    await art.legen(id, datei);
+    return datei;
+  },
+
+  /* Eine einzelne Datei holen, die auf diesem Gerät fehlt – etwa ein Bild aus
+     dem Steckbrief, das ein anderes Gerät erst nach seinem Hauptstand
+     hochgeladen hat, während die Übernahme hier schon lief. Liest nur diesen
+     einen Knoten, nie den ganzen Ast. */
+  async dateiNachholen(knoten, id) {
+    const art = this.DATEIARTEN.find(a => a.knoten === knoten);
+    if (!art || !this.aktiv() || !window.FB || !window.FB.db) return false;
+    const { db, ref, get } = window.FB;
+    const p = (await get(ref(db, `schoolTool/tresor/${this.id}/${knoten}/${id}`))).val();
+    if (!p) return false;
+    const datei = await this.dateiAblegen(art, id, p);
+    if (!datei) return false;
+    const merker = this.merker(), holMerker = this.holMerker();
+    merker[knoten + ':' + id] = this.fingerabdruck(datei.name, datei.size);
+    holMerker[knoten + ':' + id] = p.stand;
+    localStorage.setItem(this.PLAN_MERKER, JSON.stringify(merker));
+    localStorage.setItem(this.HOL_MERKER, JSON.stringify(holMerker));
+    return true;
   },
 
   /* ---------- Server-Backup ----------

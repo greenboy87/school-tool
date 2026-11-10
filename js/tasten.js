@@ -146,6 +146,8 @@ const Tasten = {
     if (document.fullscreenElement && document.fullscreenElement !== document.documentElement) return false;
     if (typeof Sitzplan !== 'undefined' && Sitzplan.gesichter) return false;
     if (document.documentElement.classList.contains('locked')) return false;
+    // Ein offenes Fenster (etwa ein Bild groß) behält die Pfeile für sich
+    if (document.querySelector('dialog[open]')) return false;
     return true;
   },
 

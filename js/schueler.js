@@ -25,6 +25,7 @@ const Schueler = {
         Classes.persist();
       });
     }
+    this.bilderVerdrahten();
     // Nachteilsausgleich für Exen: Notenschutz und Zeitzuschlag, nur lokal
     ['profil-ex-ns', 'profil-ex-zuschlag', 'profil-ex-einheit'].forEach(id => {
       const el = document.getElementById(id);
@@ -37,12 +38,14 @@ const Schueler = {
     an('btn-auswahl-weg', () => this.auswahlAufheben());
     an('btn-profil-name', () => this.umbenennen());
 
-    // Esc wählt ab – nur wenn gerade nichts getippt wird
+    // Esc wählt ab – nur wenn gerade nichts getippt wird. Ist ein Bild groß
+    // offen, schließt Esc nur das Bild.
     document.addEventListener('keydown', e => {
       if (e.key !== 'Escape' || !this.aktuell) return;
       const ziel = e.target;
       if (ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]')) return;
       if (typeof Sitzplan !== 'undefined' && Sitzplan.gesichter) return;
+      if (document.querySelector('dialog[open]')) return;
       this.auswahlAufheben();
     });
   },
@@ -351,6 +354,7 @@ const Schueler = {
     }
 
     document.getElementById('profil-notiz').value = s.notiz || '';
+    this.bilderZeichnen();
     const ex = document.getElementById('profil-ex-ns');
     if (ex) {
       ex.checked = !!s.exNotenschutz;
@@ -383,6 +387,258 @@ const Schueler = {
     const m = k && /^(\d+)-(\d+)$/.exec(k);
     if (!m) return '';
     return `${p.reihen - +m[1]}. Reihe von vorn, ${+m[2] + 1}. Platz von links`;
+  },
+
+  /* ---------- Bilder mit eigenem Text ----------
+     Zu jedem Schüler beliebig viele Bilder, jedes mit eigenem Text daneben –
+     etwa ein Foto der Medikamente und dazu, wann was zu nehmen ist. Im Schüler
+     steht nur [{ id, text }]; das Bild selbst liegt verkleinert in IndexedDB
+     („fotos“) und geht von dort einzeln verschlüsselt durch den Sync, wie die
+     Bilder zur Stunde. Der Dateiname reist dabei unverschlüsselt mit – deshalb
+     heißt jedes Bild gleich und nie nach dem Kind. */
+  BILD_NAME: 'Bild.jpg',
+  _bildLauf: 0,            // zählt die Anzeigen – eine überholte lädt nicht weiter
+  _bildUrls: [],
+  _nachgeholt: {},         // Bild-ID → schon versucht, es vom Server zu holen
+
+  bilderVerdrahten() {
+    const bereich = document.getElementById('profil-bilder-bereich');
+    if (!bereich) return;
+    const eingabe = document.getElementById('profil-bild-datei');
+    document.getElementById('btn-profil-bild').addEventListener('click', () => {
+      if (this.gewaehlt()) eingabe.click();
+    });
+    eingabe.addEventListener('change', () => {
+      const t = this.gewaehlt();
+      const dateien = [...eingabe.files];
+      eingabe.value = '';
+      if (t) this.bilderDazu(t, dateien);
+    });
+
+    // Hierher ziehen. Der Unterreiter ringsum nimmt Klassenlisten an und
+    // übergeht diesen Bereich (data-eigene-ablage).
+    let tiefe = 0;
+    const mitDateien = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
+    bereich.addEventListener('dragenter', e => {
+      if (!mitDateien(e)) return;
+      e.preventDefault();
+      if (++tiefe === 1) bereich.classList.add('drop-active');
+    });
+    bereich.addEventListener('dragover', e => {
+      if (!mitDateien(e)) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    });
+    bereich.addEventListener('dragleave', () => {
+      if (--tiefe <= 0) { tiefe = 0; bereich.classList.remove('drop-active'); }
+    });
+    bereich.addEventListener('drop', e => {
+      tiefe = 0;
+      bereich.classList.remove('drop-active');
+      if (!mitDateien(e)) return;
+      e.preventDefault();
+      const t = this.gewaehlt();
+      if (!t) return;
+      const bilder = [...e.dataTransfer.files].filter(f => /^image\//.test(f.type));
+      if (!bilder.length) { alert('Hier lassen sich nur Bilder ablegen (JPG, PNG …).'); return; }
+      this.bilderDazu(t, bilder);
+    });
+
+    document.addEventListener('paste', e => this.einfuegen(e));
+    /* Safari bietet ⌘V außerhalb von Eingabefeldern nur an, wenn die Seite
+       vorher meldet, dass sie das Einfügen selbst übernimmt */
+    document.addEventListener('beforepaste', e => { if (this.imSteckbrief()) e.preventDefault(); });
+    const mac = /Mac|iPhone|iPad/.test(navigator.platform || '');
+    document.querySelectorAll('.taste-einfuegen').forEach(k => { k.textContent = mac ? '⌘V' : 'Strg+V'; });
+  },
+
+  /* ⌘V / Strg+V: Bilder aus der Zwischenablage gehen zum gezeigten Schüler –
+     ob gerade im Notizfeld getippt wird oder nirgends. In andere Eingabefelder
+     (etwa die Suche) und in offene Fenster wird wie immer eingefügt, Text sowieso. */
+  einfuegen(e) {
+    if (e.defaultPrevented || !this.imSteckbrief() || document.querySelector('dialog[open]')) return;
+    const ziel = e.target;
+    const feld = ziel && ziel.closest && ziel.closest('input, textarea, select, [contenteditable="true"]');
+    if (feld && !feld.closest('#steckbrief')) return;
+    const bilder = this.bilderAus(e.clipboardData);
+    if (!bilder.length) return;
+    e.preventDefault();
+    this.bilderDazu(this.zeigbar(), bilder);
+  },
+
+  /* Bilder aus der Zwischenablage: ein Bildschirmfoto, ein im Browser
+     kopiertes Bild oder eine im Finder kopierte Bilddatei */
+  bilderAus(daten) {
+    if (!daten) return [];
+    const bilder = [...(daten.items || [])]
+      .filter(i => i.kind === 'file' && /^image\//.test(i.type))
+      .map(i => i.getAsFile()).filter(Boolean);
+    return bilder.length ? bilder : [...(daten.files || [])].filter(f => /^image\//.test(f.type));
+  },
+
+  /* Den Schüler frisch aus den Daten holen, nicht ein altes Objekt weiterreichen */
+  schuelerZu(klasseId, schuelerId) {
+    const cls = Classes.data.classes.find(c => c.id === klasseId);
+    return (cls && cls.students.find(x => x.id === schuelerId)) || null;
+  },
+
+  /* Neue Bilder klein rechnen (lange Seite 1600 px), ablegen und an den
+     Schüler hängen. t ist der Schüler beim Einfügen – auch wenn inzwischen
+     weitergeblättert wurde. */
+  async bilderDazu(t, dateien) {
+    if (!t || !dateien.length) return;
+    const neu = [];
+    for (const datei of dateien) {
+      let blob;
+      try { blob = await Stundenplan.bildVerkleinern(datei); }
+      catch (e) { alert(`„${datei.name || 'Bild'}“ ließ sich nicht lesen – am besten als JPG oder PNG versuchen.`); continue; }
+      const id = 'schueler-' + Store.uid();
+      try { await Store.putFoto(id, new File([blob], this.BILD_NAME, { type: blob.type || 'image/jpeg' })); }
+      catch (e) { alert('Das Bild konnte nicht gespeichert werden.\n\n' + (e.message || e)); continue; }
+      neu.push({ id });
+    }
+    if (!neu.length) return;
+    // Erst jetzt in die Daten: Beim Sync danach liegt das Bild schon bereit
+    const s = this.schuelerZu(t.cls.id, t.s.id) || t.s;
+    s.bilder = (Array.isArray(s.bilder) ? s.bilder : []).concat(neu);
+    Classes.persist();
+    this.bilderZeichnen(neu[neu.length - 1].id);
+  },
+
+  /* Die Bilder des gezeigten Schülers: Vorschau links, eigener Text rechts.
+     Bleiben Schüler und Bilder gleich, bleibt auch alles stehen – sonst
+     flackerten die Vorschauen bei jedem Neuzeichnen der Klassenliste, und ein
+     Textfeld verlöre mitten im Tippen den Cursor. fokus: ID eines neuen
+     Bildes, dessen Textfeld gleich den Cursor bekommt. */
+  async bilderZeichnen(fokus) {
+    const box = document.getElementById('profil-bilder');
+    if (!box) return;
+    const t = this.zeigbar();
+    const liste = t && Array.isArray(t.s.bilder) ? t.s.bilder : [];
+    const zeichen = t ? `${t.cls.id}/${t.s.id}:${liste.map(b => b.id).join(',')}` : '';
+    if (!fokus && box.dataset.zeichen === zeichen) return;
+    box.dataset.zeichen = zeichen;
+    const lauf = ++this._bildLauf;
+    this._bildUrls.forEach(u => URL.revokeObjectURL(u));
+    this._bildUrls = [];
+    box.innerHTML = '';
+    box.hidden = !liste.length;
+    if (!liste.length) return;
+
+    const klasseId = t.cls.id, schuelerId = t.s.id;
+    const geladen = new Map();                 // Bild-ID → Blob, für die große Ansicht
+    const eintrag = id => {
+      const s = this.schuelerZu(klasseId, schuelerId);
+      return s && Array.isArray(s.bilder) ? s.bilder.find(b => b.id === id) : null;
+    };
+    const zeilen = liste.map(b => {
+      const zeile = document.createElement('div');
+      zeile.className = 'profil-bild';
+      const vorschau = document.createElement('button');
+      vorschau.type = 'button';
+      vorschau.className = 'profil-bild-vorschau leer';
+      vorschau.addEventListener('click', () => {
+        const s = this.schuelerZu(klasseId, schuelerId);
+        const mit = ((s && s.bilder) || []).filter(x => geladen.has(x.id));
+        const pos = mit.findIndex(x => x.id === b.id);
+        if (pos < 0) return;
+        Stundenplan.bilderZeigen(mit.map(x => geladen.get(x.id)), pos, mit.map(x => x.text || ''));
+      });
+      const text = document.createElement('textarea');
+      text.rows = 3;
+      text.value = b.text || '';
+      text.placeholder = 'Was gehört zu diesem Bild? z. B. welches Medikament, wann, wo es liegt';
+      text.setAttribute('aria-label', 'Text zum Bild');
+      text.addEventListener('input', () => {
+        const e = eintrag(b.id);
+        if (!e) return;
+        if (text.value.trim()) e.text = text.value; else delete e.text;
+        Classes.persist();
+      });
+      const weg = document.createElement('button');
+      weg.type = 'button';
+      weg.className = 'del';
+      weg.innerHTML = Icons.raw('trash');
+      weg.title = 'Bild samt Text löschen';
+      weg.setAttribute('aria-label', 'Bild löschen');
+      weg.addEventListener('click', () => this.bildLoeschen(klasseId, schuelerId, b.id));
+      zeile.append(vorschau, text, weg);
+      box.append(zeile);
+      if (b.id === fokus) { text.focus(); zeile.scrollIntoView({ block: 'nearest' }); }
+      return { id: b.id, vorschau };
+    });
+
+    // Die Bilder selbst nachladen. Fehlt eines hier, einmal beim Server
+    // nachfragen: Ein anderes Gerät lädt es erst nach seinem Hauptstand hoch,
+    // die Übernahme hier kann schneller gewesen sein.
+    for (const { id, vorschau } of zeilen) {
+      let blob = await this.bildBlob(id);
+      if (lauf !== this._bildLauf) return;
+      if (!blob && !this._nachgeholt[id] && window.Tresor && Tresor.aktiv()) {
+        this._nachgeholt[id] = true;
+        vorschau.textContent = 'wird geholt …';
+        try { if (await Tresor.dateiNachholen('fotos', id)) blob = await this.bildBlob(id); }
+        catch (e) { console.error('Bild nachholen:', e); }
+        if (lauf !== this._bildLauf) return;
+      }
+      if (!blob) {
+        vorschau.textContent = 'Bild fehlt auf diesem Gerät';
+        vorschau.title = 'Kommt mit dem nächsten Abgleich von dem Gerät, auf dem es eingefügt wurde';
+        continue;
+      }
+      const url = URL.createObjectURL(blob);
+      this._bildUrls.push(url);
+      geladen.set(id, blob);
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = 'Bild';
+      img.draggable = false;                   // sonst landet es per Ziehen gleich doppelt hier
+      vorschau.textContent = '';
+      vorschau.title = 'Groß zeigen';
+      vorschau.classList.remove('leer');
+      vorschau.append(img);
+    }
+  },
+
+  async bildBlob(id) {
+    try {
+      const e = await Store.getFoto(id);
+      return e && e.blob ? e.blob : null;
+    } catch (e) {
+      console.error('Bild laden:', e);
+      return null;
+    }
+  },
+
+  bildLoeschen(klasseId, schuelerId, id) {
+    const s = this.schuelerZu(klasseId, schuelerId);
+    const b = s && Array.isArray(s.bilder) && s.bilder.find(x => x.id === id);
+    if (!b) return;
+    if (!confirm(b.text ? 'Dieses Bild samt Text löschen?' : 'Dieses Bild löschen?')) return;
+    s.bilder = s.bilder.filter(x => x.id !== id);
+    if (!s.bilder.length) delete s.bilder;
+    Classes.persist();
+    this.bilderAufraeumen([id]);
+    this.bilderZeichnen();
+  },
+
+  /* Alle Bild-IDs einer Reihe von Schülern – zum Aufräumen beim Löschen */
+  bildIds(schueler) {
+    return (schueler || []).flatMap(s => Array.isArray(s.bilder) ? s.bilder.map(b => b.id) : []);
+  },
+
+  /* Bilder, auf die kein Schüler mehr zeigt, vom Gerät und vom Server löschen –
+     sonst wanderten sie unauffindbar durch jeden Abgleich. Die Kopie fürs
+     nächste Schuljahr teilt sich die Bilder mit dem Original; solange einer
+     von beiden ein Bild noch hat, bleibt es. Aufrufen, nachdem die Daten
+     schon ohne die Bilder dastehen. */
+  bilderAufraeumen(ids) {
+    const benutzt = new Set(this.bildIds(Classes.data.classes.flatMap(c => c.students || [])));
+    for (const id of ids) {
+      if (!id || benutzt.has(id)) continue;
+      Store.deleteFoto(id).catch(() => {});
+      if (window.Tresor && Tresor.dateiEntfernen) Tresor.dateiEntfernen('fotos', id);
+    }
   },
 
   /* ---------- Gesichter ausschneiden ---------- */
