@@ -1891,6 +1891,123 @@ const Classes = {
     document.getElementById('grade-summary').textContent = this.summaryText(p);
   },
 
+  /* ---------- Einzelansicht: ein Schüler groß ----------
+     Klick auf einen Namen in der Notenliste: Foto, Note und alle eigenen
+     Spalten in einem Fenster, ←/→ blättert zum vorigen/nächsten Kind. Gedacht
+     fürs Vorspielen am iPad – das Kind steht vorn, man sieht, wer es ist, und
+     hakt ab. Gespeichert wird sofort, die Liste wird beim Schließen neu gezeichnet. */
+  einzelnOeffnen(sid) {
+    const dlg = document.getElementById('noten-einzeln');
+    if (!dlg) return;
+    this._einzeln = sid;
+    this.einzelnZeichnen();
+    if (!dlg.open) dlg.showModal();
+    if (!dlg.dataset.verdrahtet) {
+      dlg.dataset.verdrahtet = '1';
+      const blaettern = (n, inDieNote) => {
+        const cls = this.currentClass();
+        const i = cls.students.findIndex(x => x.id === this._einzeln);
+        const ziel = cls.students[i + n];
+        if (ziel) { this._einzeln = ziel.id; this.einzelnZeichnen(inDieNote); }
+      };
+      document.getElementById('ne-zurueck').addEventListener('click', () => blaettern(-1));
+      document.getElementById('ne-weiter').addEventListener('click', () => blaettern(1));
+      document.getElementById('ne-zu').addEventListener('click', () => dlg.close());
+      dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+      dlg.addEventListener('keydown', e => {
+        const feld = e.target.closest('input[type=text]');
+        // Enter im Textfeld: nächstes Kind – aus der Note heraus gleich wieder in die Note
+        if (feld && e.key === 'Enter') { e.preventDefault(); blaettern(1, feld.classList.contains('grade')); return; }
+        // ←/→ blättern, außer man steht in einem längeren Textfeld
+        if (feld && !feld.classList.contains('grade')) return;
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); blaettern(1, !!feld); }
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); blaettern(-1, !!feld); }
+      });
+      dlg.addEventListener('close', () => {
+        this.renderGradeTable();
+        const p = this.currentProject();
+        if (p) document.getElementById('grade-summary').textContent = this.summaryText(p);
+        this.renderProjects();
+      });
+    }
+  },
+
+  einzelnZeichnen(inDieNote) {
+    const cls = this.currentClass(), p = this.currentProject();
+    const s = cls && p && cls.students.find(x => x.id === this._einzeln);
+    if (!s) return;
+    const i = cls.students.indexOf(s);
+    document.getElementById('ne-name').textContent = [s.first, s.last].filter(Boolean).join(' ');
+    document.getElementById('ne-pos').textContent = `${i + 1} von ${cls.students.length} · ${p.name}`;
+    const gr = (p.groups || []).findIndex(g => g.includes(s.id));
+    const grEl = document.getElementById('ne-gruppe');
+    grEl.hidden = gr < 0;
+    if (gr >= 0) grEl.textContent = 'Gruppe: ' + ((p.groupNames && p.groupNames[gr]) || 'Gruppe ' + (gr + 1));
+    const foto = document.getElementById('ne-foto');
+    foto.style.backgroundImage = '';
+    foto.classList.add('ohne');
+    foto.dataset.initialen = ((s.first || '')[0] || '') + ((s.last || '')[0] || '');
+    const quelle = Schueler.fotoQuelle({ cls, s });
+    if (quelle) Schueler.gesichtEinsetzen(foto, quelle.cls, quelle.s, 320);
+    const stelle = (id, nachbar) => {
+      const b = document.getElementById(id);
+      b.disabled = !nachbar;
+      b.querySelector('span').textContent = nachbar ? this.studentName(nachbar) : '';
+      b.classList.toggle('unsichtbar', !nachbar);
+    };
+    stelle('ne-zurueck', cls.students[i - 1]);
+    stelle('ne-weiter', cls.students[i + 1]);
+
+    const box = document.getElementById('ne-felder');
+    box.innerHTML = '';
+    let erstes = null;
+    if (!p.ohneNote) {
+      const l = document.createElement('label');
+      l.className = 'ne-note';
+      l.append('Note');
+      const f = document.createElement('input');
+      f.type = 'text';
+      f.className = 'grade';
+      f.value = p.grades[s.id] || '';
+      f.addEventListener('input', () => {
+        if (f.value.trim()) p.grades[s.id] = f.value.trim(); else delete p.grades[s.id];
+        this.persist();
+      });
+      l.appendChild(f);
+      box.appendChild(l);
+      erstes = f;
+    }
+    for (const sp of this.spalten(p)) {
+      if (sp.art === 'haken') {
+        const l = document.createElement('label');
+        l.className = 'ne-haken';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = this.wert(p, s.id, sp.id) === true;
+        cb.addEventListener('change', () => { this.wertSetzen(p, s.id, sp.id, cb.checked); l.classList.toggle('an', cb.checked); });
+        l.classList.toggle('an', cb.checked);
+        const t = document.createElement('span');
+        t.textContent = sp.name;
+        l.append(cb, t);
+        box.appendChild(l);
+      } else {
+        const l = document.createElement('label');
+        l.className = 'ne-text';
+        l.append(sp.name);
+        const f = document.createElement('input');
+        f.type = 'text';
+        f.value = this.wert(p, s.id, sp.id) || '';
+        f.addEventListener('input', () => this.wertSetzen(p, s.id, sp.id, f.value.trim() ? f.value : ''));
+        l.appendChild(f);
+        box.appendChild(l);
+      }
+    }
+    if (!box.children.length) box.innerHTML = '<p class="hint">Dieses Projekt hat noch keine Note und keine eigenen Spalten.</p>';
+    // Sonst „Weiter“ – dann klappt am iPad keine Tastatur auf
+    if (erstes && inDieNote) { erstes.focus(); erstes.select(); }
+    else document.getElementById('ne-weiter').focus();
+  },
+
   renderSpaltenEditor() {
     const p = this.currentProject();
     const liste = document.getElementById('project-spalten-liste');
@@ -2017,7 +2134,10 @@ const Classes = {
       tdNum.className = 'num';
       tdNum.textContent = i + 1;
       const tdName = document.createElement('td');
+      tdName.className = 'ne-name-zelle';
       tdName.textContent = this.studentName(s);
+      tdName.title = 'Einzeln öffnen: Foto, Note und alle Spalten – mit ←/→ zum nächsten';
+      tdName.addEventListener('click', () => this.einzelnOeffnen(s.id));
       const tdGrade = document.createElement('td');
       const input = document.createElement('input');
       input.className = 'grade';
