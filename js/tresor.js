@@ -54,6 +54,16 @@ const Tresor = {
       this.knopfAktualisieren();
     }
 
+    /* Wann zuletzt jemand etwas eingetragen hat. Speichern kurz danach ist
+       eine echte Änderung; Speichern ohne Eingabe davor trägt nur der Plan
+       beim Öffnen selbst nach. */
+    ['input', 'change', 'submit', 'drop', 'paste', 'keydown'].forEach(ev =>
+      document.addEventListener(ev, () => { this.letzteEingabe = Date.now(); }, true));
+    document.addEventListener('click', e => {
+      if (e.target.closest && e.target.closest('.tab-btn, .subtab-btn, .bandtab-btn, .ex-reiter-btn')) return;
+      this.letzteEingabe = Date.now();
+    }, true);
+
     // Jedes Speichern löst eine verzögerte Übertragung aus
     const originalSave = Store.save.bind(Store);
     Store.save = (data) => {
@@ -62,12 +72,30 @@ const Tresor = {
         this.aenderungen++;
         this.geaendert(true);
         this.geplantHochladen();
+      } else if (localStorage.getItem(this.PASS_KEY) && Date.now() - (this.letzteEingabe || 0) < 3000) {
+        /* Sync eingerichtet, aber (noch) nicht verbunden – offline in der
+           Schule oder in den ersten Sekunden nach dem Öffnen. Früher zählte
+           das gar nicht: Kam danach ein neuerer Stand vom Server, ersetzte er
+           diese Einträge still, und lag keiner vor, gingen sie nie hoch. Jetzt
+           gelten sie als ungesichert – beim Verbinden wird hochgeladen oder,
+           wenn ein anderes Gerät inzwischen gespeichert hat, nachgefragt. */
+        this.geaendert(true);
       }
     };
-    // Zurück im Tab: ausstehenden fremden Stand zeigen
+    // Zurück im Tab: ausstehenden fremden Stand zeigen – oder Liegengebliebenes hochladen
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && this.fremd) this.hinweisZeigen();
+      if (document.hidden) return;
+      if (this.fremd) this.hinweisZeigen();
+      else this.nachholen();
     });
+    // Netz wieder da: was offline eingetragen wurde, jetzt hochladen
+    window.addEventListener('online', () => this.nachholen());
+  },
+
+  /* Ungesicherte Änderungen nach einem gescheiterten Hochladen erneut
+     anstoßen. Liegt oben inzwischen Neueres, fragt hochladen() nach. */
+  nachholen() {
+    if (this.aktiv() && this.bereit && !this.pausiert && !this.amLaufen && this.istGeaendert()) this.geplantHochladen();
   },
 
   basis() { return Number(localStorage.getItem(this.BASIS_KEY)) || 0; },
@@ -294,6 +322,11 @@ const Tresor = {
         // Beide Seiten benennen: Sonst weiß man nicht, was man gerade ersetzt.
         const zaehle = d => this.zaehle(d);
         if (still || confirm(
+          (this.istGeaendert()
+            ? 'ACHTUNG: Auf diesem Gerät wurde etwas eingetragen, das noch nicht hochgeladen ist ' +
+              '(etwa offline). Ein anderes Gerät hat inzwischen ebenfalls gespeichert.\n' +
+              'Übernimmst du den Server-Stand, liegen die Einträge von hier danach unter Sync → 4.\n\n'
+            : '') +
           'Passwort stimmt – auf dem Server liegen Daten.\n\n' +
           `VOM SERVER (${this.zeit(fernStand)}, ${vorhanden.geraet || 'anderes Gerät'}):\n` +
           `   ${zaehle(daten)}\n\n` +
