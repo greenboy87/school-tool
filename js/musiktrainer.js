@@ -218,8 +218,8 @@ const Musiktrainer = {
       <div class="projekt-header">
         <h3 data-icon="music">music-trainer</h3>
         <div class="btn-row">
-          <button class="primary" data-mt="qr" data-icon="expand">QR-Anmeldung am Beamer</button>
-          <button data-mt="namen" data-icon="list">Namensliste am Beamer</button>
+          <button class="primary" data-mt="namen" data-icon="list">Namensliste am Beamer</button>
+          <button data-mt="qr" data-icon="expand" title="Ein QR-Code je Kind – als Notlösung, wenn das Eintippen nicht klappt">QR-Anmeldung am Beamer</button>
           <button data-mt="liste" data-icon="printer">Liste drucken</button>
           <button data-mt="drucken" data-icon="printer">Kärtchen drucken</button>
         </div>
