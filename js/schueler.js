@@ -319,7 +319,7 @@ const Schueler = {
 
     this.blaetterLeisteStellen(cls, s);
     document.getElementById('profil-name').textContent =
-      [s.first, s.last].filter(Boolean).join(' ');
+      Classes.studentName(s);
 
     // Das Gesicht aus dieser Klasse – sonst aus einer anderen mit demselben Namen
     const foto = document.getElementById('profil-foto');

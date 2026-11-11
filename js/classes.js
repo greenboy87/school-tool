@@ -1959,7 +1959,7 @@ const Classes = {
     const s = cls && p && cls.students.find(x => x.id === this._einzeln);
     if (!s) return;
     const i = cls.students.indexOf(s);
-    document.getElementById('ne-name').textContent = [s.first, s.last].filter(Boolean).join(' ');
+    document.getElementById('ne-name').textContent = this.studentName(s);
     document.getElementById('ne-pos').textContent = `${i + 1} von ${cls.students.length} · ${p.name}`;
     const gr = (p.groups || []).findIndex(g => g.includes(s.id));
     const grEl = document.getElementById('ne-gruppe');
@@ -2118,6 +2118,8 @@ const Classes = {
     const table = document.getElementById('grade-table');
     const spalten = this.spalten(p);
     const mitNote = !p.ohneNote;
+    const mitFotos = cls.students.some(s => Schueler.fotoQuelle({ cls, s }));
+    Schueler.neuerDurchgang();
     table.classList.toggle('mit-spalten', spalten.length > 0);
     const kopf = document.createElement('tr');
     kopf.innerHTML = '<th class="num">Nr.</th><th>Name</th>' + (mitNote ? '<th>Note</th>' : '');
@@ -2157,7 +2159,16 @@ const Classes = {
       tdNum.textContent = i + 1;
       const tdName = document.createElement('td');
       tdName.className = 'ne-name-zelle';
-      tdName.textContent = this.studentName(s);
+      // Kleines Gesicht davor – wie in der Klassenliste, sobald es Fotos gibt
+      if (mitFotos) {
+        const gesicht = document.createElement('span');
+        gesicht.className = 'mini-gesicht ohne';
+        gesicht.dataset.initialen = ((s.first || '')[0] || '') + ((s.last || '')[0] || '');
+        const quelle = Schueler.fotoQuelle({ cls, s });
+        if (quelle) Schueler.gesichtEinsetzen(gesicht, quelle.cls, quelle.s);
+        tdName.appendChild(gesicht);
+      }
+      tdName.append(this.studentName(s));
       tdName.title = 'Einzeln öffnen: Foto, Note und alle Spalten – mit ←/→ zum nächsten';
       tdName.addEventListener('click', () => this.einzelnOeffnen(s.id));
       const tdGrade = document.createElement('td');

@@ -3061,3 +3061,4 @@ dialog.noten-einzeln::backdrop { background: rgba(0, 0, 0, .55); }
 .ne-gesichter .icon { margin-right: .25rem; }
 .ne-gesichter kbd { font: inherit; font-size: .75em; padding: 0 .3em; margin-left: .2em; border: 1px solid currentColor; border-radius: 4px; opacity: .7; }
 .ne-gesichter.aus { border-color: var(--accent); color: var(--accent); }
+.grade-table td.ne-name-zelle .mini-gesicht { width: 1.9rem; height: 1.9rem; margin-right: .5rem; }
