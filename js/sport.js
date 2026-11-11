@@ -204,11 +204,11 @@ const Sport = {
       tr.innerHTML = `<td class="num">${n}</td><td>${d.noten[n] ? d.noten[n].text : '–'}</td>`;
       tab.appendChild(tr);
     }
-    // Wer die Note 5 nicht schafft, soll auch markiert sein – sonst stuende
+    // Note 6 (Schwelle fuer 5 verfehlt) soll auch markiert sein – sonst stuende
     // gerade dann nichts hervorgehoben, wenn es am meisten zaehlt
     const unter = document.createElement('tr');
     unter.dataset.note = '6';
-    unter.innerHTML = `<td class="num">–</td><td>${this.unterFuenfText(d)}</td>`;
+    unter.innerHTML = `<td class="num">6</td><td>${this.unterFuenfText(d)}</td>`;
     tab.appendChild(unter);
     this._tabellenNote = undefined;
     const feld = document.getElementById('sport-messwert');
@@ -221,7 +221,7 @@ const Sport = {
 
   /* ---------- Note zu einem Wert ----------
      „weniger ist besser“ bei Zeiten, „mehr ist besser“ bei Weiten, Hoehen und
-     der Dauerlauf-Minutenzahl. Note 6 heisst hier: unter Note 5. */
+     der Dauerlauf-Minutenzahl. Note 6: schlechter als die Schwelle fuer Note 5. */
   noteFuer(d, wert) {
     if (!d || wert === null || isNaN(wert)) return null;
     for (const n of ['1', '2', '3', '4', '5']) {
@@ -248,7 +248,7 @@ const Sport = {
     if (note === 6) return null;                          // schlechter geht nicht
     const schwelle = d.noten[String(note)];
     if (!schwelle) return null;
-    return { note: note === 5 ? 'unter Note 5' : String(note + 1),
+    return { note: String(note + 1),
              abstand: schwelle.zahl - wert };
   },
 
@@ -273,15 +273,15 @@ const Sport = {
       el.textContent = ''; el.className = 'sport-messnote'; this.markiereTabelle(null); return;
     }
     const note = this.noteFuer(d, wert);
-    el.textContent = note === 6 ? 'unter Note 5' : 'Note ' + note;
+    el.textContent = 'Note ' + note;
     el.className = 'sport-messnote note-' + note;
     this.markiereTabelle(note);
   },
 
-  /* „unter Note 5“ als Schwelle lesbar: bei Zeiten langsamer, sonst weniger */
+  /* Note 6 als Schwelle lesbar: bei Zeiten langsamer, sonst weniger */
   unterFuenfText(d) {
     const s = d.noten['5'];
-    if (!s) return 'unter Note 5';
+    if (!s) return '–';
     return (d.richtung === 'weniger' ? 'über ' : 'unter ') + s.text;
   },
 
@@ -318,11 +318,19 @@ const Sport = {
            (mitZehntel ? ',' + zehntel : '');
   },
 
-  /* Abstaende in Sekunden lesbar machen: „42,3 s“ bzw. „2:07“ */
+  /* Abstaende in Sekunden lesbar machen: „42,3 s“ bzw. „2:07“.
+     Aufgerundet, nicht abgeschnitten: Die Uhr oben schneidet ab, zeigt also
+     bei 0:50,7 noch „00:50“. Steht die Schwelle bei 1:00, sollen darunter
+     dann auch „noch 00:10“ stehen und nicht schon „00:09“ – Uhr und Rest
+     ergeben so immer zusammen die Schwelle. Das kleine Abziehen faengt
+     Rundungsreste ab (10,0000001 s wuerde sonst zu 11). */
   abstandText(sekunden, einheit) {
-    if (einheit === 'min') return this.text(sekunden * 1000, false);
-    if (einheit === 'min:s') return this.text(sekunden * 1000, true);
-    return sekunden.toFixed(1).replace('.', ',') + ' s';
+    const auf = (x, schritt) => Math.ceil(x / schritt - 1e-6) * schritt;
+    const zehntel = !this.uhr.laeuft;   // wie die Uhr: Zehntel erst im Stillstand
+    if (einheit === 'min' || einheit === 'min:s') {
+      return this.text(auf(sekunden, zehntel ? 0.1 : 1) * 1000, zehntel);
+    }
+    return auf(sekunden, 0.1).toFixed(1).replace('.', ',') + ' s';
   },
 
   zeichneUhr() {
@@ -361,11 +369,9 @@ const Sport = {
       const abst = this.abstandText(
         d.einheit === 'min' ? naechste.abstand * 60 : naechste.abstand,
         d.einheit === 'min' ? 'min' : d.einheit);
-      zeile.textContent = naechste.note === 'unter Note 5'
-        ? `noch ${abst} bis unter Note 5`
-        : `noch ${abst} bis Note ${naechste.note}`;
+      zeile.textContent = `noch ${abst} bis Note ${naechste.note}`;
     } else {
-      zeile.textContent = note === 1 ? 'Note 1' : note === 6 ? 'unter Note 5' : 'Note ' + note;
+      zeile.textContent = 'Note ' + note;
     }
     zeile.className = 'stoppuhr-note note-' + note;
     zeile.hidden = false;
@@ -388,12 +394,12 @@ const Sport = {
       feld.append(kopf, zeit);
       leiste.appendChild(feld);
     }
-    // Feld fuer „unter Note 5“, damit auch dann eine Note markiert ist
+    // Feld fuer Note 6, damit auch dann eine Note markiert ist
     if (d.noten['5']) {
       const feld = document.createElement('span');
       feld.className = 'leisten-feld' + (note === 6 ? ' erreicht' : '');
       const kopf = document.createElement('b');
-      kopf.textContent = 'unter 5';
+      kopf.textContent = 'Note 6';
       const zeit = document.createElement('span');
       zeit.className = 'leisten-wert';
       zeit.textContent = (d.richtung === 'weniger' ? '> ' : '< ') + d.noten['5'].text;

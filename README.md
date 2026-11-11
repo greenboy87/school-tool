@@ -347,9 +347,11 @@ Eigener Reiter mit **Stoppuhr** und den **Bewertungstabellen**.
   sie läuft dabei weiter.
 - Ist unten eine Zeit-Disziplin gewählt, **läuft die Note mit**. Unter der Uhr steht nur die
   eine Zahl, die gerade zählt – „noch 03:46 bis Note 3“ –, darunter als Leiste alle fünf
-  Schwellen (plus „unter 5“) mit der erreichten hervorgehoben; dieselbe Note ist auch in der
+  Schwellen plus Note 6 mit der erreichten hervorgehoben; dieselbe Note ist auch in der
   Bewertungstabelle markiert, ebenso beim eingetippten Messwert. Beim Dauerlauf läuft es auf die bessere Note zu,
   bei Zeitläufen auf die schlechtere: „noch 0,6 s bis Note 4“ heißt, so lange hält Note 3 noch.
+  Der Rest wird aufgerundet, damit er zur Uhr passt: Steht oben 00:50 und die Schwelle bei 1:00,
+  steht darunter „noch 00:10“.
 - Während die Uhr läuft, zeigt sie **volle Sekunden**; erst beim Anhalten kommt die Zehntel-
   stelle dazu. Eine zehnmal je Sekunde wechselnde Ziffer macht die Anzeige auf der Leinwand
   unruhig, beim Stoppen ist sie dagegen genau das, was man braucht.
