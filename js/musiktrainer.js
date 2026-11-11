@@ -1279,7 +1279,7 @@ const Musiktrainer = {
     this.qrSeite = null;
     const b = this.beamerEbene();
     const sortiert = [...kinder].sort((a, c) => a.name.localeCompare(c.name, 'de'));
-    b.innerHTML = `
+    b.innerHTML = `<div class="mt-namen-ansicht">
       <div class="mt-beamer-kopf">
         <div>
           <h2>${this.esc(titel)}: deine Anmeldung</h2>
@@ -1292,11 +1292,55 @@ const Musiktrainer = {
         <div class="mt-adresse">${this.esc(this.KURZ_URL)}</div>
         <div class="mt-allgemein-qr mt-qr-platz" aria-hidden="true"></div>
       </div>
-      <div class="mt-namensliste${sortiert.length > 24 ? ' drei' : ''}" style="--zeilen:${Math.ceil(sortiert.length / (sortiert.length > 24 ? 3 : sortiert.length > 16 ? 2 : 1))}">
+      <div class="mt-namensliste">
         ${sortiert.map(k => `<div class="mt-namenszeile"><span>${this.esc(k.name)}</span><code>${this.esc(k.benutzer)}</code></div>`).join('')}
       </div>
-      <div class="mt-passwort-gross"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>      </div>`;
-    this.allgemeinQr(document.getElementById("mt-allgemein-qr"), 460);
+      <div class="mt-passwort-gross"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
+    </div>`;
+    this.allgemeinQr(document.getElementById('mt-allgemein-qr'), 460);
+    this.namenslisteEinpassen(b, sortiert.length);
+    // Das Vollbild kommt erst kurz nach dem Klick – dann neu einpassen
+    if (!this._namenFit) {
+      this._namenFit = () => {
+        const bb = document.getElementById('mt-beamer');
+        const ansicht = bb && !bb.hidden && bb.querySelector('.mt-namen-ansicht');
+        if (ansicht) this.namenslisteEinpassen(bb, ansicht.querySelectorAll('.mt-namenszeile').length);
+      };
+      window.addEventListener('resize', this._namenFit);
+    }
+  },
+
+  /* Namensliste ohne Scrollen: Spaltenzahl und Schrift so wählen, dass die Namen
+     möglichst groß sind und alles auf den Bildschirm passt. Wird es eng, schrumpfen
+     auch QR-Code, Adresse und Passwort. */
+  namenslisteEinpassen(b, anzahl) {
+    const ansicht = b.querySelector('.mt-namen-ansicht');
+    if (!ansicht || !anzahl) return;
+    const zeilen = [...ansicht.querySelectorAll('.mt-namenszeile')];
+    // Die mittig ausgerichtete Liste läuft sonst links unbemerkt über den Rand
+    const breitOk = () => {
+      const r = ansicht.getBoundingClientRect();
+      return zeilen.every(z => { const q = z.getBoundingClientRect(); return q.left >= r.left - 1 && q.right <= r.right + 1; });
+    };
+    const passt = () => b.scrollHeight <= b.clientHeight + 1 && b.scrollWidth <= b.clientWidth + 1 && breitOk();
+    const setze = (s, spalten, n) => {
+      ansicht.style.setProperty('--s', s);
+      ansicht.style.setProperty('--n', `${n}px`);
+      ansicht.style.setProperty('--zeilen', Math.ceil(anzahl / spalten));
+    };
+    let best = null;
+    for (const s of [1, 0.8, 0.62, 0.48]) {
+      for (let spalten = 1; spalten <= Math.min(4, anzahl); spalten++) {
+        for (let n = 40; n >= 13; n--) {
+          if (best && n <= best.n) break;
+          setze(s, spalten, n);
+          if (passt()) { best = { s, spalten, n }; break; }
+        }
+      }
+      if (best && best.n >= 22) break; // Namen groß genug – QR-Code nicht weiter verkleinern
+    }
+    best = best || { s: 0.48, spalten: Math.min(4, anzahl), n: 13 };
+    setze(best.s, best.spalten, best.n);
   },
 
   /* Allgemeiner Link: nur zur Anmeldeseite, ohne Benutzername und Passwort */

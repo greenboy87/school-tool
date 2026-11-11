@@ -2614,6 +2614,22 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 /* Leerplatz genau so breit wie der QR-Code samt Polster (2 × 12 px) */
 .mt-qr-platz { box-sizing: border-box; width: calc(clamp(140px, 13vw, 210px) + 24px); }
 
+/* Namensliste am Beamer: Größen kommen aus namenslisteEinpassen (--s für Kopf, QR, Adresse,
+   Passwort; --n für die Namen; --zeilen je Spalte), damit nichts gescrollt werden muss */
+.mt-namen-ansicht { --s: 1; --n: 28px; }
+.mt-namen-ansicht .mt-beamer-kopf { margin-bottom: calc(.8rem * var(--s)); }
+.mt-namen-ansicht .mt-beamer-kopf h2 { font-size: calc(1.6rem * var(--s)); }
+.mt-namen-ansicht .mt-beamer-kopf p { font-size: calc(1.1rem * var(--s)); }
+.mt-namen-ansicht .mt-zugangsblock { margin-bottom: calc(1rem * var(--s)); padding: calc(.8rem * var(--s)) 2rem; }
+.mt-namen-ansicht .mt-adresse { font-size: calc(6rem * var(--s)); }
+.mt-namen-ansicht .mt-allgemein-qr img, .mt-namen-ansicht .mt-allgemein-qr canvas {
+  width: calc(200px * var(--s)) !important; height: calc(200px * var(--s)) !important; }
+.mt-namen-ansicht .mt-qr-platz { width: calc(200px * var(--s) + 24px); }
+.mt-namen-ansicht .mt-namensliste { font-size: var(--n); gap: 0 calc(var(--n) * 1.4); }
+.mt-namen-ansicht .mt-namenszeile { padding: calc(var(--n) * .12) 0; gap: calc(var(--n) * .9); }
+.mt-namen-ansicht .mt-passwort-gross { margin-top: calc(.8rem * var(--s)); }
+.mt-namen-ansicht .mt-passwort-gross code { font-size: calc(4.2rem * var(--s)); }
+
 /* Kärtchen drucken: nur sie, alles andere ausgeblendet */
 #mt-druck { display: none; }
 @media print {
