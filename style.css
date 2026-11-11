@@ -2583,6 +2583,7 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-beamer-fuss button .icon { margin: 0; }
 .mt-links { transform: rotate(-90deg); }
 .mt-rechts { transform: rotate(90deg); }
+.mt-sb-anzeige { display: inline-flex; align-items: center; gap: .35rem; font-size: .9rem; }
 .mt-beamer-fuss label { display: inline-flex; align-items: center; gap: .4rem; font-size: .9rem; margin-left: 1.5rem; }
 
 /* Namensliste zum Abschreiben */

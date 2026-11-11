@@ -1061,21 +1061,25 @@ const Musiktrainer = {
       </table>
       </div>
       <div class="mt-beamer-fuss">
-        <label>Anzeige <select class="mt-sb-anzeige">
+        <span class="mt-sb-anzeige">Anzeige
           ${[['note', 'Noten'], ['sterne', 'Sterne'], ['prozent', 'Prozent richtig'], ['richtige', 'Richtige'], ['punkte', 'Punkte']]
-            .map(([v, t]) => `<option value="${v}" ${modus === v ? 'selected' : ''}>${t}</option>`).join('')}
-        </select></label>
+            .map(([v, t]) => `<button type="button" class="small${modus === v ? ' primary' : ''}" data-sb-anzeige="${v}">${t}</button>`).join('')}
+        </span>
         <label><input type="checkbox" class="mt-sb-namen" ${vornamen ? 'checked' : ''}> Vornamen (sonst Benutzernamen)</label>
       </div>`;
-    // So groß wie möglich, aber alle Kinder ohne Scrollen auf dem Beamer
+    // So groß wie möglich, aber alle Kinder ohne Scrollen auf dem Beamer –
+    // nach dem Wechsel ins Vollbild (kommt erst kurz nach dem Klick) noch einmal
     const tabelle = b.querySelector('.mt-scoreboard');
     const rahmen = tabelle.parentElement;
-    const platzDa = () => window.innerHeight - tabelle.getBoundingClientRect().top - b.querySelector('.mt-beamer-fuss').offsetHeight - 40;
-    let groesse = 34;
-    tabelle.style.fontSize = `${groesse}px`;
-    while (groesse > 12 && (tabelle.offsetHeight > platzDa() || rahmen.scrollWidth > rahmen.clientWidth)) {
-      tabelle.style.fontSize = `${--groesse}px`;
-    }
+    this.beamerAnpassen = () => {
+      const platzDa = () => window.innerHeight - tabelle.getBoundingClientRect().top - b.querySelector('.mt-beamer-fuss').offsetHeight - 40;
+      let groesse = 34;
+      tabelle.style.fontSize = `${groesse}px`;
+      while (groesse > 12 && (tabelle.offsetHeight > platzDa() || rahmen.scrollWidth > rahmen.clientWidth)) {
+        tabelle.style.fontSize = `${--groesse}px`;
+      }
+    };
+    this.beamerAnpassen();
   },
 
   /* ---------- Beamer und Druck ---------- */
@@ -1098,18 +1102,19 @@ const Musiktrainer = {
         if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); this.qrBlaettern(-1); }
       });
       b.addEventListener('click', e => {
-        if (e.target.closest('.mt-beamer-zu')) this.beamerZu();
-        else if (e.target.closest('[data-blaettern]')) this.qrBlaettern(+e.target.closest('[data-blaettern]').dataset.blaettern);
-      });
-      b.addEventListener('change', e => {
-        if (e.target.matches('.mt-sb-anzeige')) {
-          this.score = e.target.value !== 'note';
-          if (this.score) this.scoreArt = e.target.value;
+        const anzeige = e.target.closest('[data-sb-anzeige]');
+        if (anzeige) {
+          this.score = anzeige.dataset.sbAnzeige !== 'note';
+          if (this.score) this.scoreArt = anzeige.dataset.sbAnzeige;
           localStorage.setItem('schooltool-mt-score', this.score ? 'an' : 'aus');
           localStorage.setItem('schooltool-mt-score-art', this.scoreArt);
           this.render();
           return this.scoreboardZeigen(this.klasse());
         }
+        if (e.target.closest('.mt-beamer-zu')) this.beamerZu();
+        else if (e.target.closest('[data-blaettern]')) this.qrBlaettern(+e.target.closest('[data-blaettern]').dataset.blaettern);
+      });
+      b.addEventListener('change', e => {
         if (e.target.matches('.mt-sb-namen')) {
           localStorage.setItem('schooltool-mt-scoreboard-namen', e.target.checked ? 'vornamen' : 'benutzer');
           return this.scoreboardZeigen(this.klasse());
@@ -1130,8 +1135,11 @@ const Musiktrainer = {
         if (!voll && b.dataset.vollbild) { delete b.dataset.vollbild; b.hidden = true; }
       };
       document.addEventListener('fullscreenchange', raus);
+      // Größe ändert sich (Vollbild an/aus, Fenster): die offene Ansicht neu einpassen
+      window.addEventListener('resize', () => { if (!b.hidden && this.beamerAnpassen) this.beamerAnpassen(); });
       document.addEventListener('webkitfullscreenchange', raus);
     }
+    this.beamerAnpassen = null;
     b.hidden = false;
     this.beamerVollbild(b);
     return b;
@@ -1145,7 +1153,7 @@ const Musiktrainer = {
     try {
       const p = rein.call(b);
       b.dataset.vollbild = '1';
-      if (p && p.catch) p.catch(() => { delete b.dataset.vollbild; });
+      if (p && p.then) p.then(() => this.beamerAnpassen && this.beamerAnpassen(), () => { delete b.dataset.vollbild; });
     } catch (e) { delete b.dataset.vollbild; }
   },
 
@@ -1298,16 +1306,9 @@ const Musiktrainer = {
       <div class="mt-passwort-gross"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
     </div>`;
     this.allgemeinQr(document.getElementById('mt-allgemein-qr'), 460);
-    this.namenslisteEinpassen(b, sortiert.length);
-    // Das Vollbild kommt erst kurz nach dem Klick – dann neu einpassen
-    if (!this._namenFit) {
-      this._namenFit = () => {
-        const bb = document.getElementById('mt-beamer');
-        const ansicht = bb && !bb.hidden && bb.querySelector('.mt-namen-ansicht');
-        if (ansicht) this.namenslisteEinpassen(bb, ansicht.querySelectorAll('.mt-namenszeile').length);
-      };
-      window.addEventListener('resize', this._namenFit);
-    }
+    // Das Vollbild kommt erst kurz nach dem Klick – dann über den resize-Lauscher neu einpassen
+    this.beamerAnpassen = () => this.namenslisteEinpassen(b, sortiert.length);
+    this.beamerAnpassen();
   },
 
   /* Namensliste ohne Scrollen: Spaltenzahl und Schrift so wählen, dass die Namen
