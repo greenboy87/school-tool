@@ -200,9 +200,17 @@ const Sport = {
     tab.appendChild(kopf);
     for (const n of ['1', '2', '3', '4', '5']) {
       const tr = document.createElement('tr');
+      tr.dataset.note = n;
       tr.innerHTML = `<td class="num">${n}</td><td>${d.noten[n] ? d.noten[n].text : '–'}</td>`;
       tab.appendChild(tr);
     }
+    // Wer die Note 5 nicht schafft, soll auch markiert sein – sonst stuende
+    // gerade dann nichts hervorgehoben, wenn es am meisten zaehlt
+    const unter = document.createElement('tr');
+    unter.dataset.note = '6';
+    unter.innerHTML = `<td class="num">–</td><td>${this.unterFuenfText(d)}</td>`;
+    tab.appendChild(unter);
+    this._tabellenNote = undefined;
     const feld = document.getElementById('sport-messwert');
     feld.placeholder = d.einheit === 'm' ? 'z. B. 4,20' : d.einheit;
     this.zeigeMessnote();
@@ -259,11 +267,36 @@ const Sport = {
     const el = document.getElementById('sport-messnote');
     const d = this.aktuelleDisziplin();
     if (!el || !d) return;
+    if (this.istZeit(d)) return;                 // da markiert die Stoppuhr
     const wert = this.zahlAus(document.getElementById('sport-messwert').value, d.einheit);
-    if (wert === null) { el.textContent = ''; el.className = 'sport-messnote'; return; }
+    if (wert === null) {
+      el.textContent = ''; el.className = 'sport-messnote'; this.markiereTabelle(null); return;
+    }
     const note = this.noteFuer(d, wert);
     el.textContent = note === 6 ? 'unter Note 5' : 'Note ' + note;
     el.className = 'sport-messnote note-' + note;
+    this.markiereTabelle(note);
+  },
+
+  /* „unter Note 5“ als Schwelle lesbar: bei Zeiten langsamer, sonst weniger */
+  unterFuenfText(d) {
+    const s = d.noten['5'];
+    if (!s) return 'unter Note 5';
+    return (d.richtung === 'weniger' ? 'über ' : 'unter ') + s.text;
+  },
+
+  /* Die erreichte Zeile der Bewertungstabelle hervorheben. Nur beim Wechsel
+     anfassen – die Stoppuhr ruft das zwanzigmal je Sekunde auf. */
+  markiereTabelle(note) {
+    const wert = note === null || note === undefined ? null : String(note);
+    if (this._tabellenNote === wert) return;
+    this._tabellenNote = wert;
+    for (const tr of document.querySelectorAll('#sport-tabelle tr[data-note]')) {
+      const an = tr.dataset.note === wert;
+      tr.classList.toggle('erreicht', an);
+      tr.className = tr.className.replace(/\bnote-\d\b/g, '').trim();
+      if (an) tr.classList.add('note-' + wert);
+    }
   },
 
   /* ---------- Stoppuhr ---------- */
@@ -336,6 +369,7 @@ const Sport = {
     }
     zeile.className = 'stoppuhr-note note-' + note;
     zeile.hidden = false;
+    this.markiereTabelle(note);
 
     // Notenleiste: alle fuenf Schwellen, die erreichte hervorgehoben
     leiste.innerHTML = '';
@@ -351,6 +385,18 @@ const Sport = {
       const zeit = document.createElement('span');
       zeit.className = 'leisten-wert';
       zeit.textContent = s.text;
+      feld.append(kopf, zeit);
+      leiste.appendChild(feld);
+    }
+    // Feld fuer „unter Note 5“, damit auch dann eine Note markiert ist
+    if (d.noten['5']) {
+      const feld = document.createElement('span');
+      feld.className = 'leisten-feld' + (note === 6 ? ' erreicht' : '');
+      const kopf = document.createElement('b');
+      kopf.textContent = 'unter 5';
+      const zeit = document.createElement('span');
+      zeit.className = 'leisten-wert';
+      zeit.textContent = (d.richtung === 'weniger' ? '> ' : '< ') + d.noten['5'].text;
       feld.append(kopf, zeit);
       leiste.appendChild(feld);
     }

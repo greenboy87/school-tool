@@ -1273,6 +1273,9 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
 }
 .sport-messnote { font-size: 1.05rem; font-weight: 700; padding-bottom: .35rem; }
 .sport-tabelle { max-width: 22rem; }
+/* Die erreichte Note – mit der Stoppuhr oder dem eingetippten Messwert */
+.sport-tabelle tr.erreicht td { background: var(--active-soft); font-weight: 700; }
+.sport-tabelle tr.erreicht td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 .sport-laden { margin: .3rem 0 1rem; align-items: center; }
 #sport-ladestatus.warnung { color: var(--danger); }
 /* Note 1 und 2 gruen, 3 und 4 gelb, 5 und darunter rot – auf dem Beamer
@@ -1325,7 +1328,7 @@ html[data-gesichter="aus"] #gesichter-bereich::after {
    beiden Zahlen im Vorbeigehen nicht auseinanderzuhalten */
 .leisten-feld b { font-size: .68rem; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
 .leisten-wert { font-size: 1.05rem; font-weight: 700; color: var(--text); line-height: 1.15; }
-.leisten-feld.erreicht { border-color: var(--accent); background: var(--active-soft); }
+.leisten-feld.erreicht { border-color: var(--accent); background: var(--active-soft); box-shadow: 0 0 0 2px var(--accent); }
 .leisten-feld.erreicht b { color: var(--accent-soft); }
 .stoppuhr-buehne:fullscreen .stoppuhr-leiste {
   gap: min(1.6vw, 1.6rem); margin: 0; justify-content: center;
