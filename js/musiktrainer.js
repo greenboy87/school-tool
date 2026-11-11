@@ -254,6 +254,7 @@ const Musiktrainer = {
       </div>
       <div class="btn-row mt-knoepfe">
         <button class="small" data-mt="scoreboard" data-icon="expand" title="Die Tabelle als Rangliste im Vollbild – zum Zeigen am Beamer">Scoreboard</button>
+        <button class="small" data-mt="statistik" data-icon="gauge" title="Wie viel, wann und was geübt wird – ohne Namen, auch für den Beamer">Statistik</button>
         <button class="small" data-mt="klasse" data-icon="expand" title="Notenschlüssel, was zählt und Notenspiegel – ohne Namen">Notenschlüssel am Beamer</button>
         <button class="small primary" data-mt="uebertragen" data-icon="pen" title="Die Noten der rechten Spalte als Spalte unter „Projekte & Noten“ eintragen">Noten in Klassenliste übertragen</button>
         <button class="small" data-mt="kopieren" data-icon="clipboard" title="Name und Note als Liste kopieren">Kopieren</button>
@@ -392,10 +393,11 @@ const Musiktrainer = {
     }
     if (aktion === 'einrichten') return this.einrichten(cls);
     if (aktion === 'nachtragen') return this.nachtragen(cls);
-    if (aktion === 'laden') { this.ergebnis = null; return this.laden(); }
+    if (aktion === 'laden') { this.ergebnis = null; this.statCache = {}; return this.laden(); }
     if (aktion === 'kopieren') return this.kopieren(cls);
     if (aktion === 'klasse') return this.klasseZeigen(cls);
     if (aktion === 'scoreboard') return this.scoreboardZeigen(cls);
+    if (aktion === 'statistik') { this.statOptionen().ansicht = 'klasse'; return this.statistikZeigen(cls); }
     if (aktion === 'uebertragen') return this.uebertragen(cls);
     if (aktion === 'meine') return this.meineNoteSetzen(cls);
     if (aktion === 'qr') {
@@ -1042,6 +1044,11 @@ const Musiktrainer = {
           <h2>${this.esc(cls.name)} · ${this.esc(this.kategorienText(mt, true))}</h2>
           <p>${{ note: 'Note', sterne: 'Sterne', prozent: 'Prozent richtig', richtige: 'Richtige der besten Runde', punkte: 'Punkte-Rekord' }[modus]} je Aufgabe${['punkte', 'richtige'].includes(modus) ? '' : ' – Schnitt deiner 3 besten Runden'}. Üben lohnt sich!</p>
         </div>
+        ${(() => {
+          const st = this.statRechnen(this.ergebnis.daten, +this.filter.zeitraum || 0);
+          return st.runden ? `<div class="st-chip" title="Summe aller Runden der Klasse${+this.filter.zeitraum ? ` in den letzten ${this.filter.zeitraum} Tagen` : ''} (Minuten seit 01.11.2026)">
+            <span>Gemeinsam geübt</span><b>${this.minuten(st.sek)}</b><small>${this.tausend(st.runden)} Runden</small></div>` : '';
+        })()}
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
       <div class="mt-tabelle-rahmen">
@@ -1082,6 +1089,260 @@ const Musiktrainer = {
     this.beamerAnpassen();
   },
 
+  /* ---------- Statistik: wie viel, wann und was geübt wird ---------- */
+  /* Ohne Namen, damit sie auch am Beamer gezeigt werden kann. Minuten gibt es erst seit
+     01.11.2026 (Dauer der Runden), Runden und Anmeldetage für das ganze Jahr. */
+  STAT_AB: Date.UTC(2026, 10, 1) / 1000,
+  statOpt: null,
+
+  statOptionen() {
+    if (!this.statOpt) {
+      let o = {};
+      try { o = JSON.parse(localStorage.getItem('schooltool-mt-statistik') || '{}'); } catch { /* egal */ }
+      this.statOpt = { mass: o.mass || 'min', zeitraum: o.zeitraum || '28', ansicht: 'klasse' };
+    }
+    return this.statOpt;
+  },
+
+  statTag(t) { return Math.floor((t + 3600) / 86400); },   // wie im Worker: grob deutsche Zeit
+
+  /* Zahlen einer Klasse im Zeitraum (tage = 0: alles, was der Server hat) */
+  statRechnen(daten, tage) {
+    const jetztT = Date.now() / 1000;
+    const seit = tage ? jetztT - tage * 86400 : 0;
+    const runden = daten.verlauf.filter(v => v.zeit >= seit);
+    const kinder = daten.schueler.length;
+    const proKind = {};
+    const kind = id => (proKind[id] ||= { sek: 0, runden: 0 });
+    let sek = 0, schulSek = 0, schulRunden = 0, mitDauer = 0;
+    const heat = Array.from({ length: 7 }, () => Array(24).fill(0));
+    const heatRunden = Array.from({ length: 7 }, () => Array(24).fill(0));
+    const proSpiel = {};
+    const proTag = {};
+    runden.forEach(v => {
+      const d = v.dauer || 0;
+      sek += d;
+      if (v.dauer != null) mitDauer++;
+      const k = kind(v.schueler_id); k.sek += d; k.runden++;
+      const dt = new Date(v.zeit * 1000);
+      const wt = (dt.getDay() + 6) % 7, h = dt.getHours(), m = h * 60 + dt.getMinutes();
+      heat[wt][h] += d; heatRunden[wt][h]++;
+      if (wt < 5 && m >= 450 && m < 810) { schulSek += d; schulRunden++; }   // Mo–Fr 7:30–13:30
+      const sp = (proSpiel[v.spiel] ||= { sek: 0, runden: 0 }); sp.sek += d; sp.runden++;
+      const tg = (proTag[this.statTag(v.zeit)] ||= { sek: 0, runden: 0 }); tg.sek += d; tg.runden++;
+    });
+    const besuche = (daten.besuche || []).filter(b => b.tag >= this.statTag(seit));
+    const letzte7 = daten.verlauf.filter(v => v.zeit >= jetztT - 7 * 86400);
+    return {
+      kinder, runden: runden.length, sek, mitDauer, schulSek, schulRunden,
+      aktiv: Object.keys(proKind).length,
+      anmeldetage: besuche.length,
+      proKind, heat, heatRunden, proSpiel, proTag,
+      sek7: letzte7.reduce((s, v) => s + (v.dauer || 0), 0), runden7: letzte7.length,
+      erste: daten.verlauf.length ? daten.verlauf[0].zeit : null,
+    };
+  },
+
+  minuten(sek) {
+    const min = Math.round(sek / 60);
+    if (min < 60) return `${min} min`;
+    return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
+  },
+  tausend(n) { return n.toLocaleString('de-DE'); },
+
+  async statistikZeigen(cls) {
+    if (!this.ergebnis || !cls?.musiktrainer) return;
+    const o = this.statOptionen();
+    const b = this.beamerEbene();
+    const knopf = (art, wert, text) => `<button type="button" class="small${o[art] === wert ? ' primary' : ''}" data-stat="${art}" data-wert="${wert}">${text}</button>`;
+    const kopf = `
+      <div class="mt-beamer-kopf">
+        <div>
+          <h2>${o.ansicht === 'alle' ? 'Alle Klassen' : this.esc(cls.name)} · music-trainer-Statistik</h2>
+          <p>${o.zeitraum === '0' ? 'Alles, was der Server hat (bis 365 Tage)' : `Letzte ${o.zeitraum} Tage`}. Minuten werden seit 01.11.2026 gezählt.</p>
+        </div>
+        <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
+      </div>
+      <div class="st-filter">
+        <span>${knopf('ansicht', 'klasse', 'Diese Klasse')}${knopf('ansicht', 'alle', 'Alle Klassen')}</span>
+        <span>${knopf('zeitraum', '7', '7 Tage')}${knopf('zeitraum', '28', '4 Wochen')}${knopf('zeitraum', '90', '3 Monate')}${knopf('zeitraum', '0', 'Gesamt')}</span>
+        <span>${knopf('mass', 'min', 'Minuten')}${knopf('mass', 'runden', 'Runden')}</span>
+      </div>`;
+    if (o.ansicht === 'alle') {
+      b.innerHTML = kopf + '<p class="hint st-laden">Lade alle Klassen …</p>';
+      const html = await this.statAlleKlassen(o);
+      if (b.hidden || this.statOpt.ansicht !== 'alle') return;
+      b.innerHTML = kopf + html;
+      return;
+    }
+    b.innerHTML = kopf + this.statKlasse(this.ergebnis.daten, o);
+  },
+
+  /* Eine Klasse: Kennzahlen, Verlauf, Wochentag × Uhrzeit, Spiele, Verteilung der Kinder */
+  statKlasse(daten, o) {
+    const s = this.statRechnen(daten, +o.zeitraum);
+    const min = o.mass === 'min';
+    const wert = x => (min ? x.sek / 60 : x.runden);
+    const text = x => (min ? this.minuten(x.sek) : `${this.tausend(x.runden)} Runden`);
+    const schulAnteil = min ? (s.sek ? s.schulSek / s.sek : null) : (s.runden ? s.schulRunden / s.runden : null);
+    const kacheln = `
+      <div class="st-kacheln">
+        <div class="st-kachel st-gross"><b>${this.minuten(s.sek)}</b><span>gemeinsam geübt</span></div>
+        <div class="st-kachel"><b>${this.tausend(s.runden)}</b><span>Runden gespielt</span></div>
+        <div class="st-kachel"><b>${s.aktiv} <small>von ${s.kinder}</small></b><span>Kinder haben geübt</span></div>
+        <div class="st-kachel" title="Tage, an denen ein Kind angemeldet war – je Kind und Tag einmal gezählt"><b>${this.tausend(s.anmeldetage)}</b><span>Anmeldetage</span></div>
+        <div class="st-kachel"><b>${s.aktiv ? this.minuten(s.sek / s.aktiv) : '–'}</b><span>je übendem Kind</span></div>
+        <div class="st-kachel" title="Runden außerhalb von Mo–Fr 7:30–13:30 Uhr"><b>${schulAnteil === null ? '–' : Math.round(100 * (1 - schulAnteil)) + ' %'}</b><span>außerhalb der Schulzeit</span></div>
+      </div>`;
+
+    // Verlauf: je Tag (bis 4 Wochen) oder je Woche
+    const heute = this.statTag(Date.now() / 1000);
+    let spanne = +o.zeitraum || Math.max(7, s.erste ? heute - this.statTag(s.erste) + 1 : 28);
+    // Minuten gibt es erst ab 01.11.2026 – davor wären es leere Säulen, die wie „nicht geübt“ aussehen
+    const abMinuten = heute - this.statTag(this.STAT_AB) + 1;
+    const gekappt = min && spanne > abMinuten;
+    if (gekappt) spanne = Math.max(1, abMinuten);
+    const jeWoche = spanne > 31;
+    const balken = [];
+    if (jeWoche) {
+      const montag = t => t - ((new Date(t * 86400000).getUTCDay() + 6) % 7);   // Tag 0 = Do., 1.1.1970
+      const erste = montag(heute - spanne + 1);
+      for (let w = erste; w <= heute; w += 7) {
+        const x = { sek: 0, runden: 0 };
+        for (let t = w; t < w + 7; t++) { const d = s.proTag[t]; if (d) { x.sek += d.sek; x.runden += d.runden; } }
+        balken.push({ ...x, label: this.statDatum(w), titel: `Woche ab ${this.statDatum(w)}` });
+      }
+    } else {
+      for (let t = heute - spanne + 1; t <= heute; t++) {
+        const d = s.proTag[t] || { sek: 0, runden: 0 };
+        const wt = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'][(new Date(t * 86400000).getUTCDay() + 6) % 7];
+        balken.push({ ...d, label: spanne <= 7 ? wt : this.statDatum(t), titel: `${wt} ${this.statDatum(t)}`, wochenende: ['Sa', 'So'].includes(wt) });
+      }
+    }
+    const verlauf = this.statSaeulen(balken, wert, text, jeWoche ? 'je Woche' : 'je Tag');
+
+    // Wochentag × Uhrzeit
+    const heat = min ? s.heat.map(r => r.map(x => x / 60)) : s.heatRunden;
+    const stunden = [];
+    for (let h = 6; h <= 22; h++) stunden.push(h);
+    const hmax = Math.max(1e-9, ...heat.flat());
+    const tageN = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    const karte = `
+      <div class="st-karte" style="--spalten:${stunden.length}">
+        <span></span>${stunden.map(h => `<span class="st-achse">${h % 2 === 0 ? h : ''}</span>`).join('')}
+        ${tageN.map((t, wt) => `<span class="st-achse">${t}</span>${stunden.map(h => {
+          const v = heat[wt][h] + (h === 6 ? heat[wt].slice(0, 6).reduce((a, c) => a + c, 0) : 0) + (h === 22 ? heat[wt][23] : 0);
+          const schule = wt < 5 && h >= 8 && h < 13;
+          return `<span class="st-zelle${schule ? ' schule' : ''}" style="--a:${v ? 0.12 + 0.88 * Math.min(1, v / hmax) : 0}" title="${t} ${h}–${h + 1} Uhr: ${min ? Math.round(v) + ' min' : v + ' Runden'}"></span>`;
+        }).join('')}`).join('')}
+      </div>
+      <p class="st-legende"><span class="st-zelle" style="--a:.15"></span> wenig <span class="st-zelle" style="--a:1"></span> viel · umrandet: Mo–Fr 8–13 Uhr</p>`;
+
+    // Spiele
+    const spiele = Object.entries(s.proSpiel).map(([id, x]) => {
+      const sp = MT_SPIELE.find(g => g.id === id);
+      return { ...x, name: sp ? `${sp.bereich}: ${sp.titel}` : id };
+    }).sort((a, c) => wert(c) - wert(a));
+    const top = spiele.slice(0, 8);
+    if (spiele.length > 8) top.push(spiele.slice(8).reduce((r, x) => ({ sek: r.sek + x.sek, runden: r.runden + x.runden, name: r.name }), { sek: 0, runden: 0, name: `${spiele.length - 8} weitere` }));
+    const spielBalken = this.statLiegend(top, wert, text);
+
+    // Kinder nach Übungsmenge (ohne Namen)
+    const grenzen = min ? [[0, 0, 'nicht geübt'], [1, 9, 'unter 10 min'], [10, 29, '10–29 min'], [30, 59, '30–59 min'], [60, Infinity, '1 h und mehr']]
+      : [[0, 0, 'keine Runde'], [1, 4, '1–4'], [5, 14, '5–14'], [15, 29, '15–29'], [30, Infinity, '30 und mehr']];
+    const mengen = daten.schueler.map(k => { const x = s.proKind[k.id]; return x ? (min ? Math.round(x.sek / 60) : x.runden) : 0; });
+    const vert = grenzen.map(([a, z, label]) => ({ label, n: mengen.filter(m => m >= a && m <= z).length }));
+    const vmax = Math.max(1, ...vert.map(v => v.n));
+    const verteilung = `<div class="st-verteilung">${vert.map(v => `
+      <div title="${v.n} ${v.n === 1 ? 'Kind' : 'Kinder'}: ${v.label}"><b>${v.n}</b><span class="st-fuell" style="--h:${v.n / vmax}"></span><span class="st-achse">${v.label}</span></div>`).join('')}</div>`;
+
+    return `
+      ${kacheln}
+      <div class="st-raster">
+        <section class="mt-klasse-block st-breit"><h3>${min ? 'Minuten' : 'Runden'} ${jeWoche ? 'je Woche' : 'je Tag'}${gekappt ? ' <small class="hint">(ab 01.11.2026 – davor wurden keine Minuten gespeichert; unter „Runden“ siehst du den ganzen Zeitraum)</small>' : ''}</h3>${verlauf}</section>
+        <section class="mt-klasse-block"><h3>Wann wird geübt?</h3>${karte}</section>
+        <section class="mt-klasse-block"><h3>Was wird gespielt?</h3>${spielBalken || '<p>Noch keine Runden.</p>'}</section>
+        <section class="mt-klasse-block"><h3>Wie viel üben die Kinder?</h3>${verteilung}</section>
+      </div>`;
+  },
+
+  statDatum(tag) {
+    const d = new Date(tag * 86400000);
+    return `${d.getUTCDate()}.${d.getUTCMonth() + 1}.`;
+  },
+
+  /* Senkrechte Säulen mit Wert über der höchsten; Beschriftung nur jede n-te */
+  statSaeulen(balken, wert, text, je) {
+    const max = Math.max(1e-9, ...balken.map(wert));
+    const jede = Math.ceil(balken.length / 14);
+    const summe = balken.reduce((r, x) => ({ sek: r.sek + x.sek, runden: r.runden + x.runden }), { sek: 0, runden: 0 });
+    const hoechst = balken.reduce((a, x) => (wert(x) > wert(a) ? x : a), balken[0]);
+    return `
+      <div class="st-saeulen" style="--n:${balken.length}">
+        ${balken.map((x, i) => `<div class="st-saeule${x.wochenende ? ' we' : ''}" title="${this.esc(x.titel)}: ${text(x)}">
+          ${x === hoechst && wert(x) > 0 ? `<b>${text(x).replace(' Runden', '')}</b>` : ''}
+          <span class="st-fuell" style="--h:${wert(x) / max}"></span>
+          <span class="st-achse">${i % jede === 0 ? x.label : ''}</span></div>`).join('')}
+      </div>
+      <p class="st-legende">Zusammen ${text(summe)} · Ø ${text({ sek: summe.sek / balken.length, runden: Math.round(summe.runden / balken.length) })} ${je}</p>`;
+  },
+
+  /* Liegende Balken, Wert direkt dahinter */
+  statLiegend(zeilen, wert, text) {
+    if (!zeilen.length) return '';
+    const max = Math.max(1e-9, ...zeilen.map(wert));
+    return `<div class="st-liegend">${zeilen.map(z => `
+      <span class="st-name">${this.esc(z.name)}</span>
+      <span class="st-bahn"><span class="st-fuell" style="--w:${wert(z) / max}"></span></span>
+      <span class="st-wert">${text(z).replace(' Runden', '')}</span>`).join('')}</div>`;
+  },
+
+  /* Alle Klassen mit music-trainer: nacheinander laden (Cloudflare, nicht Firebase) und vergleichen */
+  statCache: {},
+  async statAlleKlassen(o) {
+    const klassen = Classes.data.classes.filter(c => c.musiktrainer?.id);
+    const reihen = [];
+    for (const c of klassen) {
+      let daten = this.ergebnis?.klasseId === c.musiktrainer.id ? this.ergebnis.daten : this.statCache[c.musiktrainer.id];
+      if (!daten) {
+        try {
+          daten = await this.api(`/api/lehrer/klassen/${c.musiktrainer.id}?seit=${Math.floor(Date.now() / 1000) - 366 * 86400}`);
+          this.statCache[c.musiktrainer.id] = daten;
+        } catch (err) {
+          if (err.status === 401) return '<p class="hint">Bitte erst im school-tool beim music-trainer anmelden.</p>';
+          continue;   // Klasse auf dem Server gelöscht
+        }
+      }
+      reihen.push({ name: c.name, ...this.statRechnen(daten, +o.zeitraum) });
+    }
+    if (!reihen.length) return '<p class="hint">Noch keine Klasse mit dem music-trainer verbunden.</p>';
+    const min = o.mass === 'min';
+    const wert = x => (min ? x.sek / 60 : x.runden);
+    const text = x => (min ? this.minuten(x.sek) : `${this.tausend(x.runden)} Runden`);
+    reihen.sort((a, c) => wert(c) - wert(a));
+    const summe = reihen.reduce((r, x) => ({ sek: r.sek + x.sek, runden: r.runden + x.runden, kinder: r.kinder + x.kinder, aktiv: r.aktiv + x.aktiv, anmeldetage: r.anmeldetage + x.anmeldetage }),
+      { sek: 0, runden: 0, kinder: 0, aktiv: 0, anmeldetage: 0 });
+    return `
+      <div class="st-kacheln">
+        <div class="st-kachel st-gross"><b>${this.minuten(summe.sek)}</b><span>in ${reihen.length} Klassen geübt</span></div>
+        <div class="st-kachel"><b>${this.tausend(summe.runden)}</b><span>Runden gespielt</span></div>
+        <div class="st-kachel"><b>${summe.aktiv} <small>von ${summe.kinder}</small></b><span>Kinder haben geübt</span></div>
+        <div class="st-kachel" title="Tage, an denen ein Kind angemeldet war – je Kind und Tag einmal gezählt"><b>${this.tausend(summe.anmeldetage)}</b><span>Anmeldetage</span></div>
+        <div class="st-kachel"><b>${summe.aktiv ? this.minuten(summe.sek / summe.aktiv) : '–'}</b><span>je übendem Kind</span></div>
+      </div>
+      <div class="st-raster">
+        <section class="mt-klasse-block st-breit"><h3>${min ? 'Minuten' : 'Runden'} je Klasse</h3>${this.statLiegend(reihen, wert, text)}</section>
+        <section class="mt-klasse-block st-breit">
+          <div class="mt-tabelle-rahmen"><table class="mt-tabelle st-tabelle">
+            <thead><tr><th>Klasse</th><th>Kinder geübt</th><th>Runden</th><th>Minuten</th><th>Anmeldetage</th><th>Ø je Kind</th><th>Letzte 7 Tage</th></tr></thead>
+            <tbody>${reihen.map(r => `<tr><td><b>${this.esc(r.name)}</b></td><td>${r.aktiv} von ${r.kinder}</td><td>${this.tausend(r.runden)}</td>
+              <td>${this.minuten(r.sek)}</td><td>${this.tausend(r.anmeldetage)}</td><td>${r.aktiv ? this.minuten(r.sek / r.aktiv) : '–'}</td>
+              <td>${this.minuten(r.sek7)} · ${r.runden7} R.</td></tr>`).join('')}</tbody>
+          </table></div>
+        </section>
+      </div>`;
+  },
+
   /* ---------- Beamer und Druck ---------- */
   anmeldeLink(benutzer, passwort) {
     return `${this.SPIEL_URL}#/anmelden?u=${encodeURIComponent(benutzer)}&p=${encodeURIComponent(passwort)}`;
@@ -1102,6 +1363,13 @@ const Musiktrainer = {
         if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); this.qrBlaettern(-1); }
       });
       b.addEventListener('click', e => {
+        const stat = e.target.closest('[data-stat]');
+        if (stat) {
+          const o = this.statOptionen();
+          o[stat.dataset.stat] = stat.dataset.wert;
+          try { localStorage.setItem('schooltool-mt-statistik', JSON.stringify({ mass: o.mass, zeitraum: o.zeitraum })); } catch { /* egal */ }
+          return this.statistikZeigen(this.klasse());
+        }
         const anzeige = e.target.closest('[data-sb-anzeige]');
         if (anzeige) {
           this.score = anzeige.dataset.sbAnzeige !== 'note';
