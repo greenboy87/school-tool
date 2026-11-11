@@ -1,6 +1,7 @@
 /* App-Verdrahtung: Haupttabs, Lärmampel-Steuerung, Backup */
 document.addEventListener('DOMContentLoaded', () => {
   Classes.init();
+  Store.tabsAbgleichen(() => Classes.data);
   Sitzplan.init();
   Schueler.init();
   Notfall.init();

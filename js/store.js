@@ -11,6 +11,9 @@ const Store = {
   },
 
   save(data) {
+    // Ein anderer Tab hat inzwischen gespeichert: dieser hier lädt gleich neu
+    // und darf seinen alten Stand nicht mehr darüberschreiben
+    if (this.veraltet) return;
     localStorage.setItem(this.KEY, JSON.stringify(data));
     // Einmal je Stunde den Stand beiseitelegen
     if (Date.now() - (Number(localStorage.getItem(this.SICHERUNG_ZEIT)) || 0) > 3600e3) this.sichern(data, 'stündlich');
@@ -45,6 +48,32 @@ const Store = {
       catch (e) { liste.pop(); }
     }
     if (stuendlich) localStorage.setItem(this.SICHERUNG_ZEIT, String(Date.now()));
+  },
+
+  /* ----- Mehrere Tabs desselben Browsers -----
+     Alle Tabs teilen sich localStorage, aber jeder hält seinen Stand im
+     Arbeitsspeicher. Am 11.11.2026 hat so ein älterer Tab beim Speichern die
+     Noten überschrieben, die gerade in einem anderen Tab eingetragen worden
+     waren – und weil beide Tabs denselben Sync-Merker („tresor-basis“) teilen,
+     sah der Sync keinen Konflikt. Jetzt: Speichert ein Tab etwas anderes, als
+     dieser hier im Speicher hat, speichert dieser nichts mehr und lädt neu. */
+  veraltet: false,
+  tabsAbgleichen(aktuell) {
+    const ohneStand = t => {
+      try { const o = typeof t === 'string' ? JSON.parse(t) : JSON.parse(JSON.stringify(t)); delete o.standAt; return JSON.stringify(o); }
+      catch (e) { return String(t); }
+    };
+    window.addEventListener('storage', e => {
+      if (e.key !== this.KEY || e.newValue == null || this.veraltet) return;
+      if (ohneStand(e.newValue) === ohneStand(aktuell())) return;   // derselbe Stand
+      this.veraltet = true;
+      const hinweis = document.createElement('div');
+      hinweis.className = 'tresor-hinweis';
+      hinweis.setAttribute('role', 'status');
+      hinweis.textContent = 'In einem anderen Tab wurde gespeichert – diese Seite lädt den neuen Stand …';
+      document.body.append(hinweis);
+      setTimeout(() => location.reload(), 300);
+    });
   },
 
   uid() {
