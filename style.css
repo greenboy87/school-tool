@@ -3065,3 +3065,11 @@ dialog.noten-einzeln::backdrop { background: rgba(0, 0, 0, .55); }
 .ne-gesichter kbd { font: inherit; font-size: .75em; padding: 0 .3em; margin-left: .2em; border: 1px solid currentColor; border-radius: 4px; opacity: .7; }
 .ne-gesichter.aus { border-color: var(--accent); color: var(--accent); }
 .grade-table td.ne-name-zelle .mini-gesicht { width: 1.9rem; height: 1.9rem; margin-right: .5rem; }
+.mt-notiz { margin-top: .4rem; }
+.mt-notiz input { max-width: 16rem; font-size: .85rem; opacity: .8; }
+.mt-notiz input:focus { opacity: 1; }
+.st-zuhause { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; margin: .2rem 0 .4rem; }
+.st-zuhause div { display: flex; flex-direction: column; }
+.st-zuhause b { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.st-zuhause small { font-size: .8rem; font-weight: 400; opacity: .7; }
+.st-zuhause span { font-size: .85rem; opacity: .75; }

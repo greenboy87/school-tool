@@ -142,10 +142,31 @@ const Musiktrainer = {
         <button type="submit" class="primary" data-icon="lock">Anmelden</button>
         <span class="hint mt-fehler"></span>
       </form>
+      <div class="inline-form mt-notiz">
+        <input type="text" placeholder="Notiz – Kürzel tippen, Enter kopiert" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <span class="hint mt-notiz-info"></span>
+      </div>
       <p class="hint">Das Lehrer-Passwort aus dem Cloudflare-Worker (LEHRER_PASSWORT). Die Anmeldung gilt 12 Stunden auf diesem Gerät.</p>`;
     Icons.hydrate(ziel);
     const form = ziel.querySelector('form');
     form.querySelector('input').focus();
+    /* Notizfeld: Textersetzung klappt nicht in Passwortfeldern, hier schon.
+       Enter kopiert den Text, setzt ihn ins Passwortfeld und leert die Notiz
+       (nichts wird gespeichert). */
+    const notiz = ziel.querySelector('.mt-notiz input'), info = ziel.querySelector('.mt-notiz-info');
+    notiz.addEventListener('keydown', async e => {
+      if (e.key !== 'Enter' || !notiz.value) return;
+      e.preventDefault();
+      const text = notiz.value;
+      let kopiert = false;
+      try { await navigator.clipboard.writeText(text); kopiert = true; }
+      catch { notiz.select(); kopiert = document.execCommand && document.execCommand('copy'); }
+      const pw = form.querySelector('input');
+      pw.value = text;
+      notiz.value = '';
+      pw.focus();
+      info.textContent = (kopiert ? 'Kopiert und ' : '') + 'ins Passwortfeld gesetzt – Enter meldet an.';
+    });
     form.addEventListener('submit', async e => {
       e.preventDefault();
       try {
@@ -574,16 +595,37 @@ const Musiktrainer = {
     const seit = tage ? Date.now() / 1000 - tage * 86400 : 0;
     const tag = t => Math.floor((t + 3600) / 86400);       // wie im Worker: grob deutsche Zeit
     const u = {};
-    const kind = id => (u[id] ||= { runden: 0, tage: new Set(), sekunden: 0 });
+    const kind = id => (u[id] ||= { runden: 0, tage: new Set(), sekunden: 0, zuhause: 0, zuhauseRunden: 0 });
     this.ergebnis.daten.verlauf.forEach(v => {
       if (v.zeit < seit) return;
       const k = kind(v.schueler_id);
       k.runden++;
       k.tage.add(tag(v.zeit));
       k.sekunden += v.dauer || 0;
+      if (!this.schulzeit(v.zeit)) { k.zuhause += v.dauer || 0; k.zuhauseRunden++; }
     });
     (this.ergebnis.daten.besuche || []).forEach(b => { if (b.tag >= tag(seit)) kind(b.schueler_id).tage.add(b.tag); });
     return u;
+  },
+
+  /* Schulzeit: Mo–Fr 7:30–13:30 (Ferien und Feiertage zählen nicht als Schulzeit-Ausnahme) */
+  schulzeit(t) {
+    const dt = new Date(t * 1000);
+    const wt = (dt.getDay() + 6) % 7, m = dt.getHours() * 60 + dt.getMinutes();
+    return wt < 5 && m >= 450 && m < 810;
+  },
+
+  /* Runden außerhalb der Schulzeit zu Sitzungen bündeln: Liegen zwischen zwei Runden mehr
+     als 15 Minuten Pause, beginnt eine neue. zeit ist das Ende der Runde, dauer ihre Länge. */
+  sitzungen(runden) {
+    const liste = [];
+    runden.filter(v => !this.schulzeit(v.zeit)).sort((a, b) => a.zeit - b.zeit).forEach(v => {
+      const d = v.dauer || 0, von = v.zeit - d;
+      const l = liste[liste.length - 1];
+      if (l && von - l.bis <= 15 * 60) { l.bis = Math.max(l.bis, v.zeit); l.sek += d; l.runden++; }
+      else liste.push({ von, bis: v.zeit, sek: d, runden: 1 });
+    });
+    return liste;
   },
 
   zeit(sekunden) {
@@ -747,6 +789,7 @@ const Musiktrainer = {
       runden: z => z.u?.runden || 0,
       tage: z => z.u?.tage.size || 0,
       zeit: z => z.u?.sekunden || 0,
+      zuhause: z => z.u?.zuhause || 0,
       zuletzt: z => z.k.zuletzt || null,
     }[art] || (() => 0);
     const dreh = this.filter.umgekehrt ? -1 : 1;
@@ -762,6 +805,7 @@ const Musiktrainer = {
     const offen = zeilen.filter(z => z.gespielt < auswahl.length).length;
     const { oben, unten } = this.kopf(auswahl);
     const uebungZellen = (k, u) => `<td>${u?.runden || 0}</td><td>${u?.tage.size || 0}</td><td class="hint">${this.zeit(u?.sekunden)}</td>
+      <td class="hint" title="${u?.zuhauseRunden || 0} Runden außerhalb der Schulzeit">${this.zeit(u?.zuhause)}</td>
       <td class="hint">${this.zuletzt(k.zuletzt)}</td>`;
     ziel.innerHTML = `
       ${this.meineNoteHinweis(cls)}
@@ -774,7 +818,7 @@ const Musiktrainer = {
           <tr>${sortKopf('name', 'Name')}${oben}
             ${sortKopf('ergebnis', { note: 'Note', sterne: 'Sterne', prozent: 'Ø %', richtige: 'Richtige', punkte: 'Punkte' }[modus]).replace('class="', 'class="mt-gesamtkopf ')}
             ${sortKopf('runden', 'Runden', 'Runden in allen Spielen')}${sortKopf('tage', 'Tage', 'Tage, an denen das Kind angemeldet im music-trainer war')}
-            ${sortKopf('zeit', 'Zeit', 'Übungszeit (gemessen seit 01.11.2026)')}${sortKopf('zuletzt', 'Zuletzt')}</tr>
+            ${sortKopf('zeit', 'Zeit', 'Übungszeit (gemessen seit 01.11.2026)')}${sortKopf('zuhause', 'Zuhause', 'Übungszeit außerhalb der Schulzeit (Mo–Fr 7:30–13:30 zählt als Schule)')}${sortKopf('zuletzt', 'Zuletzt')}</tr>
           <tr>${unten}</tr>
         </thead>
         <tbody>
@@ -887,6 +931,7 @@ const Musiktrainer = {
         <div><b>${u?.runden || 0}</b><span>Runden</span></div>
         <div><b>${u?.tage.size || 0}</b><span>Tage</span></div>
         <div><b>${this.zeit(u?.sekunden)}</b><span>Zeit</span></div>
+        <div title="Außerhalb von Mo–Fr 7:30–13:30"><b>${this.zeit(u?.zuhause)}</b><span>davon zuhause</span></div>
         <div><b>${this.zuletzt(z.k.zuletzt)}</b><span>zuletzt</span></div>
       </div>
       <div class="mt-tabelle-rahmen">
@@ -906,12 +951,27 @@ const Musiktrainer = {
         return `<li><span class="hint">${datum(v.zeit)}</span> ${this.esc(sp?.titel || v.spiel)} <span class="hint">${this.esc(stufeName(sp, v.stufe))}</span>
           <b>${'★'.repeat(v.sterne)}<span class="mt-detail-leer">${'★'.repeat(Math.max(0, this.STERNE - v.sterne))}</span></b></li>`;
       }).join('')}</ul>` : '<p class="hint">In diesem Zeitraum noch keine Runde gespielt.</p>'}
+      ${this.sitzungenHtml(runden)}
       <div class="mt-detail-fuss">
         <button data-detail="-1" ${d.i ? '' : 'disabled'} title="Voriges Kind (Pfeil links)">${Icons.raw('chevronUp', 'mt-links')}</button>
         <span>${d.i + 1} von ${d.ids.length} <span class="hint">· Pfeiltasten blättern</span></span>
         <button data-detail="1" ${d.i < d.ids.length - 1 ? '' : 'disabled'} title="Nächstes Kind (Pfeil rechts)">${Icons.raw('chevronUp', 'mt-rechts')}</button>
       </div>`;
     this.gesichterEinsetzen(cls, dlg, 240);
+  },
+
+  /* Liste der Übungszeiten außerhalb der Schulzeit, neueste zuerst */
+  sitzungenHtml(runden) {
+    const liste = this.sitzungen(runden).reverse();
+    if (!liste.length) return '<h3 class="mt-detail-h3">Außerhalb der Schulzeit</h3><p class="hint">Keine Runden außerhalb der Schulzeit in diesem Zeitraum.</p>';
+    const uhr = t => new Date(t * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const tag = t => new Date(t * 1000).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    const summe = liste.reduce((a, x) => a + x.sek, 0);
+    return `<h3 class="mt-detail-h3">Außerhalb der Schulzeit <span class="hint">· ${liste.length} ${liste.length === 1 ? 'Mal' : 'Mal'}, ${this.zeit(summe)}</span></h3>
+      <ul class="mt-detail-runden mt-sitzungen">${liste.slice(0, 10).map(x => `<li><span class="hint">${tag(x.von)}</span>
+        ${uhr(x.von)}–${uhr(x.bis)} Uhr <b>${x.sek ? this.zeit(x.sek) : '<span class="hint">ohne Zeit</span>'}</b>
+        <span class="hint">${x.runden} ${x.runden === 1 ? 'Runde' : 'Runden'}</span></li>`).join('')}</ul>
+      ${liste.length > 10 ? `<p class="hint">… und ${liste.length - 10} weitere.</p>` : ''}`;
   },
 
   /* ---------- „Meine Note“ der Kinder ---------- */
@@ -1125,15 +1185,21 @@ const Musiktrainer = {
       if (v.dauer != null) mitDauer++;
       const k = kind(v.schueler_id); k.sek += d; k.runden++;
       const dt = new Date(v.zeit * 1000);
-      const wt = (dt.getDay() + 6) % 7, h = dt.getHours(), m = h * 60 + dt.getMinutes();
+      const wt = (dt.getDay() + 6) % 7, h = dt.getHours();
       heat[wt][h] += d; heatRunden[wt][h]++;
-      if (wt < 5 && m >= 450 && m < 810) { schulSek += d; schulRunden++; }   // Mo–Fr 7:30–13:30
+      if (this.schulzeit(v.zeit)) { schulSek += d; schulRunden++; }   // Mo–Fr 7:30–13:30
       const sp = (proSpiel[v.spiel] ||= { sek: 0, runden: 0 }); sp.sek += d; sp.runden++;
       const tg = (proTag[this.statTag(v.zeit)] ||= { sek: 0, runden: 0 }); tg.sek += d; tg.runden++;
     });
     const besuche = (daten.besuche || []).filter(b => b.tag >= this.statTag(seit));
     const letzte7 = daten.verlauf.filter(v => v.zeit >= jetztT - 7 * 86400);
+    // Außerhalb der Schulzeit: Sitzungen je Kind (ohne Namen)
+    const jeKind = {};
+    runden.forEach(v => (jeKind[v.schueler_id] ||= []).push(v));
+    const sitzungen = Object.values(jeKind).flatMap(r => this.sitzungen(r));
+    const zuhauseKinder = Object.values(jeKind).filter(r => r.some(v => !this.schulzeit(v.zeit))).length;
     return {
+      sitzungen, zuhauseKinder,
       kinder, runden: runden.length, sek, mitDauer, schulSek, schulRunden,
       aktiv: Object.keys(proKind).length,
       anmeldetage: besuche.length,
@@ -1256,9 +1322,24 @@ const Musiktrainer = {
     const verteilung = `<div class="st-verteilung">${vert.map(v => `
       <div title="${v.n} ${v.n === 1 ? 'Kind' : 'Kinder'}: ${v.label}"><b>${v.n}</b><span class="st-fuell" style="--h:${v.n / vmax}"></span><span class="st-achse">${v.label}</span></div>`).join('')}</div>`;
 
+    // Außerhalb der Schulzeit (ohne Namen – wer, steht in der Klassenliste unter „Zuhause“)
+    const zs = s.sitzungen, zSek = zs.reduce((a, x) => a + x.sek, 0);
+    const laengste = zs.reduce((a, x) => Math.max(a, x.sek), 0);
+    const zuhause = zs.length ? `
+      <div class="st-zuhause">
+        <div><b>${s.zuhauseKinder} <small>von ${s.kinder}</small></b><span>Kinder</span></div>
+        <div><b>${this.tausend(zs.length)}</b><span>Mal geübt</span></div>
+        <div><b>${this.minuten(zSek)}</b><span>zusammen</span></div>
+        <div><b>${this.minuten(zSek / zs.length)}</b><span>Ø je Mal</span></div>
+        <div><b>${this.minuten(laengste)}</b><span>am längsten</span></div>
+      </div>
+      <p class="hint">Ein „Mal“ endet nach 15 Minuten Pause. Wer es war, zeigt die Klassenliste in der Spalte „Zuhause“ und der Klick auf ein Kind.</p>`
+      : '<p>Noch niemand hat außerhalb der Schulzeit geübt.</p>';
+
     return `
       ${kacheln}
       <div class="st-raster">
+        <section class="mt-klasse-block st-breit"><h3>Außerhalb der Schulzeit <small class="hint">(nicht Mo–Fr 7:30–13:30)</small></h3>${zuhause}</section>
         <section class="mt-klasse-block st-breit"><h3>${min ? 'Minuten' : 'Runden'} ${jeWoche ? 'je Woche' : 'je Tag'}${gekappt ? ' <small class="hint">(ab 01.11.2026 – davor wurden keine Minuten gespeichert; unter „Runden“ siehst du den ganzen Zeitraum)</small>' : ''}</h3>${verlauf}</section>
         <section class="mt-klasse-block"><h3>Wann wird geübt?</h3>${karte}</section>
         <section class="mt-klasse-block"><h3>Was wird gespielt?</h3>${spielBalken || '<p>Noch keine Runden.</p>'}</section>
