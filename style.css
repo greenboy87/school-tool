@@ -3127,3 +3127,11 @@ html.locked .live-anzeige { display: none; }
 .live-frei { font-weight: 600; }
 @media screen and (max-width: 520px) { .live-anzeige { right: 8px; bottom: 8px; } }
 @media print { .live-anzeige { display: none; } }
+
+/* Nur QR-Code am Beamer (Klasse ohne Logins): Code so groß wie möglich, Adresse darunter */
+.mt-nurqr-ansicht { display: flex; flex-direction: column; min-height: calc(100vh - 4rem); }
+.mt-nurqr-mitte { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.4rem; }
+.mt-nurqr-bild img, .mt-nurqr-bild canvas {
+  width: min(62vh, 80vw) !important; height: min(62vh, 80vw) !important; }
+.mt-nurqr-adresse { font-size: clamp(2.4rem, 7vw, 6rem); }
+.mt-ohne-login { margin-top: .8rem; }

@@ -231,6 +231,9 @@ const Musiktrainer = {
           <button class="primary" data-mt="einrichten" data-icon="plus" ${cls.students.length ? '' : 'disabled'}>${cls.students.length} Kinder einrichten</button>
         </div>
         ${cls.students.length ? '' : '<p class="hint">Erst Schüler eintragen.</p>'}
+        <div class="btn-row mt-ohne-login">
+          <button data-mt="nurqr" data-icon="expand" title="Großer QR-Code zum music-trainer am Beamer – die Kinder spielen ohne Anmeldung">Nur QR-Code am Beamer (ohne Anmeldung)</button>
+        </div>
         <div id="mt-login"></div>`;
       Icons.hydrate(this.el);
       return;
@@ -241,6 +244,7 @@ const Musiktrainer = {
         <div class="btn-row">
           <button class="primary" data-mt="namen" data-icon="list">Namensliste am Beamer</button>
           <button data-mt="qr" data-icon="expand" title="Ein QR-Code je Kind – als Notlösung, wenn das Eintippen nicht klappt">QR-Anmeldung am Beamer</button>
+          <button data-mt="nurqr" data-icon="expand" title="Großer QR-Code zum music-trainer – zum Spielen ohne Anmeldung">Nur QR-Code</button>
           <button data-mt="liste" data-icon="printer">Liste drucken</button>
           <button data-mt="drucken" data-icon="printer">Kärtchen drucken</button>
         </div>
@@ -436,6 +440,7 @@ const Musiktrainer = {
       Classes.persist();
       return this.render();
     }
+    if (aktion === 'nurqr') return this.nurQrZeigen(cls ? cls.name : '');
     if (aktion === 'einrichten') return this.einrichten(cls);
     if (aktion === 'nachtragen') return this.nachtragen(cls);
     if (aktion === 'laden') { this.ergebnis = null; this.statCache = {}; return this.laden(); }
@@ -1715,6 +1720,31 @@ const Musiktrainer = {
     }
     best = best || { s: 0.48, spalten: Math.min(4, anzahl), n: 13 };
     setze(best.s, best.spalten, best.n);
+  },
+
+  /* Nur der QR-Code zum Spiel, groß am Beamer – für Klassen ohne Logins:
+     Die Kinder scannen und spielen gleich, ohne Anmeldung (dann wird nichts
+     gespeichert, und es geht nichts an den Server). */
+  nurQrZeigen(titel) {
+    this.qrSeite = null;
+    const b = this.beamerEbene();
+    b.innerHTML = `<div class="mt-nurqr-ansicht">
+      <div class="mt-beamer-kopf">
+        <div>
+          <h2>${titel ? this.esc(titel) + ': ' : ''}music-trainer</h2>
+          <p>QR-Code scannen oder die Adresse eintippen – und los. Eine Anmeldung brauchst du nicht.</p>
+        </div>
+        <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
+      </div>
+      <div class="mt-nurqr-mitte">
+        <div class="mt-allgemein-qr mt-nurqr-bild" id="mt-nurqr"></div>
+        <div class="mt-adresse mt-nurqr-adresse">${this.esc(this.KURZ_URL)}</div>
+      </div>
+    </div>`;
+    const feld = document.getElementById('mt-nurqr');
+    if (feld && typeof QRCode !== 'undefined') {
+      new QRCode(feld, { text: this.SPIEL_URL, width: 640, height: 640, correctLevel: QRCode.CorrectLevel.M });
+    }
   },
 
   /* Allgemeiner Link: nur zur Anmeldeseite, ohne Benutzername und Passwort */
