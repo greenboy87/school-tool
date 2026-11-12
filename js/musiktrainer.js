@@ -359,8 +359,13 @@ const Musiktrainer = {
       }
       return [...g];
     };
+    const vorher = mt.kategorienVorher;
     return `
       <div class="mt-kategorien">
+        <div class="mt-kat-knoepfe">
+          <button type="button" class="small" data-mt="kat-alles" data-icon="list" title="Alle Bereiche, Spiele und Stufen – zeigt, wer schon wo war">Alle Spiele zeigen</button>
+          ${vorher ? `<button type="button" class="small" data-mt="kat-zurueck" title="Die Auswahl von vor „Alle Spiele zeigen“ wiederherstellen">Vorige Auswahl</button>` : ''}
+        </div>
         <div class="mt-kat-zeile">${titel('Bereich')}
           ${bereiche.map(b => chip('bereich', b, k.bereiche.includes(b), this.esc(b))).join('')}</div>
         ${spiele.length ? `
@@ -409,6 +414,25 @@ const Musiktrainer = {
       const an = !felder.every(f => f.checked);
       const k = this.kategorien(cls.musiktrainer);
       felder.forEach(f => this.katSetzen(k, f, an));
+      Classes.persist();
+      return this.render();
+    }
+    if (aktion === 'kat-alles') {
+      // Alles anwählen; die bisherige Wahl wird gemerkt und lässt sich zurückholen
+      const mt = cls.musiktrainer, k = this.kategorien(mt);
+      const bereiche = [...new Set(MT_SPIELE.map(sp => sp.bereich))];
+      const alles = {
+        bereiche, ohne: [], stufen: k.stufen || [],
+        stufenJe: Object.fromEntries(bereiche.map(bb => [bb, [...new Set(MT_SPIELE.filter(sp => sp.bereich === bb).flatMap(sp => this.reihe(sp)))]])),
+      };
+      if (JSON.stringify(k) !== JSON.stringify(alles)) mt.kategorienVorher = JSON.parse(JSON.stringify(k));
+      mt.kategorien = alles;
+      Classes.persist();
+      return this.render();
+    }
+    if (aktion === 'kat-zurueck') {
+      const mt = cls.musiktrainer;
+      if (mt.kategorienVorher) { mt.kategorien = mt.kategorienVorher; delete mt.kategorienVorher; }
       Classes.persist();
       return this.render();
     }

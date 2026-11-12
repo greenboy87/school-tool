@@ -3073,3 +3073,4 @@ dialog.noten-einzeln::backdrop { background: rgba(0, 0, 0, .55); }
 .st-zuhause b { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
 .st-zuhause small { font-size: .8rem; font-weight: 400; opacity: .7; }
 .st-zuhause span { font-size: .85rem; opacity: .75; }
+.mt-kat-knoepfe { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .3rem; }
