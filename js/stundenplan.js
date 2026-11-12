@@ -206,6 +206,12 @@ const Stundenplan = {
     document.getElementById('plan-inhalt').addEventListener('click', e => {
       if (e.target.closest('a')) return;     // Links (iPads buchen) öffnen nur sich selbst
       if (e.target.closest('.plan-notiz')) return;      // ins Notizfeld klicken = schreiben
+      const live = e.target.closest('[data-live]');
+      if (live) {
+        try { localStorage.setItem(this.LIVE_KEY, live.dataset.live); } catch (err) { /* egal */ }
+        this.render();
+        return;
+      }
       const link = e.target.closest('[data-klasse]');
       if (link) { this.klasseOeffnen(link.dataset.klasse); return; }
       const bild = e.target.closest('[data-bilder]');
@@ -2278,9 +2284,105 @@ const Stundenplan = {
     this._cache = null;
     // Was in einem Notizfeld getippt, aber noch nicht gesichert ist, vorher sichern
     inhalt.querySelectorAll('.plan-notiz[data-geaendert]').forEach(f => this.notizSpeichern(f));
-    inhalt.innerHTML = this.schalter.checked ? this.wocheHtml() : this.heuteHtml();
+    inhalt.innerHTML = this.liveHtml() + (this.schalter.checked ? this.wocheHtml() : this.heuteHtml());
     inhalt.querySelectorAll('.plan-notiz').forEach(f => this.notizHoehe(f));
     this.vollbildEinpassen();
+  },
+
+  /* ---------- Live-Leiste: Jetzt und Als Nächstes ----------
+     Über jeder Ansicht des Plans: was gerade läuft (mit Restzeit und Balken)
+     und was als Nächstes kommt (mit Countdown) – jeweils mit allem, was die
+     Stunde im Tag auch zeigt: Thema, Notiz, Info, iPads, Bilder, Start,
+     Klassenbuch. Rückt mit dem Minutentakt des Plans weiter. Am KL-Freitag
+     zählen die Kurzstunden und die Klassenleiterstunde. Zuklappbar, gemerkt
+     je Gerät. */
+  LIVE_KEY: 'schooltool-plan-live',
+
+  /* Wirkliche Zeiten einer Stunde – am KL-Freitag die Kurzstunden */
+  echteZeit(t) {
+    const kurz = this.istKL(this.tagSchluessel(t.beginn)) && this.KURZ[this.uhr(t.beginn)];
+    if (!kurz) return { von: t.beginn, bis: t.ende };
+    const [v, b] = kurz.split('–');
+    const um = hm => { const d = new Date(t.beginn); const [h, m] = hm.split(':').map(Number); d.setHours(h, m, 0, 0); return d; };
+    return { von: um(v), bis: um(b) };
+  },
+
+  dauerText(ms) {
+    const min = Math.max(0, Math.round(ms / 60000));
+    return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, '0')} min`;
+  },
+
+  liveHtml() {
+    let zu = false;
+    try { zu = localStorage.getItem(this.LIVE_KEY) === 'zu'; } catch (e) { /* egal */ }
+    if (zu) return `<button type="button" class="small plan-live-auf" data-live="auf" title="Live-Anzeige wieder einblenden">${Icons.raw('timer')}Jetzt &amp; als Nächstes</button>`;
+    const jetzt = new Date();
+    const heute = this.tagSchluessel(jetzt);
+    const termine = this.alleTermine().filter(t => !t.entfaellt && t.ende > new Date(jetzt.getTime() - 3 * 3600e3))
+      .map(t => ({ t, ...this.echteZeit(t) }));
+    const laufend = termine.filter(x => x.von <= jetzt && x.bis > jetzt);
+    const kommend = termine.filter(x => x.von > jetzt).sort((a, b) => a.von - b.von);
+    const zuerst = kommend[0];
+    const danach = zuerst ? kommend.filter(x => x.von.getTime() === zuerst.von.getTime()) : [];
+    // KL-Stunde 11:10–11:40 am KL-Freitag
+    const kl = this.istKL(heute) ? { von: new Date(heute + 'T11:10'), bis: new Date(heute + 'T11:40') } : null;
+    const klJetzt = kl && kl.von <= jetzt && kl.bis > jetzt;
+    const klDanach = kl && kl.von > jetzt && (!zuerst || kl.von < zuerst.von);
+
+    const stundeHtml = x => {
+      const b = this.baustein(x.t, jetzt, true);
+      return `<div class="${b.klassenName} plan-live-stunde"${b.attr}>
+        <span class="plan-live-wer">${b.wer}</span>${b.raum}${b.marken}</div>`;
+    };
+    const klHtml = '<div class="plan-kl-kasten plan-live-kl"><strong>KL</strong> Klassenleiterstunde</div>';
+    const nr = d => { const s = this.STUNDEN[this.uhr(d)]; return s && s !== 'Pause' ? s + ' Std. · ' : ''; };
+
+    // Linke Karte: Jetzt
+    let links;
+    if (laufend.length || klJetzt) {
+      const x = klJetzt ? kl : laufend[0];
+      const anteil = Math.min(100, Math.max(0, (jetzt - x.von) / (x.bis - x.von) * 100));
+      links = `<div class="plan-live-karte jetzt">
+        <div class="plan-live-kopf"><span class="plan-live-label">Jetzt</span>
+          <span class="plan-live-zeit">${klJetzt ? '' : nr(x.t.beginn)}${this.uhr(x.von)}–${this.uhr(x.bis)} · noch <strong>${this.dauerText(x.bis - jetzt)}</strong></span></div>
+        <div class="plan-live-balken" role="progressbar" aria-valuenow="${Math.round(anteil)}" aria-valuemin="0" aria-valuemax="100"><span style="width:${anteil.toFixed(1)}%"></span></div>
+        ${klJetzt ? klHtml : laufend.map(stundeHtml).join('')}
+      </div>`;
+    } else {
+      const naechstesHeute = (zuerst && this.tagSchluessel(zuerst.von) === heute) || klDanach;
+      const bis = klDanach ? kl.von : zuerst && zuerst.von;
+      const vorher = termine.filter(x => x.bis <= jetzt && this.tagSchluessel(x.von) === heute).length;
+      const text = !naechstesHeute ? (vorher ? 'Für heute fertig' : 'Heute kein Unterricht')
+        : vorher ? `Pause – bis ${this.uhr(bis)}` : `Noch frei – los geht's um ${this.uhr(bis)}`;
+      links = `<div class="plan-live-karte jetzt frei">
+        <div class="plan-live-kopf"><span class="plan-live-label">Jetzt</span>
+          ${naechstesHeute ? `<span class="plan-live-zeit">noch <strong>${this.dauerText(bis - jetzt)}</strong></span>` : ''}</div>
+        <p class="plan-live-frei">${this.esc(text)}</p>
+      </div>`;
+    }
+
+    // Rechte Karte: Als Nächstes
+    let rechts = '';
+    if (klDanach) {
+      rechts = `<div class="plan-live-karte danach">
+        <div class="plan-live-kopf"><span class="plan-live-label">Als Nächstes</span>
+          <span class="plan-live-zeit">11:10–11:40 · in <strong>${this.dauerText(kl.von - jetzt)}</strong></span></div>
+        ${klHtml}</div>`;
+    } else if (danach.length) {
+      const x = danach[0];
+      const tag = this.tagSchluessel(x.von);
+      const morgen = this.tagSchluessel(new Date(jetzt.getTime() + 864e5));
+      const wann = tag === heute ? `in <strong>${this.dauerText(x.von - jetzt)}</strong>`
+        : tag === morgen ? 'morgen' : this.tagName(x.von);
+      rechts = `<div class="plan-live-karte danach">
+        <div class="plan-live-kopf"><span class="plan-live-label">Als Nächstes</span>
+          <span class="plan-live-zeit">${nr(x.t.beginn)}${this.uhr(x.von)}–${this.uhr(x.bis)} · ${wann}</span></div>
+        ${danach.map(stundeHtml).join('')}
+      </div>`;
+    }
+    return `<section class="plan-live" aria-label="Jetzt und als Nächstes">${links}${rechts}
+      <button type="button" class="plan-live-zu" data-live="zu" title="Live-Anzeige ausblenden" aria-label="Live-Anzeige ausblenden">${Icons.raw('x')}</button>
+    </section>`;
   },
 
   /* Heute/Woche umschalten. Heute ohne Tag = der aktuelle Tag (Taste H);
@@ -2389,7 +2491,7 @@ const Stundenplan = {
       mitPlanen = inhalt.innerHTML;
       this.planenSchalter.checked = false;
       this._cache = null;
-      inhalt.innerHTML = this.schalter.checked ? this.wocheHtml() : this.heuteHtml();
+      inhalt.innerHTML = this.liveHtml() + (this.schalter.checked ? this.wocheHtml() : this.heuteHtml());
       inhalt.querySelectorAll('.plan-notiz').forEach(f => this.notizHoehe(f));
       this.planenSchalter.checked = true;
       this._cache = null;
@@ -2507,25 +2609,8 @@ const Stundenplan = {
     const liste = alle.filter(t => this.tagSchluessel(t.beginn) === tag);
     const davor = tage.some(d => d < tag), danach = tage.some(d => d > tag);
 
-    const naechste = this.tagWahl ? null : this.termine.find(t => t.ende > jetzt && !t.entfaellt && !t.aufsicht);
-    let kopf = '';
-    if (naechste) {
-      const b = this.baustein(naechste, jetzt, true);
-      const laeuft = naechste.beginn <= jetzt;
-      const min = Math.round((naechste.beginn - jetzt) / 60000);
-      const wann = laeuft ? `läuft bis ${this.uhr(naechste.ende)}`
-        : this.tagSchluessel(naechste.beginn) !== heute ? `${this.tagName(naechste.beginn)}, ${this.uhr(naechste.beginn)}`
-        : min <= 90 ? `in ${min} min · ${this.uhr(naechste.beginn)}` : `um ${this.uhr(naechste.beginn)}`;
-      // Zugeklappt: braucht man selten, und offen drängt es den Tag nach unten
-      kopf = `<details class="plan-naechste-klapp"${this.naechsteOffen ? ' open' : ''}>
-        <summary>${laeuft ? 'Jetzt' : 'Als Nächstes'} · ${wann}</summary>
-        <div class="plan-naechste ${b.klassenName}"${b.attr}>
-          <span class="plan-naechste-wer">${b.wer}</span>
-          ${b.raum}${b.marken}
-          <span class="plan-naechste-wann">${wann}</span>
-        </div>
-      </details>`;
-    }
+    // „Jetzt / Als Nächstes“ steht seit v399 als Live-Leiste über jeder Ansicht
+    const kopf = '';
 
     const datum = this.datum(tag.replace(/-/g, ''));
     // KL-Freitag: Kurzstunden-Zeiten, die KL-Stunde zwischen 4. und 5. Stunde

@@ -3074,3 +3074,38 @@ dialog.noten-einzeln::backdrop { background: rgba(0, 0, 0, .55); }
 .st-zuhause small { font-size: .8rem; font-weight: 400; opacity: .7; }
 .st-zuhause span { font-size: .85rem; opacity: .75; }
 .mt-kat-knoepfe { display: flex; gap: .4rem; flex-wrap: wrap; margin-bottom: .3rem; }
+
+/* ---------- Live-Leiste im Plan: Jetzt und Als Nächstes ---------- */
+.plan-live {
+  position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: .7rem;
+  margin: 0 0 .9rem; padding-right: 1.8rem;
+}
+.plan-live-karte {
+  min-width: 0; padding: .6rem .75rem .7rem; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--panel);
+}
+.plan-live-karte.jetzt { border-left: 4px solid var(--accent); }
+.plan-live-karte.danach { border-left: 4px solid var(--border); }
+.plan-live-kopf { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; margin-bottom: .35rem; }
+.plan-live-label { font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+.plan-live-karte.danach .plan-live-label { color: var(--muted); }
+.plan-live-zeit { margin-left: auto; font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.plan-live-zeit strong { color: var(--text); }
+.plan-live-balken { height: 5px; border-radius: 3px; background: var(--hover); overflow: hidden; margin: 0 0 .5rem; }
+.plan-live-balken span { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.plan-live-stunde { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .45rem; padding: .1rem 0; cursor: pointer; }
+.plan-live-stunde + .plan-live-stunde { border-top: 1px solid var(--border); margin-top: .35rem; padding-top: .45rem; }
+.plan-live-wer { font-size: 1.15rem; font-weight: 700; }
+.plan-live-stunde .plan-thema { flex-basis: 100%; }
+.plan-live-frei { margin: .25rem 0 0; font-size: 1.05rem; font-weight: 600; }
+.plan-live-kl { font-size: .9rem; padding: .35rem .5rem; }
+.plan-live-zu {
+  position: absolute; top: .2rem; right: 0; line-height: 0; padding: .3rem;
+  border: none; background: none; color: var(--muted); cursor: pointer; border-radius: 6px;
+}
+.plan-live-zu:hover { background: var(--hover); color: var(--text); }
+.plan-live-zu .icon { margin: 0; width: .95rem; height: .95rem; }
+.plan-live-auf { margin: 0 0 .7rem; }
+.plan-live-auf .icon { margin-right: .3rem; }
+@media screen and (max-width: 700px) { .plan-live { grid-template-columns: 1fr; } }
+@media print { .plan-live, .plan-live-auf { display: none; } }
