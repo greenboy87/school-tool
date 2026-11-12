@@ -46,6 +46,7 @@ const Tresor = {
     const knopf = document.getElementById('btn-tresor');
     if (!knopf) return;
     knopf.addEventListener('click', () => this.menue());
+    this.meldungZeigen();
 
     const gemerkt = localStorage.getItem(this.PASS_KEY);
     if (gemerkt) {
@@ -104,6 +105,138 @@ const Tresor = {
   geaendert(an) {
     if (an) localStorage.setItem(this.GEAENDERT_KEY, '1');
     else localStorage.removeItem(this.GEAENDERT_KEY);
+  },
+
+  /* ---------- Zusammenführen statt Ersetzen ----------
+     Bis November 2026 ersetzte ein Gerät beim Abgleich immer den ganzen Stand.
+     Am 11.11.2026 hat so der Stand vom iPad (neue Spalte in der 6c) die Noten
+     der 6f vom Mac gelöscht. Jetzt merkt sich jedes Gerät den Stand, auf dem es
+     aufbaut (BASIS_DATEN), und führt bei einem neueren Serverstand drei Stände
+     zusammen: Basis, dieses Gerät, Server. Was nur eine Seite geändert hat,
+     kommt durch – Klassen, Schüler, Spalten, Noten, Notizen einzeln. Haben beide
+     Seiten dasselbe Feld verschieden geändert, gewinnt dieses Gerät; der
+     Serverstand liegt dann unter Sync → 4. Gelöscht wird nur, was die andere
+     Seite unverändert gelassen hat. */
+  BASIS_DATEN_KEY: 'tresor-basis-daten',
+
+  basisDaten() {
+    try { const t = localStorage.getItem(this.BASIS_DATEN_KEY); return t ? JSON.parse(t) : null; }
+    catch (e) { return null; }
+  },
+  basisDatenSetzen(daten) {
+    try {
+      const o = { ...daten }; delete o.standAt;
+      localStorage.setItem(this.BASIS_DATEN_KEY, JSON.stringify(o));
+    } catch (e) {
+      // Speicher voll: lieber ohne Basis (dann wird wie früher gefragt) als mit falscher
+      localStorage.removeItem(this.BASIS_DATEN_KEY);
+    }
+  },
+
+  gleich(a, b) {
+    if (a === b) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object' || Array.isArray(a) !== Array.isArray(b)) return false;
+    if (Array.isArray(a)) return a.length === b.length && a.every((x, i) => this.gleich(x, b[i]));
+    const ka = Object.keys(a), kb = Object.keys(b);
+    return ka.length === kb.length && ka.every(k => Object.prototype.hasOwnProperty.call(b, k) && this.gleich(a[k], b[k]));
+  },
+
+  /* Drei Stände zusammenführen. Liefert { daten, konflikte: [Pfade] } */
+  zusammenfuehren(basis, hier, dort) {
+    const konflikte = [];
+    const istObj = x => !!x && typeof x === 'object' && !Array.isArray(x);
+    const mitId = a => a === undefined || (Array.isArray(a) && a.every(x => istObj(x) && x.id != null)
+      && new Set(a.map(x => String(x.id))).size === a.length);
+    const schlicht = a => a === undefined || (Array.isArray(a) && a.every(x => x === null || typeof x !== 'object')
+      && new Set(a.map(x => JSON.stringify(x))).size === a.length);
+    const m = (b, h, d, pfad) => {
+      if (this.gleich(h, d)) return h;
+      if (this.gleich(b, h)) return d;
+      if (this.gleich(b, d)) return h;
+      // Beide Seiten haben hier etwas geändert
+      if (istObj(h) && istObj(d)) {
+        const bb = istObj(b) ? b : {};
+        const out = {};
+        for (const k of new Set([...Object.keys(h), ...Object.keys(d)])) {
+          const v = m(bb[k], h[k], d[k], `${pfad}.${k}`);
+          if (v !== undefined) out[k] = v;
+        }
+        return out;
+      }
+      if (Array.isArray(h) && Array.isArray(d) && mitId(h) && mitId(d) && mitId(b)) {
+        // Listen mit id (Klassen, Schüler, Spalten …): Eintrag für Eintrag
+        const karte = a => new Map((a || []).map(x => [String(x.id), x]));
+        const B = karte(b), H = karte(h), D = karte(d);
+        const out = [];
+        for (const id of [...H.keys(), ...[...D.keys()].filter(k => !H.has(k))]) {
+          const v = m(B.get(id), H.get(id), D.get(id), `${pfad}[${id}]`);
+          if (v !== undefined) out.push(v);
+        }
+        return out;
+      }
+      if (Array.isArray(h) && Array.isArray(d) && schlicht(h) && schlicht(d) && schlicht(b)) {
+        // Listen aus Zahlen/Texten ohne Doppelte: wie Mengen
+        const k = x => JSON.stringify(x);
+        const bs = new Set((b || []).map(k)), hs = new Set(h.map(k)), ds = new Set(d.map(k));
+        return [...h.filter(x => !bs.has(k(x)) || ds.has(k(x))), ...d.filter(x => !hs.has(k(x)) && !bs.has(k(x)))];
+      }
+      // Echter Widerspruch: dieses Gerät gewinnt – gelöscht gegen geändert: das Geänderte bleibt
+      konflikte.push(pfad);
+      return h !== undefined ? h : d;
+    };
+    const ohne = x => { const o = { ...(x || {}) }; delete o.standAt; return o; };
+    return { daten: m(ohne(basis), ohne(hier), ohne(dort), ''), konflikte };
+  },
+
+  /* Neuerer Serverstand (paket) liegt vor: mit dem Stand hier zusammenführen.
+     Danach ist der Serverstand die neue Basis und der zusammengeführte Stand
+     lokal gespeichert. Ohne Basis: null (dann wie früher fragen). */
+  async mitServerZusammenfuehren(paket) {
+    const basis = this.basisDaten();
+    if (!basis || !paket || !paket.chiffre) return null;
+    const dort = await this.entschluesseln(paket);
+    const hier = Store.load();
+    const { daten, konflikte } = this.zusammenfuehren(basis, hier, dort);
+    const wer = paket.geraet || 'anderes Gerät';
+    const ohne = x => { const o = { ...x }; delete o.standAt; return o; };
+    const hierNeu = !this.gleich(ohne(daten), ohne(hier));   // vom Server kam etwas dazu
+    const dortNeu = !this.gleich(ohne(daten), ohne(dort));   // von hier muss etwas hoch
+    if (hierNeu) Store.sichern(hier, `vor dem Zusammenführen (${wer})`);
+    if (konflikte.length) Store.sichern(dort, `Serverstand mit Widersprüchen (${wer})`);
+    // Ab jetzt baut dieses Gerät auf dem Serverstand auf
+    this.basisSetzen(paket.stand);
+    this.basisDatenSetzen(dort);
+    daten.standAt = paket.stand;
+    localStorage.setItem(Store.KEY, JSON.stringify(daten));     // ohne erneuten Sync-Anstoß
+    // Was diese Seite noch im Arbeitsspeicher hat, ist veraltet: nicht mehr speichern
+    if (hierNeu) Store.veraltet = true;
+    this.fremd = null;
+    this.hinweisWeg();
+    return { hierNeu, dortNeu, konflikte, wer };
+  },
+
+  /* Nach dem Zusammenführen: Dateien holen, neu laden und danach melden, was passiert ist */
+  async nachZusammenfuehren(erg) {
+    if (!erg.hierNeu) return;
+    const text = `Mit dem Stand von ${erg.wer} zusammengeführt – nichts ersetzt.` +
+      (erg.konflikte.length ? ` ${erg.konflikte.length} Feld${erg.konflikte.length === 1 ? '' : 'er'} hatten beide Seiten verschieden geändert; es gilt das von hier, der andere Stand liegt unter Sync → 4.` : '');
+    try { sessionStorage.setItem('tresor-meldung', text); } catch (e) { /* egal */ }
+    this.status('hole Sitzpläne und Fotos …');
+    try { await this.dateienHolen(); } catch (e) { console.error('Dateien:', e); }
+    location.reload();
+  },
+
+  meldungZeigen() {
+    let text = null;
+    try { text = sessionStorage.getItem('tresor-meldung'); sessionStorage.removeItem('tresor-meldung'); } catch (e) { /* egal */ }
+    if (!text) return;
+    const el = document.createElement('div');
+    el.className = 'tresor-hinweis';
+    el.setAttribute('role', 'status');
+    el.innerHTML = `<span>${Band.esc(text)}</span><button class="small">OK</button>`;
+    el.querySelector('button').addEventListener('click', () => el.remove());
+    document.body.append(el);
+    setTimeout(() => el.remove(), 12000);
   },
 
   /* ---------- Bedienung ---------- */
@@ -316,6 +449,19 @@ const Tresor = {
       const lokal = Store.load();
       const lokalStand = Math.max(lokal.standAt || 0, this.basis());
       const fernStand = vorhanden.stand || 0;
+      // Erstmals mit Zusammenführen: Baut dieses Gerät genau auf dem Serverstand auf, ist er die Basis
+      if (!this.basisDaten() && fernStand && fernStand === this.basis()) this.basisDatenSetzen(daten);
+      // Mit Basis: zusammenführen – dann geht weder hier noch dort etwas verloren
+      if (fernStand > lokalStand && this.basisDaten()) {
+        const erg = await this.mitServerZusammenfuehren(vorhanden);
+        this.bereit = true;
+        this.knopfAktualisieren();
+        if (erg.dortNeu) await this.hochladen(false, true);
+        else { this.geaendert(false); this.status('aktuell (' + this.zeit(fernStand) + ')'); }
+        if (erg.hierNeu) return this.nachZusammenfuehren(erg);
+        this.mithoeren();
+        return;
+      }
       // Still übernehmen nur, wenn hier nichts Ungesichertes liegt
       if (fernStand > lokalStand && still && this.istGeaendert()) still = false;
       if (fernStand > lokalStand) {
@@ -413,6 +559,7 @@ const Tresor = {
     Store.save(daten);
     clearTimeout(this.timer);     // das eben Übernommene nicht gleich wieder hochladen
     this.basisSetzen(stand);
+    this.basisDatenSetzen(daten);
     this.geaendert(false);
     this.fremd = null;
     this.letzterStand = stand;
@@ -460,8 +607,9 @@ const Tresor = {
       if (!stand || stand <= this.basis() || stand === this.eigenerStand) return;
       window.FB.get(ref(db, `schoolTool/tresor/${this.id}/geraet`)).then(g => {
         this.fremd = { stand, geraet: g.val() };
-        // Nichts Eigenes offen und der Tab liegt im Hintergrund: still übernehmen
-        if (!this.istGeaendert() && document.hidden) this.herunterladen(false);
+        // Tab im Hintergrund: still zusammenführen (ohne Basis nur übernehmen, wenn hier nichts offen ist)
+        if (document.hidden && this.basisDaten()) this.hochladen(false);
+        else if (!this.istGeaendert() && document.hidden) this.herunterladen(false);
         else this.hinweisZeigen();
       }).catch(() => {});
     });
@@ -501,6 +649,8 @@ const Tresor = {
   },
 
   fremdUebernehmen() {
+    // Mit Basis geht nichts verloren: zusammenführen (lädt hoch, was hier fehlt, und lädt neu)
+    if (this.basisDaten()) { this.pausiert = false; this.hochladen(false); return; }
     if (this.istGeaendert() && !confirm('Den neueren Stand übernehmen?\n\n' +
       'Was du in diesem Browser seitdem geändert hast, geht dabei verloren.')) return;
     this.herunterladen(false);
@@ -519,12 +669,27 @@ const Tresor = {
     this.amLaufen = true;
     try {
       const { db, ref, update } = window.FB;
+      let zusammen = null;
       if (!erzwingen) {
         const fern = (await this.kopfHolen(this.id, ['stand', 'geraet'])) || {};
         if ((fern.stand || 0) > this.basis()) {
-          this.amLaufen = false;
-          await this.konflikt(fern.stand, fern.geraet);
-          return;
+          // Ein anderes Gerät hat inzwischen gespeichert: zusammenführen, sonst wie früher fragen
+          if (this.basisDaten()) {
+            try { zusammen = await this.mitServerZusammenfuehren(await this.kopfHolen()); }
+            catch (e) { console.error('Zusammenführen:', e); zusammen = null; }
+          }
+          if (!zusammen) {
+            this.amLaufen = false;
+            await this.konflikt(fern.stand, fern.geraet);
+            return;
+          }
+          if (!zusammen.dortNeu) {
+            // Hier gab es nichts, was oben fehlt – nur übernehmen
+            this.geaendert(false);
+            this.amLaufen = false;
+            this.status('aktuell (' + this.zeit(fern.stand) + ')');
+            return this.nachZusammenfuehren(zusammen);
+          }
         }
       }
       this.pausiert = false;
@@ -543,6 +708,7 @@ const Tresor = {
       await this.verlaufSchreiben(paket, stand, this.geraetName());
       this.letzterStand = stand;
       this.basisSetzen(stand);
+      this.basisDatenSetzen(daten);
       // Was seit Beginn des Hochladens geändert wurde, ist schon wieder neu angestoßen
       if (this.aenderungen === aenderungenVorher) this.geaendert(false);
       this.fremd = null;
@@ -565,6 +731,7 @@ const Tresor = {
         ? 'Daten wurden verschlüsselt hochgeladen.\n\nDie Sitzpläne konnten nicht ' +
           'mitgenommen werden:\n' + planFehler
         : 'Daten wurden verschlüsselt hochgeladen.');
+      if (zusammen) { this.amLaufen = false; return this.nachZusammenfuehren(zusammen); }
     } catch (e) {
       this.status('Hochladen fehlgeschlagen: ' + this.fehlertext(e), true);
       if (laut) alert('Hochladen fehlgeschlagen.\n\n' + this.fehlertext(e));
