@@ -240,6 +240,8 @@ const Stundenplan = {
       if (tagNav) { this.tag(parseInt(tagNav.dataset.tagnav, 10)); return; }
       const leer = e.target.closest('[data-leer]');
       if (leer && !e.target.closest('.plan-termin')) { this.neueStunde(leer.dataset.leer); return; }
+      // „KL“ im Wochenkopf: Übersicht aller KL-Stunden statt Tagesansicht
+      if (e.target.closest('[data-kluebersicht]')) { this.klUebersicht(); return; }
       const tagKopf = e.target.closest('[data-tag]');
       if (tagKopf) { this.ansicht('heute', tagKopf.dataset.tag); return; }
       const schieben = e.target.closest('[data-verschieben]');
@@ -1265,6 +1267,51 @@ const Stundenplan = {
     }
     Classes.persist();
     this.render();
+  },
+
+  /* Übersicht aller KL-Stunden des Schuljahrs – öffnet sich über „KL“ im Wochenkopf.
+     Vergangene ausgegraut, die nächste hervorgehoben; von Hand geänderte Freitage zählen mit. */
+  klUebersicht() {
+    const heute = this.tagSchluessel(new Date());
+    const tage = [];
+    for (const d = new Date(this.KL_LISTE_VON + 'T12:00'); this.tagSchluessel(d) <= this.KL_LISTE_BIS; d.setDate(d.getDate() + 1)) {
+      const tag = this.tagSchluessel(d);
+      if (this.istKL(tag)) tage.push(tag);
+    }
+    const naechste = tage.find(t => t >= heute);
+    const monate = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    let monat = '';
+    const zeilen = tage.map(tag => {
+      const d = new Date(tag + 'T12:00');
+      const m = monate[d.getMonth()] + ' ' + d.getFullYear();
+      const kopf = m !== monat ? (monat = m, `<li class="kl-ueb-monat">${m}</li>`) : '';
+      const art = tag < heute ? ' vorbei' : tag === naechste ? ' naechste' : '';
+      const hand = !(tag in this.KL_TERMINE) ? ' <span class="kl-ueb-hand" title="Von Hand dazugenommen">von Hand</span>' : '';
+      return `${kopf}<li class="kl-ueb-tag${art}"><button type="button" data-kltag="${tag}" title="Diesen Tag im Plan zeigen">
+        <span class="kl-ueb-datum">${this.tagName(d)}</span>
+        <span class="kl-ueb-anlass">${this.esc(this.klAnlass(tag))}${hand}${tag === naechste ? ' <span class="kl-ueb-marke">als Nächstes</span>' : ''}</span></button></li>`;
+    }).join('');
+    const weg = Object.keys(this.KL_TERMINE).filter(t => !this.istKL(t));
+    let dlg = document.getElementById('kl-uebersicht');
+    if (!dlg) {
+      dlg = document.createElement('dialog');
+      dlg.id = 'kl-uebersicht';
+      dlg.className = 'kl-uebersicht';
+      document.body.appendChild(dlg);
+      dlg.addEventListener('click', e => {
+        if (e.target === dlg || e.target.closest('.kl-ueb-zu')) return dlg.close();
+        const t = e.target.closest('[data-kltag]');
+        if (t) { dlg.close(); this.ansicht('heute', t.dataset.kltag); }
+      });
+    }
+    dlg.innerHTML = `<div class="kl-ueb-kopf"><h2>Klassenleiterstunden</h2>
+        <button type="button" class="small kl-ueb-zu" title="Schließen (Esc)">${Icons.raw('x')}</button></div>
+      <p class="hint">Freitags 11:10–11:40, an diesen Tagen Kurzstunden · ${tage.length} Termine${tage.filter(t => t >= heute).length ? `, davon noch ${tage.filter(t => t >= heute).length}` : ''}</p>
+      <ul class="kl-ueb-liste">${zeilen}</ul>
+      ${weg.length ? `<p class="hint">Von Hand gestrichen: ${weg.map(t => this.tagName(new Date(t + 'T12:00'))).join(', ')}</p>` : ''}`;
+    dlg.showModal();
+    const n = dlg.querySelector('.naechste');
+    if (n) n.scrollIntoView({ block: 'center' });
   },
 
   freiUmschalten(tage) {
@@ -2799,7 +2846,7 @@ const Stundenplan = {
     const heute = this.tagSchluessel(jetzt);
     const tage = [0, 1, 2, 3, 4].map(i => { const d = new Date(mo); d.setDate(d.getDate() + i); return d; });
     const kopf = '<div class="plan-ecke"></div>' + tage.map(d =>
-      `<button type="button" class="plan-tagkopf${this.tagSchluessel(d) === heute ? ' heute' : ''}" data-tag="${this.tagSchluessel(d)}" title="Diesen Tag als Tagesansicht">${this.tagName(d)}${this.istKL(this.tagSchluessel(d)) ? ` <span class="plan-kl-marke" title="Klassenleiterstunde 11:10–11:40, Kurzstunden${this.klAnlass(this.tagSchluessel(d)) ? ' – ' + this.esc(this.klAnlass(this.tagSchluessel(d))) : ''}">KL${this.klAnlass(this.tagSchluessel(d)) ? ' ★' : ''}</span>` : ''}${this.istFrei(this.tagSchluessel(d)) ? ` <span class="plan-frei">${this.esc(this.ferienName(this.tagSchluessel(d)) || 'frei')}</span>` : ''}</button>`).join('');
+      `<button type="button" class="plan-tagkopf${this.tagSchluessel(d) === heute ? ' heute' : ''}" data-tag="${this.tagSchluessel(d)}" title="Diesen Tag als Tagesansicht">${this.tagName(d)}${this.istKL(this.tagSchluessel(d)) ? ` <span class="plan-kl-marke" data-kluebersicht title="Klassenleiterstunde 11:10–11:40, Kurzstunden${this.klAnlass(this.tagSchluessel(d)) ? ' – ' + this.esc(this.klAnlass(this.tagSchluessel(d))) : ''} – anklicken: alle KL-Stunden">KL${this.klAnlass(this.tagSchluessel(d)) ? ' ★' : ''}</span>` : ''}${this.istFrei(this.tagSchluessel(d)) ? ` <span class="plan-frei">${this.esc(this.ferienName(this.tagSchluessel(d)) || 'frei')}</span>` : ''}</button>`).join('');
     const zellen = zeiten.map(z => {
       const zeile = tage.map(d => {
         const tag = this.tagSchluessel(d);
