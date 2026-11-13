@@ -2227,6 +2227,8 @@ button.schwebe-knopf .icon { width: 1rem; height: 1rem; margin: 0; }
 :root[data-theme="light"] .plan-kl-marke { color: #fff; }
 .plan-kurz-zeit { flex-basis: 100%; font-size: .68rem; font-weight: 700; color: var(--accent); line-height: 1; }
 button.plan-kl-an { border-color: var(--accent); }
+.plan-kl-anlass { font-weight: 800; }
+.plan-kl-kasten .plan-kl-anlass { display: block; }
 .plan-naechste-klapp > summary { cursor: pointer; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: .2rem 0; }
 .plan-naechste-klapp[open] > summary { margin-bottom: .4rem; }
 .plan-naechste-label { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); width: 100%; }

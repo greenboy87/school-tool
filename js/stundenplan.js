@@ -655,12 +655,13 @@ const Stundenplan = {
   },
 
   /* Was ins Feld „Unterrichtsinhalte“ kommt: das Thema samt Zusatz, ohne
-     Thema (etwa Schulband) die Notiz der Stunde */
+     Thema (etwa Schulband) die Notiz der Stunde. Auch Stunden ohne Klasse im
+     School-Tool (etwa eine Vertretung in 6e) haben ein Thema – im Buch ohne
+     Klasse; bis v402 blieb es hier außen vor und das Feld leer. */
   klassenbuchText(t) {
     const key = this.buchSchluessel(t);
     const buch = this.buchKlasse(t);
-    const cls = buch && !buch.ohne ? buch : null;
-    const themen = cls ? this.nummeriert(cls, key, this.themenDerStunde(cls, t).themen) : [];
+    const themen = buch ? this.nummeriert(buch, key, this.themenDerStunde(buch, t).themen) : [];
     const rec = ((buch && buch.stundenbuch) || {})[key] || {};
     const text = themen.length ? themen.map(x => Lessons.ohneReihe(x.wort)).join(' · ') + (rec.z ? ' ' + rec.z : '')
       : rec.s || '';
@@ -1192,15 +1193,42 @@ const Stundenplan = {
     return hand === 1 || (hand !== 0 && !!this.ferienName(tag));
   },
 
-  /* Klassenleiterstunde: jeden zweiten Freitag 11:10–11:40, dafür Kurzstunden.
-     Im Abo steht davon nichts. Rhythmus ab einem Start-Freitag, einzelne
-     Freitage von Hand an/aus (Classes.data.planKL: { start, tage: { tag: 1|0 } }). */
+  /* Klassenleiterstunde 11:10–11:40, dafür Kurzstunden. Im Abo steht davon nichts.
+     Im Schuljahr 2026/27 gilt die Liste der Schule (KL_TERMINE, Stand 13.11.2026) –
+     nicht der Zwei-Wochen-Rhythmus, die Abstände sind unregelmäßig. Dazu, was an
+     dem Tag ansteht (Zwischenbericht, Zeugnis). Einzelne Freitage von Hand an/aus:
+     planKL.liste { tag: 1|0 }. Außerhalb der Liste wie früher: Rhythmus ab einem
+     Start-Freitag, Ausnahmen in planKL.tage. Für ein neues Schuljahr hier ergänzen. */
   KURZ: { '08:00': '08:00–08:40', '08:45': '08:40–09:20', '09:30': '09:20–10:00',
     '10:45': '10:30–11:10', '11:30': '11:40–12:20', '12:15': '12:20–13:00' },
 
+  KL_TERMINE: {
+    '2026-09-18': '', '2026-09-25': 'Wandertag',
+    '2026-10-02': '', '2026-10-16': '', '2026-10-30': '',
+    '2026-11-20': '',
+    '2026-12-04': '1. Zwischenbericht', '2026-12-18': '',
+    '2027-01-22': '',
+    '2027-02-05': '', '2027-02-19': '2. Zwischenbericht / Zwischenzeugnis',
+    '2027-03-05': '', '2027-03-19': '',
+    '2027-04-09': '', '2027-04-23': '',
+    '2027-05-07': '3. Zwischenbericht',
+    '2027-06-04': '', '2027-06-18': '',
+    '2027-07-02': '', '2027-07-16': '',
+  },
+  KL_LISTE_VON: '2026-09-14', KL_LISTE_BIS: '2027-08-01',
+
+  klInListe(tag) { return tag >= this.KL_LISTE_VON && tag <= this.KL_LISTE_BIS; },
+
+  // Was laut Liste an diesem KL-Freitag ansteht (leer, wenn nichts)
+  klAnlass(tag) { return this.KL_TERMINE[tag] || ''; },
+
   istKL(tag) {
-    const kl = Classes.data.planKL;
-    if (!kl || new Date(tag + 'T12:00').getDay() !== 5) return false;
+    if (new Date(tag + 'T12:00').getDay() !== 5) return false;
+    const kl = Classes.data.planKL || {};
+    if (this.klInListe(tag)) {
+      const hand = (kl.liste || {})[tag];
+      return hand !== undefined ? hand === 1 : tag in this.KL_TERMINE;
+    }
     const hand = (kl.tage || {})[tag];
     if (hand !== undefined) return hand === 1;
     if (!kl.start || tag < kl.start || this.istFrei(tag)) return false;
@@ -1211,16 +1239,22 @@ const Stundenplan = {
   klUmschalten(tag) {
     const kl = Classes.data.planKL || {};
     const war = this.istKL(tag);
-    if (!war && !kl.start) {
+    if (this.klInListe(tag)) {
+      // Liste der Schule: nur die Abweichung merken
+      this.merken('KL-Stunde');
+      const liste = kl.liste || (kl.liste = {});
+      if ((tag in this.KL_TERMINE) === !war) delete liste[tag]; else liste[tag] = war ? 0 : 1;
+      Classes.data.planKL = kl;
+    } else if (!war && !kl.start) {
       // Erster KL-Freitag: gleich den Rhythmus festlegen
       if (!confirm('Ab diesem Freitag alle zwei Wochen eine Klassenleiterstunde?\n\n' +
         'OK: alle zwei Wochen ab hier (einzelne Freitage lassen sich danach ändern).\n' +
         'Abbrechen: nur an diesem Freitag.')) {
         this.merken('KL-Stunde');
-        Classes.data.planKL = { tage: { [tag]: 1 } };
+        Classes.data.planKL = Object.assign(kl, { tage: Object.assign(kl.tage || {}, { [tag]: 1 }) });
       } else {
         this.merken('KL-Rhythmus');
-        Classes.data.planKL = { start: tag, tage: {} };
+        Classes.data.planKL = Object.assign(kl, { start: tag, tage: {} });
       }
     } else {
       this.merken('KL-Stunde');
@@ -2392,7 +2426,7 @@ const Stundenplan = {
     const kl = this.istKL(heute) ? { von: new Date(heute + 'T11:10'), bis: new Date(heute + 'T11:40') } : null;
     const klJetzt = kl && kl.von <= jetzt && kl.bis > jetzt;
     const klDanach = kl && kl.von > jetzt && (!zuerst || kl.von < zuerst.von);
-    const klHtml = '<div class="live-stunde"><div class="live-wer"><strong>KL</strong> Klassenleiterstunde</div></div>';
+    const klHtml = `<div class="live-stunde"><div class="live-wer"><strong>KL</strong> Klassenleiterstunde${this.klAnlass(heute) ? ' · ' + this.esc(this.klAnlass(heute)) : ''}</div></div>`;
     const nr = d => { const s = this.STUNDEN[this.uhr(d)]; return s && s !== 'Pause' ? s + ' · ' : ''; };
 
     // Jetzt
@@ -2674,8 +2708,9 @@ const Stundenplan = {
     const datum = this.datum(tag.replace(/-/g, ''));
     // KL-Freitag: Kurzstunden-Zeiten, die KL-Stunde zwischen 4. und 5. Stunde
     const kl = this.istKL(tag);
+    const anlass = kl ? this.klAnlass(tag) : '';
     const klZeile = `<li class="plan-kl"><span class="plan-nr">KL</span><span class="plan-zeit">11:10–11:40</span>
-        <span class="plan-wer">Klassenleiterstunde</span></li>`;
+        <span class="plan-wer">Klassenleiterstunde${anlass ? ` · <span class="plan-kl-anlass">${this.esc(anlass)}</span>` : ''}</span></li>`;
     let klDrin = !kl;
     const zeilen = liste.map(t => {
       const b = this.baustein(t, jetzt, true);
@@ -2764,7 +2799,7 @@ const Stundenplan = {
     const heute = this.tagSchluessel(jetzt);
     const tage = [0, 1, 2, 3, 4].map(i => { const d = new Date(mo); d.setDate(d.getDate() + i); return d; });
     const kopf = '<div class="plan-ecke"></div>' + tage.map(d =>
-      `<button type="button" class="plan-tagkopf${this.tagSchluessel(d) === heute ? ' heute' : ''}" data-tag="${this.tagSchluessel(d)}" title="Diesen Tag als Tagesansicht">${this.tagName(d)}${this.istKL(this.tagSchluessel(d)) ? ' <span class="plan-kl-marke" title="Klassenleiterstunde 11:10–11:40, Kurzstunden">KL</span>' : ''}${this.istFrei(this.tagSchluessel(d)) ? ` <span class="plan-frei">${this.esc(this.ferienName(this.tagSchluessel(d)) || 'frei')}</span>` : ''}</button>`).join('');
+      `<button type="button" class="plan-tagkopf${this.tagSchluessel(d) === heute ? ' heute' : ''}" data-tag="${this.tagSchluessel(d)}" title="Diesen Tag als Tagesansicht">${this.tagName(d)}${this.istKL(this.tagSchluessel(d)) ? ` <span class="plan-kl-marke" title="Klassenleiterstunde 11:10–11:40, Kurzstunden${this.klAnlass(this.tagSchluessel(d)) ? ' – ' + this.esc(this.klAnlass(this.tagSchluessel(d))) : ''}">KL${this.klAnlass(this.tagSchluessel(d)) ? ' ★' : ''}</span>` : ''}${this.istFrei(this.tagSchluessel(d)) ? ` <span class="plan-frei">${this.esc(this.ferienName(this.tagSchluessel(d)) || 'frei')}</span>` : ''}</button>`).join('');
     const zellen = zeiten.map(z => {
       const zeile = tage.map(d => {
         const tag = this.tagSchluessel(d);
@@ -2777,7 +2812,7 @@ const Stundenplan = {
         const name = frei && z === zeiten[0] ? `<div class="plan-ferien">${this.esc(this.ferienName(tag) || 'unterrichtsfrei')}</div>` : '';
         // KL-Freitag: die Klassenleiterstunde liegt zwischen 4. und 5. Stunde – als Kasten unter der 4.
         const kl = z === '10:45' && this.istKL(tag)
-          ? '<div class="plan-kl-kasten" title="Klassenleiterstunde nach der 4. Stunde, an diesem Tag Kurzstunden"><strong>KL</strong> 11:10–11:40 Klassenleiterstunde</div>' : '';
+          ? `<div class="plan-kl-kasten" title="Klassenleiterstunde nach der 4. Stunde, an diesem Tag Kurzstunden"><strong>KL</strong> 11:10–11:40 Klassenleiterstunde${this.klAnlass(tag) ? `<span class="plan-kl-anlass">${this.esc(this.klAnlass(tag))}</span>` : ''}</div>` : '';
         // KL-Freitag: Kurzstunden – die echte Anfangszeit steht an jeder Stunde
         const kurz = this.istKL(tag) && this.KURZ[z];
         const ab = kurz ? `<span class="plan-kurz-zeit" title="Kurzstunde ${kurz}">${kurz.split('–')[0]}</span>` : '';
