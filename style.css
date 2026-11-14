@@ -3161,3 +3161,11 @@ html.locked .live-anzeige { display: none; }
   width: min(62vh, 80vw) !important; height: min(62vh, 80vw) !important; }
 .mt-nurqr-adresse { font-size: clamp(2.4rem, 7vw, 6rem); }
 .mt-ohne-login { margin-top: .8rem; }
+
+/* music-trainer: eigene Zugänge im Reiter Klassen (unten in „Meine Klassen“) */
+.mt-eigene-knopf { margin-top: .4rem; }
+.mt-eigene-knopf .icon { color: var(--accent); }
+.mt-eigene-ansicht .mt-gruppe { margin-top: 1rem; }
+.mt-server-suche { margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.mt-treffer li { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; }
+.mt-treffer li button { margin-left: auto; }

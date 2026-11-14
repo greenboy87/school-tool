@@ -611,6 +611,7 @@ const Classes = {
     if (typeof Notes !== 'undefined') Notes.klassenNotizSichern();
     this.currentClassId = id;
     this.notfallOffen = false;
+    this.mtEigeneOffen = false;
     this.currentProjectId = null;
     this.gruppenBearbeiten = false;
     this.pendingGroups = null;
@@ -1293,10 +1294,15 @@ const Classes = {
     const cls = this.currentClass();
     // Statt einer Klasse kann rechts die Notfallliste stehen (Knopf unten links)
     const notfall = !cls && !!this.notfallOffen;
-    document.getElementById('class-empty').hidden = !!cls || notfall;
+    // … oder die eigenen music-trainer-Zugänge (Knopf darunter)
+    const mtEigene = !cls && !notfall && !!this.mtEigeneOffen;
+    document.getElementById('class-empty').hidden = !!cls || notfall || mtEigene;
     document.getElementById('class-detail').hidden = !cls;
     const nfAnsicht = document.getElementById('notfall-ansicht');
     if (nfAnsicht) nfAnsicht.hidden = !notfall;
+    const mtAnsicht = document.getElementById('mt-eigene-ansicht');
+    if (mtAnsicht) mtAnsicht.hidden = !mtEigene;
+    document.getElementById('btn-mt-eigene')?.classList.toggle('active', mtEigene);
     if (window.Notfall) Notfall.zahlStellen();
     if (!cls) return;
     const sub = [cls.grade ? `Jgst. ${cls.grade}` : null,

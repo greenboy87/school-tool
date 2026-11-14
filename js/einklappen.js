@@ -1,4 +1,4 @@
-/* Klassenlisten (und die eigenen music-trainer-Zugänge unter Extras) ein- und ausklappen.
+/* Klassenlisten ein- und ausklappen.
 
    Eingeklappt verschwindet der Bereich samt Platzbedarf – das hält den Reiter
    übersichtlich, wenn es gerade um die Gruppen geht. Der Zustand bleibt
@@ -8,7 +8,6 @@ const Einklappen = {
     schueler: { inhalt: 'klassenliste-inhalt', knopf: 'btn-toggle-students' },
     noten:    { inhalt: 'noten-bereich',       knopf: 'btn-toggle-grades' },
     lehrer:   { inhalt: 'lehrer-inhalt',       knopf: 'btn-toggle-lehrer' },
-    mtEigene: { inhalt: 'mt-eigene-inhalt',    knopf: 'btn-toggle-mt-eigene' },
   },
 
   init() {
@@ -23,7 +22,7 @@ const Einklappen = {
   /* Alle Bereiche starten offen. Die Lehrerliste war frueher ausgenommen, weil
      sie in einem fremden Reiter mitlief; seit sie einen eigenen hat, waere der
      sonst leer. Wer sie zuklappt, findet sie beim naechsten Mal zugeklappt. */
-  ZU_AM_ANFANG: ['mtEigene'],   // eigene music-trainer-Zugänge braucht man selten
+  ZU_AM_ANFANG: [],
 
   istZu(name) {
     const gemerkt = localStorage.getItem('eingeklappt-' + name);

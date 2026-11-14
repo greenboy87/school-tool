@@ -89,6 +89,17 @@ const Musiktrainer = {
       });
       this.renderEigene();
     }
+    // Unten in „Meine Klassen“: öffnet die eigenen Zugänge rechts anstelle einer Klasse
+    document.getElementById('btn-mt-eigene')?.addEventListener('click', () => this.eigeneZeigen());
+  },
+
+  eigeneZeigen() {
+    Classes.selectClass(null);
+    Classes.mtEigeneOffen = true;
+    Classes.renderDetail();
+    this.renderEigene();
+    const ansicht = document.getElementById('mt-eigene-ansicht');
+    if (ansicht && window.innerWidth <= 800) ansicht.scrollIntoView({ block: 'start', behavior: 'smooth' });
   },
 
   esc(s) { return Band.esc(s).replace(/"/g, '&quot;'); },
@@ -1860,7 +1871,7 @@ const Musiktrainer = {
   renderEigene() {
     if (!this.eigeneEl) return;
     if (!this.API) {
-      this.eigeneEl.innerHTML = '<p class="hint">Erst den music-trainer-Worker eintragen (siehe Reiter Klassen → music-trainer).</p>';
+      this.eigeneEl.innerHTML = '<p class="hint">Erst den music-trainer-Worker eintragen (siehe bei einer Klasse den Unterreiter music-trainer).</p>';
       return;
     }
     const gruppen = this.gruppen();
@@ -1874,6 +1885,7 @@ const Musiktrainer = {
               <button class="small" data-eigen="ergebnisse" data-g="${gi}" data-icon="list" ${g.kinder.length ? '' : 'disabled'}>Ergebnisse</button>
               <button class="small" data-eigen="qr" data-g="${gi}" data-icon="expand" ${g.kinder.length ? '' : 'disabled'}>QR-Codes</button>
               <button class="small" data-eigen="drucken" data-g="${gi}" data-icon="printer" ${g.kinder.length ? '' : 'disabled'}>Kärtchen</button>
+              <button class="small" data-eigen="pw-aendern" data-g="${gi}" data-icon="pen" title="Passwort der Gruppe ändern – die Kärtchen danach neu drucken">Passwort ändern</button>
               <button class="small danger" data-eigen="gruppe-weg" data-g="${gi}" data-icon="trash">Gruppe löschen</button>
             </div>
           </div>
@@ -1892,8 +1904,13 @@ const Musiktrainer = {
         <input type="text" id="mt-gruppe-pw" placeholder="Passwort (mind. 4 Zeichen)" maxlength="30" spellcheck="false">
         <button class="primary small" data-eigen="gruppe-neu" data-icon="plus">Gruppe anlegen</button>
       </div>
+      <div class="mt-server-suche">
+        <button class="small" data-eigen="suchen" data-icon="list" title="Findet Gruppen, die es auf dem music-trainer-Server gibt, die hier aber fehlen – etwa nach einem verlorenen Sync">Fehlende Gruppen auf dem Server suchen</button>
+        <div id="mt-server-treffer"></div>
+      </div>
       <div id="mt-eigene-login"></div>`;
     Icons.hydrate(this.eigeneEl);
+    if (this.serverTreffer) this.serverTrefferZeigen(document.getElementById('mt-server-treffer'));
   },
 
   eigenErg: {},   // Gruppen-ID → { daten, bereich } – nur solange die Ergebnisse offen sind
@@ -1957,6 +1974,39 @@ const Musiktrainer = {
         Fahre über ein Feld für Einzelheiten.</p>`;
   },
 
+  /* Gruppen auf dem Server, die hier fehlen: Der Worker hat keine Liste aller Klassen, darum
+     der Reihe nach die Nummern abfragen (bekannte Klassen und Gruppen überspringen), bis nach
+     der höchsten bekannten Nummer 25 hintereinander frei sind. Nur lesen, nichts ändern. */
+  async serverSuchen(ziel) {
+    const bekannt = new Set([...this.gruppen().map(g => Number(g.id)),
+      ...Classes.data.classes.map(c => Number(c.musiktrainer?.id)).filter(Boolean)]);
+    const max = Math.max(0, ...bekannt);
+    const treffer = [];
+    let frei = 0;
+    ziel.innerHTML = '<p class="hint">Suche …</p>';
+    for (let start = 1; start <= 400 && (start <= max || frei < 25); start += 5) {
+      const nummern = Array.from({ length: 5 }, (_, i) => start + i).filter(n => !bekannt.has(n));
+      const antworten = await Promise.all(nummern.map(n => this.api(`/api/lehrer/klassen/${n}`)
+        .catch(err => { if (err.status === 404) return null; throw err; })));
+      for (const d of antworten) {
+        if (d) { treffer.push(d); frei = 0; } else frei++;
+      }
+    }
+    this.serverTreffer = treffer;
+    this.serverTrefferZeigen(ziel);
+  },
+
+  serverTrefferZeigen(ziel) {
+    const t = this.serverTreffer || [];
+    ziel.innerHTML = t.length ? `
+      <p class="hint">Auf dem Server, aber hier nicht eingetragen – übernimm nur, was zu dir gehört:</p>
+      <ul class="mt-zugaenge mt-treffer">
+        ${t.map(d => `<li><strong>${this.esc(d.klasse.name)}</strong> <span class="hint">Passwort <code>${this.esc(d.klasse.passwort)}</code> ·
+          ${d.schueler.length ? d.schueler.map(k => this.esc(k.benutzername)).join(', ') : 'keine Zugänge'}</span>
+          <button class="small primary" data-eigen="uebernehmen" data-id="${d.klasse.id}">Übernehmen</button></li>`).join('')}
+      </ul>` : '<p class="hint">Keine fehlenden Gruppen gefunden – hier ist alles eingetragen.</p>';
+  },
+
   async klickEigene(e) {
     const b = e.target.closest('[data-eigen]');
     if (!b) return;
@@ -1991,6 +2041,22 @@ const Musiktrainer = {
         if (!confirm(`Gruppe „${g.name}“ mit allen Zugängen und Ergebnissen löschen?`)) return;
         await this.api(`/api/lehrer/klassen/${g.id}`, { methode: 'DELETE' }).catch(err => { if (err.status !== 404) throw err; });
         gruppen.splice(b.dataset.g, 1);
+      }
+      if (b.dataset.eigen === 'pw-aendern') {
+        const neu = (prompt(`Neues Passwort für „${g.name}“ (mind. 4 Zeichen):`, g.passwort) || '').trim();
+        if (!neu || neu === g.passwort) return;
+        if (neu.length < 4) return alert('Das Passwort braucht mindestens 4 Zeichen.');
+        const r = await this.api(`/api/lehrer/klassen/${g.id}`, { methode: 'PATCH', body: { passwort: neu } });
+        g.passwort = r.passwort;
+        alert('Passwort geändert. Die alten Kärtchen und QR-Codes gelten nicht mehr – bitte neu drucken.');
+      }
+      if (b.dataset.eigen === 'suchen') return this.serverSuchen(document.getElementById('mt-server-treffer'));
+      if (b.dataset.eigen === 'uebernehmen') {
+        const d = this.serverTreffer?.find(t => String(t.klasse.id) === b.dataset.id);
+        if (!d || gruppen.some(x => x.id === d.klasse.id)) return;
+        gruppen.push({ id: d.klasse.id, name: d.klasse.name, passwort: d.klasse.passwort,
+          kinder: d.schueler.map(k => ({ id: k.id, name: k.benutzername })) });
+        this.serverTreffer = this.serverTreffer.filter(t => t !== d);
       }
       if (b.dataset.eigen === 'qr') {
         return this.qrZeigen(g.name, g.passwort, g.kinder.map(k => ({ name: k.name, benutzer: k.name })));
