@@ -82,14 +82,13 @@ const Musiktrainer = {
     }
     if (this.eigeneEl) {
       this.eigeneEl.addEventListener('click', e => this.klickEigene(e));
-      this.eigeneEl.addEventListener('change', e => {
-        const id = e.target.dataset.eigenBereich;
-        if (!id || !this.eigenErg[id]) return;
-        this.eigenErg[id].bereich = e.target.value;
-        const gi = this.gruppen().findIndex(g => String(g.id) === id);
-        this.eigeneErgebnisse(this.gruppen()[gi], this.eigeneEl.querySelector(`[data-erg="${gi}"]`));
-      });
       this.renderEigene();
+    }
+    // Ergebnisse einer eigenen Gruppe: dieselbe Ansicht wie bei einer Klasse, nur an anderer Stelle
+    this.gruppeEl = document.getElementById('mt-eigene-auswertung');
+    if (this.gruppeEl) {
+      this.gruppeEl.addEventListener('click', e => this.klick(e));
+      this.gruppeEl.addEventListener('change', e => this.aenderung(e));
     }
     // Unten in „Meine Klassen“: öffnet die eigenen Zugänge rechts anstelle einer Klasse
     document.getElementById('btn-mt-eigene')?.addEventListener('click', () => this.eigeneZeigen());
@@ -105,7 +104,26 @@ const Musiktrainer = {
   },
 
   esc(s) { return Band.esc(s).replace(/"/g, '&quot;'); },
-  klasse() { return Classes.currentClass(); },
+  /* Die gerade gezeigte Klasse – oder, in den eigenen Zugängen, eine Gruppe als „Klasse“: Kinder =
+     Zugänge (Vorname = Benutzername), musiktrainer = die Gruppe selbst (id, passwort; die Auswahl
+     der Spiele wird dort gemerkt). So zeigen Gruppen dieselbe Auswertung wie Klassen. */
+  klasse() {
+    if (this.gruppe && !Classes.currentClassId && Classes.mtEigeneOffen) return this.gruppenKlasse;
+    this.gruppe = null;
+    return Classes.currentClass();
+  },
+  gruppeOeffnen(g) {
+    this.gruppe = g;
+    this.gruppenKlasse = {
+      id: 'mtgruppe-' + g.id, name: g.name, gruppe: true, musiktrainer: g,
+      students: g.kinder.map(k => ({ id: 'mtk-' + k.id, first: k.name, last: '', mt: { id: k.id, name: k.name } })),
+    };
+    this.ergebnis = null;
+    if (this.el) this.el.innerHTML = '';   // keine doppelten IDs mit dem Klassenreiter
+    this.render();
+  },
+  /* Wohin die Auswertung gezeichnet wird */
+  ansicht() { return this.gruppe && this.klasse()?.gruppe ? this.gruppeEl : this.el; },
   name(s) { return `${s.first || ''} ${s.last || ''}`.trim(); },
   /* Für Tabelle und Einzelansicht: „Nachname, Vorname“, sortiert nach Nachnamen */
   nachname(s) { return s.first ? `${s.last || ''}, ${s.first}`.replace(/^, /, '') : (s.last || ''); },
@@ -225,20 +243,21 @@ const Musiktrainer = {
 
   /* ---------- Reiter einer Klasse ---------- */
   render() {
-    if (!this.el) return;
     const cls = this.klasse();
-    if (!cls) { this.el.innerHTML = ''; return; }
+    const el = this.ansicht();
+    if (!el) return;
+    if (!cls) { el.innerHTML = ''; return; }
     if (!this.API) {
-      this.el.innerHTML = `<h3 data-icon="music">music-trainer</h3>
+      el.innerHTML = `<h3 data-icon="music">music-trainer</h3>
         <p class="hint">Noch nicht eingerichtet: In <code>js/musiktrainer.js</code> fehlt die Adresse des Workers
         (<code>API</code>). Die Schritte stehen in music-trainer/ANLEITUNG.md.</p>`;
-      Icons.hydrate(this.el);
+      Icons.hydrate(el);
       return;
     }
     const mt = cls.musiktrainer;
     const ohne = cls.students.filter(s => !s.mt);
     if (!mt) {
-      this.el.innerHTML = `
+      el.innerHTML = `
         <div class="projekt-header"><h3 data-icon="music">music-trainer</h3></div>
         <p class="hint">Die Kinder spielen auf <a href="${this.SPIEL_URL}" target="_blank" rel="noopener">${this.SPIEL_URL.replace(/^https:\/\//, '')}</a>
           unter einem Pseudonym wie „PandaGeige42“. Zum Server gehen nur Pseudonyme, das Klassenpasswort und
@@ -252,11 +271,14 @@ const Musiktrainer = {
           <button data-mt="nurqr" data-icon="expand" title="Großer QR-Code zum music-trainer am Beamer – die Kinder spielen ohne Anmeldung">Nur QR-Code am Beamer (ohne Anmeldung)</button>
         </div>
         <div id="mt-login"></div>`;
-      Icons.hydrate(this.el);
+      Icons.hydrate(el);
       return;
     }
-    this.el.innerHTML = `
-      <div class="projekt-header">
+    el.innerHTML = `
+      ${cls.gruppe ? `<div class="projekt-header">
+        <h3 data-icon="list">Ergebnisse: ${this.esc(cls.name)}</h3>
+        <div class="btn-row"><button class="small" data-mt="gruppe-zu" data-icon="x">Schließen</button></div>
+      </div>` : `<div class="projekt-header">
         <h3 data-icon="music">music-trainer</h3>
         <div class="btn-row">
           <button class="primary" data-mt="namen" data-icon="list">Namensliste am Beamer</button>
@@ -270,7 +292,7 @@ const Musiktrainer = {
         <button class="small" data-mt="pw" data-icon="reset">ändern</button>
         ${ohne.length ? `<button class="small" data-mt="nachtragen" data-icon="plus">${ohne.length} neue Kinder einrichten</button>` : ''}
         <button class="small danger" data-mt="loeschen" data-icon="trash" title="Klasse samt Ergebnissen vom Server löschen – etwa am Schuljahresende">Vom Server löschen</button>
-      </p>
+      </p>`}
       <div id="mt-login"></div>
       ${this.kategorienHtml(mt)}
       <div class="mt-filter inline-form">
@@ -298,14 +320,14 @@ const Musiktrainer = {
         <button class="small" data-mt="scoreboard" data-icon="expand" title="Die Tabelle als Rangliste im Vollbild – zum Zeigen am Beamer">Scoreboard</button>
         <button class="small" data-mt="statistik" data-icon="gauge" title="Wie viel, wann und was geübt wird – ohne Namen, auch für den Beamer">Statistik</button>
         <button class="small" data-mt="klasse" data-icon="expand" title="Notenschlüssel, was zählt und Notenspiegel – ohne Namen">Notenschlüssel am Beamer</button>
-        <button class="small primary" data-mt="uebertragen" data-icon="pen" title="Die Noten der rechten Spalte als Spalte unter „Projekte & Noten“ eintragen">Noten in Klassenliste übertragen</button>
+        ${cls.gruppe ? '' : `<button class="small primary" data-mt="uebertragen" data-icon="pen" title="Die Noten der rechten Spalte als Spalte unter „Projekte & Noten“ eintragen">Noten in Klassenliste übertragen</button>`}
         <button class="small" data-mt="kopieren" data-icon="clipboard" title="Name und Note als Liste kopieren">Kopieren</button>
         <button class="small" data-mt="laden" data-icon="reset">Aktualisieren</button>
       </div>
       <div id="mt-auswertung"><p class="hint">Lade Ergebnisse …</p></div>`;
-    Icons.hydrate(this.el);
+    Icons.hydrate(el);
     // Nur holen, wenn der Reiter offen ist – nicht bei jedem Klassenwechsel
-    if (this.el.classList.contains('active')) this.laden();
+    if (cls.gruppe || el.classList.contains('active')) this.laden();
   },
 
   /* ---------- Kategorien: welche Spiele und Stufen die Tabelle zeigt und benotet ---------- */
@@ -467,6 +489,7 @@ const Musiktrainer = {
     if (!b) return;
     const aktion = b.dataset.mt;
     const cls = this.klasse();
+    if (aktion === 'gruppe-zu') { this.gruppe = null; this.gruppeEl.innerHTML = ''; return; }
     if (aktion === 'kat-alle') {
       // Ganze Zeile: ist schon alles an, alles ab – sonst alles an
       const felder = [...b.closest('.mt-kat-zeile').querySelectorAll('input[data-kat]')];
@@ -1066,6 +1089,7 @@ const Musiktrainer = {
      beim Übertragen in die Klassenliste oder mit dem Knopf hier. Ein bloßes Umschalten der
      Kategorien – etwa fürs Scoreboard – ändert es nicht. */
   meineNoteHinweis(cls) {
+    if (cls.gruppe) return '';
     const mt = cls.musiktrainer;
     const klasse = this.ergebnis?.daten?.klasse;
     if (!klasse || !('benotung' in klasse))
@@ -1899,7 +1923,6 @@ const Musiktrainer = {
             ${g.kinder.map((k, ki) => `<li><code>${this.esc(k.name)}</code>
               <button class="small danger" data-eigen="kind-weg" data-g="${gi}" data-k="${ki}" title="Zugang löschen">${Icons.raw('x')}</button></li>`).join('') || '<li class="hint">Noch keine Zugänge.</li>'}
           </ul>
-          <div class="mt-eigen-erg" data-erg="${gi}"></div>
           <div class="inline-form">
             <input type="text" data-neu-kind="${gi}" placeholder="Benutzername, z. B. Emil" maxlength="30" spellcheck="false">
             <button class="small" data-eigen="kind-neu" data-g="${gi}" data-icon="plus">Zugang anlegen</button>
@@ -1917,67 +1940,6 @@ const Musiktrainer = {
       <div id="mt-eigene-login"></div>`;
     Icons.hydrate(this.eigeneEl);
     if (this.serverTreffer) this.serverTrefferZeigen(document.getElementById('mt-server-treffer'));
-  },
-
-  eigenErg: {},   // Gruppen-ID → { daten, bereich } – nur solange die Ergebnisse offen sind
-
-  /* Sterne der eigenen Zugänge: ohne Bereich je Bereich zusammengefasst,
-     mit Bereich je Spiel; im Tooltip die Note je Stufe */
-  eigeneErgebnisse(g, ziel) {
-    const { daten, bereich } = this.eigenErg[g.id];
-    const bereiche = [...new Set(MT_SPIELE.map(s => s.bereich))];
-    const spalten = bereich
-      ? MT_SPIELE.filter(s => s.bereich === bereich).map(s => ({ titel: s.titel, spiele: [s] }))
-      : bereiche.map(b => ({ titel: b, spiele: MT_SPIELE.filter(s => s.bereich === b) }));
-    // je Stufe die Note der besten Runde (null = noch nicht gespielt)
-    const zelle = (k, sp) => {
-      let runden = 0;
-      const noten = [], info = [];
-      sp.spiele.forEach(spiel => this.reihe(spiel).forEach(i => {
-        const n = spiel.stufen[i];
-        const v = k.fortschritt[spiel.id]?.[i];
-        const note = v?.sterne ? 7 - v.sterne : null;
-        noten.push({ note, stufe: n });
-        if (!v) return;
-        runden += v.runden;
-        info.push(`${spiel.titel} – ${n}: Note ${note ?? 6} (${v.runden}× gespielt)`);
-      }));
-      const gespielt = noten.map(n => n.note).filter(n => n !== null);
-      const schnitt = gespielt.length ? gespielt.reduce((a, n) => a + n, 0) / gespielt.length : null;
-      return { noten, gespielt, schnitt, runden, info: info.join('\n') || 'noch nicht gespielt' };
-    };
-    const note = (n, kreis) => n === null ? '<span class="hint">–</span>'
-      : kreis ? `<span class="mt-kreis klein n${n}">${n}</span>` : this.gesamtNote(n);
-    // Ein Bereich gewählt: Noten aller Stufen nebeneinander; sonst der Schnitt des Bereichs
-    const inhalt = c => bereich
-      ? `<span class="mt-stufennoten">${c.noten.map(n => `<span title="${this.esc(n.stufe)}">${note(n.note, true)}</span>`).join('')}</span>`
-      : note(c.schnitt) + (c.gespielt.length ? ` <span class="hint">(${c.gespielt.length} ${c.gespielt.length === 1 ? 'Stufe' : 'Stufen'})</span>` : '');
-    ziel.innerHTML = `
-      <div class="inline-form mt-filter">
-        <label>Bereich <select data-eigen-bereich="${g.id}"><option value="">Alle Bereiche</option>
-          ${bereiche.map(b => `<option ${b === bereich ? 'selected' : ''}>${b}</option>`).join('')}
-        </select></label>
-      </div>
-      <div class="mt-tabelle-rahmen">
-      <table class="mt-tabelle">
-        <thead><tr><th>Zugang</th>${spalten.map(sp => `<th>${this.esc(sp.titel)}</th>`).join('')}<th>Schnitt</th><th>Runden</th><th>Zuletzt</th></tr></thead>
-        <tbody>
-          ${daten.schueler.map(k => {
-            const zellen = spalten.map(sp => zelle(k, sp));
-            const alle = zellen.flatMap(c => c.gespielt);
-            return `<tr><td>${this.esc(k.benutzername)}</td>
-              ${zellen.map(c => `<td class="mt-noten-zelle" title="${this.esc(c.info)}">${inhalt(c)}</td>`).join('')}
-              <td class="mt-summe">${note(alle.length ? alle.reduce((a, n) => a + n, 0) / alle.length : null)}</td>
-              <td>${zellen.reduce((a, c) => a + c.runden, 0)}</td>
-              <td class="hint">${this.zuletzt(k.zuletzt)}</td></tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-      </div>
-      <p class="hint">Note der besten Runde je Stufe (6 Sterne = Note 1). ${bereich
-        ? 'Je Spiel stehen die Stufen von leicht nach schwer nebeneinander; – = noch nicht gespielt.'
-        : 'Je Bereich der Schnitt der gespielten Stufen. Wähle einen Bereich für die Noten je Stufe.'}
-        Fahre über ein Feld für Einzelheiten.</p>`;
   },
 
   /* Gruppen auf dem Server, die hier fehlen: Der Worker hat keine Liste aller Klassen, darum
@@ -2081,15 +2043,15 @@ const Musiktrainer = {
         return this.drucken(g.name, g.passwort, g.kinder.map(k => ({ name: k.name, benutzer: k.name })));
       }
       if (b.dataset.eigen === 'ergebnisse') {
-        const ziel = this.eigeneEl.querySelector(`[data-erg="${b.dataset.g}"]`);
-        if (ziel.innerHTML) { ziel.innerHTML = ''; delete this.eigenErg[g.id]; return; }   // zweiter Klick schließt
-        ziel.innerHTML = '<p class="hint">Lade Ergebnisse …</p>';
-        const daten = await this.api(`/api/lehrer/klassen/${g.id}`);
-        this.eigenErg[g.id] = { daten, bereich: this.eigenErg[g.id]?.bereich || '' };
-        return this.eigeneErgebnisse(g, ziel);
+        if (this.gruppe === g) { this.gruppe = null; this.gruppeEl.innerHTML = ''; return; }   // zweiter Klick schließt
+        this.gruppeOeffnen(g);
+        this.gruppeEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        return;
       }
       Classes.persist();
       this.renderEigene();
+      if (this.gruppe && !gruppen.includes(this.gruppe)) { this.gruppe = null; this.gruppeEl.innerHTML = ''; }
+      else if (this.gruppe === g) this.gruppeOeffnen(g);
     } catch (err) {
       if (err.status === 401) return this.anmeldeFormular(login, nochmal);
       alert(err.status ? err.message : 'Keine Verbindung zum music-trainer-Server.');
