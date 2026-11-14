@@ -42,10 +42,12 @@ const MT_SPIELE = (() => {
     { id: 'rhythmus-bauen', bereich: 'Rhythmus', titel: 'Rhythmus nachbauen', stufen: ['Eine Lücke', 'Zwei Lücken', 'Ein halber Takt', 'Ein ganzer Takt', 'Zwei ganze Takte', 'Ohne Hilfe: ein Takt', 'Ohne Hilfe: zwei Takte', 'Ohne Hilfe: drei Takte'] },
     { id: 'rhythmus-echo', bereich: 'Rhythmus', titel: 'Rhythmus-Echo', stufen: ['Halbe und Viertel', 'Dazu Achtel', 'Nur nach Gehör'] },
     { id: 'taktfuehler', bereich: 'Rhythmus', titel: 'Taktgefühl', stufen: ['Mit Betonung', 'Mit Begleitung', 'Schnell'] },
-    // Rhythmus Prüfung (music-trainer js/pruefung.js): gemeldet werden nur Durchgänge bei „Sterne sammeln“,
-    // die Prüfung selbst speichert nichts. Stufe 0–4 = Klasse 5 Note 5–1, 5–9 = Klasse 6 Note 5–1
-    { id: 'rhythmus-pruefung', bereich: 'Rhythmus', titel: 'Rhythmus Prüfung',
+    // Rhythmus Prüfung (music-trainer js/pruefung.js), zwei getrennte Einträge:
+    // „Sterne sammeln“ – beste Runde je Zeile, Stufe 0–4 = Klasse 5 Note 5–1, 5–9 = Klasse 6 Note 5–1;
+    // „Prüfung“ – Endnote jeder abgelegten Prüfung (Sterne = 7 − Note), Stufe 0 = Klasse 5, 1 = Klasse 6
+    { id: 'rhythmus-pruefung', bereich: 'Rhythmus', titel: 'Rhythmus Prüfung · Sterne sammeln',
       stufen: [5, 6].flatMap(k => [5, 4, 3, 2, 1].map(n => `Klasse ${k} · Note ${n}`)) },
+    { id: 'rhythmus-pruefung-note', bereich: 'Rhythmus', titel: 'Rhythmus Prüfung · Prüfung', stufen: ['Klasse 5', 'Klasse 6'] },
   ];
 })();
 
@@ -330,7 +332,7 @@ const Musiktrainer = {
     // Neue Spiele (z. B. die Rhythmus Prüfung, 11.2026) kommen bei schon eingerichteten Klassen
     // erst abgewählt dazu – sonst änderte sich die Notenspalte (etwa mit „Nicht gespielt zählt als 6“)
     const k = mt.kategorien;
-    if (!k.gesehen) k.gesehen = MT_SPIELE.map(sp => sp.id).filter(id => id !== 'rhythmus-pruefung');
+    if (!k.gesehen) k.gesehen = MT_SPIELE.map(sp => sp.id).filter(id => !id.startsWith('rhythmus-pruefung'));
     const neu = MT_SPIELE.map(sp => sp.id).filter(id => !k.gesehen.includes(id));
     if (neu.length) {
       k.ohne = [...new Set([...(k.ohne || []), ...neu])];
