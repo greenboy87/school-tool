@@ -408,25 +408,29 @@ const Musiktrainer = {
           ${vorher ? `<button type="button" class="small" data-mt="kat-zurueck" title="Die Auswahl von vor „Alle Spiele zeigen“ wiederherstellen">Vorige Auswahl</button>` : ''}
         </div>
         <div class="mt-kat-zeile">${titel('Bereich')}
-          ${bereiche.map(b => chip('bereich', b, k.bereiche.includes(b), this.esc(b))).join('')}</div>
+          <span class="mt-kat-chips">${bereiche.map(b => chip('bereich', b, k.bereiche.includes(b), this.esc(b))).join('')}</span></div>
         ${spiele.length ? `
         <div class="mt-kat-zeile">${titel('Spiel')}
-          ${spiele.map(sp => chip('spiel', sp.id, !k.ohne.includes(sp.id),
-            this.esc(sp.titel) + (doppelt(sp) ? ` <span class="hint">${this.esc(sp.bereich)}</span>` : ''), `${sp.bereich}: ${sp.titel}`)).join('')}</div>` : ''}
+          <span class="mt-kat-chips">${spiele.map(sp => chip('spiel', sp.id, !k.ohne.includes(sp.id),
+            this.esc(sp.titel) + (doppelt(sp) ? ` <span class="hint">${this.esc(sp.bereich)}</span>` : ''), `${sp.bereich}: ${sp.titel}`)).join('')}</span></div>` : ''}
         ${mitStufen.map(b => {
           const imBereich = aktiv.filter(sp => sp.bereich === b);
           // Gleich benannte Stufen: eine Auswahl für alle Spiele des Bereichs (wie bisher)
-          if (!this.jeSpiel(imBereich)) return gruppen(this.stufenListe(imBereich)).map(([g, liste], n) => `
+          const ueber = mitStufen.length > 1 ? `<div class="mt-kat-ueber">${this.esc(b)}</div>` : '';
+          // Ob je Spiel gewählt wird, hängt an allen Spielen des Bereichs – so sieht der Bereich
+          // gleich aus, egal welche Spiele gerade angewählt sind
+          if (!this.jeSpiel(MT_SPIELE.filter(sp => sp.bereich === b))) return ueber + gruppen(this.stufenListe(imBereich)).map(([g, liste]) => `
         <div class="mt-kat-zeile">
-          ${mitStufen.length > 1 ? `<span class="mt-kat-bereich">${n ? '' : this.esc(b)}</span>` : ''}
           ${titel(g)}
-          ${liste.map(s => chip('stufe', s.i, this.stufenVon(k, b).includes(s.i), this.esc(s.kurz), s.titel, b)).join('')}</div>`).join('');
+          <span class="mt-kat-chips">${liste.map(s => chip('stufe', s.i, this.stufenVon(k, b).includes(s.i), this.esc(s.kurz), s.titel, b)).join('')}</span></div>`).join('');
           // Verschieden benannt: je Spiel eigene Zeilen, „Klasse 5 · 3“ in Gruppen geteilt
-          return imBereich.map((sp, si) => gruppen(this.reihe(sp).map(i => ({ i, name: sp.stufen[i], titel: '' }))).map(([g, liste], n) => `
-        <div class="mt-kat-zeile${n ? '' : ' mt-kat-spielbeginn'}">
-          <span class="mt-kat-bereich">${n ? '' : `${si || mitStufen.length < 2 ? '' : `${this.esc(b)} · `}${this.esc(sp.titel)}`}</span>
+          // Spielname als kleine Überschrift über seinen Zeilen – die Beschriftung links bleibt
+          // überall gleich breit, nichts verrutscht beim An- und Abwählen
+          return ueber + imBereich.map(sp => `<div class="mt-kat-spiel">${this.esc(sp.titel)}</div>` +
+            gruppen(this.reihe(sp).map(i => ({ i, name: sp.stufen[i], titel: '' }))).map(([g, liste]) => `
+        <div class="mt-kat-zeile">
           ${titel(g === 'Stufe' ? 'Stufen' : g)}
-          ${liste.map(s => chip('stufe', s.i, this.stufenVon(k, b, sp).includes(s.i), this.esc(s.kurz), `${sp.titel}: ${s.titel}`, b, sp.id)).join('')}</div>`).join('')).join('');
+          <span class="mt-kat-chips">${liste.map(s => chip('stufe', s.i, this.stufenVon(k, b, sp).includes(s.i), this.esc(s.kurz), `${sp.titel}: ${s.titel}`, b, sp.id)).join('')}</span></div>`).join('')).join('');
         }).join('')}
       </div>`;
   },
@@ -438,7 +442,7 @@ const Musiktrainer = {
     const spalten = this.spalten(mt);
     const teile = [...new Set(spalten.map(s => s.spiel.bereich))].map(b => {
       const spiele = [...new Set(spalten.filter(s => s.spiel.bereich === b).map(s => s.spiel))];
-      if (this.jeSpiel(MT_SPIELE.filter(sp => sp.bereich === b && !k.ohne.includes(sp.id))))
+      if (this.jeSpiel(MT_SPIELE.filter(sp => sp.bereich === b)))
         return `${b} · ${spiele.map(sp => `${sp.titel} ${spalten.filter(s => s.spiel === sp).map(s => sp.stufen[s.stufe]).join(', ')}`).join('; ')}`;
       return `${b} · ${this.stufenListe(spiele).filter(s => this.stufenVon(k, b).includes(s.i)).map(s => s.name).join(', ')}`;
     });

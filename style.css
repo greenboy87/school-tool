@@ -2752,8 +2752,10 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-haken { flex-direction: row !important; align-items: center; gap: .35rem !important; font-size: .85rem !important; color: var(--text) !important; }
 /* Kategorien: Bereich × Spiel × Stufe bestimmen Spalten und Note */
 .mt-kategorien { display: flex; flex-direction: column; gap: .4rem; margin: .9rem 0 .2rem; }
-.mt-kat-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
-.mt-kat-titel { min-width: 4.5rem; font-size: .78rem; color: var(--muted); text-align: left; background: none; border: none;
+.mt-kat-zeile { display: flex; align-items: flex-start; gap: .3rem; }
+.mt-kat-zeile > .mt-kat-titel { margin-top: .35rem; }
+.mt-kat-chips { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; flex: 1; min-width: 0; }
+.mt-kat-titel { min-width: 5.6rem; flex: none; font-size: .78rem; color: var(--muted); text-align: left; background: none; border: none;
   padding: .15rem .3rem; margin-left: -.3rem; border-radius: 6px; cursor: pointer; font-weight: 600; }
 .mt-kat-titel:hover { color: var(--accent); background: var(--active-soft); }
 .mt-kat-bereich { min-width: 5.2rem; font-size: .75rem; font-weight: 600; color: var(--muted); }
@@ -3169,3 +3171,8 @@ html.locked .live-anzeige { display: none; }
 .mt-server-suche { margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 .mt-treffer li { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .6rem; }
 .mt-treffer li button { margin-left: auto; }
+
+/* Stufenwahl: Überschriften für Bereich und Spiel, Beschriftung links überall gleich breit */
+.mt-kat-ueber { margin: .55rem 0 0; font-size: .8rem; font-weight: 700; color: var(--text); padding-top: .45rem; border-top: 1px solid var(--border); }
+.mt-kat-spiel { margin: .35rem 0 -.1rem; font-size: .74rem; font-weight: 600; color: var(--muted); padding-left: calc(5.6rem + .3rem); }
+.mt-kat-ueber + .mt-kat-spiel { margin-top: .15rem; }
