@@ -1984,9 +1984,12 @@ const Musiktrainer = {
     const treffer = [];
     let frei = 0;
     ziel.innerHTML = '<p class="hint">Suche …</p>';
-    for (let start = 1; start <= 400 && (start <= max || frei < 25); start += 5) {
-      const nummern = Array.from({ length: 5 }, (_, i) => start + i).filter(n => !bekannt.has(n));
-      const antworten = await Promise.all(nummern.map(n => this.api(`/api/lehrer/klassen/${n}`)
+    // „seit“ in der Zukunft: der Server schickt Verlauf und Besuche nicht mit – nur Name, Passwort, Zugänge
+    const seit = Math.floor(Date.now() / 1000) + 86400;
+    for (let start = 1; start <= 400 && (start <= max || frei < 25); start += 8) {
+      ziel.innerHTML = `<p class="hint">Suche … Nummer ${start} von etwa ${Math.max(max, start) + 25}${treffer.length ? ` · ${treffer.length} gefunden` : ''}</p>`;
+      const nummern = Array.from({ length: 8 }, (_, i) => start + i).filter(n => !bekannt.has(n));
+      const antworten = await Promise.all(nummern.map(n => this.api(`/api/lehrer/klassen/${n}?seit=${seit}`)
         .catch(err => { if (err.status === 404) return null; throw err; })));
       for (const d of antworten) {
         if (d) { treffer.push(d); frei = 0; } else frei++;
@@ -2050,7 +2053,11 @@ const Musiktrainer = {
         g.passwort = r.passwort;
         alert('Passwort geändert. Die alten Kärtchen und QR-Codes gelten nicht mehr – bitte neu drucken.');
       }
-      if (b.dataset.eigen === 'suchen') return this.serverSuchen(document.getElementById('mt-server-treffer'));
+      // await: sonst ginge ein Fehler (z. B. Anmeldung abgelaufen) am catch unten vorbei
+      if (b.dataset.eigen === 'suchen') {
+        const ziel = document.getElementById('mt-server-treffer');
+        try { return await this.serverSuchen(ziel); } catch (err) { ziel.innerHTML = ''; throw err; }
+      }
       if (b.dataset.eigen === 'uebernehmen') {
         const d = this.serverTreffer?.find(t => String(t.klasse.id) === b.dataset.id);
         if (!d || gruppen.some(x => x.id === d.klasse.id)) return;
