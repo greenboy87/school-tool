@@ -1995,7 +1995,10 @@ const Musiktrainer = {
         if (d) { treffer.push(d); frei = 0; } else frei++;
       }
     }
-    this.serverTreffer = treffer;
+    // Klassen aus dem Reiter Klassen nicht vorschlagen – auch ältere Server-Einträge mit demselben
+    // Namen nicht (z. B. eine früher eingerichtete 5e), das sind keine eigenen Gruppen
+    const klassenNamen = new Set(Classes.data.classes.map(c => (c.name || '').trim().toLowerCase()));
+    this.serverTreffer = treffer.filter(d => !klassenNamen.has((d.klasse.name || '').trim().toLowerCase()));
     this.serverTrefferZeigen(ziel);
   },
 
@@ -2007,7 +2010,7 @@ const Musiktrainer = {
         ${t.map(d => `<li><strong>${this.esc(d.klasse.name)}</strong> <span class="hint">Passwort <code>${this.esc(d.klasse.passwort)}</code> ·
           ${d.schueler.length ? d.schueler.map(k => this.esc(k.benutzername)).join(', ') : 'keine Zugänge'}</span>
           <button class="small primary" data-eigen="uebernehmen" data-id="${d.klasse.id}">Übernehmen</button></li>`).join('')}
-      </ul>` : '<p class="hint">Keine fehlenden Gruppen gefunden – hier ist alles eingetragen.</p>';
+      </ul>` : '<p class="hint">Keine fehlenden Gruppen gefunden – alle eigenen Gruppen sind hier eingetragen.</p>';
   },
 
   async klickEigene(e) {
