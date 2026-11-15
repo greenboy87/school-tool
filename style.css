@@ -3218,3 +3218,4 @@ html.locked .live-anzeige { display: none; }
 .tr-fern { margin-top: .8rem; }
 .tr-fern summary { cursor: pointer; font-weight: 600; }
 .tr-fern .mini-gesicht { margin-right: .4rem; vertical-align: middle; }
+.tr-vergleich .tr-summe td { border-top: 2px solid var(--border); border-bottom: 0; font-weight: 700; }

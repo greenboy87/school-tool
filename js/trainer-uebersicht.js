@@ -65,7 +65,8 @@ const TrainerUebersicht = {
 
   /* Fehlende Klassen nacheinander holen (je Klasse wenige Kilobyte) */
   async laden(neu = false) {
-    if (this.laedt) return;
+    // Lädt schon etwas: nur neu zeichnen; was inzwischen dazugewählt wurde, holt die Schleife unten mit
+    if (this.laedt) { if (neu) this.nochmal = true; return this.render(); }
     if (neu) { this.daten = {}; this.fehlt.clear(); }
     const quellen = this.quellen();
     const wahl = this.gewaehlt(quellen);
@@ -95,7 +96,9 @@ const TrainerUebersicht = {
       return;
     }
     this.laedt = false;
-    this.render();
+    // Während des Ladens dazugewählte Klassen (etwa mit „Alle“) jetzt auch holen
+    const nochmal = this.nochmal; this.nochmal = false;
+    this.laden(nochmal);
   },
 
   anmelden() {
@@ -318,6 +321,16 @@ const TrainerUebersicht = {
           <td>${Musiktrainer.minuten(r.sek7)} · ${r.runden7} R.</td>
           <td>${r.heuteKinder ? `${r.heuteKinder} Kinder` : '–'}</td>
           <td>${r.nie || '–'}</td></tr>`).join('')}</tbody>
+        <tfoot>${(() => {
+          const a = reihen.reduce((x, r) => ({ kinder: x.kinder + r.kinder, aktiv: x.aktiv + r.aktiv, runden: x.runden + r.runden, sek: x.sek + r.sek,
+            zuhauseSek: x.zuhauseSek + r.zuhauseSek, zuhauseKinder: x.zuhauseKinder + r.zuhauseKinder, anmeldetage: x.anmeldetage + r.anmeldetage,
+            sek7: x.sek7 + r.sek7, runden7: x.runden7 + r.runden7, heuteKinder: x.heuteKinder + r.heuteKinder, nie: x.nie + r.nie }),
+            { kinder: 0, aktiv: 0, runden: 0, sek: 0, zuhauseSek: 0, zuhauseKinder: 0, anmeldetage: 0, sek7: 0, runden7: 0, heuteKinder: 0, nie: 0 });
+          return `<tr class="tr-summe"><td><b>Alle zusammen</b></td><td>${a.aktiv} von ${a.kinder}</td><td>${pz(a.aktiv, a.kinder)}</td>
+            <td>${Musiktrainer.tausend(a.runden)}</td><td>${Musiktrainer.minuten(a.sek)}</td><td>${a.aktiv ? Musiktrainer.minuten(a.sek / a.aktiv) : '–'}</td>
+            <td>${Musiktrainer.minuten(a.zuhauseSek)} <small class="hint">(${a.zuhauseKinder} Kinder)</small></td><td>${Musiktrainer.tausend(a.anmeldetage)}</td>
+            <td>${Musiktrainer.minuten(a.sek7)} · ${a.runden7} R.</td><td>${a.heuteKinder ? `${a.heuteKinder} Kinder` : '–'}</td><td>${a.nie || '–'}</td></tr>`;
+        })()}</tfoot>
       </table></div>`;
   },
 
