@@ -3190,3 +3190,31 @@ html.locked .live-anzeige { display: none; }
 .mt-kat-ueber { margin: .55rem 0 0; font-size: .8rem; font-weight: 700; color: var(--text); padding-top: .45rem; border-top: 1px solid var(--border); }
 .mt-kat-spiel { margin: .35rem 0 -.1rem; font-size: .74rem; font-weight: 600; color: var(--muted); padding-left: calc(5.6rem + .3rem); }
 .mt-kat-ueber + .mt-kat-spiel { margin-top: .15rem; }
+
+/* ---------- Reiter Trainer: Link zum music-trainer und Übersicht über die Klassen ---------- */
+.trainer-uebersicht { max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
+.trainer-uebersicht > .card { margin: 0; }
+.tr-start { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.tr-start h2 { margin: 0 0 .2rem; }
+.tr-start p { margin: 0; }
+.tr-oeffnen { display: inline-flex; align-items: center; gap: .4rem; padding: .75rem 1.4rem; border-radius: var(--radius-sm);
+  background: var(--accent); color: #fff; font-weight: 700; font-size: 1.05rem; text-decoration: none; white-space: nowrap; }
+.tr-oeffnen:hover { filter: brightness(1.1); }
+.tr-auswahl h3 { margin: 0 0 .6rem; }
+.tr-chips { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-bottom: .5rem; }
+.tr-jahr { color: var(--muted); font-size: .85rem; min-width: 7rem; }
+.tr-chip { display: inline-flex; align-items: center; gap: .3rem; margin: 0; padding: .3rem .75rem; border: 1px solid var(--border);
+  border-radius: 999px; cursor: pointer; font-weight: 600; font-size: .95rem; user-select: none; }
+.tr-chip input { position: absolute; opacity: 0; pointer-events: none; }
+.tr-chip.an { background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent); color: var(--text); }
+.tr-chip.weg { opacity: .5; text-decoration: line-through; }
+.tr-chip:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tr-wahl-knoepfe { align-items: center; margin-top: .3rem; }
+.tr-tag { display: inline-flex; align-items: center; gap: .4rem; margin: 0; }
+.tr-tag-tabelle .mini-gesicht { margin-right: .4rem; vertical-align: middle; }
+.tr-spiele { white-space: normal !important; color: var(--muted); font-size: .85rem; min-width: 14rem; }
+.tr-leer { text-align: center; }
+@media (max-width: 600px) { .tr-jahr { min-width: 0; width: 100%; } .tr-oeffnen { width: 100%; justify-content: center; } }
+.tr-fern { margin-top: .8rem; }
+.tr-fern summary { cursor: pointer; font-weight: 600; }
+.tr-fern .mini-gesicht { margin-right: .4rem; vertical-align: middle; }

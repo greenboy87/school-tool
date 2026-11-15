@@ -178,21 +178,27 @@ const Musiktrainer = {
         <span class="hint mt-fehler"></span>
       </form>
       <div class="inline-form mt-notiz">
-        <input type="text" placeholder="Notiz – Kürzel tippen, Enter kopiert" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <input type="text" placeholder="Kürzel der Textersetzung tippen, dann Enter" autocomplete="off" name="mt-notiz">
         <span class="hint mt-notiz-info"></span>
       </div>
       <p class="hint">Das Lehrer-Passwort aus dem Cloudflare-Worker (LEHRER_PASSWORT). Die Anmeldung gilt 12 Stunden auf diesem Gerät.</p>`;
     Icons.hydrate(ziel);
     const form = ziel.querySelector('form');
-    form.querySelector('input').focus();
-    /* Notizfeld: Textersetzung klappt nicht in Passwortfeldern, hier schon.
-       Enter kopiert den Text, setzt ihn ins Passwortfeld und leert die Notiz
-       (nichts wird gespeichert). */
+    /* Notizfeld für die Textersetzung des Mac: In Passwortfeldern ersetzt macOS nichts, in einem
+       normalen Textfeld schon – aber nur, wenn Autokorrektur und Rechtschreibprüfung dort nicht
+       abgeschaltet sind (autocorrect="off" / spellcheck="false" verhinderten es bis v412).
+       Kürzel tippen, Enter: macOS ersetzt beim Enter, darum wird erst beim Loslassen der Taste
+       gelesen. Der Text wandert ins Passwortfeld, wird kopiert und das Notizfeld geleert
+       (nichts wird gespeichert). Ein zweites Enter meldet an. */
     const notiz = ziel.querySelector('.mt-notiz input'), info = ziel.querySelector('.mt-notiz-info');
-    notiz.addEventListener('keydown', async e => {
-      if (e.key !== 'Enter' || !notiz.value) return;
-      e.preventDefault();
-      const text = notiz.value;
+    notiz.focus();
+    notiz.addEventListener('input', e => {
+      if (e.inputType === 'insertReplacementText') info.textContent = 'Ersetzt – Enter übernimmt.';
+    });
+    notiz.addEventListener('keyup', async e => {
+      if (e.key !== 'Enter') return;
+      const text = notiz.value.trim();
+      if (!text) return;
       let kopiert = false;
       try { await navigator.clipboard.writeText(text); kopiert = true; }
       catch { notiz.select(); kopiert = document.execCommand && document.execCommand('copy'); }

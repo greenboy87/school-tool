@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   Stundenplan.init();
   Ablage.init();
   Musiktrainer.init();
+  TrainerUebersicht.init();
 
   /* Höhe der oberen Leiste für alles, was darunter stehen bleibt (Steckbrief) */
   const leiste = document.querySelector('.topbar');
