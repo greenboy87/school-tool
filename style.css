@@ -3219,3 +3219,12 @@ html.locked .live-anzeige { display: none; }
 .tr-fern summary { cursor: pointer; font-weight: 600; }
 .tr-fern .mini-gesicht { margin-right: .4rem; vertical-align: middle; }
 .tr-vergleich .tr-summe td { border-top: 2px solid var(--border); border-bottom: 0; font-weight: 700; }
+.tr-chip.ohne { background: none; color: var(--muted); opacity: .55; border-style: dashed; font-weight: 500; }
+.tr-chip.ohne:hover { opacity: .9; }
+.tr-ohne-hinweis { margin: .1rem 0 .4rem; }
+.tr-uebung { margin-top: .6rem; padding-top: .7rem; border-top: 1px solid var(--border); gap: .6rem 1rem; }
+.tr-uebung label { display: inline-flex; align-items: center; gap: .4rem; margin: 0; }
+.tr-leistung td, .tr-leistung th { text-align: center; }
+.tr-leistung td small { margin-left: .2rem; }
+.tr-leistung .tr-summe td { border-top: 2px solid var(--border); }
+.trainer-uebersicht h3 small { margin-left: .4rem; font-weight: 500; }

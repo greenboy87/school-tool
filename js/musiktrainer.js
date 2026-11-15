@@ -1944,6 +1944,7 @@ const Musiktrainer = {
               <button class="small" data-eigen="ergebnisse" data-g="${gi}" data-icon="list" ${g.kinder.length ? '' : 'disabled'}>Ergebnisse</button>
               <button class="small" data-eigen="qr" data-g="${gi}" data-icon="expand" ${g.kinder.length ? '' : 'disabled'}>QR-Codes</button>
               <button class="small" data-eigen="drucken" data-g="${gi}" data-icon="printer" ${g.kinder.length ? '' : 'disabled'}>Kärtchen</button>
+              <button class="small" data-eigen="umbenennen" data-g="${gi}" data-icon="pen" title="Namen der Gruppe ändern – Passwort und Zugänge bleiben">Umbenennen</button>
               <button class="small" data-eigen="pw-aendern" data-g="${gi}" data-icon="pen" title="Passwort der Gruppe ändern – die Kärtchen danach neu drucken">Passwort ändern</button>
               <button class="small danger" data-eigen="gruppe-weg" data-g="${gi}" data-icon="trash">Gruppe löschen</button>
             </div>
@@ -2044,6 +2045,12 @@ const Musiktrainer = {
         if (!confirm(`Gruppe „${g.name}“ mit allen Zugängen und Ergebnissen löschen?`)) return;
         await this.api(`/api/lehrer/klassen/${g.id}`, { methode: 'DELETE' }).catch(err => { if (err.status !== 404) throw err; });
         gruppen.splice(b.dataset.g, 1);
+      }
+      if (b.dataset.eigen === 'umbenennen') {
+        const neu = (prompt('Neuer Name der Gruppe:', g.name) || '').trim().slice(0, 40);
+        if (!neu || neu === g.name) return;
+        const r = await this.api(`/api/lehrer/klassen/${g.id}`, { methode: 'PATCH', body: { name: neu } });
+        g.name = r.name || neu;
       }
       if (b.dataset.eigen === 'pw-aendern') {
         const neu = (prompt(`Neues Passwort für „${g.name}“ (mind. 4 Zeichen):`, g.passwort) || '').trim();
