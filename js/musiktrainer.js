@@ -1892,6 +1892,29 @@ const Musiktrainer = {
     setTimeout(() => window.print(), 300);
   },
 
+  /* Große Kärtchen für eigene Zugänge: QR-Code groß in der Mitte, darunter Name,
+     Benutzer und Passwort, ganz unten der Kurzlink zum Eintippen – wie die
+     Luke-und-Linus-Kärtchen */
+  grossDrucken(passwort, kinder) {
+    let d = document.getElementById('mt-druck');
+    if (!d) { d = document.createElement('div'); d.id = 'mt-druck'; document.body.appendChild(d); }
+    d.innerHTML = `<div class="mt-gross">
+      <h1>music-trainer · Anmelden mit dem QR-Code</h1>
+      <div class="mt-gross-raster">${kinder.map((k, i) => `
+        <div class="mt-gross-karte">
+          <div class="mt-gross-qr" id="mt-gross-qr-${i}"></div>
+          <div class="mt-gross-name">${this.esc(k.name)}</div>
+          <div class="mt-gross-daten">Benutzer <code>${this.esc(k.benutzer)}</code> · Passwort <code>${this.esc(passwort)}</code></div>
+          <div class="mt-gross-kurz">ohne Kamera: im Browser eintippen<strong>${this.esc(this.KURZ_URL)}</strong></div>
+        </div>`).join('')}</div>
+    </div>`;
+    kinder.forEach((k, i) => new QRCode(document.getElementById(`mt-gross-qr-${i}`),
+      { text: this.anmeldeLink(k.benutzer, passwort), width: 400, height: 400, correctLevel: QRCode.CorrectLevel.M }));
+    document.body.classList.add('mt-drucken');
+    window.addEventListener('afterprint', () => document.body.classList.remove('mt-drucken'), { once: true });
+    setTimeout(() => window.print(), 300);
+  },
+
   /* ---------- Eigene Zugänge (Extras) ---------- */
   gruppen() {
     Classes.data.musiktrainer ||= { gruppen: [] };
@@ -2040,7 +2063,7 @@ const Musiktrainer = {
         return this.qrZeigen(g.name, g.passwort, g.kinder.map(k => ({ name: k.name, benutzer: k.name })));
       }
       if (b.dataset.eigen === 'drucken') {
-        return this.drucken(g.name, g.passwort, g.kinder.map(k => ({ name: k.name, benutzer: k.name })));
+        return this.grossDrucken(g.passwort, g.kinder.map(k => ({ name: k.name, benutzer: k.name })));
       }
       if (b.dataset.eigen === 'ergebnisse') {
         if (this.gruppe === g) { this.gruppe = null; this.gruppeEl.innerHTML = ''; return; }   // zweiter Klick schließt

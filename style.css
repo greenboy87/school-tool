@@ -2715,6 +2715,20 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
   body.mt-drucken > *:not(#mt-druck) { display: none !important; }
   body.mt-drucken { background: #fff !important; color: #000; }
   body.mt-drucken #mt-druck { display: block; }
+  /* Die allgemeine Druckregel (body * unsichtbar außer .print-area) hier aufheben */
+  body.mt-drucken #mt-druck, body.mt-drucken #mt-druck * { visibility: visible; }
+  /* Große Kärtchen (eigene Zugänge) */
+  .mt-gross { color: #1e1633; font-family: -apple-system, "Segoe UI", sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .mt-gross h1 { font-size: 15pt; margin: 0 0 6mm; }
+  .mt-gross-raster { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; }
+  .mt-gross-karte { box-sizing: border-box; min-width: 0; border: 2px dashed #a89fcc; border-radius: 4mm; padding: 6mm; text-align: center; break-inside: avoid; }
+  .mt-gross-qr { display: flex; justify-content: center; margin-bottom: 4mm; line-height: 0; }
+  .mt-gross-qr img, .mt-gross-qr canvas { width: 58mm !important; height: 58mm !important; }
+  .mt-gross-name { font-size: 22pt; font-weight: 800; }
+  .mt-gross-daten { margin-top: 1.5mm; font-size: 10pt; color: #4a4170; }
+  .mt-gross-daten code { font-family: Menlo, monospace; font-size: 11pt; color: #1e1633; white-space: nowrap; }
+  .mt-gross-kurz { margin-top: 4mm; padding-top: 3mm; border-top: 1px solid #e5e0f5; font-size: 9.5pt; color: #615a7d; }
+  .mt-gross-kurz strong { display: block; font-size: 19pt; color: #7c3aed; white-space: nowrap; }
   .mt-karten { display: grid; grid-template-columns: 1fr 1fr; }
   .mt-karte { border: 1px dashed #999; padding: 5mm 6mm; break-inside: avoid; font-size: 11pt; color: #000;
     display: flex; gap: 4mm; align-items: center; }
