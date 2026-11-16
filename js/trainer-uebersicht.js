@@ -338,7 +338,7 @@ const TrainerUebersicht = {
   leistungHtml(quellen) {
     const sp = this.spiel();
     const seit = +this.opt.zeitraum ? Date.now() / 1000 - this.opt.zeitraum * 86400 : 0;
-    const schnitt3 = z => { const t = [...z].sort((a, b) => b - a).slice(0, 3); return t.reduce((a, n) => a + n, 0) / t.length; };
+    const schnitt3 = z => { const t = [...z].sort((a, b) => b - a).slice(0, Musiktrainer.wievieleZaehlen(sp.id)); return t.reduce((a, n) => a + n, 0) / t.length; };
     const rechnen = verlauf => {
       const je = {};
       verlauf.forEach(v => { if (v.zeit >= seit) ((je[v.stufe] ||= {})[v.schueler_id] ||= []).push(v); });

@@ -674,6 +674,10 @@ const Musiktrainer = {
     this.tabelle(cls, ziel);
   },
 
+  /* Bei der Rhythmus-Prüfung (Endnote) zählt nur die beste Prüfung, sonst die besten 3 Runden.
+     Muss zu Fortschritt.wievieleZaehlen() im music-trainer (js/app.js) passen. */
+  wievieleZaehlen(spiel) { return spiel === 'rhythmus-pruefung-note' ? 1 : 3; },
+
   /* Je Kind und „spiel|stufe“ aus den Runden im Zeitraum: Sterne als Schnitt der drei besten
      Runden (wer weniger gespielt hat: der gespielten), ebenso Prozent richtig; Punkte = Rekord */
   werte(tage) {
@@ -682,8 +686,8 @@ const Musiktrainer = {
     this.ergebnis.daten.verlauf.forEach(v => {
       if (v.zeit >= seit) ((runden[v.schueler_id] ||= {})[`${v.spiel}|${v.stufe}`] ||= []).push(v);
     });
-    const schnitt3 = zahlen => {
-      const top = [...zahlen].sort((x, y) => y - x).slice(0, 3);
+    const schnitt3 = (zahlen, n = 3) => {
+      const top = [...zahlen].sort((x, y) => y - x).slice(0, n);
       return top.length ? top.reduce((x, n) => x + n, 0) / top.length : null;
     };
     const werte = {};
@@ -691,10 +695,11 @@ const Musiktrainer = {
       const w = werte[id] = {};
       Object.entries(stufen).forEach(([schluessel, liste]) => {
         const mitAnteil = liste.filter(v => v.von);
+        const n = this.wievieleZaehlen(schluessel.split('|')[0]);
         w[schluessel] = {
-          sterne: schnitt3(liste.map(v => v.sterne)),
-          beste: liste.map(v => v.sterne).sort((x, y) => y - x).slice(0, 3),
-          prozent: mitAnteil.length ? schnitt3(mitAnteil.map(v => Math.min(100, 100 * v.richtig / v.von))) : null,
+          sterne: schnitt3(liste.map(v => v.sterne), n),
+          beste: liste.map(v => v.sterne).sort((x, y) => y - x).slice(0, n),
+          prozent: mitAnteil.length ? schnitt3(mitAnteil.map(v => Math.min(100, 100 * v.richtig / v.von)), n) : null,
           punkte: Math.max(...liste.map(v => v.punkte)),
           // Richtige der besten Runde; Blitzlesen gibt 10 Punkte je Note, das geht auch für ältere Runden
           richtig: Math.max(-1, ...liste.map(v => v.richtig ?? (v.spiel.endsWith('-blitz') ? Math.round(v.punkte / 10) : -1))),
@@ -837,7 +842,7 @@ const Musiktrainer = {
     const kurz = namen.filter(n => this.STUFE_KURZ[n]).map(n => `${this.STUFE_KURZ[n]} = ${n}`);
     const nummer = namen.some(n => !this.STUFE_KURZ[n]);
     const text = {
-      note: `Note je Aufgabe aus dem Schnitt der 3 besten Runden (wer weniger gespielt hat: der gespielten);
+      note: `Note je Aufgabe aus dem Schnitt der 3 besten Runden (wer weniger gespielt hat: der gespielten; bei der Rhythmus-Prüfung nur die beste Prüfung);
         6&nbsp;Sterne = 1 · 5 = 2 · 4 = 3 · 3 = 4 · 2 = 5 · 1&nbsp;Stern = 6. Rechts der Durchschnitt.`,
       sterne: 'Sterne im Schnitt der 3 besten Runden (6/6 = Note 1 … 1/6 = Note 6). Rechts alle zusammen von den möglichen.',
       prozent: `Richtig beantwortet im Schnitt der 3 besten Runden, von 10 Aufgaben (Blitzlesen: richtige Noten vom Ziel für
@@ -1714,7 +1719,7 @@ const Musiktrainer = {
       <div class="mt-beamer-kopf">
         <div>
           <h2>${this.esc(cls.name)}: So entsteht deine music-trainer-Note</h2>
-          <p>Je Aufgabe zählt der <b>Schnitt deiner 3 besten Runden</b> – du kannst so oft üben, wie du willst.</p>
+          <p>Je Aufgabe zählt der <b>Schnitt deiner 3 besten Runden</b> – du kannst so oft üben, wie du willst. Bei der Rhythmus-Prüfung zählt deine <b>beste Prüfung</b>.</p>
         </div>
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
