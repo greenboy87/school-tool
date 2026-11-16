@@ -544,12 +544,12 @@ const Musiktrainer = {
         vorname: doppelt(s.first) && s.last ? `${s.first} ${s.last[0]}.` : s.first,
       })));
     }
-    if (aktion === 'namen') return this.namenslisteZeigen(cls.name, cls.musiktrainer.passwort,
-      cls.students.filter(s => s.mt).map(s => ({ name: this.name(s), benutzer: s.mt.name })));
-    if (aktion === 'liste') return this.listeDrucken(cls.name, cls.musiktrainer.passwort,
-      cls.students.filter(s => s.mt).map(s => ({ name: this.name(s), benutzer: s.mt.name })));
-    if (aktion === 'drucken') return this.drucken(cls.name, cls.musiktrainer.passwort,
-      cls.students.filter(s => s.mt).map(s => ({ name: this.name(s), benutzer: s.mt.name })));
+    // Reihenfolge wie in der Klassenliste: nach Nachnamen, angezeigt „Vorname Nachname“
+    const zugaenge = () => cls.students.filter(s => s.mt).sort((a, c) => this.nachNachname(a, c))
+      .map(s => ({ name: this.name(s), benutzer: s.mt.name }));
+    if (aktion === 'namen') return this.namenslisteZeigen(cls.name, cls.musiktrainer.passwort, zugaenge());
+    if (aktion === 'liste') return this.listeDrucken(cls.name, cls.musiktrainer.passwort, zugaenge());
+    if (aktion === 'drucken') return this.drucken(cls.name, cls.musiktrainer.passwort, zugaenge());
     if (aktion === 'pw') {
       const neu = prompt('Neues Klassenpasswort (4 bis 30 Zeichen). Alle Kinder brauchen dann das neue.', cls.musiktrainer.passwort);
       if (!neu || neu === cls.musiktrainer.passwort) return;
@@ -1752,13 +1752,14 @@ const Musiktrainer = {
   namenslisteZeigen(titel, passwort, kinder) {
     this.qrSeite = null;
     const b = this.beamerEbene();
-    const sortiert = [...kinder].sort((a, c) => a.name.localeCompare(c.name, 'de'));
+    const sortiert = kinder;   // schon nach Nachnamen sortiert
     b.innerHTML = `<div class="mt-namen-ansicht">
       <div class="mt-beamer-kopf">
         <div>
           <h2>${this.esc(titel)}: deine Anmeldung</h2>
           <p>Schreib dir Adresse, Benutzername und Passwort auf – dann kannst du auch zu Hause spielen.</p>
         </div>
+        <button type="button" class="small mt-teams-knopf" title="Beitrag mit Link und QR-Bild kopieren – zum Einfügen in Teams oder anderswo">Für Teams kopieren</button>
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
       <div class="mt-zugangsblock" title="Der QR-Code führt nur zur Anmeldeseite – Benutzername und Passwort tippt jedes Kind selbst">
@@ -1772,6 +1773,7 @@ const Musiktrainer = {
       <div class="mt-passwort-gross"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
     </div>`;
     this.allgemeinQr(document.getElementById('mt-allgemein-qr'), 460);
+    b.querySelector('.mt-teams-knopf').onclick = e => this.teamsKopieren(e.currentTarget);
     // Das Vollbild kommt erst kurz nach dem Klick – dann über den resize-Lauscher neu einpassen
     this.beamerAnpassen = () => this.namenslisteEinpassen(b, sortiert.length);
     this.beamerAnpassen();
@@ -1835,6 +1837,56 @@ const Musiktrainer = {
     }
   },
 
+  /* Beitrag für Teams (oder Mail, Padlet …): Überschrift, Link, Gruß und ein Bild mit
+     QR-Code und Kurzadresse. Als HTML mit eingebettetem Bild, dazu reiner Text als Ersatz.
+     Ohne Namen und ohne Passwort – der Beitrag kann überall stehen. */
+  async teamsKopieren(knopf) {
+    // Synchron im Klick bauen – Safari erlaubt das Kopieren sonst nicht
+    const bild = this.teamsBild();
+    const link = 'https://' + this.KURZ_URL;
+    const html = `<h2>Music-Trainer</h2>
+      <p><b><a href="${link}">${this.esc(this.KURZ_URL)}</a></b><br>Viel Spaß 🙂</p>
+      ${bild ? `<p><a href="${link}"><img src="${bild}" width="620" alt="QR-Code zu ${this.esc(this.KURZ_URL)}"></a></p>` : ''}`;
+    const text = `Music-Trainer\n\n${this.KURZ_URL}\nViel Spaß 🙂`;
+    const alt = knopf.textContent;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([text], { type: 'text/plain' }),
+      })]);
+      knopf.textContent = 'Kopiert – in Teams einfügen';
+    } catch {
+      try { await navigator.clipboard.writeText(text); knopf.textContent = 'Nur Text kopiert'; }
+      catch { return prompt('Kopieren ging nicht automatisch – hier markieren und kopieren:', text); }
+    }
+    setTimeout(() => { knopf.textContent = alt; }, 2500);
+  },
+
+  /* Das Bild zum Beitrag: dunkles Lila, links der QR-Code auf weißem Feld, rechts die Adresse */
+  teamsBild() {
+    if (typeof QRCode === 'undefined') return null;
+    const W = 1240, H = 220, r = 22;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    const rund = (x, y, w, h, rr) => { g.beginPath(); g.roundRect(x, y, w, h, rr); };
+    const verlauf = g.createLinearGradient(0, 0, W, H);
+    verlauf.addColorStop(0, '#120d24'); verlauf.addColorStop(0.6, '#24183f'); verlauf.addColorStop(1, '#3d2a63');
+    rund(0, 0, W, H, r); g.fillStyle = verlauf; g.fill();
+    rund(1, 1, W - 2, H - 2, r); g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 2; g.stroke();
+    const q = 180, x0 = 22, y0 = (H - q) / 2;
+    rund(x0, y0, q, q, 14); g.fillStyle = '#fff'; g.fill();
+    g.fillStyle = '#ecd5ff';
+    g.font = '600 92px ui-monospace, "SF Mono", Menlo, Consolas, monospace';
+    g.textBaseline = 'middle';
+    g.fillText(this.KURZ_URL, x0 + q + 60, H / 2 + 4);
+    const feld = document.createElement('div');
+    new QRCode(feld, { text: this.allgemeinLink(), width: q - 24, height: q - 24, correctLevel: QRCode.CorrectLevel.M });
+    const qr = feld.querySelector('canvas');
+    if (qr) g.drawImage(qr, x0 + 12, y0 + 12, q - 24, q - 24);
+    return c.toDataURL('image/png');
+  },
+
   /* Allgemeiner Link: nur zur Anmeldeseite, ohne Benutzername und Passwort */
   allgemeinLink() { return this.SPIEL_URL + '#/anmelden'; },
   allgemeinQr(feld, groesse) {
@@ -1847,7 +1899,7 @@ const Musiktrainer = {
   listeDrucken(titel, passwort, kinder) {
     let d = document.getElementById('mt-druck');
     if (!d) { d = document.createElement('div'); d.id = 'mt-druck'; document.body.appendChild(d); }
-    const sortiert = [...kinder].sort((a, c) => a.name.localeCompare(c.name, 'de'));
+    const sortiert = kinder;   // schon nach Nachnamen sortiert
     const adresse = this.KURZ_URL;
     d.innerHTML = `<div class="mt-liste">
       <div class="mt-liste-kopf">
