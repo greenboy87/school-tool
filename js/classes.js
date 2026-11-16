@@ -269,14 +269,24 @@ const Classes = {
       if (file) this.handleStudentFile(file);
     });
 
-    // Projekte
+    // Projekte – das Datum steht schon auf heute (Ortszeit; bleibt die Seite über Nacht
+    // offen, rückt ein unverändertes Datum beim nächsten Antippen auf den neuen Tag)
+    const heute = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+    const datumFeld = document.getElementById('new-project-date');
+    let autoDatum = datumFeld.value = heute();
+    const gruppenDatum = document.getElementById('manual-project-date');
+    if (gruppenDatum && !gruppenDatum.value) gruppenDatum.value = heute();
+    const datumAuffrischen = () => { if (datumFeld.value === autoDatum || !datumFeld.value) autoDatum = datumFeld.value = heute(); };
+    document.getElementById('new-project-name').addEventListener('focus', datumAuffrischen);
     document.getElementById('form-new-project').addEventListener('submit', e => {
       e.preventDefault();
       const name = document.getElementById('new-project-name').value.trim();
       if (!name) return;
-      const date = document.getElementById('new-project-date').value || new Date().toISOString().slice(0, 10);
+      datumAuffrischen();
+      const date = datumFeld.value || heute();
       this.createProject(name, date, null);
       document.getElementById('new-project-name').value = '';
+      autoDatum = datumFeld.value = heute();
     });
     document.getElementById('btn-delete-project').addEventListener('click', () => {
       const cls = this.currentClass(), p = this.currentProject();
@@ -2033,7 +2043,11 @@ const Classes = {
     if (!box.children.length) box.innerHTML = '<p class="hint">Dieses Projekt hat noch keine Note und keine eigenen Spalten.</p>';
     // Sonst „Weiter“ – dann klappt am iPad keine Tastatur auf
     if (erstes && inDieNote) { erstes.focus(); erstes.select(); }
-    else document.getElementById('ne-weiter').focus();
+    else {
+      // Beim letzten Kind ist „weiter“ gesperrt – der Fokus ginge sonst verloren und ←/→ hingen
+      const w = document.getElementById('ne-weiter'), z = document.getElementById('ne-zurueck');
+      (!w.disabled ? w : !z.disabled ? z : document.getElementById('ne-zu')).focus();
+    }
   },
 
   renderSpaltenEditor() {
