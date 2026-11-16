@@ -150,6 +150,40 @@ const IpadBuchen = {
         '&belegt=' + heute + '_' + bis + Object.entries(fremd).map(([k, ids]) => `~${k}.${ids.join(',')}`).join('');
     };
 
+    /* Zwei Koffer auf einmal (Häkchen im Plan): genau diese beiden buchen –
+       stbuchen2|2026-10-29|3|66897,66898|Mu 5a, H311. Ist einer belegt, sagt
+       es das und bucht auf Wunsch nur den freien. */
+    const mehr = /^stbuchen2\|(\d{4}-\d\d-\d\d)\|(\d)\|([\d,]+)\|(.*)$/.exec(window.name || '');
+    if (mehr) {
+      const [, d, n, l, w] = mehr;
+      const ids = l.split(',').map(Number).slice(0, 2);
+      const was2 = `${new Date(d + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric' })}, ${n}. Stunde${w ? ' (' + w + ')' : ''}`;
+      const name = id => KOFFER[id] || id;
+      const r0 = await anfrage(version, [{ moduleName: 'resources', endpointName: 'check-resource-reservation-conflicts',
+        parameters: { resourceIds: ids, startDate: d, endDate: d, startClassHourId: stundeId(n), endClassHourId: stundeId(n), repeatUntilDate: null } }]);
+      const bes = (r0 && r0.data) || {};
+      const wer2 = b => { const t = b && b.reservation && b.reservation.teacher; return t ? `${t.lastname}, ${t.firstname}` : 'belegt'; };
+      const frei2 = ids.filter(id => !bes[id]);
+      const besetzt2 = ids.filter(id => bes[id]).map(id => `${name(id)} ist belegt (${wer2(bes[id])}).`).join('\n');
+      if (!frei2.length) { alert(`${was2}\n\n${besetzt2}\n\nBitte im Plan andere Koffer wählen.`); return; }
+      const frage = frei2.length === ids.length
+        ? `${ids.length} iPad-Koffer buchen: ${frei2.map(name).join(' und ')}?\n\n${was2}`
+        : `${besetzt2}\n\nNur ${name(frei2[0])} buchen?\n\n${was2}`;
+      if (!confirm(frage)) return;
+      window.name = '';                         // derselbe Auftrag nicht zweimal
+      const ok = [], schief = [];
+      for (const id of frei2) {
+        const r = await anfrage(version, [{ moduleName: 'resources', endpointName: 'create-resource-reservation',
+          parameters: { resourceId: id, comment: '', startDate: d, endDate: d,
+            startClassHourId: stundeId(n), endClassHourId: stundeId(n), repeatUntilDate: null } }]);
+        (r && r.status === 200 && r.data && r.data.id ? ok : schief).push(name(id) + (r && r.status && r.status !== 200 ? ` (Status ${r.status})` : ''));
+      }
+      alert((ok.length ? `Gebucht: ${ok.join(' und ')}\n` : '') + (schief.length ? `Nicht geklappt: ${schief.join(', ')} – bitte direkt im Schulmanager buchen.\n` : '') +
+        `${was2}\n\nZurück zum School-Tool – die Buchung steht dann im Plan.`);
+      if (ok.length) await abgleichen();
+      return;
+    }
+
     let auftrag = /^stbuchen\|(\d{4}-\d\d-\d\d)\|(\d)\|([\d,]+)\|(.*)$/.exec(window.name || '');
     if (window.name === 'stabgleich') { window.name = ''; await abgleichen(); return; }
     if (!auftrag) {

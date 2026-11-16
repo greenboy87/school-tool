@@ -155,6 +155,11 @@ const Stundenplan = {
     // Bestimmten Koffer aus dem Menü im Bearbeiten-Fenster buchen
     document.getElementById('plan-dialog-ipad-links').addEventListener('change', e => {
       if (e.target.matches('select.plan-ipad-wahl')) this.ipadWahl(e.target);
+      if (e.target.matches('.plan-ipad-zwei input')) this.ipadZweiPruefen(e.target.closest('.plan-ipad-zwei'));
+    });
+    document.getElementById('plan-dialog-ipad-links').addEventListener('click', e => {
+      const knopf = e.target.closest('.plan-ipad-zwei-knopf');
+      if (knopf) this.ipadZweiBuchen(knopf.closest('.plan-ipad-zwei'));
     });
     const lesezeichen = document.getElementById('ipad-lesezeichen');
     if (lesezeichen && typeof IpadBuchen !== 'undefined') lesezeichen.href = IpadBuchen.adresse();
@@ -618,8 +623,16 @@ const Stundenplan = {
     const wahl = this.KOFFER.filter(k => !ohne.includes(k.id)).map(k =>
       `<option value="${k.id}" data-href="${this.esc(this.ipadAdresse(t.beginn, k.id))}" data-ziel="${this.esc(auftrag(reihe(k)))}">` +
       `${this.esc(k.raum)} · ${k.ipads} iPads${belegt(k) ? ' · belegt' : ''}</option>`).join('');
+    // Zwei Koffer auf einmal: Häkchen (höchstens zwei), dann ein Knopf – nur solange noch keiner gebucht ist
+    const zwei = nr && !ohne.length ? `<span class="plan-ipad-zwei eigene-zeile" data-tag="${this.esc(this.tagSchluessel(t.beginn))}"
+        data-nr="${nr}" data-was="${this.esc(was)}" data-href="${this.esc(this.ipadAdresse(t.beginn))}">` +
+      `<span title="Bis zu zwei Koffer anhaken und mit einem Klick buchen${this.esc(hinweis)}">Zwei Koffer:</span> ` +
+      [...stockwerk, ...this.KOFFER.filter(k => !stockwerk.includes(k))].map(k =>
+        `<label class="${belegt(k) ? 'belegt' : ''}" title="${this.esc(`${k.raum} · ${k.ipads} iPads${belegt(k) ? ' · belegt laut Abgleich' : ''}`)}">` +
+        `<input type="checkbox" value="${k.id}">${this.esc(k.raum)}</label>`).join('') +
+      ` <button type="button" class="small plan-ipad-zwei-knopf" disabled>beide buchen</button></span>` : '';
     // Menü und „von Hand“ in eigener Zeile unter dem Stockwerk
-    return teil + `<span class="plan-ipad-unten${teil ? ' eigene-zeile' : ''}">` +
+    return teil + zwei + `<span class="plan-ipad-unten${teil || zwei ? ' eigene-zeile' : ''}">` +
       `<select class="plan-ipad-wahl" data-nativ aria-label="Bestimmten Koffer buchen" title="Bestimmten Koffer buchen${this.esc(hinweis)}">` +
       `<option value="">${stockwerk.length ? 'bestimmter Koffer …' : 'Koffer wählen …'}</option>${wahl}</select>` +
       // Nur die Seite, ohne Auftrag – zum Buchen von Hand
@@ -635,6 +648,25 @@ const Stundenplan = {
     if (!o || !o.value) return;
     const a = Object.assign(document.createElement('a'), { href: o.dataset.href, target: o.dataset.ziel, rel: 'noopener' });
     sel.after(a);
+    a.click();
+    a.remove();
+  },
+
+  /* Häkchen „Zwei Koffer“: höchstens zwei; der Knopf geht erst bei zweien */
+  ipadZweiPruefen(box) {
+    const alle = [...box.querySelectorAll('input')];
+    const an = alle.filter(x => x.checked);
+    alle.forEach(x => { x.disabled = !x.checked && an.length >= 2; });
+    box.querySelector('.plan-ipad-zwei-knopf').disabled = an.length !== 2;
+  },
+
+  /* Beide angehakten Koffer buchen: Auftrag stbuchen2 im Fensternamen, wie bei einem Koffer */
+  ipadZweiBuchen(box) {
+    const ids = [...box.querySelectorAll('input:checked')].map(x => x.value).slice(0, 2);
+    if (ids.length !== 2) return;
+    const ziel = ['stbuchen2', box.dataset.tag, box.dataset.nr, ids.join(','), box.dataset.was].join('|');
+    const a = Object.assign(document.createElement('a'), { href: box.dataset.href, target: ziel, rel: 'noopener' });
+    box.after(a);
     a.click();
     a.remove();
   },

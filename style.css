@@ -2416,6 +2416,12 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .plan-zelle .plan-ipads { font-size: .72rem; }
 .plan-dialog-ipad-links { font-size: .85rem; color: var(--muted); line-height: 1.6; margin: .7rem 0 .9rem; }
 .plan-ipad-unten.eigene-zeile { display: block; margin-top: .45rem; }
+.plan-ipad-zwei.eigene-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .55rem; margin-top: .45rem; }
+.plan-ipad-zwei label { display: inline-flex; align-items: center; gap: .2rem; cursor: pointer; color: var(--text); white-space: nowrap; }
+.plan-ipad-zwei label.belegt { color: var(--muted); text-decoration: line-through; }
+.plan-ipad-zwei input { width: auto; margin: 0; }
+.plan-ipad-zwei label:has(input:disabled) { opacity: .45; cursor: default; }
+.plan-ipad-zwei-knopf { margin: 0; }
 /* Lesezeichen zum Ziehen (Extras → iPad-Koffer) */
 .lesezeichen-knopf {
   display: inline-block; padding: .55rem 1rem; border-radius: var(--radius-sm); font-weight: 700;
