@@ -1773,7 +1773,10 @@ const Musiktrainer = {
         <div class="mt-allgemein-qr mt-qr-platz" aria-hidden="true"></div>
       </div>
       <div class="mt-namensliste">
-        ${sortiert.map(k => `<div class="mt-namenszeile"><span>${this.esc(k.name)}</span><code>${this.esc(k.benutzer)}</code></div>`).join('')}
+        ${sortiert.map(k => k.name === k.benutzer
+          // Eigene Gruppen kennen nur Benutzernamen – dann steht nur der da, fett
+          ? `<div class="mt-namenszeile nur-benutzer"><code>${this.esc(k.benutzer)}</code></div>`
+          : `<div class="mt-namenszeile"><span>${this.esc(k.name)}</span><code>${this.esc(k.benutzer)}</code></div>`).join('')}
       </div>
       <div class="mt-passwort-gross"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
     </div>`;
@@ -1999,6 +2002,7 @@ const Musiktrainer = {
             <span class="hint">Passwort <code>${this.esc(g.passwort)}</code></span>
             <div class="btn-row">
               <button class="small" data-eigen="ergebnisse" data-g="${gi}" data-icon="list" ${g.kinder.length ? '' : 'disabled'}>Ergebnisse</button>
+              <button class="small primary" data-eigen="namen" data-g="${gi}" data-icon="list" ${g.kinder.length ? '' : 'disabled'} title="Alle Benutzernamen und das Passwort groß am Beamer">Namensliste am Beamer</button>
               <button class="small" data-eigen="qr" data-g="${gi}" data-icon="expand" ${g.kinder.length ? '' : 'disabled'}>QR-Codes</button>
               <button class="small" data-eigen="drucken" data-g="${gi}" data-icon="printer" ${g.kinder.length ? '' : 'disabled'}>Kärtchen</button>
               <button class="small" data-eigen="umbenennen" data-g="${gi}" data-icon="pen" title="Namen der Gruppe ändern – Passwort und Zugänge bleiben">Umbenennen</button>
@@ -2128,6 +2132,11 @@ const Musiktrainer = {
         gruppen.push({ id: d.klasse.id, name: d.klasse.name, passwort: d.klasse.passwort,
           kinder: d.schueler.map(k => ({ id: k.id, name: k.benutzername })) });
         this.serverTreffer = this.serverTreffer.filter(t => t !== d);
+      }
+      if (b.dataset.eigen === 'namen') {
+        return this.namenslisteZeigen(g.name, g.passwort, [...g.kinder]
+          .sort((x, y) => x.name.localeCompare(y.name, 'de', { sensitivity: 'base' }))
+          .map(k => ({ name: k.name, benutzer: k.name })));
       }
       if (b.dataset.eigen === 'qr') {
         return this.qrZeigen(g.name, g.passwort, g.kinder.map(k => ({ name: k.name, benutzer: k.name })));

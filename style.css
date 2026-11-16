@@ -2631,6 +2631,7 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .mt-namenszeile > * { white-space: nowrap; }
 .mt-namenszeile { display: flex; justify-content: space-between; gap: 2rem; padding: .25rem 0; border-bottom: 1px solid var(--border); }
 .mt-namenszeile code { font-weight: 800; color: var(--accent-soft); background: none; }
+.mt-namenszeile.nur-benutzer { justify-content: center; }
 /* Allgemeiner QR-Code: nur die Anmeldeseite, weiß hinterlegt, damit die Kamera ihn auch im Dunkelmodus liest */
 /* Zugangsblock der Namensliste: Adresse groß in der Mitte, QR-Code links, rechts ein
    gleich breiter Leerplatz – so steht die Adresse genau mittig. Passwort darunter. */
