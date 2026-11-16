@@ -160,6 +160,11 @@ const Stundenplan = {
     document.getElementById('plan-dialog-ipad-links').addEventListener('click', e => {
       const knopf = e.target.closest('.plan-ipad-zwei-knopf');
       if (knopf) this.ipadZweiBuchen(knopf.closest('.plan-ipad-zwei'));
+      const mehr = e.target.closest('[data-ipad-mehr]');
+      if (mehr && this._ipadT) {
+        this._ipadMehr = Math.max(0, (this._ipadMehr || 0) + Number(mehr.dataset.ipadMehr));
+        this.ipadBereich(this._ipadT);
+      }
     });
     const lesezeichen = document.getElementById('ipad-lesezeichen');
     if (lesezeichen && typeof IpadBuchen !== 'undefined') lesezeichen.href = IpadBuchen.adresse();
@@ -592,14 +597,17 @@ const Stundenplan = {
      anderen Koffer gibt es im Menü „bestimmter Koffer“. Vor dem Buchen nennt das
      Lesezeichen den Koffer und fragt nach. Ohne Stundennummer (Nachmittag ohne
      Raster) gibt es keinen Auftrag, dann öffnen die Links nur die Seite. */
-  ipadLinks(t, ohne = []) {
+  ipadLinks(t, ohne = [], folge = []) {
     // ohne: schon gebuchte Koffer – für einen zweiten Koffer zur selben Stunde
+    // folge: weitere Stunden der Klasse („+1 Stunde“), für die dieselben Koffer mitgebucht werden
     const stockwerk = this.kofferFuer(t.raum).filter(k => !ohne.includes(k.id));
     const nr = parseInt(this.STUNDEN[this.uhr(t.beginn)], 10);
     const was = `${t.fach} ${this.klassenText(t)}, ${t.raum || ''}`.replace(/\|/g, '/');
-    const auftrag = liste => nr ? ['stbuchen', this.tagSchluessel(t.beginn), nr, liste.map(k => k.id).join(','), was].join('|') : 'schulmanager';
+    const serie = this.ipadSerie([t, ...folge]);
+    const einzeln = liste => nr ? ['stbuchen', this.tagSchluessel(t.beginn), nr, liste.map(k => k.id).join(','), was].join('|') : 'schulmanager';
     // Ist der gewählte Koffer belegt, kommen erst die übrigen auf dem Stockwerk dran
     const reihe = k => [k, ...stockwerk.filter(x => x !== k)];
+    const auftrag = liste => folge.length ? this.ipadSerieAuftrag(serie, [liste[0].id]) : einzeln(liste);
     const hinweis = ' – im Schulmanager-Tab das Lesezeichen „Schulmanager“ anklicken';
     const titel = k => `Koffer ${k.raum} (${k.ipads} iPads) am ${this.tagName(t.beginn)} buchen${hinweis}`;
     const link = k => `<a href="${this.esc(this.ipadAdresse(t.beginn, k.id))}" target="${this.esc(auftrag(reihe(k)))}" rel="noopener"
@@ -624,8 +632,8 @@ const Stundenplan = {
       `<option value="${k.id}" data-href="${this.esc(this.ipadAdresse(t.beginn, k.id))}" data-ziel="${this.esc(auftrag(reihe(k)))}">` +
       `${this.esc(k.raum)} · ${k.ipads} iPads${belegt(k) ? ' · belegt' : ''}</option>`).join('');
     // Zwei Koffer auf einmal: Häkchen (höchstens zwei), dann ein Knopf – nur solange noch keiner gebucht ist
-    const zwei = nr && !ohne.length ? `<span class="plan-ipad-zwei eigene-zeile" data-tag="${this.esc(this.tagSchluessel(t.beginn))}"
-        data-nr="${nr}" data-was="${this.esc(was)}" data-href="${this.esc(this.ipadAdresse(t.beginn))}">` +
+    const zwei = nr && !ohne.length ? `<span class="plan-ipad-zwei eigene-zeile" data-serie="${this.esc(JSON.stringify(serie))}"
+        data-href="${this.esc(this.ipadAdresse(t.beginn))}">` +
       `<span title="Bis zu zwei Koffer anhaken und mit einem Klick buchen${this.esc(hinweis)}">Zwei Koffer:</span> ` +
       [...stockwerk, ...this.KOFFER.filter(k => !stockwerk.includes(k))].map(k =>
         `<label class="${belegt(k) ? 'belegt' : ''}" title="${this.esc(`${k.raum} · ${k.ipads} iPads${belegt(k) ? ' · belegt laut Abgleich' : ''}`)}">` +
@@ -660,15 +668,59 @@ const Stundenplan = {
     box.querySelector('.plan-ipad-zwei-knopf').disabled = an.length !== 2;
   },
 
-  /* Beide angehakten Koffer buchen: Auftrag stbuchen2 im Fensternamen, wie bei einem Koffer */
+  /* Beide angehakten Koffer buchen: Auftrag stserie im Fensternamen, wie bei einem Koffer */
   ipadZweiBuchen(box) {
-    const ids = [...box.querySelectorAll('input:checked')].map(x => x.value).slice(0, 2);
+    const ids = [...box.querySelectorAll('input:checked')].map(x => Number(x.value)).slice(0, 2);
     if (ids.length !== 2) return;
-    const ziel = ['stbuchen2', box.dataset.tag, box.dataset.nr, ids.join(','), box.dataset.was].join('|');
+    const ziel = this.ipadSerieAuftrag(JSON.parse(box.dataset.serie), ids);
     const a = Object.assign(document.createElement('a'), { href: box.dataset.href, target: ziel, rel: 'noopener' });
     box.after(a);
     a.click();
     a.remove();
+  },
+
+  /* Mehrere Stunden auf einmal: Auftrag „stserie|{…}“ fürs Lesezeichen.
+     s: je Stunde Tag, Stundennummer, Text und die Koffer im Stockwerk ihres
+     Raums (Ersatz, falls ein gewählter dort belegt ist); k: die gewählten Koffer. */
+  IPAD_SERIE_MAX: 6,
+
+  ipadSerie(stunden) {
+    return stunden.map(x => ({ d: this.tagSchluessel(x.beginn), n: parseInt(this.STUNDEN[this.uhr(x.beginn)], 10),
+      w: `${x.fach} ${this.klassenText(x)}, ${x.raum || ''}`, a: this.kofferFuer(x.raum).map(k => k.id) }));
+  },
+
+  ipadSerieAuftrag(serie, ids) {
+    return 'stserie|' + JSON.stringify({ k: ids, s: serie });
+  },
+
+  /* Die nächsten Stunden derselben Klasse im selben Fach (mit Stundennummer, ohne Entfall) */
+  ipadFolge(t, anzahl) {
+    const nr = x => parseInt(this.STUNDEN[this.uhr(x.beginn)], 10);
+    const kt = this.klassenText(t);
+    return this.alleTermine().filter(x => x.beginn > t.beginn && !x.entfaellt && !x.aufsicht && !x.verschwunden &&
+      nr(x) && x.fach === t.fach && this.klassenText(x) === kt).slice(0, anzahl);
+  },
+
+  /* iPad-Bereich im Bearbeiten-Fenster: gebuchte Koffer, „+1 Stunde“, Buchungslinks */
+  ipadBereich(t) {
+    this._ipadT = t;
+    const key = this.buchSchluessel(t);
+    const gebuchtIds = (Classes.data.planIpads || {})[key] || [];
+    const gebucht = gebuchtIds.map(id => (this.KOFFER.find(k => k.id === id) || { raum: id }).raum);
+    const nr = parseInt(this.STUNDEN[this.uhr(t.beginn)], 10);
+    const moeglich = nr && !gebuchtIds.length ? this.ipadFolge(t, this.IPAD_SERIE_MAX - 1) : [];
+    const mehr = Math.min(this._ipadMehr || 0, moeglich.length);
+    const folge = moeglich.slice(0, mehr);
+    const kurz = x => `${this.tagName(x.beginn)} ${this.STUNDEN[this.uhr(x.beginn)]}`;
+    const stunden = moeglich.length ? `<span class="plan-ipad-stunden">iPads buchen für <strong>${this.esc(kurz(t))}</strong>` +
+      folge.map(x => ` + <strong>${this.esc(kurz(x))}</strong>`).join('') +
+      (mehr < moeglich.length ? ` <button type="button" class="small plan-ipad-mehr" data-ipad-mehr="1"
+        title="Auch die nächste Stunde der Klasse mitbuchen: ${this.esc(kurz(moeglich[mehr]))}${moeglich[mehr].vorschau ? ' (Vorschau)' : ''}">+1 Stunde</button>` : '') +
+      (mehr ? ` <button type="button" class="small plan-ipad-mehr" data-ipad-mehr="-1" title="Letzte Stunde wieder herausnehmen">−1</button>` : '') +
+      `</span>` : '';
+    document.getElementById('plan-dialog-ipad-links').innerHTML = gebucht.length
+      ? `<span class="plan-dialog-gebucht">✓ iPads gebucht: ${this.esc(gebucht.join(', '))}</span><br>Weiterer Koffer – ${this.ipadLinks(t, gebuchtIds)}`
+      : (stunden || 'iPads buchen – ') + this.ipadLinks(t, [], folge);
   },
 
   /* Klassenbuch im Schulmanager: Jede Stunde hat dort eine eigene Seite; die
@@ -1518,11 +1570,8 @@ const Stundenplan = {
       (t.vorschau ? ' (Vorschau)' : '');
 
     // iPads: gebucht zeigen, sonst (bzw. für einen weiteren Koffer) die Buchungslinks
-    const gebuchtIds = (Classes.data.planIpads || {})[key] || [];
-    const gebucht = gebuchtIds.map(id => (this.KOFFER.find(k => k.id === id) || { raum: id }).raum);
-    document.getElementById('plan-dialog-ipad-links').innerHTML = gebucht.length
-      ? `<span class="plan-dialog-gebucht">✓ iPads gebucht: ${this.esc(gebucht.join(', '))}</span><br>Weiterer Koffer – ${this.ipadLinks(t, gebuchtIds)}`
-      : 'iPads buchen – ' + this.ipadLinks(t);
+    this._ipadMehr = 0;
+    this.ipadBereich(t);
 
     const jahr = Classes.currentSchoolYear();
     const klassen = [...Classes.data.classes].sort((a, b) => (b.year === jahr) - (a.year === jahr));

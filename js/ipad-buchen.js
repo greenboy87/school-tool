@@ -6,6 +6,7 @@
    Fensternamen mit (window.name überlebt das Laden der Seite, anders als ein
    Zusatz in der Adresse, den der Schulmanager wegräumt):
      stbuchen|2026-10-29|3|66897,66898,127145|Mu 5a, H311   – buchen
+     stserie|{"k":[…],"s":[…]}                             – mehrere Stunden/zwei Koffer
      stabgleich                                             – Buchungen holen
    Ein Lesezeichen in Chrome („Schulmanager“) führt dann auf der Seite des
    Schulmanagers – mit dessen Anmeldung – den Auftrag aus. Die eigenen Buchungen
@@ -150,37 +151,56 @@ const IpadBuchen = {
         '&belegt=' + heute + '_' + bis + Object.entries(fremd).map(([k, ids]) => `~${k}.${ids.join(',')}`).join('');
     };
 
-    /* Zwei Koffer auf einmal (Häkchen im Plan): genau diese beiden buchen –
-       stbuchen2|2026-10-29|3|66897,66898|Mu 5a, H311. Ist einer belegt, sagt
-       es das und bucht auf Wunsch nur den freien. */
-    const mehr = /^stbuchen2\|(\d{4}-\d\d-\d\d)\|(\d)\|([\d,]+)\|(.*)$/.exec(window.name || '');
-    if (mehr) {
-      const [, d, n, l, w] = mehr;
-      const ids = l.split(',').map(Number).slice(0, 2);
-      const was2 = `${new Date(d + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric' })}, ${n}. Stunde${w ? ' (' + w + ')' : ''}`;
+    /* Mehrere Stunden und/oder zwei Koffer auf einmal („+1 Stunde“, Häkchen im Plan):
+       stserie|{"k":[66897,66898],"s":[{"d":"2026-10-29","n":3,"w":"Mu 5a, H311","a":[…]},…]}
+       Je Stunde werden die gewählten Koffer gebucht; ist einer dort belegt,
+       springt ein freier aus dem Stockwerk (a) ein, sonst irgendein freier.
+       Vor dem Buchen zeigt es alles und fragt einmal nach. */
+    if ((window.name || '').startsWith('stserie|')) {
+      let a;
+      try { a = JSON.parse(window.name.slice(8)); } catch (e) { a = null; }
+      if (!a || !Array.isArray(a.s) || !a.s.length || !Array.isArray(a.k) || !a.k.length) { alert('Der Auftrag aus dem School-Tool ließ sich nicht lesen.'); return; }
       const name = id => KOFFER[id] || id;
-      const r0 = await anfrage(version, [{ moduleName: 'resources', endpointName: 'check-resource-reservation-conflicts',
-        parameters: { resourceIds: ids, startDate: d, endDate: d, startClassHourId: stundeId(n), endClassHourId: stundeId(n), repeatUntilDate: null } }]);
-      const bes = (r0 && r0.data) || {};
-      const wer2 = b => { const t = b && b.reservation && b.reservation.teacher; return t ? `${t.lastname}, ${t.firstname}` : 'belegt'; };
-      const frei2 = ids.filter(id => !bes[id]);
-      const besetzt2 = ids.filter(id => bes[id]).map(id => `${name(id)} ist belegt (${wer2(bes[id])}).`).join('\n');
-      if (!frei2.length) { alert(`${was2}\n\n${besetzt2}\n\nBitte im Plan andere Koffer wählen.`); return; }
-      const frage = frei2.length === ids.length
-        ? `${ids.length} iPad-Koffer buchen: ${frei2.map(name).join(' und ')}?\n\n${was2}`
-        : `${besetzt2}\n\nNur ${name(frei2[0])} buchen?\n\n${was2}`;
-      if (!confirm(frage)) return;
-      window.name = '';                         // derselbe Auftrag nicht zweimal
-      const ok = [], schief = [];
-      for (const id of frei2) {
-        const r = await anfrage(version, [{ moduleName: 'resources', endpointName: 'create-resource-reservation',
-          parameters: { resourceId: id, comment: '', startDate: d, endDate: d,
-            startClassHourId: stundeId(n), endClassHourId: stundeId(n), repeatUntilDate: null } }]);
-        (r && r.status === 200 && r.data && r.data.id ? ok : schief).push(name(id) + (r && r.status && r.status !== 200 ? ` (Status ${r.status})` : ''));
+      const wer3 = b => { const t = b && b.reservation && b.reservation.teacher; return t ? `${t.lastname}, ${t.firstname}` : 'belegt'; };
+      const wann3 = s => new Date(s.d + 'T12:00').toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric' }) + `, ${s.n}. Std.`;
+      const plan = [];
+      for (const s of a.s) {
+        const r0 = await anfrage(version, [{ moduleName: 'resources', endpointName: 'check-resource-reservation-conflicts',
+          parameters: { resourceIds: ALLE, startDate: s.d, endDate: s.d, startClassHourId: stundeId(s.n), endClassHourId: stundeId(s.n), repeatUntilDate: null } }]);
+        if (!r0) { alert('Die Belegung ließ sich nicht prüfen. Bitte die Seite neu laden und es noch einmal versuchen.'); return; }
+        const bes = r0.data || {};
+        const nimm = [], notiz = [];
+        for (const id of a.k) {
+          if (!bes[id]) { nimm.push(id); continue; }
+          const ersatz = [...(s.a || []), ...ALLE].find(x => !bes[x] && !nimm.includes(x) && !a.k.includes(x));
+          if (ersatz) { nimm.push(ersatz); notiz.push(`${name(ersatz)} statt ${name(id)} (${wer3(bes[id])})`); }
+          else notiz.push(`${name(id)} belegt (${wer3(bes[id])}), kein anderer frei`);
+        }
+        plan.push({ s, nimm, notiz });
       }
-      alert((ok.length ? `Gebucht: ${ok.join(' und ')}\n` : '') + (schief.length ? `Nicht geklappt: ${schief.join(', ')} – bitte direkt im Schulmanager buchen.\n` : '') +
-        `${was2}\n\nZurück zum School-Tool – die Buchung steht dann im Plan.`);
-      if (ok.length) await abgleichen();
+      if (!plan.some(p => p.nimm.length)) {
+        alert('Alles belegt:\n\n' + plan.map(p => `${wann3(p.s)}: ${p.notiz.join('; ')}`).join('\n'));
+        return;
+      }
+      const zeilen = plan.map(p => `${wann3(p.s)}${p.s.w ? ' (' + p.s.w + ')' : ''}: ${p.nimm.length ? p.nimm.map(name).join(' + ') : '—'}` +
+        (p.notiz.length ? `\n    ${p.notiz.join('; ')}` : ''));
+      if (!confirm(`iPad-Koffer buchen – ${plan.length} Stunde${plan.length === 1 ? '' : 'n'}:\n\n${zeilen.join('\n')}\n\nSo buchen?`)) return;
+      window.name = '';                         // derselbe Auftrag nicht zweimal
+      const bericht = [];
+      let gebucht = 0;
+      for (const p of plan) {
+        const ok = [], schief = [];
+        for (const id of p.nimm) {
+          const r = await anfrage(version, [{ moduleName: 'resources', endpointName: 'create-resource-reservation',
+            parameters: { resourceId: id, comment: '', startDate: p.s.d, endDate: p.s.d,
+              startClassHourId: stundeId(p.s.n), endClassHourId: stundeId(p.s.n), repeatUntilDate: null } }]);
+          if (r && r.status === 200 && r.data && r.data.id) { ok.push(name(id)); gebucht++; }
+          else schief.push(name(id) + (r && r.status ? ` (Status ${r.status})` : ''));
+        }
+        bericht.push(`${schief.length ? '✗' : '✓'} ${wann3(p.s)}: ${ok.length ? ok.join(' + ') : '–'}${schief.length ? ' · nicht geklappt: ' + schief.join(', ') : ''}`);
+      }
+      alert(`iPad-Buchungen:\n\n${bericht.join('\n')}\n\n${gebucht ? 'Zurück zum School-Tool – die Buchungen stehen dann im Plan.' : 'Bitte direkt im Schulmanager buchen.'}`);
+      if (gebucht) await abgleichen();
       return;
     }
 

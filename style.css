@@ -2422,6 +2422,9 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 .plan-ipad-zwei input { width: auto; margin: 0; }
 .plan-ipad-zwei label:has(input:disabled) { opacity: .45; cursor: default; }
 .plan-ipad-zwei-knopf { margin: 0; }
+.plan-ipad-stunden { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .4rem; margin-bottom: .35rem; }
+.plan-ipad-stunden strong { color: var(--text); }
+.plan-ipad-mehr { margin: 0; padding: .1rem .55rem; }
 /* Lesezeichen zum Ziehen (Extras → iPad-Koffer) */
 .lesezeichen-knopf {
   display: inline-block; padding: .55rem 1rem; border-radius: var(--radius-sm); font-weight: 700;
