@@ -719,6 +719,8 @@ const Musiktrainer = {
         <p><b>${i === 0 ? 'Neuester Stand' : 'Älterer Stand'}:</b> ${this.esc(f.quelle)} vom ${wann(f.zeit)} · Passwort <code>${this.esc(f.musiktrainer.passwort)}</code> ·
           ${f.zuordnung.length} von ${cls.students.length} Kindern</p>
         <p class="hint">z. B. ${f.zuordnung.slice(0, 4).map(z => `${this.esc(name(z.sid))} = <code>${this.esc(z.mt.name)}</code>`).join(', ')}</p>
+        <details><summary class="hint">Alle ${f.zuordnung.length} anzeigen</summary>
+          <p class="hint">${f.zuordnung.map(z => `${this.esc(name(z.sid))} = <code>${this.esc(z.mt.name)}</code>`).join('<br>')}</p></details>
         ${f.ohne.length ? `<p class="hint">Damals mit Zugang, jetzt nicht in der Klasse gefunden: ${this.esc(f.ohne.join(', '))}</p>` : ''}
         <div class="btn-row"><button class="${i === 0 ? 'primary' : ''}" data-mt="retten-uebernehmen" data-nr="${i}" data-icon="check">Diese Zuordnung übernehmen</button></div>
       </div>`).join('')}`;
