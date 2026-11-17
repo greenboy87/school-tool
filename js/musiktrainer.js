@@ -273,6 +273,15 @@ const Musiktrainer = {
           <button class="primary" data-mt="einrichten" data-icon="plus" ${cls.students.length ? '' : 'disabled'}>${cls.students.length} Kinder einrichten</button>
         </div>
         ${cls.students.length ? '' : '<p class="hint">Erst Schüler eintragen.</p>'}
+        ${cls.students.length ? `<div class="mt-retten">
+          <p class="hint"><b>War die Klasse schon eingerichtet?</b> Dann nicht neu einrichten – sonst bekommen alle neue Zugänge.
+            Hol stattdessen die Zuordnung (welches Pseudonym zu welchem Kind gehört) aus einem früheren Stand zurück.
+            Nur diese Klasse wird geändert, alles andere bleibt.</p>
+          <div class="btn-row">
+            <button data-mt="retten" data-icon="reset">Zugänge aus früherem Stand zurückholen</button>
+          </div>
+          <div id="mt-retten-ergebnis"></div>
+        </div>` : ''}
         <div class="btn-row mt-ohne-login">
           <button data-mt="nurqr" data-icon="expand" title="Großer QR-Code zum music-trainer am Beamer – die Kinder spielen ohne Anmeldung">Nur QR-Code am Beamer (ohne Anmeldung)</button>
         </div>
@@ -525,7 +534,13 @@ const Musiktrainer = {
       return this.render();
     }
     if (aktion === 'nurqr') return this.nurQrZeigen(cls ? cls.name : '');
-    if (aktion === 'einrichten') return this.einrichten(cls);
+    if (aktion === 'einrichten') {
+      if (!confirm(`${cls.students.length} neue Zugänge für „${cls.name}“ anlegen?\n\nWar die Klasse schon eingerichtet, bekommen alle Kinder damit NEUE Benutzernamen – ` +
+        'die alten Zugänge bleiben auf dem Server, sind hier aber nicht mehr zugeordnet. Dann lieber „Zugänge aus früherem Stand zurückholen“.')) return;
+      return this.einrichten(cls);
+    }
+    if (aktion === 'retten') return this.rettenSuchen(cls);
+    if (aktion === 'retten-uebernehmen') return this.rettenUebernehmen(cls, +b.dataset.nr);
     if (aktion === 'nachtragen') return this.nachtragen(cls);
     if (aktion === 'laden') { this.ergebnis = null; this.statCache = {}; return this.laden(); }
     if (aktion === 'kopieren') return this.kopieren(cls);
@@ -638,6 +653,87 @@ const Musiktrainer = {
       Classes.persist();
       this.render();
     } catch (err) { this.fehler(err, document.getElementById('mt-login'), () => this.einrichten(cls)); }
+  },
+
+  /* ---------- Verlorene Zuordnung zurückholen ----------
+     Fehlt bei einer Klasse cls.musiktrainer (etwa nach einem Sync-Fehler), liegt die Klasse
+     samt Zugängen noch auf dem Server – nur die Zuordnung Pseudonym → Kind fehlt hier.
+     Gesucht wird in den Sicherungen dieses Geräts (Sync → 4), dann im Server-Verlauf
+     (Sync → 5). Übernommen wird nur cls.musiktrainer und s.mt dieser einen Klasse. */
+  rettenKandidat(daten, cls, quelle, zeit) {
+    const alt = (daten?.classes || []).find(c => c.id === cls.id && c.musiktrainer?.id)
+      || (daten?.classes || []).find(c => (c.name || '').trim().toLowerCase() === (cls.name || '').trim().toLowerCase() && c.musiktrainer?.id);
+    if (!alt) return null;
+    const schluessel = s => `${(s.first || '').trim().toLowerCase()}|${(s.last || '').trim().toLowerCase()}`;
+    const zuordnung = [];
+    cls.students.forEach(s => {
+      const a = alt.students.find(x => x.id === s.id && x.mt) || alt.students.find(x => x.mt && schluessel(x) === schluessel(s));
+      if (a) zuordnung.push({ sid: s.id, mt: a.mt });
+    });
+    const ohne = alt.students.filter(x => x.mt && !zuordnung.some(z => z.mt.id === x.mt.id));
+    return { quelle, zeit, musiktrainer: alt.musiktrainer, zuordnung, ohne: ohne.map(x => `${x.first || ''} ${x.last || ''}`.trim()) };
+  },
+
+  async rettenSuchen(cls) {
+    const ziel = document.getElementById('mt-retten-ergebnis');
+    ziel.innerHTML = '<p class="hint">Suche in den Sicherungen dieses Geräts …</p>';
+    // Je music-trainer-Klasse (id) der neueste Fund – war die Klasse schon einmal doppelt
+    // eingerichtet, stehen beide zur Wahl
+    const funde = new Map();
+    const merken = f => { if (f && (!funde.has(f.musiktrainer.id) || funde.get(f.musiktrainer.id).zeit < f.zeit)) funde.set(f.musiktrainer.id, f); };
+    for (const x of Store.sicherungen()) {
+      let d = null;
+      try { d = JSON.parse(x.daten); } catch { /* kaputt */ }
+      merken(this.rettenKandidat(d, cls, `Sicherung dieses Geräts (${x.grund})`, x.zeit));
+    }
+    // Dazu der Server-Verlauf (Sync → 5): erst nur die kleinen Felder „stand“, dann Stand für Stand
+    if (typeof Tresor !== 'undefined' && Tresor.aktiv() && window.FB) {
+      try {
+        const { db, ref, get } = window.FB;
+        const basis = `schoolTool/tresor/${Tresor.id}/verlauf`;
+        const faecher = [...Array(48).keys()].map(i => 'h' + i).concat([...Array(14).keys()].map(i => 't' + i));
+        const koepfe = await Promise.all(faecher.map(f => get(ref(db, `${basis}/${f}/stand`)).then(s => ({ f, stand: s.val() })).catch(() => ({ f }))));
+        const gesehen = new Set();
+        const liste = koepfe.filter(k => k.stand && !gesehen.has(k.stand) && gesehen.add(k.stand)).sort((a, b) => b.stand - a.stand);
+        for (const [i, k] of liste.entries()) {
+          ziel.innerHTML = `<p class="hint">Suche im Server-Verlauf … ${i + 1} von ${liste.length}${funde.size ? ` · ${funde.size} gefunden` : ''}</p>`;
+          const [chiffre, iv] = await Promise.all(['chiffre', 'iv'].map(f => get(ref(db, `${basis}/${k.f}/${f}`)).then(s => s.val())));
+          try {
+            const d = await Tresor.entschluesseln({ chiffre, iv, salz: Tresor.nachB64(Tresor.salz) });
+            merken(this.rettenKandidat(d, cls, 'Server-Verlauf', k.stand));
+          } catch { /* dieses Fach nicht lesbar */ }
+        }
+      } catch (e) { console.warn('Server-Verlauf nicht lesbar', e); }
+    }
+    this.rettenFunde = [...funde.values()].sort((a, b) => b.zeit - a.zeit);
+    if (!this.rettenFunde.length) {
+      ziel.innerHTML = `<p class="hint">In keinem früheren Stand gefunden. Die Zugänge gibt es auf dem Server trotzdem noch –
+        sag Bescheid, dann lassen sie sich von Hand den Kindern zuordnen (die Kinder haben sie ja aufgeschrieben).</p>`;
+      return;
+    }
+    const wann = z => new Date(z).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+    const name = sid => { const k = cls.students.find(x => x.id === sid); return k ? `${k.first || ''} ${k.last || ''}`.trim() : ''; };
+    ziel.innerHTML = `
+      ${this.rettenFunde.length > 1 ? `<p><b>Die Klasse war ${this.rettenFunde.length}-mal eingerichtet.</b> Vergleiche mit dem, was die Kinder aufgeschrieben haben:</p>` : ''}
+      ${this.rettenFunde.map((f, i) => `<div class="mt-retten-fund">
+        <p><b>${i === 0 ? 'Neuester Stand' : 'Älterer Stand'}:</b> ${this.esc(f.quelle)} vom ${wann(f.zeit)} · Passwort <code>${this.esc(f.musiktrainer.passwort)}</code> ·
+          ${f.zuordnung.length} von ${cls.students.length} Kindern</p>
+        <p class="hint">z. B. ${f.zuordnung.slice(0, 4).map(z => `${this.esc(name(z.sid))} = <code>${this.esc(z.mt.name)}</code>`).join(', ')}</p>
+        ${f.ohne.length ? `<p class="hint">Damals mit Zugang, jetzt nicht in der Klasse gefunden: ${this.esc(f.ohne.join(', '))}</p>` : ''}
+        <div class="btn-row"><button class="${i === 0 ? 'primary' : ''}" data-mt="retten-uebernehmen" data-nr="${i}" data-icon="check">Diese Zuordnung übernehmen</button></div>
+      </div>`).join('')}`;
+    Icons.hydrate(ziel);
+  },
+
+  rettenUebernehmen(cls, nr) {
+    const f = (this.rettenFunde || [])[nr];
+    if (!f || cls.musiktrainer) return;
+    cls.musiktrainer = JSON.parse(JSON.stringify(f.musiktrainer));
+    f.zuordnung.forEach(z => { const s = cls.students.find(x => x.id === z.sid); if (s) s.mt = { ...z.mt }; });
+    this.rettenFunde = null;
+    Classes.persist();
+    this.ergebnis = null;
+    this.render();
   },
 
   async nachtragen(cls) {
