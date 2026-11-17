@@ -30,6 +30,45 @@ const LiveGroups = {
     document.getElementById('btn-live-beamer').addEventListener('click', () => this.beamer());
     const weiter = document.getElementById('btn-live-fortsetzen');
     if (weiter) weiter.addEventListener('click', () => this.fortsetzen());
+    // Browser zu, Tab neu geladen? Läuft die Sammlung noch, gleich anbieten
+    if (window.FB && window.FB.bereit) this.nachfragen();
+    else window.addEventListener('fb-bereit', () => this.nachfragen(), { once: true });
+  },
+
+  /* Erst fragen, wenn die Seite entsperrt ist – sonst läge die Frage über der Passwortabfrage */
+  async nachfragen() {
+    let gemerkt = null;
+    try { gemerkt = JSON.parse(localStorage.getItem('live-sammlung') || 'null'); } catch (e) { return; }
+    if (!gemerkt || !gemerkt.raum || this.raum) return;
+    const cls = Classes.data.classes.find(c => c.id === gemerkt.klasseId);
+    if (!cls) { this.vergessen(); return; }
+    let meta = null;
+    try {
+      const { db, ref } = window.FB;
+      meta = (await window.FB.get(ref(db, `${window.FB.WURZEL}/${gemerkt.raum}/meta`))).val();
+    } catch (e) { return; }
+    if (!meta) { this.vergessen(); return; }          // Raum gibt es nicht mehr
+    if (String(meta.projekt || '').startsWith('Tiny Band')) return;
+    const gesperrt = () => document.documentElement.classList.contains('locked') ||
+      document.body.classList.contains('locked');
+    while (gesperrt()) await new Promise(r => setTimeout(r, 700));
+    if (this.raum) return;
+    if (!confirm(`Die Gruppen-Sammlung für ${cls.name} (Raum ${gemerkt.raum}) läuft noch.\n\n` +
+      'Jetzt fortsetzen? Die Einträge der Klasse sind alle noch da.')) return;
+    if (Classes.currentClassId !== cls.id) Classes.selectClass(cls.id);
+    const projekt = gemerkt.projektId && cls.projects.find(p => p.id === gemerkt.projektId);
+    const reiter = document.querySelector('.subtab-btn[data-subtab="projekte"]');
+    if (reiter) reiter.click();
+    if (projekt) {
+      Classes.currentProjectId = projekt.id;
+      Classes.renderProjects();
+      Classes.werkstattOeffnen();
+    }
+    await this.fortsetzen(gemerkt.raum);
+    if (!projekt) {
+      document.getElementById('gruppen-werkstatt').hidden = false;
+      Classes.werkstattTitel();
+    }
   },
 
   status(text, warnung) {
@@ -196,7 +235,7 @@ const LiveGroups = {
      Alles, was der Lehrer-Tab braucht, lässt sich wiederherstellen: Projekt und
      Bezeichnung stehen in meta, die Platznummern folgen der Klassenliste. Damit
      ergibt sich sogar derselbe QR-Code wie beim Start. */
-  async fortsetzen() {
+  async fortsetzen(vorgabe) {
     let gemerkt = null;
     try { gemerkt = JSON.parse(localStorage.getItem('live-sammlung') || 'null'); } catch (e) { /* egal */ }
     if (gemerkt && gemerkt.klasseId && Classes.currentClassId !== gemerkt.klasseId &&
@@ -210,7 +249,7 @@ const LiveGroups = {
       return;
     }
     const vorschlag = gemerkt && gemerkt.klasseId === cls.id ? gemerkt.raum : '';
-    const eingabe = prompt(`Raum-Code der laufenden Sammlung für ${cls.name}\n` +
+    const eingabe = vorgabe || prompt(`Raum-Code der laufenden Sammlung für ${cls.name}\n` +
       '(steht auf der Leinwand bzw. auf den Handys, z. B. „7b-uoso“):', vorschlag || '');
     if (eingabe === null) return;
     const raum = eingabe.trim().toLowerCase();
@@ -568,21 +607,31 @@ const LiveGroups = {
       }
     };
     const stil = d.createElement('style');
-    stil.textContent = `#vollbild{position:fixed;top:1rem;right:1rem;z-index:10;padding:.8rem 1.4rem;
-      font:600 1.2rem system-ui,-apple-system,sans-serif;color:#fff;background:#7c3aed;border:0;
-      border-radius:.8rem;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.25);}
-      #vollbild:hover{background:#6d28d9;}`;
+    /* Unten rechts statt oben: Oben blendet macOS im Vollbild die Fensterleiste
+       samt rotem X ein – wer dort „Vollbild aus“ sucht, schließt das Fenster. */
+    stil.textContent = `#vollbild{position:fixed;bottom:1.2rem;right:1.2rem;z-index:10;padding:1rem 1.8rem;
+      font:700 1.35rem system-ui,-apple-system,sans-serif;color:#fff;background:#7c3aed;border:0;
+      border-radius:1rem;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.25);}
+      #vollbild:hover{background:#6d28d9;}
+      #vollbild.an{background:#1e1633;opacity:.55;}
+      #vollbild.an:hover{opacity:1;}`;
     d.head.appendChild(stil);
     const knopf = d.createElement('button');
     knopf.id = 'vollbild';
     knopf.type = 'button';
     knopf.textContent = '⛶ Vollbild';
+    knopf.className = '';
     knopf.title = 'Vollbild an/aus (auch Taste F oder Doppelklick)';
     knopf.addEventListener('click', umschalten);
     d.body.appendChild(knopf);
     d.addEventListener('dblclick', umschalten);
     d.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') umschalten(); });
-    const zeigen = () => { knopf.hidden = !!aktiv(); };
+    // Im Vollbild bleibt der Knopf da (etwas zurückgenommen) und heißt „Vollbild beenden“
+    const zeigen = () => {
+      const an = !!aktiv();
+      knopf.textContent = an ? '↙ Vollbild beenden' : '⛶ Vollbild';
+      knopf.classList.toggle('an', an);
+    };
     d.addEventListener('fullscreenchange', zeigen);
     d.addEventListener('webkitfullscreenchange', zeigen);
   },
