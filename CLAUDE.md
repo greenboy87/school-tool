@@ -46,6 +46,7 @@ gehen. `MT_SPIELE` muss zur Spielliste im music-trainer passen, auch in der
 `reihe` der Stufen (Stufennummern sind gespeicherte Schlüssel, `reihe` nur die
 Anzeige). Zum Worker geht dagegen die Auswahl für die Note (`benotung`: nur
 `spiel|stufe`), damit jedes Kind im music-trainer unter „Meine Note“ seine
-eigene Note sieht. Festgelegt
+eigene Note sieht. Seit 17.11.2026 ist das aus (`MEINE_NOTE: false`, Tom braucht
+es nicht): Es geht eine leere Auswahl zum Worker, die Kinder sehen keinen Kasten. Festgelegt
 wird sie beim Übertragen in die Klassenliste, nicht beim Umschalten der
 Kategorien (`kategorien`: Bereiche × Spiele × Stufen je Bereich).

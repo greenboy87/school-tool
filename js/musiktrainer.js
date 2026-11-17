@@ -1266,8 +1266,13 @@ const Musiktrainer = {
   /* Was die Kinder im music-trainer unter „Meine Note“ sehen, legt die Lehrkraft fest:
      beim Übertragen in die Klassenliste oder mit dem Knopf hier. Ein bloßes Umschalten der
      Kategorien – etwa fürs Scoreboard – ändert es nicht. */
+  /* „Meine Note“ für die Kinder ist seit 17.11.2026 aus (Tom braucht sie nicht): kein Hinweis,
+     und benotungSenden schickt eine leere Auswahl – dann zeigt der music-trainer den Kasten nicht.
+     Wieder einschalten: MEINE_NOTE auf true. */
+  MEINE_NOTE: false,
+
   meineNoteHinweis(cls) {
-    if (cls.gruppe) return '';
+    if (cls.gruppe || !this.MEINE_NOTE) return '';
     const mt = cls.musiktrainer;
     const klasse = this.ergebnis?.daten?.klasse;
     if (!klasse || !('benotung' in klasse))
@@ -1296,7 +1301,7 @@ const Musiktrainer = {
     const mt = cls?.musiktrainer;
     const klasse = mt && this.ergebnis?.klasseId === mt.id && this.ergebnis.daten.klasse;
     if (!klasse || !('benotung' in klasse)) return;      // älterer Worker kennt das noch nicht
-    const soll = { liste: [...(mt.benotung || [])].sort(), fehltAls6: !!mt.fehltAls6 };
+    const soll = { liste: this.MEINE_NOTE ? [...(mt.benotung || [])].sort() : [], fehltAls6: !!mt.fehltAls6 };
     const ist = klasse.benotung ? { liste: [...klasse.benotung.liste].sort(), fehltAls6: !!klasse.benotung.fehltAls6 } : { liste: [], fehltAls6: false };
     if (JSON.stringify(ist) === JSON.stringify(soll)) return;
     if (this.benotungSendet) { this.benotungNochmal = true; return; }
