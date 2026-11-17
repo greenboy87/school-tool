@@ -359,8 +359,17 @@ const SchuelerGruppen = {
     const meine = (this.zuordnung[this.auswahl[0]] || {}).gruppe || '';
     const meinKey = meine.trim().toLowerCase();
     const wir = this.auswahl.length > 1;
+    /* Wer über „Anderen Schüler hinzufügen“ dazukam, steht noch nicht in der
+       Gruppe des Gerätebesitzers. Die eigene Karte ist kein Knopf – ohne eigenen
+       „mit eintragen“-Knopf kamen die Dazugenommenen dort nie hinein. */
+    const fehlen = meinKey ? this.auswahl.filter(sid =>
+      ((this.zuordnung[sid] || {}).gruppe || '').trim().toLowerCase() !== meinKey) : [];
+    const fehlenNamen = fehlen.map(sid => this.ohneKomma(this.namen[+sid.slice(1)] || '?'));
 
-    this.melde(meine
+    this.melde(meine && fehlen.length
+      ? `Du bist bei „${meine}“. Noch nicht dabei: ${fehlenNamen.join(', ')} – ` +
+        'tippe auf deiner Karte auf „… mit eintragen“.'
+      : meine
       ? (wir ? `Ihr seid bei „${meine}“.` : `Du bist bei „${meine}“.`)
       : (wir
         ? 'Ihr seid noch nirgends eingetragen. Tippt eine Karte an oder tragt unten etwas Eigenes ein.'
@@ -407,6 +416,16 @@ const SchuelerGruppen = {
       }
       karte.appendChild(liste);
 
+      if (drin && fehlen.length) {
+        const mit = document.createElement('button');
+        mit.type = 'button';
+        mit.className = 'primary mit-eintragen';
+        mit.textContent = fehlen.length === 1
+          ? `${fehlenNamen[0]} hier mit eintragen`
+          : `${fehlen.length} weitere hier mit eintragen`;
+        mit.addEventListener('click', () => this.trittBei(g.name));
+        karte.appendChild(mit);
+      }
       if (drin) {
         const reihe = document.createElement('div');
         reihe.className = 'karten-knoepfe';

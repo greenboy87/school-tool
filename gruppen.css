@@ -278,3 +278,7 @@ ul.gk-namen li.mit { color: var(--text); font-weight: 600; }
 
 .schueler-seite .hint { color: var(--muted); font-size: 0.88rem; line-height: 1.5; }
 .schueler-seite .hint.fuss { margin-top: 1.1rem; margin-bottom: 0; }
+
+/* Dazugenommene Namen in die eigene Gruppe holen */
+.gruppenkarte .mit-eintragen { display: block; width: 100%; margin-top: 0.7rem; padding: 0.7rem;
+  font-size: 0.95rem; border-radius: 0.6rem; }
