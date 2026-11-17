@@ -1822,6 +1822,15 @@ const Classes = {
       const knopfzeile = document.createElement('div');
       knopfzeile.className = 'btn-row gruppen-werkzeuge';
       knopfzeile.appendChild(schalter);
+      if (!bearbeiten && typeof LiveGroups !== 'undefined' && document.getElementById('btn-live-start')) {
+        const nochmal = document.createElement('button');
+        nochmal.type = 'button';
+        nochmal.className = 'small';
+        nochmal.textContent = 'Per QR-Code nochmal öffnen';
+        nochmal.title = 'Neue Sammlung, in der alle schon in ihrer Gruppe stehen – Klasse und du können ändern, „Übernehmen“ ersetzt dann diese Gruppen';
+        nochmal.addEventListener('click', () => LiveGroups.neuOeffnen(p));
+        knopfzeile.appendChild(nochmal);
+      }
       if (bearbeiten) {
         knopfzeile.appendChild(neueGruppe);
         const wie = document.createElement('span');

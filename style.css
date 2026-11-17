@@ -3261,3 +3261,8 @@ html.locked .live-anzeige { display: none; }
 .tr-leistung td small { margin-left: .2rem; }
 .tr-leistung .tr-summe td { border-top: 2px solid var(--border); }
 .trainer-uebersicht h3 small { margin-left: .4rem; font-weight: 500; }
+
+/* Namen in der laufenden Sammlung: antippen zum Umhängen */
+.live-name { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer;
+  text-align: left; text-decoration: underline dotted transparent; }
+.live-name:hover, .live-name:focus-visible { text-decoration-color: currentColor; color: var(--accent-soft); }
