@@ -353,7 +353,7 @@ const LiveGroups = {
         const knopf = document.createElement('button');
         knopf.type = 'button';
         knopf.className = 'live-name';
-        knopf.textContent = Classes.studentName(s);
+        knopf.textContent = Classes.listenName(s);
         knopf.title = 'Antippen: in eine Gruppe stecken';
         knopf.addEventListener('click', () => this.umhaengen(s.id, ''));
         zeile.append(knopf);
@@ -411,7 +411,7 @@ const LiveGroups = {
     const drin = new Set(gruppen.flatMap(g => g.ids));
     const offen = cls.students.filter(s => !drin.has(s.id));
     if (offen.length && !confirm(
-      `${offen.length} Schüler sind noch in keiner Gruppe:\n${offen.map(s => Classes.studentName(s)).join(', ')}\n\n` +
+      `${offen.length} Schüler sind noch in keiner Gruppe:\n${offen.map(s => Classes.listenName(s)).join(', ')}\n\n` +
       'Trotzdem übernehmen?')) return;
 
     // Falls gerade eine andere Klasse offen ist, zurückschalten
@@ -539,7 +539,7 @@ const LiveGroups = {
     z.textContent = String(drin.size);
     zahl.append(z, ` von ${cls.students.length} sind in einer Gruppe`);
 
-    const offen = cls.students.filter(s => !drin.has(s.id)).map(s => Classes.studentName(s));
+    const offen = cls.students.filter(s => !drin.has(s.id)).map(s => Classes.listenName(s));
     d.getElementById('offen').textContent = offen.length
       ? `Noch offen (${offen.length}): ${offen.join(', ')}`
       : 'Alle sind eingeteilt.';

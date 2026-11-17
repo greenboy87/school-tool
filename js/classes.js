@@ -1463,6 +1463,9 @@ const Classes = {
   },
 
   studentName(s) { return s.first ? `${s.last}, ${s.first}` : s.last; },
+  /* Für Aufzählungen mit Komma dazwischen: „Fabian Batz“ statt „Batz, Fabian“,
+     sonst liest sich „Batz, Fabian, Kammerer, Florian“ wie vier Leute. */
+  listenName(s) { return s.first ? `${s.first} ${s.last}` : s.last; },
 
   renderStudents() {
     const cls = this.currentClass();
@@ -1843,7 +1846,7 @@ const Classes = {
         const warnung = document.createElement('span');
         warnung.className = 'hint ohne-gruppe-hinweis';
         warnung.textContent = `${offen.length} ohne Gruppe: ` +
-          offen.map(x => this.studentName(x)).join(', ');
+          offen.map(x => this.listenName(x)).join(', ');
         knopfzeile.appendChild(warnung);
       }
 

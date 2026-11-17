@@ -96,6 +96,12 @@ const SchuelerGruppen = {
     return this.auswahl.map(sid => this.namen[+sid.slice(1)] || '?');
   },
 
+  /* „Batz, Fabian“ → „Fabian Batz“, damit Aufzählungen mit Komma lesbar bleiben */
+  ohneKomma(n) {
+    const i = n.indexOf(', ');
+    return i < 0 ? n : `${n.slice(i + 2)} ${n.slice(0, i)}`;
+  },
+
   geraeteId() {
     let id = localStorage.getItem('gruppen-geraet');
     if (!id) { id = Math.random().toString(36).slice(2, 8); localStorage.setItem('gruppen-geraet', id); }
@@ -258,7 +264,7 @@ const SchuelerGruppen = {
     document.getElementById('s-gruppe').hidden = !fertig;
     if (!fertig) { this.zeichneNamen(); return; }
 
-    document.getElementById('s-ich').textContent = this.meineNamen().join(', ');
+    document.getElementById('s-ich').textContent = this.meineNamen().map(n => this.ohneKomma(n)).join(', ');
     document.getElementById('s-projekt-titel').textContent = this.projekt || 'Deine Gruppe';
 
     // Die Lehrkraft legt fest, was hier einzutragen ist – „Gruppenname“ oder
@@ -326,7 +332,7 @@ const SchuelerGruppen = {
     if (!namen.length) return;
     text.textContent = namen.length === 1
       ? namen[0]
-      : `${namen.length} Namen: ${namen.join(', ')}`;
+      : `${namen.length} Namen: ${namen.map(n => this.ohneKomma(n)).join(', ')}`;
     knopf.textContent = namen.length === 1 ? 'Weiter' : 'Weiter mit allen';
   },
 
