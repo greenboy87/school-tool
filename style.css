@@ -1573,6 +1573,15 @@ html.locked body > *:not(.lock-screen) { display: none !important; }
 .gesichter-name.vergeben { opacity: .45; }
 .gesichter-name.aktuell { border-color: var(--accent); background: var(--active-soft); }
 .gesichter-name.danger { color: var(--danger); border-color: var(--danger); }
+.gesichter-einzeln { margin: .4rem 0 .8rem; }
+.gesichter-einzeln-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .8rem; }
+.gesichter-einzeln-kopf input { width: min(100%, 14rem); margin-left: auto; }
+.gesichter-einzeln .gesichter-namen { max-height: 7.5rem; }
+.gesichter-name.hat { border-color: color-mix(in srgb, var(--green) 55%, var(--border)); }
+.gesichter-name.fehlt { opacity: .6; }
+.gesichter-einzeln-aktion { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .6rem;
+  padding: .5rem .7rem; border: 1px solid var(--accent); border-radius: var(--radius-sm); background: var(--active-soft); }
+.gesichter-einzeln-aktion > span { margin-right: auto; }
 
 .sitz-pdf-zeile { margin: .2rem 0 .6rem; }
 .sitz-pdf-vorschau {

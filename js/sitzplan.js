@@ -82,6 +82,16 @@ const Sitzplan = {
       this.gesichterZeichnen();
     });
     an('btn-gesichter-zurueck', () => this.gesichterZurueck());
+    // Einzelne Schüler: Namen antippen blendet alle anderen Rahmen aus
+    an('gesichter-einzeln-suche', () => this.gesichterEinzelnZeichnen(), 'input');
+    an('gesichter-einzeln-liste', e => {
+      const b = e.target.closest('[data-einzeln-id]');
+      if (b) this.gesichterFokus(b.dataset.einzelnId);
+    });
+    an('gesichter-einzeln-aktion', e => {
+      const b = e.target.closest('[data-einzeln]');
+      if (b) this.gesichterEinzelnAktion(b.dataset.einzeln);
+    });
     an('btn-gesichter-namen-aus', () => this.gesichterUmschalten('zeigeNamen'));
     an('btn-gesichter-rahmen-aus', () => this.gesichterUmschalten('zeigeRahmen'));
     an('btn-gesichter-fertig', () => this.gesichterUebernehmen());
@@ -757,6 +767,7 @@ const Sitzplan = {
       x: Math.max(0, p.x - kante / 2), y: Math.max(0, p.y - kante / 2),
       b: kante, h: kante,
     };
+    if (g.ziel) { this.gesichterZielSetzen(); return; }
     this.gesichterZeichnen();
     this.gesichterWahlOeffnen(null);
   },
@@ -768,8 +779,91 @@ const Sitzplan = {
     const b = Math.abs(bis.x - von.x), h = Math.abs(bis.y - von.y);
     if (b < 12 || h < 12) return;                 // zu klein: war wohl ein Tipper
     g.offen = { x, y, b, h };
+    if (g.ziel) { this.gesichterZielSetzen(); return; }
     this.gesichterZeichnen();
     this.gesichterWahlOeffnen(null);
+  },
+
+  /* ---------- Einzelne Schüler ----------
+     Bei 25 Rahmen auf einem Foto trifft man den falschen nicht mehr. Deshalb: Namen
+     antippen (g.fokus) – dann ist nur dessen Rahmen zu sehen. Entfernen löscht ihn,
+     „Neu setzen“ (g.ziel) nimmt den nächsten Tipper oder gezogenen Rahmen direkt für
+     dieses Kind, ohne Namensauswahl; „Verschieben“ öffnet ihn für Pfeiltasten und +/−. */
+  gesichterFokus(id) {
+    const g = this.gesichter;
+    if (!g) return;
+    g.fokus = g.fokus === id ? null : id;
+    g.ziel = null;
+    this.gesichterWahlSchliessen();
+  },
+
+  gesichterEinzelnAktion(was) {
+    const g = this.gesichter;
+    if (!g || !g.fokus) return;
+    const id = g.fokus;
+    if (was === 'weg') {
+      if (!g.zuordnung[id]) return;
+      g.verlauf.push({ ...g.zuordnung });
+      delete g.zuordnung[id];
+      g.ziel = null;
+      this.gesichterWahlSchliessen();
+    } else if (was === 'neu') {
+      g.ziel = g.ziel ? null : id;       // zweiter Klick bricht ab
+      g.offen = null;
+      document.getElementById('gesichter-wahl').hidden = true;
+      this.gesichterZeichnen();
+    } else if (was === 'schieben') {
+      if (!g.zuordnung[id]) return;
+      this.gesichterWahlOeffnen(id);
+      this.gesichterZeichnen();
+    } else if (was === 'fertig') {
+      if (g.offen && g.bearbeitet) this.gesichterZuweisen(g.bearbeitet);
+    } else if (was === 'aus') {
+      g.fokus = null;
+      g.ziel = null;
+      this.gesichterWahlSchliessen();
+    }
+  },
+
+  gesichterZielSetzen() {
+    const g = this.gesichter;
+    const id = g.ziel;
+    g.verlauf.push({ ...g.zuordnung });
+    if (g.verlauf.length > 40) g.verlauf.shift();
+    g.zuordnung[id] = g.offen;
+    g.ziel = null;
+    g.fokus = id;
+    this.gesichterWahlSchliessen();
+  },
+
+  gesichterEinzelnZeichnen() {
+    const g = this.gesichter;
+    const cls = Classes.currentClass();
+    const liste = document.getElementById('gesichter-einzeln-liste');
+    const aktion = document.getElementById('gesichter-einzeln-aktion');
+    if (!g || !cls || !liste) return;
+    const suche = this.schluesselName(document.getElementById('gesichter-einzeln-suche').value);
+    liste.innerHTML = cls.students
+      .filter(s => !suche || this.schluesselName(Classes.studentName(s)).includes(suche))
+      .map(s => `<button type="button" class="gesichter-name${g.zuordnung[s.id] ? ' hat' : ' fehlt'}${g.fokus === s.id ? ' aktuell' : ''}"
+        data-einzeln-id="${s.id}" title="${g.zuordnung[s.id] ? 'Hat einen Rahmen' : 'Noch kein Rahmen'}">${g.zuordnung[s.id] ? '✓ ' : ''}${Band.esc(Classes.studentName(s))}</button>`)
+      .join('');
+    const s = g.fokus && cls.students.find(x => x.id === g.fokus);
+    aktion.hidden = !s;
+    if (!s) return;
+    const hat = !!g.zuordnung[s.id];
+    const name = Band.esc([s.first, s.last].filter(Boolean).join(' '));
+    aktion.innerHTML = g.ziel
+      ? `<span><b>${name}:</b> jetzt aufs Gesicht tippen oder einen Rahmen ziehen.</span>
+         <button type="button" class="small" data-einzeln="neu">Abbrechen</button>`
+      : g.bearbeitet === s.id
+        ? `<span><b>${name}:</b> mit den Pfeiltasten verschieben, + und − ändern die Größe.</span>
+           <button type="button" class="small primary" data-einzeln="fertig">Fertig</button>`
+        : `<span><b>${name}</b> ${hat ? '– nur dieser Rahmen ist zu sehen' : '– hat noch keinen Rahmen'}</span>
+           ${hat ? '<button type="button" class="small danger" data-einzeln="weg">Rahmen entfernen</button>' : ''}
+           <button type="button" class="small primary" data-einzeln="neu">${hat ? 'Neu setzen' : 'Rahmen setzen'}</button>
+           ${hat ? '<button type="button" class="small" data-einzeln="schieben">Verschieben</button>' : ''}
+           <button type="button" class="small" data-einzeln="aus">Alle Rahmen zeigen</button>`;
   },
 
   gesichterZeichnen() {
@@ -793,8 +887,10 @@ const Sitzplan = {
       }
       lage.appendChild(k);
     };
-    if (g.zeigeRahmen) {
+    if (g.zeigeRahmen || g.fokus) {
       for (const [id, r] of Object.entries(g.zuordnung)) {
+        if (g.fokus && id !== g.fokus) continue;           // Einzelansicht: nur dieses Kind
+        if (g.offen && id === g.bearbeitet) continue;      // wird gerade bewegt: nur der offene Rahmen
         const st = cls.students.find(s => s.id === id);
         const name = st ? [st.first, st.last].filter(Boolean).join(' ') : '?';
         setze(r, g.zeigeNamen ? name : '', 'fertig', id);
@@ -819,6 +915,7 @@ const Sitzplan = {
     }
     document.getElementById('btn-gesichter-zurueck').disabled = !g.verlauf.length;
     this.gesichterKnoepfeStellen();
+    this.gesichterEinzelnZeichnen();
   },
 
   /* Die Namensauswahl: tippen filtert, Eingabetaste nimmt den ersten Treffer.
