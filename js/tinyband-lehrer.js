@@ -646,7 +646,7 @@ const TinyBandLehrer = {
   beamer() {
     const cls = Classes.data.classes.find(c => c.id === LiveGroups.klasseId);
     const t = this.tiny();
-    const w = window.open('', 'gruppen-beamer', 'width=1280,height=800');
+    const w = window.open('', 'gruppen-beamer', LiveGroups.fensterMasse());
     if (!w) { alert('Das Fenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben.'); return; }
     LiveGroups.beamerFenster = w;
     const esc = Band.esc;
@@ -668,6 +668,7 @@ const TinyBandLehrer = {
         <section id="tb-beamer-live" class="tb-beamer-live"></section>
       </main></body></html>`);
     w.document.close();
+    LiveGroups.vollbildKnopf(w);
     const skript = w.document.createElement('script');
     skript.src = new URL('js/vendor/qrcode.min.js', location.href).href;
     skript.onload = () => {

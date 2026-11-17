@@ -471,7 +471,7 @@ const LiveGroups = {
     if (!this.raum) { alert('Es läuft gerade keine Sammlung.'); return; }
     if (this.tiny) { TinyBandLehrer.beamer(); return; }
     const cls = Classes.data.classes.find(c => c.id === this.klasseId);
-    const w = window.open('', 'gruppen-beamer', 'width=1400,height=900');
+    const w = window.open('', 'gruppen-beamer', this.fensterMasse());
     if (!w) { alert('Das Fenster wurde blockiert. Bitte Pop-ups für diese Seite erlauben.'); return; }
     this.beamerFenster = w;
     const esc = s => String(s || '').replace(/[&<>"]/g,
@@ -525,7 +525,49 @@ const LiveGroups = {
       });
     };
     w.document.head.appendChild(skript);
+    this.vollbildKnopf(w);
     this.zeichne();
+  },
+
+  /* So groß wie der Bildschirm, auf dem die Seite gerade liegt */
+  fensterMasse() {
+    const sc = window.screen;
+    const l = sc.availLeft || 0, t = sc.availTop || 0;
+    return `left=${l},top=${t},width=${sc.availWidth},height=${sc.availHeight}`;
+  },
+
+  /* Echtes Vollbild darf nur das Fenster selbst anfordern, und nur nach einem
+     Klick darin – ein Klick im Lehrer-Tab zählt nicht. Deshalb ein großer Knopf
+     im Leinwandfenster, dazu Taste F und Doppelklick. Im Vollbild verschwindet er. */
+  vollbildKnopf(w) {
+    const d = w.document;
+    const el = d.documentElement;
+    const aktiv = () => d.fullscreenElement || d.webkitFullscreenElement;
+    const umschalten = () => {
+      if (aktiv()) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+      else {
+        const an = el.requestFullscreen || el.webkitRequestFullscreen;
+        if (an) Promise.resolve(an.call(el)).catch(() => {});
+      }
+    };
+    const stil = d.createElement('style');
+    stil.textContent = `#vollbild{position:fixed;top:1rem;right:1rem;z-index:10;padding:.8rem 1.4rem;
+      font:600 1.2rem system-ui,-apple-system,sans-serif;color:#fff;background:#7c3aed;border:0;
+      border-radius:.8rem;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.25);}
+      #vollbild:hover{background:#6d28d9;}`;
+    d.head.appendChild(stil);
+    const knopf = d.createElement('button');
+    knopf.id = 'vollbild';
+    knopf.type = 'button';
+    knopf.textContent = '⛶ Vollbild';
+    knopf.title = 'Vollbild an/aus (auch Taste F oder Doppelklick)';
+    knopf.addEventListener('click', umschalten);
+    d.body.appendChild(knopf);
+    d.addEventListener('dblclick', umschalten);
+    d.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') umschalten(); });
+    const zeigen = () => { knopf.hidden = !!aktiv(); };
+    d.addEventListener('fullscreenchange', zeigen);
+    d.addEventListener('webkitfullscreenchange', zeigen);
   },
 
   leinwandZeichnen(cls, gruppen, drin) {
