@@ -227,6 +227,7 @@ const TrainerUebersicht = {
     const titel = (mehrere ? `${quellen.length} Klassen zusammen` : quellen[0].name) + (this.opt.spiel ? ` · ${this.uebungName()}` : '');
     return `
       ${this.opt.spiel ? this.leistungHtml(quellen) : ''}
+      ${this.nachmittagHtml(quellen, filter)}
       ${this.tagHtml(quellen)}
       ${mehrere ? `<section class="card">
         <div class="projekt-header"><h3 data-icon="gauge">Klassen vergleichen${this.opt.spiel ? `: ${this.esc(this.uebungName())}` : ''}</h3></div>
@@ -310,6 +311,69 @@ const TrainerUebersicht = {
         : `<p class="hint">${tag === heute ? 'Heute' : 'An diesem Tag'} war noch niemand aus ${mehrere ? 'diesen Klassen' : 'dieser Klasse'} angemeldet.</p>`}
         ${this.opt.spiel ? '' : this.fernHtml(quellen, namen)}
         <p class="hint">Angemeldet = die Seite war mit Zugang offen. Übungszeit = Länge der gespielten Runden (seit 01.11.2026 gespeichert).</p>
+      </section>`;
+  },
+
+  /* ---------- Wer hat nachmittags geübt? ----------
+     Zählt jede Runde, die ab 13 Uhr begonnen hat (alle Wochentage), im gewählten Zeitraum.
+     Je Kind: an wie vielen Tagen, wie lange, wie viele Runden, wann zuletzt. */
+  nachmittagHtml(quellen, filter) {
+    const AB = 13;
+    const seit = +this.opt.zeitraum ? Date.now() / 1000 - this.opt.zeitraum * 86400 : 0;
+    const namen = this.namen(quellen);
+    const wt = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+    const uhr = t => new Date(t * 1000).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const datum = t => { const d = new Date(t * 1000); return `${wt[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`; };
+    const kinder = {};
+    let gesamt = 0;
+    quellen.forEach(q => {
+      const d = this.d(q);
+      gesamt += d.schueler.length;
+      d.verlauf.forEach(v => {
+        const start = v.zeit - (v.dauer || 0);
+        if (v.zeit < seit || new Date(start * 1000).getHours() < AB) return;
+        const k = kinder[v.schueler_id] ||= { id: v.schueler_id, q, tage: {}, sek: 0, n: 0, zuletzt: 0 };
+        const t = Musiktrainer.statTag(v.zeit);
+        const tg = k.tage[t] ||= { von: start, bis: v.zeit, sek: 0, n: 0 };
+        tg.von = Math.min(tg.von, start); tg.bis = Math.max(tg.bis, v.zeit);
+        tg.sek += v.dauer || 0; tg.n++;
+        k.sek += v.dauer || 0; k.n++;
+        k.zuletzt = Math.max(k.zuletzt, v.zeit);
+      });
+    });
+    const zeilen = Object.values(kinder).map(k => ({ ...k, info: namen[k.id], tage: Object.values(k.tage).sort((a, b) => b.bis - a.bis) }))
+      .sort((a, b) => b.sek - a.sek || b.n - a.n);
+    const sek = zeilen.reduce((s, z) => s + z.sek, 0);
+    const nachmittage = zeilen.reduce((s, z) => s + z.tage.length, 0);
+    const mehrere = quellen.length > 1;
+    const zeitraum = this.opt.zeitraum === '0' ? 'insgesamt' : `in den letzten ${this.opt.zeitraum} Tagen`;
+    const tagText = tg => `${datum(tg.bis)} ${uhr(tg.von)}–${uhr(tg.bis)} · ${Math.round(tg.sek / 60)} min · ${tg.n} ${tg.n === 1 ? 'Runde' : 'Runden'}`;
+    return `
+      <section class="card">
+        <div class="projekt-header">
+          <h3 data-icon="timer">Nachmittags geübt (ab ${AB} Uhr)${this.opt.spiel ? ` <small class="hint">${this.esc(this.uebungName())}</small>` : ''}</h3>
+        </div>
+        ${filter}
+        <div class="st-kacheln">
+          <div class="st-kachel st-gross"><b>${zeilen.length} <small>von ${gesamt}</small></b><span>Kinder ${zeitraum}</span></div>
+          <div class="st-kachel"><b>${Musiktrainer.minuten(sek)}</b><span>Übungszeit zusammen</span></div>
+          <div class="st-kachel"><b>${zeilen.length ? Musiktrainer.minuten(sek / zeilen.length) : '–'}</b><span>je übendem Kind</span></div>
+          <div class="st-kachel"><b>${nachmittage}</b><span>Nachmittage zusammen</span></div>
+        </div>
+        ${zeilen.length ? `<div class="mt-tabelle-rahmen"><table class="mt-tabelle st-tabelle tr-nachmittag">
+          <thead><tr><th>Name</th>${mehrere ? '<th>Klasse</th>' : ''}<th>Übungszeit</th><th title="An so vielen Tagen ab ${AB} Uhr geübt">Nachmittage</th>
+            <th>Runden</th><th>Ø je Nachmittag</th><th>Zuletzt</th></tr></thead>
+          <tbody>${zeilen.map(z => `<tr title="${this.esc(z.tage.map(tagText).join('\n'))}">
+            <td>${z.info?.s ? Musiktrainer.gesichtHtml(z.info.s) : ''}<b>${this.esc(z.info?.name || 'Unbekannt')}</b></td>
+            ${mehrere ? `<td>${this.esc(z.q.name)}</td>` : ''}
+            <td><b>${Musiktrainer.zeit(z.sek)}</b></td>
+            <td>${z.tage.length}</td>
+            <td>${z.n}</td>
+            <td>${Musiktrainer.zeit(z.sek / z.tage.length)}</td>
+            <td class="hint">${datum(z.tage[0].bis)} ${uhr(z.tage[0].von)}–${uhr(z.tage[0].bis)}</td></tr>`).join('')}</tbody>
+        </table></div>
+        <p class="hint">Mit der Maus über eine Zeile: jeder Nachmittag einzeln. Gezählt wird jede Runde, die ab ${AB} Uhr begonnen hat – auch am Wochenende; Übungszeit = Länge der Runden (seit 01.11.2026 gespeichert).</p>`
+        : `<p class="hint">${zeitraum[0].toUpperCase() + zeitraum.slice(1)} hat noch niemand aus ${mehrere ? 'diesen Klassen' : 'dieser Klasse'} nach ${AB} Uhr geübt.</p>`}
       </section>`;
   },
 
