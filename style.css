@@ -3266,3 +3266,10 @@ html.locked .live-anzeige { display: none; }
 .live-name { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer;
   text-align: left; text-decoration: underline dotted transparent; }
 .live-name:hover, .live-name:focus-visible { text-decoration-color: currentColor; color: var(--accent-soft); }
+
+/* Gruppen bilden – sitzt unter dem Projekt */
+.gruppen-werkstatt { display: grid; gap: 1.2rem; }
+.gruppen-werkstatt[hidden] { display: none; }
+.werkstatt-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1rem; border: 1px solid var(--accent); }
+.werkstatt-kopf h3 { margin: 0; flex: 1 1 auto; }
+.werkstatt-kopf .hint { order: 3; flex-basis: 100%; margin: 0; }

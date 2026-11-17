@@ -633,7 +633,18 @@ const TinyBandLehrer = {
       groupNames: experten.map(g => g.i.name),
       rollen: Object.fromEntries(liste.map(x => [id(x.sid), x.bandName])),
     };
-    cls.projects.push(pBands, pExperten);
+    /* Am Projekt gestartet und das ist noch leer: die Bands kommen dort hinein,
+       die Expertengruppen bekommen ein eigenes Projekt daneben. */
+    const ziel = LiveGroups.projektId && cls.projects.find(p => p.id === LiveGroups.projektId);
+    if (ziel && !(ziel.groups || []).length) {
+      Object.assign(ziel, { groups: pBands.groups, groupNames: pBands.groupNames, rollen: pBands.rollen });
+      pBands.id = ziel.id;
+      pBands.name = ziel.name;
+      pExperten.name = `${ziel.name} – Expertengruppen`;
+      cls.projects.push(pExperten);
+    } else {
+      cls.projects.push(pBands, pExperten);
+    }
     this.uebernommen = { signatur: this.signatur(liste), ids: [pBands.id, pExperten.id] };
     Classes.currentProjectId = pBands.id;
     Classes.persist();

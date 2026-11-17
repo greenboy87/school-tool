@@ -72,10 +72,17 @@ const LiveGroups = {
     const modus = ausProjekt ? 'normal' : this.modus();
     this.tiny = modus === 'A' || modus === 'B' ? TinyBandLehrer.optionenLesen(cls, modus) : null;
     if (this.tiny === false) { this.tiny = null; return; }
-    const projekt = ausProjekt ? String(ausProjekt.name || 'Gruppenarbeit').slice(0, 60)
-      : this.tiny ? `Tiny Band – ${this.tiny.song}`.slice(0, 60) : this.projektName();
+    // Gruppen entstehen am Projekt: das offene ist das Ziel, sein Name steht auf den Handys
+    const ziel = ausProjekt || Classes.currentProject();
+    const projekt = this.tiny ? `Tiny Band – ${this.tiny.song}`.slice(0, 60)
+      : ziel ? String(ziel.name || 'Gruppenarbeit').slice(0, 60) : this.projektName();
     if (projekt === null) return;
-    this.projektId = ausProjekt ? ausProjekt.id : null;
+    this.projektId = ziel ? ziel.id : null;
+    /* Was „Übernehmen“ ersetzen darf: bei „nochmal öffnen“ alle Gruppen des Projekts
+       (sie stehen ja vorbelegt in der Sammlung), sonst nur die aus dieser Sammlung –
+       vorher schon vorhandene Gruppen bleiben vorne stehen. Mehrfaches Übernehmen
+       hängt so nichts doppelt an. */
+    this.basis = ausProjekt || !ziel ? 0 : (ziel.groups || []).length;
     this.projektVorschlag = projekt;
 
     // Was die Klasse eintragen soll. Leer = „Gruppenname“; wer „Thema“ einträgt,
@@ -112,8 +119,7 @@ const LiveGroups = {
     if (!confirm(`Die Gruppen von „${p.name}“ noch einmal zur Sammlung öffnen?\n\n` +
       'Alle stehen zunächst in ihrer bisherigen Gruppe und können per QR-Code wechseln. ' +
       'Mit „Gruppen übernehmen“ ersetzt du danach die Gruppen dieses Projekts.')) return;
-    const knopf = document.querySelector('.subtab-btn[data-subtab="gruppen"]');
-    if (knopf) knopf.click();
+    Classes.werkstattOeffnen();
     this.starte(p);
     const panel = document.getElementById('live-panel');
     if (panel && !panel.hidden) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -178,7 +184,7 @@ const LiveGroups = {
      ab), stünde die Sammlung in der Datenbank noch, aber hier wäre sie weg –
      „Übernehmen“ ginge nicht mehr. Deshalb den Raum-Code merken (keine Namen). */
   merken() {
-    try { localStorage.setItem('live-sammlung', JSON.stringify({ raum: this.raum, klasseId: this.klasseId, projektId: this.projektId })); }
+    try { localStorage.setItem('live-sammlung', JSON.stringify({ raum: this.raum, klasseId: this.klasseId, projektId: this.projektId, basis: this.basis || 0 })); }
     catch (e) { /* ohne Speicher geht nur das Merken verloren */ }
   },
 
@@ -231,7 +237,14 @@ const LiveGroups = {
     this.klasseId = cls.id;
     this.reihenfolge = cls.students.map(s => s.id);
     this.raum = raum;
-    this.projektId = gemerkt && gemerkt.raum === raum ? gemerkt.projektId || null : null;
+    const passt = gemerkt && gemerkt.raum === raum;
+    this.projektId = passt ? gemerkt.projektId || null : null;
+    this.basis = passt ? gemerkt.basis || 0 : 0;
+    // Ohne Merkzettel: das offene Projekt mit gleichem Namen als Ziel nehmen
+    if (!this.projektId) {
+      const gleich = cls.projects.find(x => x.name === meta.projekt);
+      if (gleich) { this.projektId = gleich.id; this.basis = 0; }
+    }
     this.bezeichnung = String(meta.bezeichnung || 'Gruppenname').slice(0, 30);
     this.projektVorschlag = meta.projekt || 'Gruppenarbeit';
     const modus = document.getElementById('live-modus');
@@ -418,16 +431,18 @@ const LiveGroups = {
     if (Classes.currentClassId !== this.klasseId) Classes.selectClass(this.klasseId);
 
     const alt = this.projektId && (cls.projects || []).find(x => x.id === this.projektId);
-    if (alt && confirm(`Die Gruppen von „${alt.name}“ durch diese ${gruppen.length} Gruppen ersetzen?\n\n` +
-      'Noten bleiben beim Schüler stehen. Abbrechen: anderes oder neues Projekt wählen.')) {
-      alt.groups = gruppen.map(g => g.ids);
-      alt.groupNames = gruppen.map(g => g.name);
+    if (alt) {
+      const basis = Math.min(this.basis || 0, (alt.groups || []).length);
+      alt.groups = (alt.groups || []).slice(0, basis).concat(gruppen.map(g => g.ids));
+      alt.groupNames = (alt.groupNames || []).slice(0, basis).concat(gruppen.map(g => g.name));
+      Classes.currentProjectId = alt.id;
       Classes.persist();
       Classes.renderProjects();
-      alert(`Die Gruppen von „${alt.name}“ wurden ersetzt.\n\nDer Raum läuft weiter – erst „Sammlung beenden“ löscht ihn.`);
+      Classes.zeigeProjektErgebnis(gruppen.length);
+      this.status(`${gruppen.length === 1 ? '1 Gruppe' : gruppen.length + ' Gruppen'} in „${alt.name}“ übernommen. ` +
+        'Der Raum läuft weiter – erst „Sammlung beenden“ löscht ihn.');
       return;
     }
-
     const p = Classes.gruppenZiel(this.projektVorschlag || 'Gruppenarbeit', new Date().toISOString().slice(0, 10));
     if (!p) return;
     p.groups.push(...gruppen.map(g => g.ids));
@@ -461,7 +476,9 @@ const LiveGroups = {
     if (weiter) weiter.hidden = false;
     document.getElementById('live-modus').disabled = false;
     this.vergessen();
+    this.basis = 0;
     this.status('Sammlung beendet, Raum gelöscht.');
+    Classes.werkstattTitel();
   },
 
   /* ---------- Großansicht für die Leinwand ----------

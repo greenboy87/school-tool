@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=435">
+<link rel="stylesheet" href="style.css?v=436">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Plan">
-<script src="js/icons.js?v=435"></script>
-<script src="js/theme.js?v=435"></script>
-<script src="js/auswahl.js?v=435"></script>
-<script src="js/metronom.js?v=435"></script>
-<script src="js/klang.js?v=435"></script>
-<script src="js/schwebe.js?v=435"></script>
-<script src="js/auth.js?v=435"></script>
+<script src="js/icons.js?v=436"></script>
+<script src="js/theme.js?v=436"></script>
+<script src="js/auswahl.js?v=436"></script>
+<script src="js/metronom.js?v=436"></script>
+<script src="js/klang.js?v=436"></script>
+<script src="js/schwebe.js?v=436"></script>
+<script src="js/auth.js?v=436"></script>
 </head>
 <body>
 
@@ -349,7 +349,6 @@
             <button class="subtab-btn" data-subtab="klassenbuch" data-icon="book">Klassenbuch</button>
             <button class="subtab-btn" data-subtab="stunden" data-icon="list">Stunden</button>
             <button class="subtab-btn" data-subtab="projekte" data-icon="clipboard">Projekte &amp; Noten</button>
-            <button class="subtab-btn" data-subtab="gruppen" data-icon="shuffle">Gruppen</button>
             <button class="subtab-btn" data-subtab="notizen" data-icon="clipboard">Notizen</button>
             <button class="subtab-btn" data-subtab="ablage" data-icon="folder">Ablage</button>
             <button class="subtab-btn" data-subtab="musiktrainer" data-icon="music">music-trainer</button>
@@ -516,9 +515,14 @@
               <p class="grade-summary" id="grade-summary"></p>
             </div>
           </div>
-        </section>
-
-        <section id="subtab-gruppen" class="subtab-page geteilt">
+          <!-- Gruppen bilden: früher ein eigener Reiter, jetzt am Projekt.
+               Alles, was hier entsteht, landet im Projekt aus dem Kopf. -->
+          <div id="gruppen-werkstatt" class="gruppen-werkstatt" hidden>
+          <div class="card werkstatt-kopf">
+            <h3 id="werkstatt-titel">Gruppen bilden</h3>
+            <p class="hint">Vier Wege, Gruppen zu bilden – such dir einen aus. Was du übernimmst, landet direkt in diesem Projekt.</p>
+            <button type="button" id="btn-werkstatt-zu" class="small" data-icon="x">Schließen</button>
+          </div>
           <div class="card">
           <h3>Schüler bilden Gruppen</h3>
           <p class="hint">Du zeigst einen QR-Code auf der Leinwand, die Schüler scannen ihn mit dem Handy,
@@ -589,9 +593,7 @@
           <div id="manual-groups" class="group-result"></div>
           <div class="inline-form">
             <button id="btn-add-manual-group" data-icon="plus">Gruppe hinzufügen</button>
-            <input type="text" id="manual-project-name" placeholder="Projektname">
-            <input type="date" id="manual-project-date">
-            <button id="btn-save-manual" class="primary" data-icon="check">Als Projekt speichern</button>
+            <button id="btn-save-manual" class="primary" data-icon="check">Ins Projekt übernehmen</button>
           </div>
           </div>
           <div class="card">
@@ -615,9 +617,7 @@
             <p class="hint">Zur Kontrolle – eine Zeile pro Gruppe im Format <code>Name/Produkt | Gruppennote | Namen</code>. Einzelnoten stehen als <code>Name=Note</code> direkt beim Schüler. Du kannst hier korrigieren oder Noten eintragen, bevor du übernimmst. Schüler, die noch nicht in der Klassenliste stehen, werden unten angehängt.</p>
             <textarea id="group-import-text" rows="8" spellcheck="false"></textarea>
             <div class="inline-form">
-              <input type="text" id="group-import-name" placeholder="Projektname">
-              <input type="date" id="group-import-date">
-              <button id="btn-group-import-save" class="primary" data-icon="check">Als Projekt übernehmen</button>
+              <button id="btn-group-import-save" class="primary" data-icon="check">Ins Projekt übernehmen</button>
               <button id="btn-group-import-cancel">Abbrechen</button>
             </div>
             <p class="hint" id="group-import-info"></p>
@@ -634,11 +634,13 @@
             </label>
             <input type="number" id="group-n" min="2" max="15" value="4">
             <button id="btn-make-groups" class="primary" data-icon="shuffle">Auslosen</button>
-            <button id="btn-save-groups" data-icon="check" hidden>Als Projekt speichern</button>
+            <button id="btn-save-groups" data-icon="check" hidden>Ins Projekt übernehmen</button>
           </div>
           <div id="group-result" class="group-result"></div>
           </div>
+          </div>
         </section>
+
 
         <section id="subtab-stunden" class="subtab-page card">
           <div class="projekt-header">
@@ -1572,42 +1574,42 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=435"></script>
-<script src="js/firebase-config.js?v=435"></script>
-<script type="module" src="js/live-firebase.js?v=435"></script>
-<script src="js/ai-import.js?v=435"></script>
-<script src="js/store.js?v=435"></script>
-<script src="js/noise.js?v=435"></script>
-<script src="js/classes.js?v=435"></script>
-<script src="js/sitzplan.js?v=435"></script>
-<script src="js/schueler.js?v=435"></script>
-<script src="js/tasten.js?v=435"></script>
-<script src="js/lessons.js?v=435"></script>
-<script src="js/band.js?v=435"></script>
-<script src="js/notes.js?v=435"></script>
-<script src="js/tresor.js?v=435"></script>
-<script src="js/erklaerungen.js?v=435"></script>
-<script src="js/setlisten.js?v=435"></script>
-<script src="js/einklappen.js?v=435"></script>
-<script src="js/tinyband-instrumente.js?v=435"></script>
-<script src="js/live-groups.js?v=435"></script>
-<script src="js/tinyband-lehrer.js?v=435"></script>
-<script src="js/tipps.js?v=435"></script>
-<script src="js/sport-tabellen.js?v=435"></script>
-<script src="js/sport.js?v=435"></script>
-<script src="js/ex-import.js?v=435"></script>
-<script src="js/exen.js?v=435"></script>
-<script src="js/ex-namen.js?v=435"></script>
-<script src="js/ex-sitzung.js?v=435"></script>
-<script src="js/ex-auswertung.js?v=435"></script>
-<script src="js/ex-reiter.js?v=435"></script>
-<script src="js/tools.js?v=435"></script>
-<script src="js/ablage.js?v=435"></script>
-<script src="js/musiktrainer.js?v=435"></script>
-<script src="js/trainer-uebersicht.js?v=435"></script>
-<script src="js/ipad-buchen.js?v=435"></script>
-<script src="js/stundenplan.js?v=435"></script>
-<script src="js/notfall.js?v=435"></script>
-<script src="js/app.js?v=435"></script>
+<script src="js/vendor/qrcode.min.js?v=436"></script>
+<script src="js/firebase-config.js?v=436"></script>
+<script type="module" src="js/live-firebase.js?v=436"></script>
+<script src="js/ai-import.js?v=436"></script>
+<script src="js/store.js?v=436"></script>
+<script src="js/noise.js?v=436"></script>
+<script src="js/classes.js?v=436"></script>
+<script src="js/sitzplan.js?v=436"></script>
+<script src="js/schueler.js?v=436"></script>
+<script src="js/tasten.js?v=436"></script>
+<script src="js/lessons.js?v=436"></script>
+<script src="js/band.js?v=436"></script>
+<script src="js/notes.js?v=436"></script>
+<script src="js/tresor.js?v=436"></script>
+<script src="js/erklaerungen.js?v=436"></script>
+<script src="js/setlisten.js?v=436"></script>
+<script src="js/einklappen.js?v=436"></script>
+<script src="js/tinyband-instrumente.js?v=436"></script>
+<script src="js/live-groups.js?v=436"></script>
+<script src="js/tinyband-lehrer.js?v=436"></script>
+<script src="js/tipps.js?v=436"></script>
+<script src="js/sport-tabellen.js?v=436"></script>
+<script src="js/sport.js?v=436"></script>
+<script src="js/ex-import.js?v=436"></script>
+<script src="js/exen.js?v=436"></script>
+<script src="js/ex-namen.js?v=436"></script>
+<script src="js/ex-sitzung.js?v=436"></script>
+<script src="js/ex-auswertung.js?v=436"></script>
+<script src="js/ex-reiter.js?v=436"></script>
+<script src="js/tools.js?v=436"></script>
+<script src="js/ablage.js?v=436"></script>
+<script src="js/musiktrainer.js?v=436"></script>
+<script src="js/trainer-uebersicht.js?v=436"></script>
+<script src="js/ipad-buchen.js?v=436"></script>
+<script src="js/stundenplan.js?v=436"></script>
+<script src="js/notfall.js?v=436"></script>
+<script src="js/app.js?v=436"></script>
 </body>
 </html>

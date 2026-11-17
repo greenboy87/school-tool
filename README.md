@@ -61,7 +61,13 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
 - Projekte mit Name + Datum anlegen und benoten (1–6, auch 2+/2−)
 - Noten der Reihe nach eingeben (Enter springt zum nächsten Schüler) – ideal zum Übertragen in den Notenmanager
 - Abhak-Kästchen „im Notenmanager eingetragen“ pro Projekt
-- Zufallsgruppen bilden (nach Gruppengröße oder Anzahl) und als Projekt speichern; Gruppennote wird automatisch allen Mitgliedern zugewiesen
+- **Gruppen bilden** sitzt am Projekt (seit v436 kein eigener Reiter mehr): Ein Projekt ohne
+  Gruppen zeigt den Knopf, eins mit Gruppen **Weitere Gruppen bilden**. Darunter öffnen sich
+  vier Wege – per QR-Code (auch Tiny Band), Zufall (Gruppengröße oder Anzahl), von Hand,
+  PDF-Import. Alles landet ohne Rückfrage im offenen Projekt. Gruppennote wird automatisch
+  allen Mitgliedern zugewiesen.
+- **Per QR-Code nochmal öffnen** startet eine Sammlung, in der alle schon in ihrer Gruppe
+  stehen; **Gruppen übernehmen** ersetzt dann die Gruppen des Projekts (Noten bleiben).
 - Gruppen im Projekt später ändern: **Gruppen bearbeiten** blendet die Werkzeuge ein – die
   Zahl hinter einem Namen hängt den Schüler in eine andere Gruppe, „—“ nimmt ihn heraus,
   **+ Gruppe** legt eine leere an, **×** löst eine auf. **Fertig** räumt alles wieder weg.
@@ -191,8 +197,11 @@ nicht ins Repository – die Seite ist öffentlich.
 
 ### 📱 Gruppen per QR-Code (Handys der Klasse)
 Statt Gruppen auszulosen, kann sich die Klasse selbst einteilen:
-- **Sammlung starten** im Reiter *Projekte & Noten*, dann **Groß für die Leinwand** – es
-  erscheint ein QR-Code zum Beamen.
+- Im Projekt **Gruppen bilden** → **Sammlung starten**, dann **Groß für die Leinwand** – es
+  erscheint ein QR-Code zum Beamen, daneben die Gruppen live (Vollbild-Knopf, Taste F).
+  Auf den Handys steht der Projektname. Mehrfach **Übernehmen** hängt nichts doppelt an.
+- Seite versehentlich neu geladen? **Laufende Sammlung fortsetzen** mit dem Raum-Code.
+- Auf dem Lehrerbildschirm lässt sich ein Name antippen und umhängen oder herausnehmen.
 - Die Schüler scannen, tippen ihren Namen an und gründen eine Gruppe oder treten einer bei.
   Auf dem Lehrerbildschirm läuft die Einteilung live mit, samt „Noch offen“.
 - **Ein Gerät reicht für eine ganze Gruppe:** Es lassen sich mehrere Namen zugleich antippen;
@@ -263,8 +272,9 @@ E-Bass“).
 Instrument* und *Deine Expertengruppe*, jeweils mit den Mitspielern. Nach Änderungen in der
 Matrix einfach erneut senden.
 
-**Gruppen übernehmen** legt zwei Projekte an: *Tiny Band – Bands* (das Instrument steht am
-Namen) und *Tiny Band – Expertengruppen* (die Band steht am Namen). Wer mehrere Varianten
+**Gruppen übernehmen** füllt das offene Projekt mit den Bands (das Instrument steht am Namen),
+sofern es noch leer ist, und legt daneben *„Projekt“ – Expertengruppen* an (die Band steht am
+Namen). Sonst entstehen wie früher *Tiny Band – Bands* und *Tiny Band – Expertengruppen*. Wer mehrere Varianten
 ausprobiert, bekommt durchnummerierte Paare („Tiny Band – Bands (2)“). Dieselbe Einteilung
 ein zweites Mal zu übernehmen legt keine Kopie an, und „Bands bilden“ warnt, wenn die
 bisherige Einteilung noch nicht übernommen ist.

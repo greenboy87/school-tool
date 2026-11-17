@@ -311,7 +311,8 @@ const Classes = {
     document.getElementById('btn-print-project').addEventListener('click', () => this.printProject());
     document.getElementById('btn-export-project').addEventListener('click', () => this.exportProjectCsv());
 
-    // Gruppen
+    // Gruppen bilden – sitzt am Projekt
+    document.getElementById('btn-werkstatt-zu').addEventListener('click', () => this.werkstattSchliessen());
     document.getElementById('btn-make-groups').addEventListener('click', () => this.makeGroups());
     document.getElementById('btn-save-groups').addEventListener('click', () => this.saveGroupsAsProject());
 
@@ -1615,6 +1616,7 @@ const Classes = {
 
   renderProjectDetail() {
     const cls = this.currentClass(), p = this.currentProject();
+    this.werkstattTitel();
     const detail = document.getElementById('project-detail');
     detail.hidden = !p;
     if (!p) return;
@@ -1648,6 +1650,23 @@ const Classes = {
     // Gruppen-Schnelleingabe, falls das Projekt aus einer Gruppenauslosung entstand
     const groupsInfo = document.getElementById('project-groups-info');
     groupsInfo.innerHTML = '';
+    if (!p.groups || !p.groups.length) {
+      const zeile = document.createElement('div');
+      zeile.className = 'btn-row gruppen-werkzeuge';
+      const bilden = document.createElement('button');
+      bilden.type = 'button';
+      bilden.className = 'small';
+      bilden.dataset.icon = 'shuffle';
+      bilden.textContent = 'Gruppen bilden';
+      bilden.title = 'Per QR-Code, Zufall, von Hand oder aus einem PDF';
+      bilden.addEventListener('click', () => this.werkstattOeffnen());
+      const tipp = document.createElement('span');
+      tipp.className = 'hint';
+      tipp.textContent = 'Nur nötig, wenn ihr in Gruppen arbeitet – sonst einfach unten Noten eintragen.';
+      zeile.append(bilden, tipp);
+      groupsInfo.appendChild(zeile);
+      Icons.hydrate(zeile);
+    }
     if (p.groups && p.groups.length) {
       const bearbeiten = !!this.gruppenBearbeiten;
       const wrap = document.createElement('div');
@@ -1833,6 +1852,13 @@ const Classes = {
         nochmal.title = 'Neue Sammlung, in der alle schon in ihrer Gruppe stehen – Klasse und du können ändern, „Übernehmen“ ersetzt dann diese Gruppen';
         nochmal.addEventListener('click', () => LiveGroups.neuOeffnen(p));
         knopfzeile.appendChild(nochmal);
+        const weitere = document.createElement('button');
+        weitere.type = 'button';
+        weitere.className = 'small';
+        weitere.textContent = 'Weitere Gruppen bilden';
+        weitere.title = 'Zusätzliche Gruppen per QR-Code, Zufall, von Hand oder aus einem PDF anhängen';
+        weitere.addEventListener('click', () => this.werkstattOeffnen());
+        knopfzeile.appendChild(weitere);
       }
       if (bearbeiten) {
         knopfzeile.appendChild(neueGruppe);
@@ -2404,35 +2430,15 @@ const Classes = {
     this.zeigeProjektErgebnis(anzahl, "group-result");
   },
 
-  /* Gruppen entstehen im Reiter „Gruppen“, das Projekt liegt aber unter
-     „Projekte & Noten“. Ohne Rückmeldung sähe es am Knopf so aus, als sei
-     nichts passiert – deshalb eine Meldung dort, wo geklickt wurde, samt
-     Knopf zum Hinüberwechseln. */
-  zeigeProjektErgebnis(anzahlGruppen, untenId) {
-    const detail = document.getElementById('project-detail');
-    if (!detail || detail.hidden) return;
+  /* Nach dem Übernehmen: Werkstatt zu, Gruppen am Projekt kurz aufblitzen lassen.
+     (Eine laufende QR-Sammlung bleibt offen – der Raum läuft ja weiter.) */
+  zeigeProjektErgebnis(anzahlGruppen) {
     const p = this.currentProject();
     if (!p) return;
     const text = anzahlGruppen === 1
       ? `1 Gruppe zu „${p.name}“ hinzugefügt.`
       : `${anzahlGruppen} Gruppen zu „${p.name}“ hinzugefügt.`;
-
-    // 1) Rückmeldung unten, direkt beim Knopf
-    const unten = untenId ? document.getElementById(untenId) : null;
-    if (unten) {
-      const box = document.createElement('div');
-      box.className = 'gespeichert-hinweis unten';
-      const t = document.createElement('span');
-      t.textContent = text + ' Zu finden im Reiter „Projekte & Noten“.';
-      const hin = document.createElement('button');
-      hin.className = 'small';
-      hin.textContent = 'Dorthin wechseln';
-      hin.addEventListener('click', () => this.zeigeProjekteReiter());
-      box.append(t, hin);
-      unten.replaceChildren(box);
-    }
-
-    // 2) Meldung oben am Projekt und kurzes Aufblitzen der neuen Gruppen
+    if (!(typeof LiveGroups !== 'undefined' && LiveGroups.raum)) this.werkstattSchliessen();
     const meldung = document.getElementById('project-saved-hint');
     if (meldung) {
       meldung.textContent = text;
@@ -2445,16 +2451,45 @@ const Classes = {
       info.classList.remove('frisch');
       void info.offsetWidth;             // Animation neu starten
       info.classList.add('frisch');
+      info.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-
   },
 
-  /* Nach dem Anlegen von Gruppen: in den Reiter wechseln, wo das Projekt liegt */
-  zeigeProjekteReiter() {
-    const knopf = document.querySelector('.subtab-btn[data-subtab="projekte"]');
-    if (knopf) knopf.click();
-    const detail = document.getElementById('project-detail');
-    if (detail && !detail.hidden) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  /* ---------- Gruppen bilden (am Projekt) ---------- */
+  werkstattProjektId: null,
+
+  werkstattOeffnen() {
+    const p = this.currentProject();
+    if (!p) return;
+    this.werkstattProjektId = p.id;
+    const box = document.getElementById('gruppen-werkstatt');
+    box.hidden = false;
+    this.werkstattTitel();
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+
+  werkstattSchliessen() {
+    if (typeof LiveGroups !== 'undefined' && LiveGroups.raum) {
+      alert('Die QR-Sammlung läuft noch. Erst „Gruppen übernehmen“ und dann „Sammlung beenden“ – danach lässt sich das hier schließen.');
+      return;
+    }
+    const box = document.getElementById('gruppen-werkstatt');
+    if (box) box.hidden = true;
+    this.werkstattProjektId = null;
+  },
+
+  /* Überschrift sagt, wohin übernommen wird. Wechselt man das Projekt, geht die
+     Werkstatt zu – außer eine Sammlung läuft, die gehört fest zu ihrem Projekt. */
+  werkstattTitel() {
+    const box = document.getElementById('gruppen-werkstatt');
+    if (!box || box.hidden) return;
+    const cls = this.currentClass();
+    const live = typeof LiveGroups !== 'undefined' && LiveGroups.raum;
+    const pid = live && LiveGroups.projektId ? LiveGroups.projektId : this.werkstattProjektId;
+    const p = cls && cls.projects.find(x => x.id === pid);
+    if (!live && (!p || this.currentProjectId !== pid)) { this.werkstattSchliessen(); return; }
+    document.getElementById('werkstatt-titel').textContent =
+      p ? `Gruppen bilden für „${p.name}“` : 'Gruppen bilden';
   },
 
   /* Zielprojekt für neu gebildete Gruppen: bestehendes ergänzen oder neues anlegen.
@@ -2462,10 +2497,15 @@ const Classes = {
   gruppenZiel(nameVorschlag, datum) {
     const cls = this.currentClass();
     if (!cls) return null;
+    // Gruppen werden am Projekt gebildet – das offene ist also immer das Ziel
     const offen = this.currentProject();
-    if (offen && confirm(
-      `Gruppen zum geöffneten Projekt „${offen.name}“ hinzufügen?\n\n` +
-      'Abbrechen: stattdessen ein neues Projekt anlegen.')) return offen;
+    if (offen) {
+      // Von Hand angelegte Projekte haben noch keine Gruppenlisten
+      if (!Array.isArray(offen.groups)) offen.groups = [];
+      if (!Array.isArray(offen.groupNames)) offen.groupNames = [];
+      if (!offen.grades) offen.grades = {};
+      return offen;
+    }
 
     let name = (nameVorschlag || '').trim();
     if (!name) name = (prompt('Name des neuen Projekts:') || '').trim();
@@ -2560,9 +2600,7 @@ const Classes = {
       .filter(g => g.members.length);
     if (!gefuellt.length) { alert('Es sind noch keine Namen eingetragen.'); return; }
 
-    const p = this.gruppenZiel(
-      document.getElementById('manual-project-name').value,
-      document.getElementById('manual-project-date').value);
+    const p = this.gruppenZiel('', '');
     if (!p) return;
 
     const created = [];
@@ -2575,7 +2613,6 @@ const Classes = {
 
     const anzahlNeu = this.manualGroups.length;
     this.manualGroups = [];
-    document.getElementById('manual-project-name').value = '';
     this.persist();
     this.renderClassList();
     this.renderStudents();
@@ -2583,7 +2620,7 @@ const Classes = {
     this.renderProjects();
     this.zeigeProjektErgebnis(anzahlNeu, "manual-groups");
     if (created.length) {
-      alert(`Projekt angelegt.\n\nNeu in die Klassenliste aufgenommen (unten angehängt):\n${created.join('\n')}`);
+      alert(`Gruppen übernommen.\n\nNeu in die Klassenliste aufgenommen (unten angehängt):\n${created.join('\n')}`);
     }
   },
 
@@ -2746,8 +2783,7 @@ const Classes = {
   /* Vorschau füllen und anzeigen – gemeinsam für lokalen und KI-Import */
   showGroupPreview(title, lines, info) {
     document.getElementById('group-import-text').value = lines.join('\n');
-    document.getElementById('group-import-name').value = title;
-    document.getElementById('group-import-date').value = new Date().toISOString().slice(0, 10);
+    this.importTitel = title;
     document.getElementById('group-import-info').textContent = info;
     document.getElementById('group-import-preview').hidden = false;
   },
@@ -2815,9 +2851,7 @@ const Classes = {
   saveImportedGroups() {
     const cls = this.currentClass();
     if (!cls) return;
-    const p = this.gruppenZiel(
-      document.getElementById('group-import-name').value || 'Importiertes Projekt',
-      document.getElementById('group-import-date').value);
+    const p = this.gruppenZiel(this.importTitel || 'Importiertes Projekt', '');
     if (!p) return;
     const created = [];
     const groups = [], groupNames = [], grades = {};
@@ -2853,7 +2887,6 @@ const Classes = {
     this.renderStudents();
     this.renderProjects();
     if (created.length) alert(`Neu in die Klassenliste aufgenommen (unten angehängt):\n${created.join('\n')}`);
-    document.querySelector('[data-subtab="projekte"]').click();
     this.zeigeProjektErgebnis(groups.length);
   },
 
