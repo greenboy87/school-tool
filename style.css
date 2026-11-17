@@ -3226,6 +3226,18 @@ html.locked .live-anzeige { display: none; }
 .tr-leer { text-align: center; }
 @media (max-width: 600px) { .tr-jahr { min-width: 0; width: 100%; } .tr-oeffnen { width: 100%; justify-content: center; } }
 .tr-fern { margin-top: .8rem; }
+/* Schieber Vormittag / Nachmittag / Alles: drei gleich breite Felder, die Markierung gleitet */
+.tr-schieber { position: relative; display: inline-grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border-radius: 999px;
+  background: var(--surface-2, rgba(255,255,255,.06)); border: 1px solid var(--border); margin-left: auto; }
+.tr-schieber::before { content: ''; position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / 3); border-radius: 999px;
+  background: var(--accent); transition: transform .25s ease; transform: translateX(calc(var(--pos, 0) * 100%)); }
+.tr-schieber[data-pos="1"] { --pos: 1; }
+.tr-schieber[data-pos="2"] { --pos: 2; }
+.tr-schieber button { position: relative; z-index: 1; background: none; border: 0; padding: .35rem 1.1rem; border-radius: 999px;
+  font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.tr-schieber button.an { color: var(--accent-contrast, #1a1027); }
+.tr-sortierbar { cursor: pointer; user-select: none; white-space: nowrap; }
+.tr-sortierbar:hover, .tr-sortierbar.aktiv { color: var(--accent-soft, var(--accent)); }
 .tr-fern summary { cursor: pointer; font-weight: 600; }
 .tr-fern .mini-gesicht { margin-right: .4rem; vertical-align: middle; }
 .tr-vergleich .tr-summe td { border-top: 2px solid var(--border); border-bottom: 0; font-weight: 700; }

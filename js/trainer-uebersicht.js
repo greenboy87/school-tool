@@ -21,7 +21,10 @@ const TrainerUebersicht = {
     let o = {};
     try { o = JSON.parse(localStorage.getItem(this.OPT_KEY) || '{}'); } catch { /* egal */ }
     this.opt = { zeitraum: o.zeitraum || '28', mass: o.mass || 'min', basis: o.basis || 'jeKind',
-      spiel: MT_SPIELE.some(sp => sp.id === o.spiel) ? o.spiel : '', stufe: o.spiel && o.stufe !== undefined ? String(o.stufe) : '' };
+      spiel: MT_SPIELE.some(sp => sp.id === o.spiel) ? o.spiel : '', stufe: o.spiel && o.stufe !== undefined ? String(o.stufe) : '',
+      tageszeit: ['vormittag', 'nachmittag', 'alles'].includes(o.tageszeit) ? o.tageszeit : 'nachmittag' };
+    // Sortierung der Tageszeit-Tabelle: Spalte und Richtung (nur für diese Sitzung)
+    this.sortierung = { spalte: 'sek', auf: false };
     document.querySelector('.tab-btn[data-tab="trainer"]')?.addEventListener('click', () => this.oeffnen());
     this.el.addEventListener('click', e => this.klick(e));
     this.el.addEventListener('change', e => this.aenderung(e));
@@ -314,11 +317,26 @@ const TrainerUebersicht = {
       </section>`;
   },
 
-  /* ---------- Wer hat nachmittags geübt? ----------
-     Zählt jede Runde, die ab 13 Uhr begonnen hat (alle Wochentage), im gewählten Zeitraum.
+  /* ---------- Wer hat wann geübt? Vormittag / Nachmittag / Alles ----------
+     Nachmittag = jede Runde, die ab 13 Uhr begonnen hat (alle Wochentage), Vormittag = davor.
      Je Kind: an wie vielen Tagen, wie lange, wie viele Runden, wann zuletzt. */
   nachmittagHtml(quellen, filter) {
     const AB = 13;
+    const tz = this.opt.tageszeit || 'nachmittag';
+    const passt = start => {
+      if (tz === 'alles') return true;
+      const nach = new Date(start * 1000).getHours() >= AB;
+      return tz === 'nachmittag' ? nach : !nach;
+    };
+    const TZ = {
+      vormittag: { titel: `Vormittags geübt (vor ${AB} Uhr)`, tage: 'Vormittage', leer: `vor ${AB} Uhr` },
+      nachmittag: { titel: `Nachmittags geübt (ab ${AB} Uhr)`, tage: 'Nachmittage', leer: `nach ${AB} Uhr` },
+      alles: { titel: 'Wer hat geübt? (ganzer Tag)', tage: 'Tage', leer: '' },
+    }[tz];
+    const schieber = `<div class="tr-schieber" data-pos="${['vormittag', 'nachmittag', 'alles'].indexOf(tz)}" role="group" aria-label="Tageszeit">
+      ${[['vormittag', 'Vormittag'], ['nachmittag', 'Nachmittag'], ['alles', 'Alles']].map(([w, t]) =>
+        `<button type="button" class="${tz === w ? 'an' : ''}" data-tr-opt="tageszeit" data-wert="${w}" aria-pressed="${tz === w}">${t}</button>`).join('')}
+    </div>`;
     const seit = +this.opt.zeitraum ? Date.now() / 1000 - this.opt.zeitraum * 86400 : 0;
     const namen = this.namen(quellen);
     const wt = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
@@ -331,7 +349,7 @@ const TrainerUebersicht = {
       gesamt += d.schueler.length;
       d.verlauf.forEach(v => {
         const start = v.zeit - (v.dauer || 0);
-        if (v.zeit < seit || new Date(start * 1000).getHours() < AB) return;
+        if (v.zeit < seit || !passt(start)) return;
         const k = kinder[v.schueler_id] ||= { id: v.schueler_id, q, tage: {}, sek: 0, n: 0, zuletzt: 0 };
         const t = Musiktrainer.statTag(v.zeit);
         const tg = k.tage[t] ||= { von: start, bis: v.zeit, sek: 0, n: 0 };
@@ -341,8 +359,16 @@ const TrainerUebersicht = {
         k.zuletzt = Math.max(k.zuletzt, v.zeit);
       });
     });
+    const { spalte, auf } = this.sortierung;
+    const wert = z => ({ name: z.info?.name || '', klasse: z.q.name, sek: z.sek, tage: z.tage.length, n: z.n,
+      schnitt: z.sek / z.tage.length, zuletzt: z.zuletzt })[spalte];
     const zeilen = Object.values(kinder).map(k => ({ ...k, info: namen[k.id], tage: Object.values(k.tage).sort((a, b) => b.bis - a.bis) }))
-      .sort((a, b) => b.sek - a.sek || b.n - a.n);
+      .sort((a, b) => {
+        const x = wert(a), y = wert(b);
+        const c = typeof x === 'string' ? x.localeCompare(y, 'de', { sensitivity: 'base' }) : x - y;
+        return (auf ? c : -c) || b.sek - a.sek;
+      });
+    const kopf = (sp, text, titel = '') => `<th class="tr-sortierbar${spalte === sp ? ' aktiv' : ''}" data-tr-sort="${sp}"${titel ? ` title="${titel}"` : ''}>${text}${spalte === sp ? (auf ? ' ▲' : ' ▼') : ''}</th>`;
     const sek = zeilen.reduce((s, z) => s + z.sek, 0);
     const nachmittage = zeilen.reduce((s, z) => s + z.tage.length, 0);
     const mehrere = quellen.length > 1;
@@ -351,18 +377,19 @@ const TrainerUebersicht = {
     return `
       <section class="card">
         <div class="projekt-header">
-          <h3 data-icon="timer">Nachmittags geübt (ab ${AB} Uhr)${this.opt.spiel ? ` <small class="hint">${this.esc(this.uebungName())}</small>` : ''}</h3>
+          <h3 data-icon="timer">${TZ.titel}${this.opt.spiel ? ` <small class="hint">${this.esc(this.uebungName())}</small>` : ''}</h3>
+          ${schieber}
         </div>
         ${filter}
         <div class="st-kacheln">
           <div class="st-kachel st-gross"><b>${zeilen.length} <small>von ${gesamt}</small></b><span>Kinder ${zeitraum}</span></div>
           <div class="st-kachel"><b>${Musiktrainer.minuten(sek)}</b><span>Übungszeit zusammen</span></div>
           <div class="st-kachel"><b>${zeilen.length ? Musiktrainer.minuten(sek / zeilen.length) : '–'}</b><span>je übendem Kind</span></div>
-          <div class="st-kachel"><b>${nachmittage}</b><span>Nachmittage zusammen</span></div>
+          <div class="st-kachel"><b>${nachmittage}</b><span>${TZ.tage} zusammen</span></div>
         </div>
         ${zeilen.length ? `<div class="mt-tabelle-rahmen"><table class="mt-tabelle st-tabelle tr-nachmittag">
-          <thead><tr><th>Name</th>${mehrere ? '<th>Klasse</th>' : ''}<th>Übungszeit</th><th title="An so vielen Tagen ab ${AB} Uhr geübt">Nachmittage</th>
-            <th>Runden</th><th>Ø je Nachmittag</th><th>Zuletzt</th></tr></thead>
+          <thead><tr>${kopf('name', 'Name')}${mehrere ? kopf('klasse', 'Klasse') : ''}${kopf('sek', 'Übungszeit')}${kopf('tage', TZ.tage, 'An so vielen Tagen geübt')}
+            ${kopf('n', 'Runden')}${kopf('schnitt', `Ø je ${TZ.tage === 'Tage' ? 'Tag' : TZ.tage.slice(0, -1)}`)}${kopf('zuletzt', 'Zuletzt')}</tr></thead>
           <tbody>${zeilen.map(z => `<tr title="${this.esc(z.tage.map(tagText).join('\n'))}">
             <td>${z.info?.s ? Musiktrainer.gesichtHtml(z.info.s) : ''}<b>${this.esc(z.info?.name || 'Unbekannt')}</b></td>
             ${mehrere ? `<td>${this.esc(z.q.name)}</td>` : ''}
@@ -372,8 +399,9 @@ const TrainerUebersicht = {
             <td>${Musiktrainer.zeit(z.sek / z.tage.length)}</td>
             <td class="hint">${datum(z.tage[0].bis)} ${uhr(z.tage[0].von)}–${uhr(z.tage[0].bis)}</td></tr>`).join('')}</tbody>
         </table></div>
-        <p class="hint">Mit der Maus über eine Zeile: jeder Nachmittag einzeln. Gezählt wird jede Runde, die ab ${AB} Uhr begonnen hat – auch am Wochenende; Übungszeit = Länge der Runden (seit 01.11.2026 gespeichert).</p>`
-        : `<p class="hint">${zeitraum[0].toUpperCase() + zeitraum.slice(1)} hat noch niemand aus ${mehrere ? 'diesen Klassen' : 'dieser Klasse'} nach ${AB} Uhr geübt.</p>`}
+        <p class="hint">Auf eine Spaltenüberschrift klicken sortiert, noch einmal dreht um. Mit der Maus über eine Zeile: jeder Tag einzeln.
+          ${tz === 'alles' ? '' : `Gezählt wird jede Runde, die ${tz === 'nachmittag' ? 'ab' : 'vor'} ${AB} Uhr begonnen hat – auch am Wochenende. `}Übungszeit = Länge der Runden (seit 01.11.2026 gespeichert).</p>`
+        : `<p class="hint">${zeitraum[0].toUpperCase() + zeitraum.slice(1)} hat noch niemand aus ${mehrere ? 'diesen Klassen' : 'dieser Klasse'}${TZ.leer ? ` ${TZ.leer}` : ''} geübt.</p>`}
       </section>`;
   },
 
@@ -493,6 +521,14 @@ const TrainerUebersicht = {
 
   /* ---------- Bedienung ---------- */
   klick(e) {
+    const sort = e.target.closest('[data-tr-sort]');
+    if (sort) {
+      const sp = sort.dataset.trSort;
+      // Gleiche Spalte: Richtung umdrehen; neue Spalte: Text A–Z, Zahlen größte zuerst
+      this.sortierung = this.sortierung.spalte === sp ? { spalte: sp, auf: !this.sortierung.auf }
+        : { spalte: sp, auf: ['name', 'klasse'].includes(sp) };
+      return this.render();
+    }
     const opt = e.target.closest('[data-tr-opt]');
     if (opt) {
       this.opt[opt.dataset.trOpt] = opt.dataset.wert;
