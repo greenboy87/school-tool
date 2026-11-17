@@ -592,6 +592,7 @@ const Musiktrainer = {
       this.ergebnis = null;
       this.render();
     }
+    if (aktion === 'entsperren') return this.entsperren(+b.dataset.id, b);
     if (aktion === 'kind-loeschen') {
       if (!confirm(`Pseudonym ${b.dataset.name} samt Ergebnissen vom Server löschen?`)) return;
       try { await this.api(`/api/lehrer/schueler/${b.dataset.id}`, { methode: 'DELETE' }); this.ergebnis = null; this.laden(); }
@@ -658,6 +659,42 @@ const Musiktrainer = {
       Classes.persist();
       this.render();
     } catch (err) { this.fehler(err, document.getElementById('mt-login'), () => this.einrichten(cls)); }
+  },
+
+  /* ---------- Sperre nach falschen Passwörtern ----------
+     Nach 10 falschen Passwörtern ist ein Zugang 10 Minuten gesperrt. Der Server meldet
+     beim Laden, wer gerade gesperrt ist (gesperrtBis); die Lehrkraft kann entsperren. */
+  gesperrte(schueler) {
+    const t = Date.now() / 1000;
+    return (schueler || []).filter(k => k.gesperrtBis > t);
+  },
+  sperrenHinweis(schueler, nameVon, extra = () => '') {
+    const g = this.gesperrte(schueler);
+    if (!g.length) return '';
+    const t = Date.now() / 1000;
+    return `<div class="mt-warnung mt-sperren"><b>🔒 Gesperrt nach zu vielen falschen Passwörtern:</b>
+      ${g.map(k => `<span class="mt-gesperrt">${this.esc(nameVon(k.id) || k.benutzername)} <code>${this.esc(k.benutzername)}</code>${extra(k)}
+        <span class="hint">noch ${Math.max(1, Math.ceil((k.gesperrtBis - t) / 60))} min</span>
+        <button class="small primary" data-mt="entsperren" data-tr="entsperren" data-id="${k.id}">Entsperren</button></span>`).join('')}
+      <span class="hint">Stand beim Laden – „Aktualisieren“ holt den neuesten.</span></div>`;
+  },
+  async entsperren(id, knopf) {
+    try {
+      if (knopf) { knopf.disabled = true; knopf.textContent = '…'; }
+      await this.api(`/api/lehrer/schueler/${id}/sperre`, { methode: 'DELETE' });
+      // Überall, wo dieses Kind schon geladen ist, die Sperre vergessen
+      const weg = d => d?.schueler?.forEach(k => { if (k.id === id) delete k.gesperrtBis; });
+      weg(this.ergebnis?.daten);
+      Object.values(this.statCache || {}).forEach(weg);
+      Object.values(typeof TrainerUebersicht !== 'undefined' ? TrainerUebersicht.daten || {} : {}).forEach(weg);
+      if (knopf) {
+        const zeile = knopf.closest('.mt-gesperrt');
+        zeile.innerHTML = `${zeile.querySelector('code')?.outerHTML || ''} ist entsperrt ✓`;
+      }
+    } catch (err) {
+      if (knopf) { knopf.disabled = false; knopf.textContent = 'Entsperren'; }
+      alert(err.message === 'Unbekannte Adresse' ? 'Diese Funktion kennt der Worker noch nicht – bitte den neuen worker.js im Cloudflare-Dashboard einfügen.' : `Entsperren ging nicht: ${err.message || err}`);
+    }
   },
 
   /* ---------- Verlorene Zuordnung zurückholen ----------
@@ -1055,6 +1092,10 @@ const Musiktrainer = {
       <td class="hint" title="${u?.zuhauseRunden || 0} Runden außerhalb der Schulzeit">${this.zeit(u?.zuhause)}</td>
       <td class="hint">${this.zuletzt(k.zuletzt)}</td>`;
     ziel.innerHTML = `
+      ${this.sperrenHinweis(this.ergebnis.daten.schueler, id => {
+        const s = cls.students?.find(x => x.mt?.id === id);
+        return s ? this.name(s) : '';
+      })}
       ${this.meineNoteHinweis(cls)}
       <p class="hint">${this.score ? 'Score' : 'Note'} je Aufgabe ${tage ? `aus den letzten ${tage} Tagen` : 'insgesamt'}.
         ${mt.fehltAls6 ? 'Nicht Gespieltes zählt als 6.' : 'Nicht Gespieltes zählt nicht mit.'}

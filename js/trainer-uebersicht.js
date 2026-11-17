@@ -234,7 +234,13 @@ const TrainerUebersicht = {
       besuche: quellen.flatMap(q => this.d(q).besuche || []),
     };
     const titel = (mehrere ? `${quellen.length} Klassen zusammen` : quellen[0].name) + (this.opt.spiel ? ` · ${this.uebungName()}` : '');
+    // Gesperrte Zugänge aller gewählten Klassen (ungefiltert, auch wenn eine Übung gewählt ist)
+    const namen = this.namen(quellen);
+    const klasseVon = {};
+    const alleKinder = quellen.flatMap(q => (this.daten[q.id]?.schueler || []).map(k => { klasseVon[k.id] = q.name; return k; }));
+    const sperren = Musiktrainer.sperrenHinweis(alleKinder, id => namen[id]?.name, k => (mehrere ? ` <span class="hint">${this.esc(klasseVon[k.id])}</span>` : ''));
     return `
+      ${sperren ? `<section class="card">${sperren}</section>` : ''}
       ${this.opt.spiel ? this.leistungHtml(quellen) : ''}
       ${this.nachmittagHtml(quellen, filter)}
       ${this.tagHtml(quellen)}
@@ -546,6 +552,7 @@ const TrainerUebersicht = {
     const quellen = this.quellen();
     const a = b.dataset.tr;
     if (a === 'laden') return this.laden(true);
+    if (a === 'entsperren') return Musiktrainer.entsperren(+b.dataset.id, b);
     if (a === 'uebung-weg') { this.opt.spiel = ''; this.opt.stufe = ''; this.optSpeichern(); return this.render(); }
     if (a === 'einrichten') return this.einrichten(b.dataset.klasse);
     if (a === 'alle') this.wahlSpeichern(new Set(quellen.map(q => q.key)));
