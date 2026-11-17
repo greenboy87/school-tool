@@ -125,11 +125,15 @@ const TrainerUebersicht = {
     const gewaehlt = quellen.filter(q => wahl.has(q.key));
     const geladen = gewaehlt.filter(q => this.daten[q.id]);
     const ohne = this.ohneZugang();
+    const verloren = Musiktrainer.verloren();
     const jahre = [...new Set([...quellen, ...ohne].filter(q => q.cls).map(q => q.jahr))]
       .sort((a, b) => (b || '').localeCompare(a || ''));
     const chip = q => q.ohne
-      ? `<button type="button" class="tr-chip ohne" data-tr="einrichten" data-klasse="${this.esc(q.cls.id)}"
-          title="Noch keine music-trainer-Zugänge – klicken, um sie unter Klassen → ${this.esc(q.name)} → music-trainer einzurichten">${this.esc(q.name)}</button>`
+      ? (verloren.has(q.cls.id)
+        ? `<button type="button" class="tr-chip ohne verloren" data-tr="einrichten" data-klasse="${this.esc(q.cls.id)}"
+          title="War schon eingerichtet, die Zuordnung fehlt hier – klicken und „Zugänge aus früherem Stand zurückholen“">⚠ ${this.esc(q.name)}</button>`
+        : `<button type="button" class="tr-chip ohne" data-tr="einrichten" data-klasse="${this.esc(q.cls.id)}"
+          title="Noch keine music-trainer-Zugänge – klicken, um sie unter Klassen → ${this.esc(q.name)} → music-trainer einzurichten">${this.esc(q.name)}</button>`)
       : `<label class="tr-chip${wahl.has(q.key) ? ' an' : ''}${this.fehlt.has(q.id) ? ' weg' : ''}"
         title="${this.fehlt.has(q.id) ? 'Gibt es auf dem Server nicht mehr' : this.esc(q.gruppe ? 'Eigene Gruppe' : q.jahr)}">
         <input type="checkbox" data-tr-klasse="${this.esc(q.key)}" ${wahl.has(q.key) ? 'checked' : ''}>${this.esc(q.name)}</label>`;
@@ -137,7 +141,9 @@ const TrainerUebersicht = {
     const auswahl = (quellen.length || ohne.length) ? `
       ${jahre.map(j => `<div class="tr-chips">${jahre.length > 1 ? `<span class="tr-jahr">${this.esc(j || 'ohne Schuljahr')}</span>` : ''}
         ${[...quellen.filter(q => q.cls && q.jahr === j), ...ohne.filter(q => q.jahr === j)].sort(nachName).map(chip).join('')}</div>`).join('')}
-      ${ohne.length ? '<p class="hint tr-ohne-hinweis">Grau: noch keine Zugänge – ein Klick führt zum Einrichten.</p>' : ''}
+      ${verloren.size ? `<p class="mt-warnung"><b>⚠ Zuordnung verloren:</b> ${[...verloren.keys()].map(id => this.esc(Classes.data.classes.find(c => c.id === id)?.name || '')).join(', ')}
+        war schon eingerichtet. Die Zugänge der Kinder gibt es noch – Klick auf die Klasse, dann „Zugänge aus früherem Stand zurückholen“. Nicht neu einrichten.</p>` : ''}
+      ${ohne.length > verloren.size ? '<p class="hint tr-ohne-hinweis">Grau: noch keine Zugänge – ein Klick führt zum Einrichten.</p>' : ''}
       ${quellen.some(q => q.gruppe) ? `<div class="tr-chips"><span class="tr-jahr">Eigene Gruppen</span>${quellen.filter(q => q.gruppe).map(chip).join('')}</div>` : ''}
       <div class="btn-row tr-wahl-knoepfe">
         <button class="small" data-tr="alle">Alle</button>

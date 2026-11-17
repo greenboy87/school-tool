@@ -14,9 +14,35 @@ const Store = {
     // Ein anderer Tab hat inzwischen gespeichert: dieser hier lädt gleich neu
     // und darf seinen alten Stand nicht mehr darüberschreiben
     if (this.veraltet) return;
+    this.mtSchuetzen(data, this.load());
     localStorage.setItem(this.KEY, JSON.stringify(data));
     // Einmal je Stunde den Stand beiseitelegen
     if (Date.now() - (Number(localStorage.getItem(this.SICHERUNG_ZEIT)) || 0) > 3600e3) this.sichern(data, 'stündlich');
+  },
+
+  /* ----- music-trainer-Zuordnung schützen -----
+     Welches Pseudonym zu welchem Kind gehört (cls.musiktrainer, s.mt), steht nur hier –
+     geht es verloren, lässt es sich nicht vom Server holen. Im November 2026 verschwand es
+     bei der 5e zweimal, vermutlich durch einen älteren Stand aus dem Sync. Deshalb: Ein
+     neuer Stand darf die Zuordnung nicht still entfernen. Nur „Vom Server löschen“ darf das;
+     es setzt cls.mtGeloescht. Gibt die Zahl der geretteten Klassen/Kinder zurück. */
+  mtSchuetzen(neu, alt) {
+    let n = 0;
+    if (!neu || !Array.isArray(neu.classes) || !alt || !Array.isArray(alt.classes)) return n;
+    const altKarte = new Map(alt.classes.map(c => [c.id, c]));
+    neu.classes.forEach(c => {
+      const a = altKarte.get(c.id);
+      if (!a || !a.musiktrainer?.id || c.mtGeloescht) return;
+      if (!c.musiktrainer) { c.musiktrainer = JSON.parse(JSON.stringify(a.musiktrainer)); n++; }
+      if (c.musiktrainer.id !== a.musiktrainer.id) return;     // neu eingerichtet: nichts mischen
+      const altKinder = new Map((a.students || []).map(s => [s.id, s]));
+      (c.students || []).forEach(s => {
+        const as = altKinder.get(s.id);
+        if (!s.mt && as?.mt) { s.mt = { ...as.mt }; n++; }
+      });
+    });
+    if (n) console.warn(`music-trainer-Zuordnung geschützt: ${n} Einträge wären verloren gegangen`);
+    return n;
   },
 
   /* ----- Sicherungen: frühere Stände auf diesem Gerät -----

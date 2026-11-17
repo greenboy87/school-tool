@@ -197,6 +197,8 @@ const Tresor = {
     const dort = await this.entschluesseln(paket);
     const hier = Store.load();
     const { daten, konflikte } = this.zusammenfuehren(basis, hier, dort);
+    // Was hier an music-trainer-Zuordnung steht, darf der Abgleich nicht still entfernen
+    Store.mtSchuetzen(daten, hier);
     const wer = paket.geraet || 'anderes Gerät';
     const ohne = x => { const o = { ...x }; delete o.standAt; return o; };
     const hierNeu = !this.gleich(ohne(daten), ohne(hier));   // vom Server kam etwas dazu

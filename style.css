@@ -3226,6 +3226,8 @@ html.locked .live-anzeige { display: none; }
 .tr-leer { text-align: center; }
 @media (max-width: 600px) { .tr-jahr { min-width: 0; width: 100%; } .tr-oeffnen { width: 100%; justify-content: center; } }
 .tr-fern { margin-top: .8rem; }
+.mt-warnung { border: 1px solid #e0a43a; background: rgba(224,164,58,.12); border-radius: 10px; padding: .6rem .8rem; margin: .6rem 0; }
+.tr-chip.ohne.verloren { border-color: #e0a43a; border-style: solid; color: #e0a43a; opacity: 1; }
 /* Schieber Vormittag / Nachmittag / Alles: drei gleich breite Felder, die Markierung gleitet */
 .tr-schieber { position: relative; display: inline-grid; grid-template-columns: repeat(3, 1fr); padding: 3px; border-radius: 999px;
   background: var(--surface-2, rgba(255,255,255,.06)); border: 1px solid var(--border); margin-left: auto; }

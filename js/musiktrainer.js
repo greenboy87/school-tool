@@ -274,6 +274,9 @@ const Musiktrainer = {
         </div>
         ${cls.students.length ? '' : '<p class="hint">Erst Schüler eintragen.</p>'}
         ${cls.students.length ? `<div class="mt-retten">
+          ${this.verloren().has(cls.id) ? `<p class="mt-warnung"><b>Diese Klasse war schon eingerichtet</b> (Sicherung vom
+            ${new Date(this.verloren().get(cls.id)).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}).
+            Die Zugänge der Kinder gibt es noch – hol unten die Zuordnung zurück.</p>` : ''}
           <p class="hint"><b>War die Klasse schon eingerichtet?</b> Dann nicht neu einrichten – sonst bekommen alle neue Zugänge.
             Hol stattdessen die Zuordnung (welches Pseudonym zu welchem Kind gehört) aus einem früheren Stand zurück.
             Nur diese Klasse wird geändert, alles andere bleibt.</p>
@@ -584,6 +587,7 @@ const Musiktrainer = {
       }
       delete cls.musiktrainer;
       cls.students.forEach(s => delete s.mt);
+      cls.mtGeloescht = Date.now();   // bewusst gelöscht – Store.mtSchuetzen holt es nicht zurück
       Classes.persist();
       this.ergebnis = null;
       this.render();
@@ -649,6 +653,7 @@ const Musiktrainer = {
         body: { name: cls.name, passwort: pw, schueler: kinder.map(k => ({ benutzername: k.wunsch })) },
       });
       cls.musiktrainer = { id: d.id, passwort: d.passwort };
+      delete cls.mtGeloescht;
       d.schueler.forEach((r, i) => { kinder[i].s.mt = { id: r.id, name: r.benutzername }; });
       Classes.persist();
       this.render();
@@ -660,6 +665,28 @@ const Musiktrainer = {
      samt Zugängen noch auf dem Server – nur die Zuordnung Pseudonym → Kind fehlt hier.
      Gesucht wird in den Sicherungen dieses Geräts (Sync → 4), dann im Server-Verlauf
      (Sync → 5). Übernommen wird nur cls.musiktrainer und s.mt dieser einen Klasse. */
+  /* Klassen ohne Einrichtung, die in einer Sicherung dieses Geräts eingerichtet waren:
+     id → Zeit der neuesten solchen Sicherung. Nur lokal, ohne Server; gemerkt, bis sich
+     die Sicherungen ändern. */
+  verloren() {
+    const liste = Store.sicherungen();
+    const merker = `${liste.length}|${liste[0]?.zeit}`;
+    if (this._verloren?.merker !== merker) {
+      const war = new Map();
+      liste.forEach(x => {
+        let d = null;
+        try { d = JSON.parse(x.daten); } catch { return; }
+        (d.classes || []).forEach(c => { if (c.musiktrainer?.id && !(war.get(c.id) > x.zeit)) war.set(c.id, x.zeit); });
+      });
+      this._verloren = { merker, war };
+    }
+    const out = new Map();
+    Classes.data.classes.forEach(c => {
+      if (!c.musiktrainer && !c.mtGeloescht && this._verloren.war.has(c.id)) out.set(c.id, this._verloren.war.get(c.id));
+    });
+    return out;
+  },
+
   rettenKandidat(daten, cls, quelle, zeit) {
     const alt = (daten?.classes || []).find(c => c.id === cls.id && c.musiktrainer?.id)
       || (daten?.classes || []).find(c => (c.name || '').trim().toLowerCase() === (cls.name || '').trim().toLowerCase() && c.musiktrainer?.id);
@@ -731,6 +758,7 @@ const Musiktrainer = {
     const f = (this.rettenFunde || [])[nr];
     if (!f || cls.musiktrainer) return;
     cls.musiktrainer = JSON.parse(JSON.stringify(f.musiktrainer));
+    delete cls.mtGeloescht;
     f.zuordnung.forEach(z => { const s = cls.students.find(x => x.id === z.sid); if (s) s.mt = { ...z.mt }; });
     this.rettenFunde = null;
     Classes.persist();
