@@ -201,8 +201,8 @@ const LiveGroups = {
   },
 
   /* Gemeinsamer Teil von „starten“ und „fortsetzen“ */
-  panelZeigen(cls, projekt) {
-    const url = this.schuelerUrl(cls, projekt);
+  async panelZeigen(cls, projekt) {
+    const url = await this.schuelerUrl(cls, projekt);
     this.zeigeQr(url);
     document.getElementById('live-code').textContent = this.raum;
     document.getElementById('live-gesamt').textContent = String(cls.students.length);
@@ -289,7 +289,7 @@ const LiveGroups = {
     const modus = document.getElementById('live-modus');
     if (modus) modus.value = 'normal';
     this.merken();
-    this.panelZeigen(cls, this.projektVorschlag);
+    await this.panelZeigen(cls, this.projektVorschlag);
   },
 
   projektName() {
@@ -307,19 +307,86 @@ const LiveGroups = {
   },
 
   /* Die Klassenliste reist im Anker mit – Anker werden nie an einen Server geschickt. */
-  schuelerUrl(cls, projekt) {
+  async schuelerUrl(cls, projekt) {
     const daten = {
       r: this.raum,
       p: projekt,
       k: cls.name || '',
       b: this.bezeichnung || 'Gruppenname',
-      n: cls.students.map(s => Classes.studentName(s)),
+      // Kurz („Lena F.“) hält den QR-Code grob und gut scannbar; Tiny Band braucht
+      // „Nachname, Vorname“, weil die Seite dort den Vornamen herausschneidet
+      n: this.tiny ? cls.students.map(s => Classes.studentName(s)) : this.kurzNamen(cls.students),
     };
     // Tiny Band: Modus, Bandzahl und Song reisen mit – in der Datenbank stehen sie nicht
     if (this.tiny) Object.assign(daten, { m: this.tiny.modus, z: this.tiny.baende, t: this.tiny.song });
     const seite = this.tiny ? 'tinyband.html' : 'gruppen.html';
     const basis = location.href.replace(/[^/]*$/, '') + seite;
+    // Gepackt halbiert sich der QR-Code ungefähr; Tiny Band liest nur das alte Format
+    if (!this.tiny) {
+      const gepackt = await this.packen(JSON.stringify(daten));
+      if (gepackt) return basis + '#z.' + gepackt;
+    }
     return basis + '#' + this.nachBase64(JSON.stringify(daten));
+  },
+
+  async packen(text) {
+    if (typeof CompressionStream === 'undefined') return null;
+    try {
+      const strom = new Blob([new TextEncoder().encode(text)]).stream()
+        .pipeThrough(new CompressionStream('deflate-raw'));
+      const bytes = new Uint8Array(await new Response(strom).arrayBuffer());
+      let bin = '';
+      bytes.forEach(b => { bin += String.fromCharCode(b); });
+      return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    } catch (e) {
+      return null;
+    }
+  },
+
+  /* „Lena F.“ – bei Gleichstand so viele Buchstaben des Nachnamens, bis es eindeutig ist */
+  kurzNamen(schueler) {
+    const lang = s => (s.first ? `${s.first} ${s.last}` : s.last || '').trim();
+    const kurz = (s, n) => {
+      if (!s.first || !s.last) return lang(s);
+      const nach = s.last.trim();
+      return n >= nach.length ? lang(s) : `${s.first.trim()} ${nach.slice(0, n)}.`;
+    };
+    const stufe = schueler.map(() => 1);
+    for (let runde = 0; runde < 30; runde++) {
+      const namen = schueler.map((s, i) => kurz(s, stufe[i]));
+      const zahl = new Map();
+      namen.forEach(n => zahl.set(n, (zahl.get(n) || 0) + 1));
+      let doppelt = false;
+      namen.forEach((n, i) => { if (zahl.get(n) > 1) { stufe[i]++; doppelt = true; } });
+      if (!doppelt) return namen;
+    }
+    return schueler.map(lang);
+  },
+
+  /* QR-Code als SVG: runde Punkte, abgerundete Ecken-Augen, lila statt schwarz.
+     Die Matrix rechnet die vorhandene Bibliothek aus, gezeichnet wird selbst. */
+  qrSvg(text, farbe = '#3b0764') {
+    const tmp = document.createElement('div');
+    const q = new QRCode(tmp, { text, width: 64, height: 64, correctLevel: QRCode.CorrectLevel.L });
+    const m = q._oQRCode;
+    const n = m.getModuleCount();
+    const rand = 1;
+    const auge = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+    let punkte = '';
+    for (let r = 0; r < n; r++) {
+      for (let c = 0; c < n; c++) {
+        if (auge(r, c) || !m.isDark(r, c)) continue;
+        punkte += `M${c + rand + 0.5 - 0.43},${r + rand + 0.5}a0.43,0.43 0 1,0 0.86,0a0.43,0.43 0 1,0 -0.86,0`;
+      }
+    }
+    const augen = [[0, 0], [0, n - 7], [n - 7, 0]].map(([r, c]) => {
+      const x = c + rand, y = r + rand;
+      return `<rect x="${x + 0.5}" y="${y + 0.5}" width="6" height="6" rx="1.8" fill="none" stroke="${farbe}" stroke-width="1"/>` +
+        `<rect x="${x + 2}" y="${y + 2}" width="3" height="3" rx="0.9" fill="${farbe}"/>`;
+    }).join('');
+    const g = n + 2 * rand;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${g} ${g}" shape-rendering="geometricPrecision" role="img" aria-label="QR-Code">` +
+      `<rect width="${g}" height="${g}" fill="#fff"/><path d="${punkte}" fill="${farbe}"/>${augen}</svg>`;
   },
 
   nachBase64(text) {
@@ -335,14 +402,10 @@ const LiveGroups = {
     this.letzteUrl = url;
     try {
       // Fehlerkorrektur bewusst niedrig: die Klassenliste braucht viel Platz im Code
-      new QRCode(box, {
-        text: url,
-        width: groesse || 190,
-        height: groesse || 190,
-        colorDark: '#000000',
-        colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.L,
-      });
+      box.innerHTML = this.qrSvg(url);
+      const svg = box.querySelector('svg');
+      svg.style.width = svg.style.height = (groesse || 190) + 'px';
+      svg.style.display = 'block';
       return true;
     } catch (e) {
       // Passiert erst jenseits von ~60 Schülern mit sehr langen Namen
@@ -532,57 +595,160 @@ const LiveGroups = {
     this.beamerFenster = w;
     const esc = s => String(s || '').replace(/[&<>"]/g,
       c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    // Im Stil der Seite („Polarlicht-Glas“): dunkles Violett, Milchglas-Karten
     w.document.open();
     w.document.write(`<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8">
       <title>Gruppen bilden</title><style>
       *{box-sizing:border-box;}
-      body{margin:0;min-height:100vh;background:#f5f2ff;color:#1e1633;
-        font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
-        display:grid;grid-template-columns:auto 1fr;gap:2.5vw;padding:2.5vw;}
-      .links{display:flex;flex-direction:column;align-items:center;gap:1rem;position:sticky;top:2.5vw;align-self:start;}
-      h1{font-size:clamp(1.4rem,2.4vw,2.4rem);margin:0;text-align:center;}
-      #qr{background:#fff;padding:1.2rem;border-radius:1rem;box-shadow:0 2px 20px rgba(0,0,0,.12);line-height:0;}
-      #qr img,#qr canvas{display:block;width:min(38vw,72vh);height:auto;}
-      .code{font-size:clamp(1.2rem,2vw,2rem);margin:0;color:#615a7d;}
-      .code b{color:#7c3aed;letter-spacing:.08em;}
-      .klein{font-size:.95rem;color:#615a7d;max-width:28rem;text-align:center;margin:0;line-height:1.4;}
-      .rechts{min-width:0;}
-      .zahl{font-size:clamp(1.3rem,2.2vw,2.2rem);font-weight:700;margin:0 0 .3rem;}
-      .zahl span{color:#7c3aed;}
-      .offen{font-size:clamp(.9rem,1.2vw,1.2rem);color:#615a7d;margin:0 0 1.2rem;line-height:1.5;}
-      .gruppen{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:1rem;align-items:start;}
-      .karte{background:#fff;border-radius:1rem;padding:1rem 1.2rem;box-shadow:0 2px 12px rgba(0,0,0,.08);
-        border-top:6px solid #a855f7;}
-      .karte h2{margin:0 0 .5rem;font-size:clamp(1.2rem,1.7vw,1.7rem);color:#6d28d9;overflow-wrap:anywhere;}
-      .karte h2 small{color:#615a7d;font-weight:400;}
-      .karte ul{list-style:none;margin:0;padding:0;font-size:clamp(1rem,1.4vw,1.4rem);line-height:1.5;}
-      .leer{font-size:1.4rem;color:#615a7d;}
+      html{background:#120f26;}
+      body{margin:0;min-height:100vh;color:#f7f3ff;
+        font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+        background:
+          radial-gradient(60vw 40vh at 6% -6%, rgba(45,212,191,.16), transparent 65%),
+          radial-gradient(70vw 50vh at 92% 0%, rgba(168,85,247,.42), transparent 65%),
+          radial-gradient(70vw 50vh at 50% 108%, rgba(236,72,153,.24), transparent 65%),
+          #120f26;
+        display:grid;grid-template-columns:minmax(0,auto) 1fr;gap:3vw;padding:3vw;}
+      .links{display:flex;flex-direction:column;align-items:center;gap:1.2rem;
+        position:sticky;top:3vw;align-self:start;}
+      .titel{margin:0;font-size:clamp(1.2rem,2vw,2rem);font-weight:700;letter-spacing:.01em;text-align:center;
+        background:linear-gradient(120deg,#c4b5fd,#f0abfc);-webkit-background-clip:text;background-clip:text;color:transparent;}
+      #qr{background:#fff;padding:1.3rem;border-radius:1.6rem;line-height:0;
+        box-shadow:0 0 0 1px rgba(255,255,255,.18),0 20px 60px rgba(168,85,247,.35);}
+      #qr svg{display:block;width:min(36vw,66vh);height:auto;}
+      .unter{display:flex;flex-wrap:wrap;justify-content:center;gap:.6rem;align-items:center;}
+      .pille{padding:.45rem 1rem;border-radius:999px;background:rgba(255,255,255,.08);
+        border:1px solid rgba(255,255,255,.14);font-size:clamp(1rem,1.5vw,1.5rem);color:#bdb3de;}
+      .pille b{color:#f5d0fe;letter-spacing:.08em;}
+      .klein{font-size:clamp(.85rem,1vw,1rem);color:#bdb3de;max-width:30rem;text-align:center;margin:0;line-height:1.45;}
+      .rechts{min-width:0;display:flex;flex-direction:column;gap:1.2rem;}
+      .kopf{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:.5rem 1.5rem;}
+      .projekt{margin:0;font-size:clamp(1.6rem,3vw,3rem);font-weight:800;line-height:1.1;}
+      .zahl{font-size:clamp(1.1rem,1.8vw,1.8rem);font-weight:700;color:#bdb3de;white-space:nowrap;}
+      .zahl b{font-size:1.5em;background:linear-gradient(120deg,#c4b5fd,#f0abfc);
+        -webkit-background-clip:text;background-clip:text;color:transparent;}
+      .balken{height:.55rem;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;}
+      .balken i{display:block;height:100%;width:0;border-radius:inherit;
+        background:linear-gradient(90deg,#c4b5fd,#f0abfc);transition:width .5s ease;}
+      .offen{display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;margin:0;}
+      .offen .label{color:#bdb3de;font-size:clamp(.9rem,1.2vw,1.2rem);margin-right:.2rem;}
+      .chip{padding:.3rem .75rem;border-radius:999px;font-size:clamp(.85rem,1.1vw,1.1rem);
+        background:rgba(252,211,77,.12);border:1px solid rgba(252,211,77,.35);color:#fde68a;}
+      .fertig{color:#5eead4;font-weight:700;font-size:clamp(1rem,1.4vw,1.4rem);}
+      .gruppen{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:1.1rem;align-items:start;}
+      .karte{position:relative;border-radius:1.3rem;padding:1.1rem 1.3rem 1.2rem;overflow:hidden;
+        background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.12);
+        box-shadow:0 10px 36px rgba(8,4,24,.45);backdrop-filter:blur(20px) saturate(140%);
+        animation:rein .35s ease;}
+      .karte::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;
+        background:linear-gradient(90deg,#c4b5fd,#f0abfc);}
+      .karte h2{margin:0 0 .6rem;display:flex;align-items:flex-start;justify-content:space-between;gap:.6rem;
+        font-size:clamp(1.15rem,1.6vw,1.65rem);color:#f5d0fe;overflow-wrap:anywhere;line-height:1.2;}
+      .karte h2 span.n{flex:none;min-width:2em;text-align:center;padding:.1rem .5rem;border-radius:999px;
+        background:linear-gradient(120deg,#c4b5fd,#f0abfc);color:#221438;font-size:.8em;}
+      .karte ul{list-style:none;margin:0;padding:0;font-size:clamp(1rem,1.35vw,1.35rem);line-height:1.55;}
+      .karte li{color:#f7f3ff;}
+      .leer{font-size:clamp(1.1rem,1.6vw,1.6rem);color:#bdb3de;margin:2rem 0;}
+      @keyframes rein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+      @media (max-aspect-ratio:1/1){body{grid-template-columns:1fr;}.links{position:static;}#qr svg{width:min(70vw,45vh);}}
       </style></head><body>
       <div class="links">
-        <h1>Scannt den Code mit dem Handy</h1>
-        <div id="qr"></div>
-        <p class="code">${esc(cls ? cls.name : '')} · Raum-Code: <b>${esc(this.raum)}</b></p>
+        <p class="titel">Scannt den Code mit dem Handy</p>
+        <div id="qr">${this.qrSvg(this.letzteUrl)}</div>
+        <div class="unter">
+          <span class="pille">${esc(cls ? cls.name : '')}</span>
+          <span class="pille">Raum <b>${esc(this.raum)}</b></span>
+        </div>
         <p class="klein">Steht auf eurem Gerät ein anderer Raum-Code, habt ihr einen alten
           QR-Code erwischt – dann diesen hier noch einmal scannen.</p>
       </div>
       <div class="rechts">
-        <p class="zahl" id="zahl"></p>
+        <div class="kopf">
+          <h1 class="projekt">${esc(this.projektVorschlag || 'Gruppen')}</h1>
+          <span class="zahl" id="zahl"></span>
+        </div>
+        <div class="balken"><i id="balken"></i></div>
         <p class="offen" id="offen"></p>
         <div class="gruppen" id="gruppen"></div>
       </div>
       </body></html>`);
     w.document.close();
-    const skript = w.document.createElement('script');
-    skript.src = new URL('js/vendor/qrcode.min.js', location.href).href;
-    skript.onload = () => {
-      new w.QRCode(w.document.getElementById('qr'), {
-        text: this.letzteUrl, width: 900, height: 900,
-        colorDark: '#000000', colorLight: '#ffffff', correctLevel: w.QRCode.CorrectLevel.L,
-      });
-    };
-    w.document.head.appendChild(skript);
     this.vollbildKnopf(w);
     this.zeichne();
+  },
+
+  leinwandZeichnen(cls, gruppen, drin) {
+    const w = this.beamerFenster;
+    if (!w || w.closed || this.tiny) return;
+    const d = w.document;
+    const zahl = d.getElementById('zahl');
+    if (!zahl) return;
+    const gesamt = cls.students.length;
+    zahl.innerHTML = '';
+    const b = d.createElement('b');
+    b.textContent = String(drin.size);
+    zahl.append(b, ` / ${gesamt} eingeteilt`);
+    d.getElementById('balken').style.width = gesamt ? `${Math.round(100 * drin.size / gesamt)}%` : '0';
+
+    const offen = cls.students.filter(s => !drin.has(s.id)).map(s => Classes.listenName(s));
+    const offenBox = d.getElementById('offen');
+    offenBox.innerHTML = '';
+    if (offen.length) {
+      const label = d.createElement('span');
+      label.className = 'label';
+      label.textContent = `Noch offen (${offen.length}):`;
+      offenBox.appendChild(label);
+      for (const n of offen) {
+        const chip = d.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = n;
+        offenBox.appendChild(chip);
+      }
+    } else {
+      const ok = d.createElement('span');
+      ok.className = 'fertig';
+      ok.textContent = '✓ Alle sind eingeteilt';
+      offenBox.appendChild(ok);
+    }
+
+    // Karten nur neu bauen, was sich geändert hat – sonst flackert die Animation bei jedem Eintrag
+    const box = d.getElementById('gruppen');
+    const alt = new Map([...box.querySelectorAll('.karte')].map(k => [k.dataset.sig, k]));
+    box.innerHTML = '';
+    if (!gruppen.length) {
+      const p = d.createElement('p');
+      p.className = 'leer';
+      p.textContent = 'Noch hat sich niemand eingetragen.';
+      box.appendChild(p);
+      return;
+    }
+    for (const g of gruppen) {
+      const namen = g.ids
+        .map(id => cls.students.find(s => s.id === id))
+        .filter(Boolean)
+        .map(s => Classes.studentName(s))
+        .sort((a, c) => a.localeCompare(c, 'de'));
+      const sig = g.name + '|' + namen.join(';');
+      if (alt.has(sig)) { box.appendChild(alt.get(sig)); continue; }
+      const karte = d.createElement('div');
+      karte.className = 'karte';
+      karte.dataset.sig = sig;
+      const h = d.createElement('h2');
+      const t = d.createElement('span');
+      t.textContent = g.name;
+      const anz = d.createElement('span');
+      anz.className = 'n';
+      anz.textContent = String(namen.length);
+      h.append(t, anz);
+      const ul = d.createElement('ul');
+      for (const n of namen) {
+        const li = d.createElement('li');
+        li.textContent = n;
+        ul.appendChild(li);
+      }
+      karte.append(h, ul);
+      box.appendChild(karte);
+    }
   },
 
   /* So groß wie der Bildschirm, auf dem die Seite gerade liegt */
@@ -610,10 +776,11 @@ const LiveGroups = {
     /* Unten rechts statt oben: Oben blendet macOS im Vollbild die Fensterleiste
        samt rotem X ein – wer dort „Vollbild aus“ sucht, schließt das Fenster. */
     stil.textContent = `#vollbild{position:fixed;bottom:1.2rem;right:1.2rem;z-index:10;padding:1rem 1.8rem;
-      font:700 1.35rem system-ui,-apple-system,sans-serif;color:#fff;background:#7c3aed;border:0;
-      border-radius:1rem;cursor:pointer;box-shadow:0 4px 18px rgba(0,0,0,.25);}
-      #vollbild:hover{background:#6d28d9;}
-      #vollbild.an{background:#1e1633;opacity:.55;}
+      font:700 1.35rem -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#221438;
+      background:linear-gradient(120deg,#c4b5fd,#f0abfc);border:0;border-radius:999px;cursor:pointer;
+      box-shadow:0 8px 28px rgba(168,85,247,.45);}
+      #vollbild:hover{filter:brightness(1.07);}
+      #vollbild.an{opacity:.5;}
       #vollbild.an:hover{opacity:1;}`;
     d.head.appendChild(stil);
     const knopf = d.createElement('button');
@@ -636,52 +803,4 @@ const LiveGroups = {
     d.addEventListener('webkitfullscreenchange', zeigen);
   },
 
-  leinwandZeichnen(cls, gruppen, drin) {
-    const w = this.beamerFenster;
-    if (!w || w.closed || this.tiny) return;
-    const d = w.document;
-    const zahl = d.getElementById('zahl');
-    if (!zahl) return;
-    zahl.innerHTML = '';
-    const z = d.createElement('span');
-    z.textContent = String(drin.size);
-    zahl.append(z, ` von ${cls.students.length} sind in einer Gruppe`);
-
-    const offen = cls.students.filter(s => !drin.has(s.id)).map(s => Classes.listenName(s));
-    d.getElementById('offen').textContent = offen.length
-      ? `Noch offen (${offen.length}): ${offen.join(', ')}`
-      : 'Alle sind eingeteilt.';
-
-    const box = d.getElementById('gruppen');
-    box.innerHTML = '';
-    if (!gruppen.length) {
-      const p = d.createElement('p');
-      p.className = 'leer';
-      p.textContent = 'Noch hat sich niemand eingetragen.';
-      box.appendChild(p);
-      return;
-    }
-    for (const g of gruppen) {
-      const namen = g.ids
-        .map(id => cls.students.find(s => s.id === id))
-        .filter(Boolean)
-        .map(s => Classes.studentName(s))
-        .sort((a, b) => a.localeCompare(b, 'de'));
-      const karte = d.createElement('div');
-      karte.className = 'karte';
-      const h = d.createElement('h2');
-      h.textContent = g.name + ' ';
-      const anz = d.createElement('small');
-      anz.textContent = `(${namen.length})`;
-      h.appendChild(anz);
-      const ul = d.createElement('ul');
-      for (const n of namen) {
-        const li = d.createElement('li');
-        li.textContent = n;
-        ul.appendChild(li);
-      }
-      karte.append(h, ul);
-      box.appendChild(karte);
-    }
-  },
 };

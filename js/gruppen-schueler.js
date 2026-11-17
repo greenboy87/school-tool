@@ -21,9 +21,9 @@ const SchuelerGruppen = {
   zuordnung: {},          // sid -> { gruppe, ts, von }
   abmelden: null,
 
-  init() {
+  async init() {
     this.geraet = this.geraeteId();
-    if (!this.ladeZugang()) return;
+    if (!(await this.ladeZugang())) return;
 
     // Frühere Auswahl auf diesem Handy merken (Seite neu laden verliert nichts)
     this.auswahl = this.gemerkteAuswahl();
@@ -43,11 +43,13 @@ const SchuelerGruppen = {
   },
 
   /* ---------- Zugangsdaten aus dem Anker lesen ---------- */
-  ladeZugang() {
+  async ladeZugang() {
     try {
       const roh = location.hash.replace(/^#/, '');
       if (!roh) throw new Error('kein Anker');
-      const daten = JSON.parse(this.vonBase64(roh));
+      // „z.“ = gepackt (kleinerer QR-Code), sonst das alte Format
+      const text = roh.startsWith('z.') ? await this.entpacken(roh.slice(2)) : this.vonBase64(roh);
+      const daten = JSON.parse(text);
       if (!daten.r || !Array.isArray(daten.n) || !daten.n.length) throw new Error('unvollständig');
       this.raum = String(daten.r);
       this.namen = daten.n.map(String);
@@ -56,9 +58,21 @@ const SchuelerGruppen = {
       this.bezeichnung = String(daten.b || 'Gruppenname').slice(0, 30);
       return true;
     } catch (e) {
-      this.zeigeFehler();
+      this.zeigeFehler(e && e.message === 'zu alt'
+        ? 'Dieses Gerät kann den QR-Code nicht lesen – der Browser ist zu alt. ' +
+          'Bitte ein anderes Gerät nehmen oder das Gerät aktualisieren (ab iOS 16.4).'
+        : undefined);
       return false;
     }
+  },
+
+  async entpacken(b64) {
+    if (typeof DecompressionStream === 'undefined') throw new Error('zu alt');
+    const b = b64.replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(b + '='.repeat((4 - b.length % 4) % 4));
+    const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+    const strom = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+    return new Response(strom).text();
   },
 
   vonBase64(s) {

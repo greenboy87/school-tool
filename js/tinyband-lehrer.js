@@ -680,15 +680,12 @@ const TinyBandLehrer = {
       </main></body></html>`);
     w.document.close();
     LiveGroups.vollbildKnopf(w);
-    const skript = w.document.createElement('script');
-    skript.src = new URL('js/vendor/qrcode.min.js', location.href).href;
-    skript.onload = () => {
-      new w.QRCode(w.document.getElementById('qr'), {
-        text: LiveGroups.letzteUrl, width: 400, height: 400,
-        colorDark: '#000000', colorLight: '#ffffff', correctLevel: w.QRCode.CorrectLevel.L,
-      });
-    };
-    w.document.head.appendChild(skript);
+    // Runde lila Punkte wie bei der Gruppen-Sammlung – rechnet der Lehrer-Tab aus
+    const qr = w.document.getElementById('qr');
+    if (qr) {
+      qr.innerHTML = LiveGroups.qrSvg(LiveGroups.letzteUrl);
+      Object.assign(qr.querySelector('svg').style, { width: '400px', maxWidth: '100%', height: 'auto', display: 'block' });
+    }
     if (cls) this.beamerZeichnen(cls);
   },
 

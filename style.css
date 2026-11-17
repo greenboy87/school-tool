@@ -3273,3 +3273,11 @@ html.locked .live-anzeige { display: none; }
 .werkstatt-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem 1rem; border: 1px solid var(--accent); }
 .werkstatt-kopf h3 { margin: 0; flex: 1 1 auto; }
 .werkstatt-kopf .hint { order: 3; flex-basis: 100%; margin: 0; }
+
+/* Gruppen im Projekt: Name links, Einzelnote rechts – die Kästchen stehen
+   sauber untereinander statt direkt hinter unterschiedlich langen Namen */
+.group-box ul.noten-namen { list-style: none; padding-left: 0; }
+.group-box ul.noten-namen li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center;
+  column-gap: .5rem; padding: .12rem 0; }
+.group-box ul.noten-namen li > span:first-child { overflow-wrap: anywhere; }
+.group-box ul.noten-namen li + li { border-top: 1px solid var(--panel); }

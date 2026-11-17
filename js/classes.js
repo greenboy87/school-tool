@@ -1706,6 +1706,7 @@ const Classes = {
         });
         h.appendChild(input);
         const ul = document.createElement('ul');
+        ul.className = 'noten-namen';
         g.forEach(sid => {
           const s = cls.students.find(x => x.id === sid);
           if (!s) return;
