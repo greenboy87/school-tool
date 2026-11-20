@@ -2268,7 +2268,7 @@ const Classes = {
       input.addEventListener('input', () => { const m = tdGrade.querySelector('.mt-marke'); if (m) m.remove(); });
       tr.append(tdNum, tdName);
       if (mitNote) tr.appendChild(tdGrade);
-      if (mtSpalte) tr.appendChild(Musiktrainer.spalteZelle(cls, p, s, mtNoten, input));
+      if (mtSpalte) tr.appendChild(Musiktrainer.spalteZelle(cls, p, s, mtNoten));
       for (const sp of spalten) {
         const td = document.createElement('td');
         td.className = 'spalte-zelle spalte-' + sp.art;

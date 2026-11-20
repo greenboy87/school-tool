@@ -245,74 +245,140 @@ Object.assign(Musiktrainer, {
      music-trainer. Die Ergebnisse werden einmal geholt (wie im Reiter) und dann wiederverwendet. */
   spalteAn(cls, p) { return !!(cls && cls.musiktrainer && p && p.mtZeigen && p.mtAuswahl); },
 
+  /* Kurzname der Auswahl für den Spaltenkopf: eine Aufgabe → „Prüfung Klasse 5“, sonst „3 Aufgaben“ */
+  spalteKurz(p) {
+    const sp = this.spalten({ kategorien: p.mtAuswahl });
+    if (sp.length === 1) return `${sp[0].spiel.titel.split(' · ').pop()} ${sp[0].spiel.stufen[sp[0].stufe]}`;
+    return `${sp.length} Aufgaben`;
+  },
+
   spalteNoten(cls, p) {
-    if (!this.spalteAn(cls, p)) return null;
+    if (!this.spalteAn(cls, p)) { this.spalteStopp(); return null; }
+    this.spalteStart();
     if (!this.ergebnis || this.ergebnis.klasseId !== cls.musiktrainer.id) {
       this.spalteLaden(cls);
       return null;
     }
     const { zeilen } = this.zeilenMit(cls, p.mtAuswahl);
-    return new Map(zeilen.filter(z => z.schnitt !== null).map(z => [z.s.id, this.kurz(z.schnitt)]));
+    const noten = new Map(zeilen.filter(z => z.schnitt !== null).map(z => [z.s.id, this.kurz(z.schnitt)]));
+    // Merken, was schon da war – nur später Hinzugekommenes leuchtet auf
+    this.spalteVorher = noten;
+    return noten;
   },
 
+  /* Holt die Ergebnisse (neu). Die alten bleiben stehen, bis die neuen da sind – die Liste
+     springt also nicht auf „…“. Danach werden nur die music-trainer-Zellen ausgetauscht:
+     Ein Neuzeichnen der ganzen Liste nähme dem Notenfeld, in dem man gerade tippt, den Fokus. */
   async spalteLaden(cls) {
     if (this.spalteStatus === 'laedt') return;
+    const hatteDaten = this.ergebnis && this.ergebnis.klasseId === cls.musiktrainer.id;
     this.spalteStatus = 'laedt';
+    this.spalteKopfStand();
     try {
       const daten = await this.api(`/api/lehrer/klassen/${cls.musiktrainer.id}?seit=${Math.floor(Date.now() / 1000) - 366 * 86400}`);
       this.ergebnis = { klasseId: cls.musiktrainer.id, daten };
       this.spalteStatus = null;
+      this.spalteZeit = new Date();
     } catch (err) {
       this.spalteStatus = err.status === 401 ? 'login' : 'fehler';
     }
-    if (Classes.currentClass() === cls) Classes.renderGradeTable();
+    if (Classes.currentClass() !== cls) return;
+    if (hatteDaten && this.spalteStatus === null) this.spalteZellenErneuern();
+    else Classes.renderGradeTable();
+  },
+
+  /* Nur die Zellen der Spalte neu – Notenfelder und Fokus bleiben, wie sie sind */
+  spalteZellenErneuern() {
+    const cls = Classes.currentClass(), p = Classes.currentProject();
+    const table = document.getElementById('grade-table');
+    if (!table || !this.spalteAn(cls, p)) return;
+    const vorher = this.spalteVorher || new Map();
+    const noten = this.spalteNoten(cls, p);
+    table.querySelectorAll('td.mt-spalte-zelle[data-sid]').forEach(td => {
+      const s = cls.students.find(x => x.id === td.dataset.sid);
+      if (!s) return;
+      const neu = this.spalteZelle(cls, p, s, noten);
+      // Gerade dazugekommen (jemand hat eben die Prüfung gemacht): kurz aufleuchten
+      if (noten && noten.get(s.id) && noten.get(s.id) !== vorher.get(s.id)) neu.classList.add('frisch');
+      td.replaceWith(neu);
+    });
+    this.spalteKopfStand();
+  },
+
+  /* Solange die Spalte zu sehen ist: alle 30 s nachsehen (nur bei sichtbarem Fenster) */
+  spalteStart() {
+    if (this.spalteTimer) return;
+    this.spalteTimer = setInterval(() => {
+      const cls = Classes.currentClass(), p = Classes.currentProject();
+      const table = document.getElementById('grade-table');
+      if (!this.spalteAn(cls, p) || !table || !table.querySelector('.mt-spalte-kopf')) { this.spalteStopp(); return; }
+      if (document.visibilityState !== 'visible' || !table.offsetParent) return;
+      if (this.spalteStatus === 'login') return;
+      this.spalteLaden(cls);
+    }, 30000);
+  },
+
+  spalteStopp() {
+    clearInterval(this.spalteTimer);
+    this.spalteTimer = null;
+  },
+
+  spalteKopfStand() {
+    const el = document.querySelector('#grade-table .mt-spalte-stand');
+    if (!el) return;
+    el.textContent = this.spalteStatus === 'laedt' ? 'lädt …'
+      : this.spalteZeit ? `Stand ${this.spalteZeit.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}` : '';
   },
 
   spalteKopf(cls, p) {
     const th = document.createElement('th');
     th.className = 'mt-spalte-kopf';
-    const auswahl = this.kategorienText({ kategorien: p.mtAuswahl }, true);
-    th.title = `music-trainer: ${auswahl}`;
-    const status = this.ergebnis && this.ergebnis.klasseId === cls.musiktrainer.id ? null : this.spalteStatus;
-    th.innerHTML = `<span>music-trainer</span>
-      <span class="mt-spalte-was">${this.esc(auswahl)}</span>
-      <span class="mt-spalte-knoepfe">
-        ${status === 'login' || status === 'fehler'
-          ? `<button type="button" class="small" data-mts="anmelden">${status === 'login' ? 'Anmelden' : 'Erneut laden'}</button>` : ''}
-        <button type="button" class="small" data-mts="aendern" title="Andere Spiele oder Stufen wählen">Ändern</button>
-        <button type="button" class="small" data-mts="aus" title="Spalte ausblenden">×</button>
-      </span>`;
+    th.title = `music-trainer: ${this.kategorienText({ kategorien: p.mtAuswahl }, true)} – aktualisiert sich alle 30 Sekunden`;
+    const status = this.spalteStatus;
+    th.innerHTML = `<div class="mt-spalte-zeile">
+        <span class="mt-spalte-titel">music-trainer</span>
+        <button type="button" class="mt-spalte-icon" data-mts="laden" title="Jetzt aktualisieren">${Icons.raw('reset')}</button>
+        <button type="button" class="mt-spalte-icon" data-mts="aendern" title="Andere Spiele oder Stufen wählen">${Icons.raw('pen')}</button>
+        <button type="button" class="mt-spalte-icon" data-mts="aus" title="Spalte ausblenden">${Icons.raw('x')}</button>
+      </div>
+      <div class="mt-spalte-was">${this.esc(this.spalteKurz(p))} · <span class="mt-spalte-stand"></span></div>
+      ${status === 'login' ? '<button type="button" class="small primary" data-mts="anmelden">Anmelden</button>' : ''}
+      ${status === 'fehler' ? '<span class="mt-spalte-fehler">Keine Verbindung</span>' : ''}`;
     th.addEventListener('click', e => {
       const b = e.target.closest('[data-mts]');
       if (!b) return;
-      if (b.dataset.mts === 'aus') { p.mtZeigen = false; Classes.persist(); Classes.renderGradeTable(); return; }
-      if (b.dataset.mts === 'anmelden' && status === 'fehler') { this.spalteStatus = null; this.spalteLaden(cls); return; }
+      const a = b.dataset.mts;
+      if (a === 'aus') { p.mtZeigen = false; this.spalteStopp(); Classes.persist(); Classes.renderGradeTable(); return; }
+      if (a === 'laden') { this.spalteLaden(cls); return; }
       // Ändern und Anmelden: das Fenster kann beides (es fragt bei Bedarf nach dem Passwort)
       this.notenDialog();
     });
+    setTimeout(() => this.spalteKopfStand());
     return th;
   },
 
-  spalteZelle(cls, p, s, noten, input) {
+  spalteZelle(cls, p, s, noten) {
     const td = document.createElement('td');
     td.className = 'mt-spalte-zelle';
+    td.dataset.sid = s.id;
     if (!noten) {
       td.innerHTML = `<span class="hint">${this.spalteStatus === 'laedt' ? '…' : '–'}</span>`;
       return td;
     }
     const note = noten.get(s.id);
-    if (!note) { td.innerHTML = '<span class="hint" title="Nicht gespielt">–</span>'; return td; }
+    if (!note) { td.innerHTML = '<span class="mt-spalte-leer" title="Noch nicht im music-trainer gemacht">–</span>'; return td; }
     const gleich = p.grades[s.id] === note;
-    td.innerHTML = `<span class="mt-gesamtnote n${Math.round(parseFloat(note.replace(',', '.')))}">${this.esc(note)}</span>`;
+    const farbe = Math.round(parseFloat(note.replace(',', '.')));
     if (gleich) {
-      td.insertAdjacentHTML('beforeend', '<span class="hint mt-gleich" title="Steht schon so im Notenfeld">✓</span>');
+      td.innerHTML = `<span class="mt-spalte-note n${farbe} gleich" title="Steht schon so im Notenfeld">${this.esc(note)} ✓</span>`;
       return td;
     }
+    // Note und Übernehmen in einem Knopf: groß genug fürs iPad, eine Zeile hoch
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'small mt-nehmen';
-    b.textContent = '← übernehmen';
-    b.title = p.grades[s.id] ? `Note ${p.grades[s.id]} durch ${note} ersetzen` : `Note ${note} eintragen`;
+    b.className = 'mt-spalte-nehmen';
+    b.innerHTML = `${Icons.raw('arrowLeft') || '←'}<span class="mt-spalte-note n${farbe}">${this.esc(note)}</span>`;
+    b.title = p.grades[s.id] ? `Note ${p.grades[s.id]} durch ${note} aus dem music-trainer ersetzen` : `Note ${note} aus dem music-trainer eintragen`;
     b.addEventListener('click', () => {
       if (p.grades[s.id] && !confirm(`${this.nachname(s)}: Note ${p.grades[s.id]} durch ${note} aus dem music-trainer ersetzen?`)) return;
       p.grades[s.id] = note;
