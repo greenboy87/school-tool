@@ -871,6 +871,11 @@ button.klapper.zu .klapp-pfeil { color: var(--accent); }
 
   /* Kompakte Klassenliste: enge Zeilen, damit auch 30 Namen auf eine Seite
      passen, und rechts leere Spalten zum Eintragen von Hand. */
+  /* Notenliste ohne eigene Spalten: schmal, Note direkt neben dem Namen */
+  .band-print table.eng { width: auto; min-width: 9cm; }
+  .band-print table.eng td, .band-print table.eng th { padding-right: 22pt; }
+  .band-print table.eng .num { width: auto; }
+  .band-print table.eng .note { text-align: center; padding-right: 0; min-width: 1.6cm; }
   .band-print table.kompakt { font-size: 9.5pt; line-height: 1.2; }
   .band-print table.kompakt td { padding: 2pt 6pt 2pt 0; }
   .band-print table.kompakt th { padding: 0 6pt 3.5pt 0; }

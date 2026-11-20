@@ -2322,7 +2322,7 @@ const Classes = {
     const eigene = this.spalten(p);
     const spalten = [{ titel: 'Nr.', cls: 'num' }, { titel: 'Name' }];
     if (mitGruppen) spalten.push({ titel: 'Gruppe' });
-    if (!p.ohneNote) spalten.push({ titel: 'Note' });
+    if (!p.ohneNote) spalten.push({ titel: 'Note', cls: eigene.length ? '' : 'note' });
     eigene.forEach(sp => spalten.push({ titel: sp.name, cls: sp.art === 'haken' ? 'haken' : '' }));
 
     const zeilen = cls.students.map((s, i) => {
@@ -2337,7 +2337,9 @@ const Classes = {
     });
 
     const schnitt = this.projectAverage(p);
-    Band.printHtml(p.name, Band.printTable(spalten, zeilen),
+    // Ohne eigene Spalten: Tabelle nur so breit wie nötig – die Note steht dann direkt
+    // neben dem Namen statt am rechten Seitenrand, das liest sich leichter ab
+    Band.printHtml(p.name, Band.printTable(spalten, zeilen, eigene.length ? '' : 'eng'),
       `${cls.name}${p.date ? ' · ' + new Date(p.date + 'T12:00').toLocaleDateString('de-DE') : ''}` +
       (schnitt ? ` · Schnitt ${schnitt}` : ''));
   },
