@@ -67,9 +67,13 @@ Object.assign(Musiktrainer, {
   /* Zeilen wie in der Auswertung, aber mit der Auswahl, dem Zeitraum und „fehlt = 6“ des Fensters */
   ndZeilen(cls) {
     const nd = this.nd;
-    const kopie = { ...cls, musiktrainer: { ...cls.musiktrainer, kategorien: nd.mt.kategorien, fehltAls6: nd.fehltAls6 } };
+    return this.zeilenMit(cls, nd.mt.kategorien, nd.zeitraum, nd.fehltAls6);
+  },
+
+  zeilenMit(cls, kategorien, zeitraum = '0', fehltAls6 = false) {
+    const kopie = { ...cls, musiktrainer: { ...cls.musiktrainer, kategorien, fehltAls6 } };
     const vorher = this.filter.zeitraum;
-    this.filter.zeitraum = nd.zeitraum;
+    this.filter.zeitraum = zeitraum;
     try { return this.notenZeilen(kopie); } finally { this.filter.zeitraum = vorher; }
   },
 
@@ -134,6 +138,8 @@ Object.assign(Musiktrainer, {
       <div class="btn-row nd-fuss">
         <button type="button" class="primary" data-nd="uebernehmen" data-icon="check" ${ziele.length ? '' : 'disabled'}>
           ${ziele.length ? `${ziele.length} ${ziele.length === 1 ? 'Note' : 'Noten'} übernehmen` : 'Nichts zu übernehmen'}</button>
+        <button type="button" data-nd="daneben" data-icon="list" ${auswahl.length ? '' : 'disabled'}
+          title="Nichts eintragen – die music-trainer-Note steht in der Notenliste neben jedem Kind, ein Klick übernimmt sie">Daneben in der Notenliste zeigen</button>
         <span class="hint">${this.ndHinweis(zeilen, p, ziele)}</span>
       </div>`;
     Icons.hydrate(inhalt);
@@ -206,6 +212,17 @@ Object.assign(Musiktrainer, {
       return this.ndZeichnen();
     }
     if (a === 'uebernehmen') return this.ndUebernehmen();
+    if (a === 'daneben') {
+      const { p } = this.ndKlasse();
+      if (!p) return;
+      p.mtAuswahl = this.ndKopie(this.kategorien(nd.mt));
+      delete p.mtAuswahl.kategorienVorher;
+      p.mtZeigen = true;
+      Classes.persist();
+      dlg.close();
+      Classes.renderProjectDetail();
+      return;
+    }
   },
 
   ndAenderung(e) {
@@ -220,6 +237,92 @@ Object.assign(Musiktrainer, {
     if (!f) return;
     nd[f] = t.type === 'checkbox' ? t.checked : t.value;
     this.ndZeichnen();
+  },
+
+  /* ---------- Spalte „music-trainer“ in der Notenliste ----------
+     Je Kind die Note mit der Auswahl des Projekts (p.mtAuswahl), daneben ein Knopf, der sie
+     ins Notenfeld übernimmt. So entscheidet man Kind für Kind – etwa: live vorgespielt oder
+     music-trainer. Die Ergebnisse werden einmal geholt (wie im Reiter) und dann wiederverwendet. */
+  spalteAn(cls, p) { return !!(cls && cls.musiktrainer && p && p.mtZeigen && p.mtAuswahl); },
+
+  spalteNoten(cls, p) {
+    if (!this.spalteAn(cls, p)) return null;
+    if (!this.ergebnis || this.ergebnis.klasseId !== cls.musiktrainer.id) {
+      this.spalteLaden(cls);
+      return null;
+    }
+    const { zeilen } = this.zeilenMit(cls, p.mtAuswahl);
+    return new Map(zeilen.filter(z => z.schnitt !== null).map(z => [z.s.id, this.kurz(z.schnitt)]));
+  },
+
+  async spalteLaden(cls) {
+    if (this.spalteStatus === 'laedt') return;
+    this.spalteStatus = 'laedt';
+    try {
+      const daten = await this.api(`/api/lehrer/klassen/${cls.musiktrainer.id}?seit=${Math.floor(Date.now() / 1000) - 366 * 86400}`);
+      this.ergebnis = { klasseId: cls.musiktrainer.id, daten };
+      this.spalteStatus = null;
+    } catch (err) {
+      this.spalteStatus = err.status === 401 ? 'login' : 'fehler';
+    }
+    if (Classes.currentClass() === cls) Classes.renderGradeTable();
+  },
+
+  spalteKopf(cls, p) {
+    const th = document.createElement('th');
+    th.className = 'mt-spalte-kopf';
+    const auswahl = this.kategorienText({ kategorien: p.mtAuswahl }, true);
+    th.title = `music-trainer: ${auswahl}`;
+    const status = this.ergebnis && this.ergebnis.klasseId === cls.musiktrainer.id ? null : this.spalteStatus;
+    th.innerHTML = `<span>music-trainer</span>
+      <span class="mt-spalte-was">${this.esc(auswahl)}</span>
+      <span class="mt-spalte-knoepfe">
+        ${status === 'login' || status === 'fehler'
+          ? `<button type="button" class="small" data-mts="anmelden">${status === 'login' ? 'Anmelden' : 'Erneut laden'}</button>` : ''}
+        <button type="button" class="small" data-mts="aendern" title="Andere Spiele oder Stufen wählen">Ändern</button>
+        <button type="button" class="small" data-mts="aus" title="Spalte ausblenden">×</button>
+      </span>`;
+    th.addEventListener('click', e => {
+      const b = e.target.closest('[data-mts]');
+      if (!b) return;
+      if (b.dataset.mts === 'aus') { p.mtZeigen = false; Classes.persist(); Classes.renderGradeTable(); return; }
+      if (b.dataset.mts === 'anmelden' && status === 'fehler') { this.spalteStatus = null; this.spalteLaden(cls); return; }
+      // Ändern und Anmelden: das Fenster kann beides (es fragt bei Bedarf nach dem Passwort)
+      this.notenDialog();
+    });
+    return th;
+  },
+
+  spalteZelle(cls, p, s, noten, input) {
+    const td = document.createElement('td');
+    td.className = 'mt-spalte-zelle';
+    if (!noten) {
+      td.innerHTML = `<span class="hint">${this.spalteStatus === 'laedt' ? '…' : '–'}</span>`;
+      return td;
+    }
+    const note = noten.get(s.id);
+    if (!note) { td.innerHTML = '<span class="hint" title="Nicht gespielt">–</span>'; return td; }
+    const gleich = p.grades[s.id] === note;
+    td.innerHTML = `<span class="mt-gesamtnote n${Math.round(parseFloat(note.replace(',', '.')))}">${this.esc(note)}</span>`;
+    if (gleich) {
+      td.insertAdjacentHTML('beforeend', '<span class="hint mt-gleich" title="Steht schon so im Notenfeld">✓</span>');
+      return td;
+    }
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'small mt-nehmen';
+    b.textContent = '← übernehmen';
+    b.title = p.grades[s.id] ? `Note ${p.grades[s.id]} durch ${note} ersetzen` : `Note ${note} eintragen`;
+    b.addEventListener('click', () => {
+      if (p.grades[s.id] && !confirm(`${this.nachname(s)}: Note ${p.grades[s.id]} durch ${note} aus dem music-trainer ersetzen?`)) return;
+      p.grades[s.id] = note;
+      p.mtNoten = { ...(p.mtNoten || {}), [s.id]: note };
+      Classes.persist();
+      Classes.renderGradeTable();
+      document.getElementById('grade-summary').textContent = Classes.summaryText(p);
+    });
+    td.appendChild(b);
+    return td;
   },
 
   ndUebernehmen() {

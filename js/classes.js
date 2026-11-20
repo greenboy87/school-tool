@@ -2185,6 +2185,10 @@ const Classes = {
     table.classList.toggle('mit-spalten', spalten.length > 0);
     const kopf = document.createElement('tr');
     kopf.innerHTML = '<th class="num">Nr.</th><th>Name</th>' + (mitNote ? '<th>Note</th>' : '');
+    // music-trainer-Note daneben, mit Knopf zum Übernehmen (siehe mt-uebernahme.js)
+    const mtSpalte = mitNote && typeof Musiktrainer !== 'undefined' && Musiktrainer.spalteAn(cls, p);
+    const mtNoten = mtSpalte ? Musiktrainer.spalteNoten(cls, p) : null;
+    if (mtSpalte) kopf.appendChild(Musiktrainer.spalteKopf(cls, p));
     const zaehler = {};
     for (const sp of spalten) {
       const th = document.createElement('th');
@@ -2264,6 +2268,7 @@ const Classes = {
       input.addEventListener('input', () => { const m = tdGrade.querySelector('.mt-marke'); if (m) m.remove(); });
       tr.append(tdNum, tdName);
       if (mitNote) tr.appendChild(tdGrade);
+      if (mtSpalte) tr.appendChild(Musiktrainer.spalteZelle(cls, p, s, mtNoten, input));
       for (const sp of spalten) {
         const td = document.createElement('td');
         td.className = 'spalte-zelle spalte-' + sp.art;

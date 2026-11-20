@@ -3307,3 +3307,13 @@ dialog.mt-noten-dialog::backdrop { background: rgba(8, 4, 24, .55); }
 .nd-fuss { margin-top: .9rem; align-items: center; }
 .mt-marke { margin-left: .35rem; font-size: .65rem; font-weight: 700; letter-spacing: .04em; padding: .05rem .35rem;
   border-radius: 99px; background: var(--active-soft); color: var(--accent); vertical-align: middle; }
+/* Spalte „music-trainer“ in der Notenliste: Note daneben, Klick übernimmt */
+.mt-spalte-kopf { white-space: nowrap; }
+.mt-spalte-kopf .mt-spalte-was { display: block; font-size: .7rem; font-weight: 400; color: var(--muted);
+  max-width: 14rem; overflow: hidden; text-overflow: ellipsis; }
+.mt-spalte-kopf .mt-spalte-knoepfe { display: inline-flex; gap: .25rem; margin-top: .2rem; }
+.mt-spalte-kopf .mt-spalte-knoepfe button { padding: .1rem .45rem; font-size: .72rem; }
+.mt-spalte-zelle { white-space: nowrap; }
+.mt-spalte-zelle .mt-gesamtnote { margin-right: .35rem; }
+.mt-spalte-zelle .mt-nehmen { padding: .15rem .5rem; font-size: .75rem; }
+#grade-table td:has(> input.grade) { white-space: nowrap; }

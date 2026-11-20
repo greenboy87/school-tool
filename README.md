@@ -78,6 +78,8 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
   schon eine andere Note hat, behält sie, außer „überschreiben“) oder **nur für einzelne Schüler**
   (etwa: manche spielen live vor, andere nehmen die music-trainer-Note). Übernommene Noten tragen
   ein kleines „MT“, das beim Ändern von Hand verschwindet.
+  **Daneben in der Notenliste zeigen** blendet stattdessen eine Spalte „music-trainer“ neben den
+  Noten ein: je Kind die Note und ein Knopf **← übernehmen** – Kind für Kind entscheiden.
 - Notenliste drucken oder als CSV exportieren
 - Sitzplan (PDF oder Bild) pro Klasse hochladen und anzeigen
 
