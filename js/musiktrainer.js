@@ -828,6 +828,7 @@ const Musiktrainer = {
       try {
         const daten = await this.api(`/api/lehrer/klassen/${cls.musiktrainer.id}?seit=${Math.floor(Date.now() / 1000) - 366 * 86400}`);
         this.ergebnis = { klasseId: cls.musiktrainer.id, daten };
+        this.sbStand = new Date();
       } catch (err) {
         if (err.status === 404) { ziel.innerHTML = '<p class="hint">Diese Klasse gibt es auf dem Server nicht mehr.</p>'; return; }
         return this.fehler(err, document.getElementById('mt-login'), () => this.render());
@@ -1403,6 +1404,10 @@ const Musiktrainer = {
           return st.runden ? `<div class="st-chip" title="Summe aller Runden der Klasse${+this.filter.zeitraum ? ` in den letzten ${this.filter.zeitraum} Tagen` : ''} (Minuten seit 01.11.2026)">
             <span>Gemeinsam geübt</span><b>${this.minuten(st.sek)}</b><small>${this.tausend(st.runden)} Runden</small></div>` : '';
         })()}
+        <span class="mt-sb-aktuell">
+          <button type="button" class="mt-sb-laden" title="Jetzt aktualisieren (aktualisiert sich auch alle 30 Sekunden)">${Icons.raw('reset')}</button>
+          <span class="mt-sb-stand">${this.sbStand ? `Stand ${this.sbStand.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}` : ''}</span>
+        </span>
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
       <div class="mt-tabelle-rahmen">
@@ -1441,6 +1446,46 @@ const Musiktrainer = {
       }
     };
     this.beamerAnpassen();
+    this.sbKlasseId = cls.id;
+    this.sbTakt();
+  },
+
+  /* Scoreboard neu holen: Ergebnisse vom Server, dann neu zeichnen (auch die Tabelle im Reiter).
+     Läuft per Knopf und alle 30 s, solange das Scoreboard offen ist – so sieht die Klasse,
+     wie sich die Rangliste beim Üben verändert. */
+  async sbAktualisieren() {
+    const cls = this.klasse();
+    const b = document.getElementById('mt-beamer');
+    if (!cls?.musiktrainer || !b || b.hidden || this.sbKlasseId !== cls.id || this.sbLaedt) return;
+    this.sbLaedt = true;
+    const knopf = b.querySelector('.mt-sb-laden');
+    if (knopf) knopf.classList.add('dreht');
+    try {
+      const daten = await this.api(`/api/lehrer/klassen/${cls.musiktrainer.id}?seit=${Math.floor(Date.now() / 1000) - 366 * 86400}`);
+      this.ergebnis = { klasseId: cls.musiktrainer.id, daten };
+      this.statCache = {};
+      this.sbStand = new Date();
+    } catch (err) {
+      const stand = b.querySelector('.mt-sb-stand');
+      if (stand) stand.textContent = err.status === 401 ? 'Anmeldung abgelaufen' : 'Keine Verbindung';
+      return;
+    } finally {
+      this.sbLaedt = false;
+      if (knopf) knopf.classList.remove('dreht');
+    }
+    // Nur neu zeichnen, wenn noch dasselbe Scoreboard offen ist
+    if (!b.hidden && this.sbKlasseId === cls.id && b.querySelector('.mt-scoreboard')) this.scoreboardZeigen(cls);
+    const ziel = document.getElementById('mt-auswertung');
+    if (ziel) this.tabelle(cls, ziel);
+  },
+
+  sbTakt() {
+    clearInterval(this.sbTimer);
+    this.sbTimer = setInterval(() => {
+      const b = document.getElementById('mt-beamer');
+      if (!b || b.hidden || !b.querySelector('.mt-scoreboard')) { clearInterval(this.sbTimer); this.sbTimer = null; return; }
+      if (document.visibilityState === 'visible') this.sbAktualisieren();
+    }, 30000);
   },
 
   /* ---------- Statistik: wie viel, wann und was geübt wird ---------- */
@@ -1754,6 +1799,7 @@ const Musiktrainer = {
           this.render();
           return this.scoreboardZeigen(this.klasse());
         }
+        if (e.target.closest('.mt-sb-laden')) return this.sbAktualisieren();
         if (e.target.closest('.mt-beamer-zu')) this.beamerZu();
         else if (e.target.closest('[data-blaettern]')) this.qrBlaettern(+e.target.closest('[data-blaettern]').dataset.blaettern);
       });

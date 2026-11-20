@@ -3362,3 +3362,12 @@ dialog.mt-noten-dialog::backdrop { background: rgba(8, 4, 24, .55); }
 .project-list li.abgeschlossen { opacity: .6; }
 .abgeschlossen-marke { font-size: .68rem; font-weight: 600; padding: .05rem .4rem; border-radius: 99px;
   background: var(--panel); color: var(--muted); border: 1px solid var(--border); vertical-align: middle; }
+
+/* Scoreboard: Aktualisieren-Knopf mit Stand */
+.mt-sb-aktuell { display: inline-flex; align-items: center; gap: .5rem; color: var(--muted); font-size: .95rem; white-space: nowrap; }
+.mt-sb-laden { display: inline-grid; place-items: center; width: 2.6rem; height: 2.6rem; padding: 0;
+  border: 1px solid var(--border); border-radius: 99px; background: var(--panel); color: var(--text); cursor: pointer; }
+.mt-sb-laden:hover { border-color: var(--accent); color: var(--accent); }
+.mt-sb-laden .icon { width: 1.25rem; height: 1.25rem; margin: 0; }
+.mt-sb-laden.dreht .icon { animation: mt-sb-dreh .8s linear infinite; }
+@keyframes mt-sb-dreh { to { transform: rotate(-360deg); } }
