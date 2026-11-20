@@ -3334,3 +3334,7 @@ dialog.mt-noten-dialog::backdrop { background: rgba(8, 4, 24, .55); }
 .mt-spalte-zelle.frisch .mt-spalte-nehmen { animation: mt-frisch 1.6s ease 2; }
 @keyframes mt-frisch { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 40% { box-shadow: 0 0 0 4px rgba(233, 168, 255, .45); } }
 #grade-table td:has(> input.grade) { white-space: nowrap; }
+/* Namen einzeilig – „Armstroff, Jan“ auf zwei Zeilen macht die Liste unübersichtlich.
+   Mit der music-trainer-Spalte darf die Tabelle dafür breiter werden als 560px. */
+.grade-table td.ne-name-zelle { white-space: nowrap; }
+.grade-table:has(.mt-spalte-kopf) { max-width: none; width: auto; min-width: min(100%, 560px); }
