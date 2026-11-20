@@ -309,6 +309,7 @@ const Classes = {
       document.getElementById('grade-summary').textContent = this.summaryText(p);
     });
     document.getElementById('btn-print-project').addEventListener('click', () => this.printProject());
+    document.getElementById('btn-mt-noten').addEventListener('click', () => Musiktrainer.notenDialog());
     document.getElementById('btn-export-project').addEventListener('click', () => this.exportProjectCsv());
 
     // Gruppen bilden – sitzt am Projekt
@@ -1617,6 +1618,8 @@ const Classes = {
   renderProjectDetail() {
     const cls = this.currentClass(), p = this.currentProject();
     this.werkstattTitel();
+    const mtKnopf = document.getElementById('btn-mt-noten');
+    if (mtKnopf) mtKnopf.hidden = !(cls && cls.musiktrainer);
     const detail = document.getElementById('project-detail');
     detail.hidden = !p;
     if (!p) return;
@@ -2249,6 +2252,16 @@ const Classes = {
         }
       });
       tdGrade.appendChild(input);
+      // Aus dem music-trainer übernommen (und seitdem nicht von Hand geändert): kleines „MT“
+      const mtNote = p.mtNoten && p.mtNoten[s.id];
+      if (mtNote && mtNote === p.grades[s.id]) {
+        const mt = document.createElement('span');
+        mt.className = 'mt-marke';
+        mt.textContent = 'MT';
+        mt.title = 'Note aus dem music-trainer übernommen';
+        tdGrade.appendChild(mt);
+      }
+      input.addEventListener('input', () => { const m = tdGrade.querySelector('.mt-marke'); if (m) m.remove(); });
       tr.append(tdNum, tdName);
       if (mitNote) tr.appendChild(tdGrade);
       for (const sp of spalten) {

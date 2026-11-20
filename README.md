@@ -73,6 +73,11 @@ Geräte-Sync auf dem Server landet, ist verschlüsselt und ohne Sync-Passwort we
   **+ Gruppe** legt eine leere an, **×** löst eine auf. **Fertig** räumt alles wieder weg.
   Steht jemand in keiner Gruppe, sagt das auch im Ruhezustand eine gelbe Zeile neben dem
   Knopf. Noten hängen am Schüler und wandern beim Umhängen mit.
+- **Noten aus dem music-trainer** (Knopf im Projekt, nur bei eingerichteten Klassen): Spiele und
+  Stufen frei wählen oder per Schnellwahl *Rhythmus-Prüfung Klasse 5/6*, dann **für alle** (wer
+  schon eine andere Note hat, behält sie, außer „überschreiben“) oder **nur für einzelne Schüler**
+  (etwa: manche spielen live vor, andere nehmen die music-trainer-Note). Übernommene Noten tragen
+  ein kleines „MT“, das beim Ändern von Hand verschwindet.
 - Notenliste drucken oder als CSV exportieren
 - Sitzplan (PDF oder Bild) pro Klasse hochladen und anzeigen
 
