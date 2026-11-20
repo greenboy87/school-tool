@@ -309,6 +309,17 @@ const Classes = {
       document.getElementById('grade-summary').textContent = this.summaryText(p);
     });
     document.getElementById('btn-print-project').addEventListener('click', () => this.printProject());
+    document.getElementById('btn-projekt-abschliessen').addEventListener('click', () => {
+      const p = this.currentProject();
+      if (!p) return;
+      p.abgeschlossen = !p.abgeschlossen;
+      this.persist();
+      this.renderProjects();
+    });
+    document.getElementById('laufende-projekte').addEventListener('click', e => {
+      const b = e.target.closest('[data-projekt]');
+      if (b) this.projektOeffnen(b.dataset.projekt);
+    });
     document.getElementById('btn-mt-noten').addEventListener('click', () => Musiktrainer.notenDialog());
     document.getElementById('btn-export-project').addEventListener('click', () => this.exportProjectCsv());
 
@@ -1585,10 +1596,12 @@ const Classes = {
       const li = document.createElement('li');
       li.classList.toggle('active', p.id === this.currentProjectId);
       li.classList.toggle('is-entered', p.entered);
+      li.classList.toggle('abgeschlossen', !!p.abgeschlossen);
       const name = document.createElement('span');
       name.className = 'pname';
       name.textContent = p.name;
       if (p.entered) name.insertAdjacentHTML('beforeend', Icons.raw('check', 'entered-mark'));
+      if (p.abgeschlossen) name.insertAdjacentHTML('beforeend', ' <span class="abgeschlossen-marke">abgeschlossen</span>');
       const date = document.createElement('span');
       date.className = 'pdate';
       date.textContent = p.date ? new Date(p.date + 'T12:00').toLocaleDateString('de-DE') : '';
@@ -1622,7 +1635,16 @@ const Classes = {
     if (mtKnopf) mtKnopf.hidden = !(cls && cls.musiktrainer);
     const detail = document.getElementById('project-detail');
     detail.hidden = !p;
+    this.renderLaufende();
     if (!p) return;
+    const abKnopf = document.getElementById('btn-projekt-abschliessen');
+    abKnopf.innerHTML = '';
+    abKnopf.dataset.icon = p.abgeschlossen ? 'reset' : 'check';
+    abKnopf.textContent = p.abgeschlossen ? 'Wieder öffnen' : 'Abschließen';
+    abKnopf.title = p.abgeschlossen ? 'Projekt läuft wieder – steht dann unter „Laufende Projekte“'
+      : 'Projekt fertig – taucht dann nicht mehr unter „Laufende Projekte“ auf';
+    abKnopf.classList.toggle('primary', !p.abgeschlossen && this.projektFertig(p));
+    Icons.hydrate(abKnopf.parentElement);
     // Titel ist direkt bearbeitbar, Datum daneben änderbar
     const titel = document.getElementById('project-title');
     titel.innerHTML = '';
@@ -1888,6 +1910,49 @@ const Classes = {
     this.renderGradeTable();
     document.getElementById('grade-summary').textContent = this.summaryText(p);
     if (window.Einklappen) Einklappen.anwenden('noten');
+  },
+
+  /* ---------- Laufende Projekte (unter „Nächste Stunde“) ----------
+     Alle nicht abgeschlossenen Projekte der Klasse als Abkürzung, mit Stand der Bewertung.
+     So sieht man beim Öffnen der Klasse, wo noch Noten fehlen. */
+  benotetZahl(cls, p) {
+    const ids = new Set(cls.students.map(s => s.id));
+    return Object.entries(p.grades || {}).filter(([id, g]) => ids.has(id) && g && String(g).trim()).length;
+  },
+
+  projektFertig(p) {
+    const cls = this.currentClass();
+    return !!cls && !p.ohneNote && cls.students.length > 0 && this.benotetZahl(cls, p) >= cls.students.length;
+  },
+
+  renderLaufende() {
+    const box = document.getElementById('laufende-projekte');
+    if (!box) return;
+    const cls = this.currentClass();
+    const offen = cls ? cls.projects.filter(p => !p.abgeschlossen)
+      .sort((a, b) => (b.date || '').localeCompare(a.date || '')) : [];
+    box.hidden = !offen.length;
+    if (!offen.length) { box.innerHTML = ''; return; }
+    const n = cls.students.length;
+    const esc = s => Band.esc(s);
+    box.innerHTML = `<span class="lp-titel">${Icons.raw('clipboard')}Laufende Projekte</span>
+      <span class="lp-liste">${offen.map(p => {
+        const zahl = this.benotetZahl(cls, p);
+        const fertig = !p.ohneNote && n && zahl >= n;
+        const stand = p.ohneNote ? '' : `<span class="lp-stand${fertig ? ' fertig' : ''}">${fertig ? '✓ alle benotet' : `${zahl}/${n} benotet`}</span>`;
+        const balken = p.ohneNote || !n ? '' : `<span class="lp-balken"><i style="width:${Math.round(100 * Math.min(zahl, n) / n)}%"></i></span>`;
+        return `<button type="button" class="lp-projekt" data-projekt="${esc(p.id)}" title="Projekt öffnen">
+          <span class="lp-name">${esc(p.name)}</span>${stand}${balken}</button>`;
+      }).join('')}</span>`;
+  },
+
+  projektOeffnen(id) {
+    this.currentProjectId = id;
+    const knopf = document.querySelector('.subtab-btn[data-subtab="projekte"]');
+    if (knopf) knopf.click();
+    this.renderProjects();
+    const detail = document.getElementById('project-detail');
+    if (detail && !detail.hidden) detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
   },
 
   summaryText(p) {
@@ -2246,6 +2311,7 @@ const Classes = {
         else delete p.grades[s.id];
         this.persist();
         document.getElementById('grade-summary').textContent = this.summaryText(p);
+        this.renderLaufende();
       });
       input.addEventListener('keydown', e => {
         if (e.key === 'Enter') {

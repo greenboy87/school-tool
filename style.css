@@ -3343,3 +3343,22 @@ dialog.mt-noten-dialog::backdrop { background: rgba(8, 4, 24, .55); }
    Mit der music-trainer-Spalte darf die Tabelle dafür breiter werden als 560px. */
 .grade-table td.ne-name-zelle { white-space: nowrap; }
 .grade-table:has(.mt-spalte-kopf) { max-width: none; width: auto; min-width: min(100%, 560px); }
+
+/* Laufende Projekte – unter „Nächste Stunde“, Abkürzung ins Projekt */
+.laufende-projekte { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.2rem; margin-bottom: 1.2rem; }
+.laufende-projekte[hidden] { display: none; }
+.lp-titel { display: inline-flex; align-items: center; gap: .4rem; font-weight: 700; font-size: 1rem; }
+.lp-titel .icon { width: 1.05em; height: 1.05em; margin: 0; }
+.lp-liste { display: flex; flex-wrap: wrap; gap: .5rem; }
+.lp-projekt { display: inline-grid; grid-template-columns: auto auto; align-items: center; gap: .15rem .7rem;
+  padding: .5rem .85rem; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--panel); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.lp-projekt:hover { border-color: var(--accent); background: var(--active-soft); }
+.lp-name { font-weight: 700; color: var(--accent); }
+.lp-stand { font-size: .8rem; color: var(--muted); white-space: nowrap; }
+.lp-stand.fertig { color: var(--green); font-weight: 600; }
+.lp-balken { grid-column: 1 / -1; height: 4px; border-radius: 99px; background: var(--track); overflow: hidden; }
+.lp-balken i { display: block; height: 100%; border-radius: inherit; background: var(--accent-grad); }
+.project-list li.abgeschlossen { opacity: .6; }
+.abgeschlossen-marke { font-size: .68rem; font-weight: 600; padding: .05rem .4rem; border-radius: 99px;
+  background: var(--panel); color: var(--muted); border: 1px solid var(--border); vertical-align: middle; }
