@@ -29,6 +29,12 @@ const MT_SPIELE = (() => {
   return [
     ...noten('stamm', 'Stammtöne', sechs),
     ...noten('vz', 'Vorzeichen', vier),
+    // Klasse 6 „Tonhöhen, Oktavlagen & Bassschlüssel“ (November 2026)
+    ...noten('bass', 'Bassschlüssel', vier),
+    ...noten('bassvz', 'Bassschlüssel Vorzeichen', vier),
+    ...[['etage', 'Welche Etage?'], ['name', 'Name mit Oktave'], ['taste', 'Note → Taste'], ['schreiben', 'Noten schreiben'],
+      ['detektiv', 'Oktav-Detektiv'], ['platz', 'Gleicher Platz – anderer Ton']]
+      .map(([id, titel]) => ({ id: `okt-${id}`, bereich: 'Oktavlagen', titel, ...vier })),
     { id: 'hoch-tief', bereich: 'Hören', titel: 'Hoch oder tief?', stufen: ['Große Sprünge', 'Kleine Schritte', 'Ganz knapp'] },
     { id: 'intervall', bereich: 'Hören', titel: 'Intervall-Ohr', stufen: ['Prime, Quinte, Oktave', 'Dazu Terz und Quarte', 'Alle Intervalle', 'In Noten: Sekunde bis Quinte', 'In Noten: bis zur Oktave'] },
     { id: 'dur-moll', bereich: 'Hören', titel: 'Akkorde hören', stufen: ['Junior', 'Anfänger', 'Fortgeschritten', 'Profi', 'Profi 2', 'Profi 3'] },
