@@ -110,6 +110,12 @@ const Musiktrainer = {
   },
 
   esc(s) { return Band.esc(s).replace(/"/g, '&quot;'); },
+  /* Passwort zum Ablesen: Bindestrich sichtbar kurz (Kinder tippten sonst den langen
+     Strich „–“ unten links auf der iPad-Tastatur) und kein Abstand vor dem „!“ (sonst
+     tippten sie ein Leerzeichen). Nur die Anzeige – kopiert wird weiter das echte Passwort. */
+  pw(s) {
+    return this.esc(s).replace(/-/g, '<i class="pw-strich">-</i>').replace(/!/g, '<i class="pw-ausruf">!</i>');
+  },
   /* Die gerade gezeigte Klasse – oder, in den eigenen Zugängen, eine Gruppe als „Klasse“: Kinder =
      Zugänge (Vorname = Benutzername), musiktrainer = die Gruppe selbst (id, passwort; die Auswahl
      der Spiele wird dort gemerkt). So zeigen Gruppen dieselbe Auswertung wie Klassen. */
@@ -312,7 +318,7 @@ const Musiktrainer = {
           <button data-mt="drucken" data-icon="printer">Kärtchen drucken</button>
         </div>
       </div>
-      <p class="mt-zugang">Klassenpasswort <code>${this.esc(mt.passwort)}</code>
+      <p class="mt-zugang">Klassenpasswort <code>${this.pw(mt.passwort)}</code>
         <button class="small" data-mt="pw" data-icon="reset">ändern</button>
         ${ohne.length ? `<button class="small" data-mt="nachtragen" data-icon="plus">${ohne.length} neue Kinder einrichten</button>` : ''}
         <button class="small danger" data-mt="loeschen" data-icon="trash" title="Klasse samt Ergebnissen vom Server löschen – etwa am Schuljahresende">Vom Server löschen</button>
@@ -786,7 +792,7 @@ const Musiktrainer = {
     ziel.innerHTML = `
       ${this.rettenFunde.length > 1 ? `<p><b>Die Klasse war ${this.rettenFunde.length}-mal eingerichtet.</b> Vergleiche mit dem, was die Kinder aufgeschrieben haben:</p>` : ''}
       ${this.rettenFunde.map((f, i) => `<div class="mt-retten-fund">
-        <p><b>${i === 0 ? 'Neuester Stand' : 'Älterer Stand'}:</b> ${this.esc(f.quelle)} vom ${wann(f.zeit)} · Passwort <code>${this.esc(f.musiktrainer.passwort)}</code> ·
+        <p><b>${i === 0 ? 'Neuester Stand' : 'Älterer Stand'}:</b> ${this.esc(f.quelle)} vom ${wann(f.zeit)} · Passwort <code>${this.pw(f.musiktrainer.passwort)}</code> ·
           ${f.zuordnung.length} von ${cls.students.length} Kindern</p>
         <p class="hint">z. B. ${f.zuordnung.slice(0, 4).map(z => `${this.esc(name(z.sid))} = <code>${this.esc(z.mt.name)}</code>`).join(', ')}</p>
         <details><summary class="hint">Alle ${f.zuordnung.length} anzeigen</summary>
@@ -1889,7 +1895,7 @@ const Musiktrainer = {
           <h2>${this.esc(titel)}: Anmelden im music-trainer</h2>
           <p>iPad-Kamera öffnen, <b>deinen</b> Code scannen, Link antippen – fertig.</p>
         </div>
-        <div class="mt-beamer-pw"><span>Passwort</span><code>${this.esc(passwort)}</code></div>
+        <div class="mt-beamer-pw"><span>Passwort</span><code>${this.pw(passwort)}</code></div>
         <button class="mt-beamer-zu" title="Schließen (Esc)">${Icons.raw('x')}</button>
       </div>
       <div class="mt-qr-raster" style="--spalten:${Math.min(teil.length, Math.ceil(Math.sqrt(proSeite)))}">
@@ -2002,7 +2008,7 @@ const Musiktrainer = {
           ? `<div class="mt-namenszeile nur-benutzer"><code>${this.esc(k.benutzer)}</code></div>`
           : `<div class="mt-namenszeile"><span>${this.esc(k.name)}</span><code>${this.esc(k.benutzer)}</code></div>`).join('')}
       </div>
-      <div class="mt-passwort-gross"><span>Passwort für alle</span><code>${this.esc(passwort)}</code></div>
+      <div class="mt-passwort-gross"><span>Passwort für alle</span><code>${this.pw(passwort)}</code></div>
     </div>`;
     this.allgemeinQr(document.getElementById('mt-allgemein-qr'), 460);
     b.querySelector('.mt-teams-knopf').onclick = e => this.teamsKopieren(e.currentTarget);
@@ -2138,7 +2144,7 @@ const Musiktrainer = {
         <div>
           <h1>music-trainer · ${this.esc(titel)}</h1>
           <div class="mt-liste-zeile"><span>Adresse</span><b>${this.esc(adresse)}</b></div>
-          <div class="mt-liste-zeile"><span>Passwort für alle</span><b>${this.esc(passwort)}</b></div>
+          <div class="mt-liste-zeile"><span>Passwort für alle</span><b>${this.pw(passwort)}</b></div>
           <p>Seite öffnen (oder QR-Code scannen), „Anmelden“ tippen, deinen Benutzernamen und das Passwort eingeben. Schreib dir alles auf – dann kannst du auch zu Hause spielen.</p>
         </div>
         <div class="mt-liste-qr"><div id="mt-liste-qr"></div><span>${this.esc(adresse)}</span></div>
@@ -2167,7 +2173,7 @@ const Musiktrainer = {
           <div class="mt-karte-name">${this.esc(k.name)} · ${this.esc(titel)}</div>
           <div class="mt-karte-zeile adresse"><span>Adresse</span><b>${this.esc(this.KURZ_URL)}</b></div>
           <div class="mt-karte-zeile"><span>Benutzername</span><b>${this.esc(k.benutzer)}</b></div>
-          <div class="mt-karte-zeile"><span>Passwort</span><b>${this.esc(passwort)}</b></div>
+          <div class="mt-karte-zeile"><span>Passwort</span><b>${this.pw(passwort)}</b></div>
         </div>
         <div class="mt-karte-qr" id="mt-karte-qr-${i}"></div>
       </div>`).join('')}</div>`;
@@ -2194,7 +2200,7 @@ const Musiktrainer = {
         <div class="mt-gross-karte">
           <div class="mt-gross-qr" id="mt-gross-qr-${i}"></div>
           <div class="mt-gross-name">${this.esc(k.name)}</div>
-          <div class="mt-gross-daten">Benutzer <code>${this.esc(k.benutzer)}</code> · Passwort <code>${this.esc(passwort)}</code></div>
+          <div class="mt-gross-daten">Benutzer <code>${this.esc(k.benutzer)}</code> · Passwort <code>${this.pw(passwort)}</code></div>
           <div class="mt-gross-kurz">ohne Kamera: im Browser eintippen<strong>${this.esc(this.KURZ_URL)}</strong></div>
         </div>`).join('')}</div>
     </div>`;
@@ -2223,7 +2229,7 @@ const Musiktrainer = {
         <div class="mt-gruppe">
           <div class="projekt-header">
             <strong>${this.esc(g.name)}</strong>
-            <span class="hint">Passwort <code>${this.esc(g.passwort)}</code></span>
+            <span class="hint">Passwort <code>${this.pw(g.passwort)}</code></span>
             <div class="btn-row">
               <button class="small" data-eigen="ergebnisse" data-g="${gi}" data-icon="list" ${g.kinder.length ? '' : 'disabled'}>Ergebnisse</button>
               <button class="small primary" data-eigen="namen" data-g="${gi}" data-icon="list" ${g.kinder.length ? '' : 'disabled'} title="Alle Benutzernamen und das Passwort groß am Beamer">Namensliste am Beamer</button>
@@ -2290,7 +2296,7 @@ const Musiktrainer = {
     ziel.innerHTML = t.length ? `
       <p class="hint">Auf dem Server, aber hier nicht eingetragen – übernimm nur, was zu dir gehört:</p>
       <ul class="mt-zugaenge mt-treffer">
-        ${t.map(d => `<li><strong>${this.esc(d.klasse.name)}</strong> <span class="hint">Passwort <code>${this.esc(d.klasse.passwort)}</code> ·
+        ${t.map(d => `<li><strong>${this.esc(d.klasse.name)}</strong> <span class="hint">Passwort <code>${this.pw(d.klasse.passwort)}</code> ·
           ${d.schueler.length ? d.schueler.map(k => this.esc(k.benutzername)).join(', ') : 'keine Zugänge'}</span>
           <button class="small primary" data-eigen="uebernehmen" data-id="${d.klasse.id}">Übernehmen</button></li>`).join('')}
       </ul>` : '<p class="hint">Keine fehlenden Gruppen gefunden – alle eigenen Gruppen sind hier eingetragen.</p>';
