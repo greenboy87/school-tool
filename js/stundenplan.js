@@ -1096,6 +1096,37 @@ const Stundenplan = {
     }
   },
 
+  /* „Fertig“ aus dem Reiter Stunden: Das Thema ist mit der letzten Stunde der
+     Klasse fertig, die schon begonnen hat (Sonderstunden zählen nicht). Kommende
+     Stunden bekommen damit das nächste offene Thema nur als Vorschlag – mit
+     „übernehmen“ im Planer wird es fest. Ohne Stundenplan: fertig ab heute. */
+  themaFertig(cls, id) {
+    const e = cls && Lessons.lessonsOf(cls)[id];
+    if (!e) return;
+    this._cache = null;
+    const jetzt = new Date();
+    const gehalten = this.termine && this.termine.length
+      ? this.klassenStunden(cls).filter(t => t.beginn <= jetzt && !this.sonderStunde(cls, t)).map(t => this.buchSchluessel(t))
+      : [];
+    const davor = gehalten.pop();
+    this.merken('Thema fertig');
+    if (davor) {
+      this.themaEndet(cls, [id], davor);
+      // Bestätigungen kommender Stunden mit diesem Thema gelten nicht mehr
+      for (const [key, rec] of Object.entries(cls.stundenbuch || {})) {
+        if (key > davor && rec && rec.b && String(rec.b).split(',').includes(id)) {
+          delete rec.b;
+          if (!Object.keys(rec).length) delete cls.stundenbuch[key];
+        }
+      }
+    } else {
+      Lessons.setState(cls, id, 'done');
+    }
+    this._cache = null;
+    Classes.persist();
+    this.render();
+  },
+
   /* Folgestunde: statt weiterzuführen gleich mit dem nächsten Thema beginnen –
      das bisherige ist mit der Stunde davor fertig, die Stunde gilt als bestätigt */
   wechseln(klasseId, key, id) {

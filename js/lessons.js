@@ -515,6 +515,15 @@ const Lessons = {
     }
   },
 
+  /* „Fertig“ im Reiter Stunden: Das Thema endet mit der letzten Stunde der
+     Klasse, die schon begonnen hat. Der Plan führt es danach nicht mehr fort und
+     schlägt das nächste offene Thema vor – angenommen wird das erst im Planer. */
+  fertigMarkieren(cls, topicId) {
+    if (typeof Stundenplan !== 'undefined' && Stundenplan.themaFertig) Stundenplan.themaFertig(cls, topicId);
+    else this.setState(cls, topicId, 'done');
+    this.render();
+  },
+
   /* Das nächste offene Thema der Klasse – ohne die genannten */
   naechstesOffenes(cls, ausser = []) {
     return this.assignedTopics(cls).find(t => this.stateOf(cls, t.id) === 'open' && !ausser.includes(t.id)) || null;
@@ -608,6 +617,16 @@ const Lessons = {
         : st === 'done' ? 'fertig' + (e.d2 ? ' am ' + tagText(e.d2) : '') : 'offen';
       stand.title = 'Wird im Stundenplan gesetzt: Thema einer Stunde wählen – es läuft ab dort; ein anderes Thema danach beendet es.';
       btns.appendChild(stand);
+      // Laufendes Thema hier beenden: Im Planer steht danach das nächste offene
+      // Thema als Vorschlag – fest wird es erst dort mit „übernehmen“
+      if (st === 'progress') {
+        const fertig = document.createElement('button');
+        fertig.className = 'small lesson-fertig';
+        fertig.innerHTML = Icons.raw('check') + 'Fertig';
+        fertig.title = 'Thema ist mit der letzten gehaltenen Stunde fertig. Im Planer steht danach das nächste offene Thema als Vorschlag – dort noch „übernehmen“ drücken.';
+        fertig.addEventListener('click', () => this.fertigMarkieren(cls, t.id));
+        btns.appendChild(fertig);
+      }
       // Offene Themen umsortieren: das oberste kommt im Plan als nächstes dran
       if (st === 'open') {
         const offen = zugeordnet.filter(x => this.stateOf(cls, x.id) === 'open');
