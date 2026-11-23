@@ -4,17 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School-Tool – Lehrer-Werkzeuge</title>
-<link rel="stylesheet" href="style.css?v=455">
+<link rel="stylesheet" href="style.css?v=456">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23a855f7%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22M3 21h18M5 21V9l7-5 7 5v12M10 21v-5h4v5%22/></svg>">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Plan">
-<script src="js/icons.js?v=455"></script>
-<script src="js/theme.js?v=455"></script>
-<script src="js/auswahl.js?v=455"></script>
-<script src="js/metronom.js?v=455"></script>
-<script src="js/klang.js?v=455"></script>
-<script src="js/schwebe.js?v=455"></script>
-<script src="js/auth.js?v=455"></script>
+<script src="js/icons.js?v=456"></script>
+<script src="js/theme.js?v=456"></script>
+<script src="js/auswahl.js?v=456"></script>
+<script src="js/metronom.js?v=456"></script>
+<script src="js/klang.js?v=456"></script>
+<script src="js/schwebe.js?v=456"></script>
+<script src="js/auth.js?v=456"></script>
 </head>
 <body>
 
@@ -1233,6 +1233,8 @@
         <button type="submit" class="primary" data-icon="plus">Probentermin anlegen</button>
       </form>
     </div>
+    <div class="proben-raster">
+    <div class="proben-haupt">
     <ul id="rehearsal-list" class="project-list"></ul>
     <div id="rehearsal-detail" hidden>
       <hr>
@@ -1254,6 +1256,17 @@
       </div>
       <p class="hint">Ins Feld neben dem Song kommt, was du dir merken willst (z.&thinsp;B. „Tempo schneller“, „Bridge nochmal“).</p>
       <table class="band-table" id="rehearsal-table"></table>
+    </div>
+    </div>
+    <aside class="proben-notizen">
+      <div class="projekt-header">
+        <h4>Notizen für alle Proben</h4>
+        <button id="btn-print-proben-notes" class="small" data-icon="printer" title="Drucken"></button>
+      </div>
+      <textarea id="proben-notes-text" spellcheck="true"
+        placeholder="Songs, die als Nächstes drankommen, Ideen, Absprachen …"></textarea>
+      <span class="hint" id="proben-notes-status"></span>
+    </aside>
     </div>
   </section>
 
@@ -1578,43 +1591,43 @@
 
 
 <script src="js/vendor/pdf.min.js"></script>
-<script src="js/vendor/qrcode.min.js?v=455"></script>
-<script src="js/firebase-config.js?v=455"></script>
-<script type="module" src="js/live-firebase.js?v=455"></script>
-<script src="js/ai-import.js?v=455"></script>
-<script src="js/store.js?v=455"></script>
-<script src="js/noise.js?v=455"></script>
-<script src="js/classes.js?v=455"></script>
-<script src="js/sitzplan.js?v=455"></script>
-<script src="js/schueler.js?v=455"></script>
-<script src="js/tasten.js?v=455"></script>
-<script src="js/lessons.js?v=455"></script>
-<script src="js/band.js?v=455"></script>
-<script src="js/notes.js?v=455"></script>
-<script src="js/tresor.js?v=455"></script>
-<script src="js/erklaerungen.js?v=455"></script>
-<script src="js/setlisten.js?v=455"></script>
-<script src="js/einklappen.js?v=455"></script>
-<script src="js/tinyband-instrumente.js?v=455"></script>
-<script src="js/live-groups.js?v=455"></script>
-<script src="js/tinyband-lehrer.js?v=455"></script>
-<script src="js/tipps.js?v=455"></script>
-<script src="js/sport-tabellen.js?v=455"></script>
-<script src="js/sport.js?v=455"></script>
-<script src="js/ex-import.js?v=455"></script>
-<script src="js/exen.js?v=455"></script>
-<script src="js/ex-namen.js?v=455"></script>
-<script src="js/ex-sitzung.js?v=455"></script>
-<script src="js/ex-auswertung.js?v=455"></script>
-<script src="js/ex-reiter.js?v=455"></script>
-<script src="js/tools.js?v=455"></script>
-<script src="js/ablage.js?v=455"></script>
-<script src="js/musiktrainer.js?v=455"></script>
-<script src="js/mt-uebernahme.js?v=455"></script>
-<script src="js/trainer-uebersicht.js?v=455"></script>
-<script src="js/ipad-buchen.js?v=455"></script>
-<script src="js/stundenplan.js?v=455"></script>
-<script src="js/notfall.js?v=455"></script>
-<script src="js/app.js?v=455"></script>
+<script src="js/vendor/qrcode.min.js?v=456"></script>
+<script src="js/firebase-config.js?v=456"></script>
+<script type="module" src="js/live-firebase.js?v=456"></script>
+<script src="js/ai-import.js?v=456"></script>
+<script src="js/store.js?v=456"></script>
+<script src="js/noise.js?v=456"></script>
+<script src="js/classes.js?v=456"></script>
+<script src="js/sitzplan.js?v=456"></script>
+<script src="js/schueler.js?v=456"></script>
+<script src="js/tasten.js?v=456"></script>
+<script src="js/lessons.js?v=456"></script>
+<script src="js/band.js?v=456"></script>
+<script src="js/notes.js?v=456"></script>
+<script src="js/tresor.js?v=456"></script>
+<script src="js/erklaerungen.js?v=456"></script>
+<script src="js/setlisten.js?v=456"></script>
+<script src="js/einklappen.js?v=456"></script>
+<script src="js/tinyband-instrumente.js?v=456"></script>
+<script src="js/live-groups.js?v=456"></script>
+<script src="js/tinyband-lehrer.js?v=456"></script>
+<script src="js/tipps.js?v=456"></script>
+<script src="js/sport-tabellen.js?v=456"></script>
+<script src="js/sport.js?v=456"></script>
+<script src="js/ex-import.js?v=456"></script>
+<script src="js/exen.js?v=456"></script>
+<script src="js/ex-namen.js?v=456"></script>
+<script src="js/ex-sitzung.js?v=456"></script>
+<script src="js/ex-auswertung.js?v=456"></script>
+<script src="js/ex-reiter.js?v=456"></script>
+<script src="js/tools.js?v=456"></script>
+<script src="js/ablage.js?v=456"></script>
+<script src="js/musiktrainer.js?v=456"></script>
+<script src="js/mt-uebernahme.js?v=456"></script>
+<script src="js/trainer-uebersicht.js?v=456"></script>
+<script src="js/ipad-buchen.js?v=456"></script>
+<script src="js/stundenplan.js?v=456"></script>
+<script src="js/notfall.js?v=456"></script>
+<script src="js/app.js?v=456"></script>
 </body>
 </html>

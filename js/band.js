@@ -12,6 +12,7 @@ const Band = {
     const b = data.band;
     ['members', 'songs', 'ideas', 'gigs', 'rehearsals'].forEach(k => { if (!Array.isArray(b[k])) b[k] = []; });
     if (typeof b.notizen !== 'string') b.notizen = '';
+    if (typeof b.probenNotizen !== 'string') b.probenNotizen = '';
     return b;
   },
   save() { Classes.persist(); },
@@ -1573,6 +1574,9 @@ const Band = {
   renderRehearsals() {
     const ul = document.getElementById('rehearsal-list');
     if (!ul) return;
+    // Nach einem Sync den neuen Stand zeigen – aber nie, während getippt wird
+    const pn = document.getElementById('proben-notes-text');
+    if (pn && document.activeElement !== pn && !pn._offen) pn.value = this.d().probenNotizen;
     ul.innerHTML = '';
     const list = [...this.d().rehearsals].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     if (!list.length) ul.innerHTML = '<li class="hint">Noch keine Probentermine angelegt.</li>';

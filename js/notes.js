@@ -16,6 +16,13 @@ const Notes = {
       lesen: () => Band.d().notizen,
       schreiben: t => { Band.d().notizen = t; },
     });
+    // Rechte Spalte im Probenplan: bleibt stehen, egal welche Probe offen ist
+    this.binden({
+      feld: 'proben-notes-text', status: 'proben-notes-status', druck: 'btn-print-proben-notes',
+      titel: 'Probenplan – Notizen',
+      lesen: () => Band.d().probenNotizen,
+      schreiben: t => { Band.d().probenNotizen = t; },
+    });
     /* Notizen je Klasse. Anders als die beiden anderen Felder wechselt hier das
        Ziel mit der gewaehlten Klasse – Classes.renderDetail() setzt den Inhalt
        beim Umschalten neu. */

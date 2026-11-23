@@ -3377,3 +3377,16 @@ dialog.mt-noten-dialog::backdrop { background: rgba(8, 4, 24, .55); }
 .pw-strich, .pw-ausruf { font-style: normal; font-size: inherit; color: inherit; }
 .pw-strich { font-family: -apple-system, system-ui, sans-serif; font-weight: 600; margin: 0 .04em; }
 .pw-ausruf { margin-left: -.14em; }
+
+/* Probenplan: rechts eine Notizspalte, die bei jeder Probe stehen bleibt */
+.proben-raster { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); gap: 1.2rem; align-items: start; }
+.proben-notizen { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: .4rem;
+  border-left: 1px solid var(--border, #ddd); padding-left: 1.2rem; }
+.proben-notizen .projekt-header { margin: 0; }
+.proben-notizen h4 { margin: 0; }
+.proben-notizen textarea { width: 100%; min-height: 50vh; resize: vertical; font-size: .95rem; line-height: 1.5; }
+@media (max-width: 800px) {
+  .proben-raster { grid-template-columns: 1fr; }
+  .proben-notizen { position: static; border-left: 0; padding-left: 0; }
+  .proben-notizen textarea { min-height: 10rem; }
+}
