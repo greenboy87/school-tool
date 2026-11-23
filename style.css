@@ -3376,4 +3376,4 @@ dialog.mt-noten-dialog::backdrop { background: rgba(8, 4, 24, .55); }
 /* Passwort-Anzeige (Musiktrainer.pw): kurzer Bindestrich, „!“ dicht am Buchstaben davor */
 .pw-strich, .pw-ausruf { font-style: normal; font-size: inherit; color: inherit; }
 .pw-strich { font-family: -apple-system, system-ui, sans-serif; font-weight: 600; margin: 0 .04em; }
-.pw-ausruf { margin-left: -.24em; }
+.pw-ausruf { margin-left: -.14em; }
