@@ -152,9 +152,8 @@ const Stundenplan = {
       const r = dlg.getBoundingClientRect();
       if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dlg.close();
     });
-    // Bestimmten Koffer aus dem Menü im Bearbeiten-Fenster buchen
+    // Koffer im Bearbeiten-Fenster anhaken und buchen
     document.getElementById('plan-dialog-ipad-links').addEventListener('change', e => {
-      if (e.target.matches('select.plan-ipad-wahl')) this.ipadWahl(e.target);
       if (e.target.matches('.plan-ipad-zwei input')) this.ipadZweiPruefen(e.target.closest('.plan-ipad-zwei'));
     });
     document.getElementById('plan-dialog-ipad-links').addEventListener('click', e => {
@@ -588,91 +587,69 @@ const Stundenplan = {
     return this.IPAD_SEITE + kofferId + '?startDate=' + this.tagSchluessel(datum);
   },
 
-  /* Links zum Buchen. Jeder Link öffnet die Buchungsseite des Schulmanagers mit
-     dem Auftrag im Fensternamen (siehe ipad-buchen.js) – dort erledigt das
-     Lesezeichen den Rest. „Freie Koffer im Stockwerk“ sind die Koffer auf dem
-     Stockwerk des Raums, die laut letztem Abgleich frei sind (ohne Abgleich
-     für den Tag: alle dort). Ist der gewählte inzwischen belegt, sagt das
-     Lesezeichen das und bietet den nächsten freien auf dem Stockwerk an. Jeden
-     anderen Koffer gibt es im Menü „bestimmter Koffer“. Vor dem Buchen nennt das
-     Lesezeichen den Koffer und fragt nach. Ohne Stundennummer (Nachmittag ohne
-     Raster) gibt es keinen Auftrag, dann öffnen die Links nur die Seite. */
+  /* Koffer zum Buchen: oben die Koffer im Stockwerk des Raums, darunter alle
+     weiteren – je zum Anhaken, belegte (laut letztem Abgleich) durchgestrichen.
+     „buchen“ öffnet die Buchungsseite des Schulmanagers mit dem Auftrag im
+     Fensternamen (siehe ipad-buchen.js) – dort erledigt das Lesezeichen den Rest.
+     Ein Koffer angehakt: Ist er inzwischen belegt, bietet das Lesezeichen den
+     nächsten freien im Stockwerk an. Zwei angehakt: beide (Auftrag stserie).
+     Ist schon einer gebucht, geht nur noch einer dazu. Ohne Stundennummer
+     (Nachmittag ohne Raster) gibt es keinen Auftrag, dann öffnet sich nur die Seite. */
   ipadLinks(t, ohne = [], folge = []) {
     // ohne: schon gebuchte Koffer – für einen zweiten Koffer zur selben Stunde
     // folge: weitere Stunden der Klasse („+1 Stunde“), für die dieselben Koffer mitgebucht werden
     const stockwerk = this.kofferFuer(t.raum).filter(k => !ohne.includes(k.id));
+    const weitere = this.KOFFER.filter(k => !ohne.includes(k.id) && !stockwerk.includes(k));
     const nr = parseInt(this.STUNDEN[this.uhr(t.beginn)], 10);
     const was = `${t.fach} ${this.klassenText(t)}, ${t.raum || ''}`.replace(/\|/g, '/');
     const serie = this.ipadSerie([t, ...folge]);
-    const einzeln = liste => nr ? ['stbuchen', this.tagSchluessel(t.beginn), nr, liste.map(k => k.id).join(','), was].join('|') : 'schulmanager';
-    // Ist der gewählte Koffer belegt, kommen erst die übrigen auf dem Stockwerk dran
-    const reihe = k => [k, ...stockwerk.filter(x => x !== k)];
-    const auftrag = liste => folge.length ? this.ipadSerieAuftrag(serie, [liste[0].id]) : einzeln(liste);
+    // Auftrag für genau einen Koffer: ist er belegt, kommen die übrigen im Stockwerk dran
+    const einzeln = k => !nr ? 'schulmanager'
+      : folge.length ? this.ipadSerieAuftrag(serie, [k.id])
+      : ['stbuchen', this.tagSchluessel(t.beginn), nr, [k, ...stockwerk.filter(x => x !== k)].map(x => x.id).join(','), was].join('|');
     const hinweis = ' – im Schulmanager-Tab das Lesezeichen „Schulmanager“ anklicken';
-    const titel = k => `Koffer ${k.raum} (${k.ipads} iPads) am ${this.tagName(t.beginn)} buchen${hinweis}`;
-    const link = k => `<a href="${this.esc(this.ipadAdresse(t.beginn, k.id))}" target="${this.esc(auftrag(reihe(k)))}" rel="noopener"
-      title="${this.esc(titel(k))}">${this.esc(k.raum)}</a>`;
     // Belegung laut letztem Abgleich; null: für diesen Tag unbekannt
     const belegung = nr && typeof IpadBuchen !== 'undefined' ? IpadBuchen.belegung(this.tagSchluessel(t.beginn), nr) : null;
     const belegt = k => !!belegung && belegung.ids.includes(k.id);
-    const frei = stockwerk.filter(k => !belegt(k));
     let stand = '';
     if (belegung) {
       const d = new Date(belegung.stand);
       stand = this.tagSchluessel(d) === this.tagSchluessel(new Date()) ? '' : ` (Stand ${d.getDate()}.${d.getMonth() + 1}.)`;
     }
-    const laut = belegung ? `Frei laut Abgleich vom ${new Date(belegung.stand).toLocaleString('de-DE', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })} – vor dem Buchen prüft das Lesezeichen noch einmal`
-      : 'Welche davon frei sind, weiß der Plan nach „iPads abgleichen“';
-    let teil = '';
-    if (stockwerk.length && !belegung) teil = `<span title="${this.esc(laut)}">Koffer im Stockwerk:</span> ${stockwerk.map(link).join(' ')}`;
-    else if (frei.length) teil = `<span title="${this.esc(laut)}">freie Koffer im Stockwerk${stand}:</span> ${frei.map(link).join(' ')}`;
-    else if (stockwerk.length) teil = `<span title="${this.esc(laut)}">im Stockwerk alles belegt${stand}</span>`;
-    // Alle Koffer zur Auswahl – gebucht wird der gewählte (belegt: der nächste freie auf dem Stockwerk)
-    const wahl = this.KOFFER.filter(k => !ohne.includes(k.id)).map(k =>
-      `<option value="${k.id}" data-href="${this.esc(this.ipadAdresse(t.beginn, k.id))}" data-ziel="${this.esc(auftrag(reihe(k)))}">` +
-      `${this.esc(k.raum)} · ${k.ipads} iPads${belegt(k) ? ' · belegt' : ''}</option>`).join('');
-    // Zwei Koffer auf einmal: Häkchen (höchstens zwei), dann ein Knopf – nur solange noch keiner gebucht ist
-    const zwei = nr && !ohne.length ? `<span class="plan-ipad-zwei eigene-zeile" data-serie="${this.esc(JSON.stringify(serie))}"
-        data-href="${this.esc(this.ipadAdresse(t.beginn))}">` +
-      `<span title="Bis zu zwei Koffer anhaken und mit einem Klick buchen${this.esc(hinweis)}">Zwei Koffer:</span> ` +
-      [...stockwerk, ...this.KOFFER.filter(k => !stockwerk.includes(k))].map(k =>
-        `<label class="${belegt(k) ? 'belegt' : ''}" title="${this.esc(`${k.raum} · ${k.ipads} iPads${belegt(k) ? ' · belegt laut Abgleich' : ''}`)}">` +
-        `<input type="checkbox" value="${k.id}">${this.esc(k.raum)}</label>`).join('') +
-      ` <button type="button" class="small plan-ipad-zwei-knopf" disabled>beide buchen</button></span>` : '';
-    // Menü und „von Hand“ in eigener Zeile unter dem Stockwerk
-    return teil + zwei + `<span class="plan-ipad-unten${teil || zwei ? ' eigene-zeile' : ''}">` +
-      `<select class="plan-ipad-wahl" data-nativ aria-label="Bestimmten Koffer buchen" title="Bestimmten Koffer buchen${this.esc(hinweis)}">` +
-      `<option value="">${stockwerk.length ? 'bestimmter Koffer …' : 'Koffer wählen …'}</option>${wahl}</select>` +
+    const laut = belegung ? `Durchgestrichen = belegt laut Abgleich vom ${new Date(belegung.stand).toLocaleString('de-DE', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' })} – vor dem Buchen prüft das Lesezeichen noch einmal`
+      : 'Welche frei sind, weiß der Plan nach „iPads abgleichen“';
+    const max = nr ? Math.max(1, 2 - ohne.length) : 1;
+    const haken = k => `<label class="${belegt(k) ? 'belegt' : ''}" title="${this.esc(`${k.raum} · ${k.ipads} iPads${belegt(k) ? ' · belegt laut Abgleich' : ''}`)}">` +
+      `<input type="checkbox" value="${k.id}" data-ziel="${this.esc(einzeln(k))}">${this.esc(k.raum)}</label>`;
+    const zeile = (text, liste) => liste.length
+      ? `<span class="plan-ipad-reihe"><span class="plan-ipad-name" title="${this.esc(laut)}">${text}:</span>${liste.map(haken).join('')}</span>` : '';
+    return `<span class="plan-ipad-zwei eigene-zeile" data-max="${max}" data-serie="${this.esc(JSON.stringify(serie))}"
+        data-href="${this.esc(this.ipadAdresse(t.beginn))}" title="${this.esc((max > 1 ? 'Einen oder zwei Koffer anhaken, dann buchen' : 'Koffer anhaken, dann buchen') + hinweis)}">` +
+      zeile('Im Stockwerk' + stand, stockwerk) + zeile(stockwerk.length ? 'Weitere Koffer' : 'Koffer' + stand, weitere) +
+      `<span class="plan-ipad-reihe"><button type="button" class="small plan-ipad-zwei-knopf" disabled>buchen</button>` +
       // Nur die Seite, ohne Auftrag – zum Buchen von Hand
-      ` · <a href="${this.esc(this.ipadAdresse(t.beginn))}" target="schulmanager" rel="noopener" class="plan-ipad-hand"
-        title="Nur die Buchungsseite für ${this.esc(this.tagName(t.beginn))} öffnen – selbst buchen, ohne Lesezeichen">von Hand</a></span>`;
+      `<a href="${this.esc(this.ipadAdresse(t.beginn))}" target="schulmanager" rel="noopener" class="plan-ipad-hand"
+        title="Nur die Buchungsseite für ${this.esc(this.tagName(t.beginn))} öffnen – selbst buchen, ohne Lesezeichen">von Hand</a></span></span>`;
   },
 
-  /* Koffer aus dem Menü: die Buchungsseite mit dem Auftrag öffnen – über einen
-     Link wie die übrigen, damit der Auftrag genauso im Fensternamen ankommt */
-  ipadWahl(sel) {
-    const o = sel.selectedOptions[0];
-    sel.value = '';
-    if (!o || !o.value) return;
-    const a = Object.assign(document.createElement('a'), { href: o.dataset.href, target: o.dataset.ziel, rel: 'noopener' });
-    sel.after(a);
-    a.click();
-    a.remove();
-  },
-
-  /* Häkchen „Zwei Koffer“: höchstens zwei; der Knopf geht erst bei zweien */
+  /* Häkchen: höchstens so viele wie erlaubt (zwei, oder einer, wenn schon einer
+     gebucht ist); der Knopf sagt, wie viele gebucht werden */
   ipadZweiPruefen(box) {
+    const max = Number(box.dataset.max) || 2;
     const alle = [...box.querySelectorAll('input')];
     const an = alle.filter(x => x.checked);
-    alle.forEach(x => { x.disabled = !x.checked && an.length >= 2; });
-    box.querySelector('.plan-ipad-zwei-knopf').disabled = an.length !== 2;
+    alle.forEach(x => { x.disabled = !x.checked && an.length >= max; });
+    const knopf = box.querySelector('.plan-ipad-zwei-knopf');
+    knopf.disabled = !an.length;
+    knopf.textContent = an.length === 2 ? '2 Koffer buchen' : an.length === 1 ? '1 Koffer buchen' : 'buchen';
   },
 
-  /* Beide angehakten Koffer buchen: Auftrag stserie im Fensternamen, wie bei einem Koffer */
+  /* Angehakte Koffer buchen: einer wie bisher (mit Ersatz im Stockwerk), zwei als stserie */
   ipadZweiBuchen(box) {
-    const ids = [...box.querySelectorAll('input:checked')].map(x => Number(x.value)).slice(0, 2);
-    if (ids.length !== 2) return;
-    const ziel = this.ipadSerieAuftrag(JSON.parse(box.dataset.serie), ids);
+    const an = [...box.querySelectorAll('input:checked')];
+    if (!an.length) return;
+    const ziel = an.length === 1 ? an[0].dataset.ziel
+      : this.ipadSerieAuftrag(JSON.parse(box.dataset.serie), an.slice(0, 2).map(x => Number(x.value)));
     const a = Object.assign(document.createElement('a'), { href: box.dataset.href, target: ziel, rel: 'noopener' });
     box.after(a);
     a.click();
@@ -719,8 +696,8 @@ const Stundenplan = {
       (mehr ? ` <button type="button" class="small plan-ipad-mehr" data-ipad-mehr="-1" title="Letzte Stunde wieder herausnehmen">−1</button>` : '') +
       `</span>` : '';
     document.getElementById('plan-dialog-ipad-links').innerHTML = gebucht.length
-      ? `<span class="plan-dialog-gebucht">✓ iPads gebucht: ${this.esc(gebucht.join(', '))}</span><br>Weiterer Koffer – ${this.ipadLinks(t, gebuchtIds)}`
-      : (stunden || 'iPads buchen – ') + this.ipadLinks(t, [], folge);
+      ? `<span class="plan-dialog-gebucht">✓ iPads gebucht: ${this.esc(gebucht.join(', '))}</span><br>Noch einen Koffer dazu:${this.ipadLinks(t, gebuchtIds)}`
+      : (stunden || '<span class="plan-ipad-stunden">iPads buchen</span>') + this.ipadLinks(t, [], folge);
   },
 
   /* Klassenbuch im Schulmanager: Jede Stunde hat dort eine eigene Seite; die

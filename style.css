@@ -2429,8 +2429,10 @@ table.klassenbuch tr.entfallen:hover { background: none; }
 @media (max-width: 600px) { .plan-liste .plan-ipads { padding-left: 0; } }
 .plan-zelle .plan-ipads { font-size: .72rem; }
 .plan-dialog-ipad-links { font-size: .85rem; color: var(--muted); line-height: 1.6; margin: .7rem 0 .9rem; }
-.plan-ipad-unten.eigene-zeile { display: block; margin-top: .45rem; }
-.plan-ipad-zwei.eigene-zeile { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .55rem; margin-top: .45rem; }
+.plan-ipad-zwei.eigene-zeile { display: flex; flex-direction: column; align-items: flex-start; gap: .4rem; margin-top: .45rem; }
+.plan-ipad-reihe { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .55rem; }
+.plan-ipad-name { min-width: 7.5rem; }
+.plan-ipad-reihe .plan-ipad-hand { margin-left: .4rem; }
 .plan-ipad-zwei label { display: inline-flex; align-items: center; gap: .2rem; cursor: pointer; color: var(--text); white-space: nowrap; }
 .plan-ipad-zwei label.belegt { color: var(--muted); text-decoration: line-through; }
 .plan-ipad-zwei input { width: auto; margin: 0; }
@@ -2445,7 +2447,6 @@ table.klassenbuch tr.entfallen:hover { background: none; }
   background: var(--accent-grad); color: var(--on-accent); text-decoration: none; cursor: grab;
 }
 /* Menü „bestimmter Koffer“ im Bearbeiten-Fenster: klein, in der Zeile */
-.plan-dialog .plan-ipad-wahl { display: inline-block; width: auto; margin: 0 .15rem 0 0; padding: .25rem .6rem; font-size: .82rem; vertical-align: middle; }
 /* Vorschlag übernehmen */
 .plan-uebernehmen {
   border: 1px solid var(--border); background: var(--panel); color: var(--accent); font: inherit; font-size: .78rem; font-weight: 700;
