@@ -62,6 +62,9 @@ const MT_SPIELE = (() => {
     { id: 'drumgrooves', bereich: 'Drumgrooves', titel: 'Groove-Trainer · Sterne sammeln', stufen: [1, 2, 3, 4, 5].map(g => `Groove ${g} · Note ${6 - g}`) },
     { id: 'drum-notation', bereich: 'Drumgrooves', titel: 'Wo steht welches Instrument?', stufen: ['Hi-Hat, Snare, Bassdrum', 'Das ganze Drumset', 'Zählzeiten'] },
     { id: 'groove-hoeren', bereich: 'Drumgrooves', titel: 'Welcher Groove?', stufen: ['Groove 1 bis 3', 'Alle fünf Grooves', 'Bassdrum auf …'] },
+    // Groove + Fill: Trainer „Sterne sammeln“ je Fill (Stufe 0–7 = Fill 1–8) und Hör-Quiz
+    { id: 'groove-fill', bereich: 'Groove + Fill', titel: 'Groove + Fill · Sterne sammeln', stufen: [1, 2, 3, 4, 5, 6, 7, 8].map(f => `Fill ${f} · ${f <= 4 ? 'Viertel' : 'Achtel'}`) },
+    { id: 'fill-hoeren', bereich: 'Groove + Fill', titel: 'Welcher Fill?', stufen: ['Viertel-Fills', 'Achtel-Fills', 'Alle Fills'] },
   ];
 })();
 
