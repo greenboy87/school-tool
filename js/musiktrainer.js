@@ -54,6 +54,9 @@ const MT_SPIELE = (() => {
     { id: 'rhythmus-pruefung', bereich: 'Rhythmus', titel: 'Rhythmus Prüfung · Sterne sammeln',
       stufen: [5, 6].flatMap(k => [5, 4, 3, 2, 1].map(n => `Klasse ${k} · Note ${n}`)) },
     { id: 'rhythmus-pruefung-note', bereich: 'Rhythmus', titel: 'Rhythmus Prüfung · Prüfung', stufen: ['Klasse 5', 'Klasse 6'] },
+    // Klavier-Prüfung Klasse 8 (music-trainer js/klavierpruefung.js), „Mitspielen“ gewertet:
+    // Stufe 0 = rechte Hand, 1 = linke Hand, 2 = beide
+    { id: 'klavier-pruefung', bereich: 'Klavier', titel: 'Klavier-Prüfung · In the End', stufen: ['Rechte Hand', 'Linke Hand', 'Beide Hände'] },
   ];
 })();
 
@@ -384,7 +387,7 @@ const Musiktrainer = {
     // Neue Spiele (z. B. die Rhythmus Prüfung, 11.2026) kommen bei schon eingerichteten Klassen
     // erst abgewählt dazu – sonst änderte sich die Notenspalte (etwa mit „Nicht gespielt zählt als 6“)
     const k = mt.kategorien;
-    if (!k.gesehen) k.gesehen = MT_SPIELE.map(sp => sp.id).filter(id => !id.startsWith('rhythmus-pruefung'));
+    if (!k.gesehen) k.gesehen = MT_SPIELE.map(sp => sp.id).filter(id => !id.startsWith('rhythmus-pruefung') && id !== 'klavier-pruefung');
     const neu = MT_SPIELE.map(sp => sp.id).filter(id => !k.gesehen.includes(id));
     if (neu.length) {
       k.ohne = [...new Set([...(k.ohne || []), ...neu])];
