@@ -64,8 +64,8 @@ const MT_SPIELE = (() => {
     { id: 'drumgrooves-2', bereich: 'Drums', titel: 'Drumgrooves Part II · Sterne sammeln', stufen: [1, 2, 3, 4, 5].map(l => `Level ${l} · Note ${6 - l}`) },
     { id: 'groove-hoeren', bereich: 'Drums', titel: 'Welcher Groove?', stufen: ['Groove 1 bis 3', 'Alle fünf Grooves', 'Bassdrum auf …'] },
     // Groove + Fill: Trainer „Sterne sammeln“ je Fill (Stufe 0–7 = Fill 1–8) und Hör-Quiz
-    { id: 'groove-fill', bereich: 'Drums', titel: 'Groove + Fill · Sterne sammeln', stufen: [1, 2, 3, 4, 5, 6, 7, 8].map(f => `Fill ${f} · ${f <= 4 ? 'Viertel' : 'Achtel'}`) },
-    { id: 'fill-hoeren', bereich: 'Drums', titel: 'Welcher Fill?', stufen: ['Viertel-Fills', 'Achtel-Fills', 'Alle Fills'] },
+    { id: 'groove-fill', bereich: 'Drums', titel: 'Groove + Fill · Sterne sammeln', stufen: ['1 2+ 3 4+', '1+ 2 3+ 4+', '1 2+ 3+ 4+', '1+ 2+ 3 4'].flatMap(r => [`${r} · Snare`, `${r} · Toms`]) },
+    { id: 'fill-hoeren', bereich: 'Drums', titel: 'Welcher Fill?', stufen: ['Nur Snare', 'Snare und Toms', 'Alle Fills'] },
   ];
 })();
 
