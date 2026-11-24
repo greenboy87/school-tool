@@ -54,7 +54,7 @@ const MT_SPIELE = (() => {
     { id: 'rhythmus-pruefung', bereich: 'Rhythmus', titel: 'Rhythmus Prüfung · Sterne sammeln',
       stufen: [5, 6].flatMap(k => [5, 4, 3, 2, 1].map(n => `Klasse ${k} · Note ${n}`)) },
     { id: 'rhythmus-pruefung-note', bereich: 'Rhythmus', titel: 'Rhythmus Prüfung · Prüfung', stufen: ['Klasse 5', 'Klasse 6'] },
-    // Klavier-Prüfung Klasse 8 (music-trainer js/klavierpruefung.js), „Mitspielen“ gewertet:
+    // Klavier-Prüfung (music-trainer js/klavierpruefung.js), „Mitspielen“ gewertet:
     // Stufe 0 = rechte Hand, 1 = linke Hand, 2 = beide
     { id: 'klavier-pruefung', bereich: 'Klavier', titel: 'Klavier-Prüfung · In the End', stufen: ['Rechte Hand', 'Linke Hand', 'Beide Hände'] },
   ];
