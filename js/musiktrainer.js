@@ -60,6 +60,8 @@ const MT_SPIELE = (() => {
     // Drumgrooves (music-trainer js/drumgrooves.js, Stunde „Der Drumgroove“): Groove-Trainer
     // „Sterne sammeln“ je Groove (Stufe 0–4 = Groove 1–5 = Note 5–1) und Hör-Quiz; alles im Bereich „Drums“
     { id: 'drumgrooves', bereich: 'Drums', titel: 'Groove-Trainer · Sterne sammeln', stufen: [1, 2, 3, 4, 5].map(g => `Groove ${g} · Note ${6 - g}`) },
+    // Drumgrooves Part II (Klasse 9): Stufe 0–4 = Level 1–5 = Note 5–1
+    { id: 'drumgrooves-2', bereich: 'Drums', titel: 'Drumgrooves Part II · Sterne sammeln', stufen: [1, 2, 3, 4, 5].map(l => `Level ${l} · Note ${6 - l}`) },
     { id: 'groove-hoeren', bereich: 'Drums', titel: 'Welcher Groove?', stufen: ['Groove 1 bis 3', 'Alle fünf Grooves', 'Bassdrum auf …'] },
     // Groove + Fill: Trainer „Sterne sammeln“ je Fill (Stufe 0–7 = Fill 1–8) und Hör-Quiz
     { id: 'groove-fill', bereich: 'Drums', titel: 'Groove + Fill · Sterne sammeln', stufen: [1, 2, 3, 4, 5, 6, 7, 8].map(f => `Fill ${f} · ${f <= 4 ? 'Viertel' : 'Achtel'}`) },
