@@ -56,7 +56,7 @@ const MT_SPIELE = (() => {
     { id: 'rhythmus-pruefung-note', bereich: 'Rhythmus', titel: 'Rhythmus Prüfung · Prüfung', stufen: ['Klasse 5', 'Klasse 6'] },
     // Klavier-Prüfung (music-trainer js/klavierpruefung.js), „Mitspielen“ gewertet:
     // Stufe 0 = rechte Hand, 1 = linke Hand, 2 = beide
-    { id: 'klavier-pruefung', bereich: 'Klavier', titel: 'Klavier-Prüfung · In the End', stufen: ['Rechte Hand', 'Linke Hand', 'Beide Hände'] },
+    { id: 'klavier-pruefung', bereich: 'Piano', titel: 'In the End', stufen: ['Rechte Hand', 'Linke Hand', 'Beide Hände'] },
     // Drumgrooves (music-trainer js/drumgrooves.js, Stunde „Der Drumgroove“): Groove-Trainer
     // „Sterne sammeln“ je Groove (Stufe 0–4 = Groove 1–5 = Note 5–1) und Hör-Quiz; alles im Bereich „Drums“
     { id: 'drumgrooves', bereich: 'Drums', titel: 'Drumgrooves · Sterne sammeln', stufen: [1, 2, 3, 4, 5].map(g => `Groove ${g} · Note ${6 - g}`) },
