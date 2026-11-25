@@ -57,6 +57,8 @@ const MT_SPIELE = (() => {
     // Klavier-Prüfung (music-trainer js/klavierpruefung.js), „Mitspielen“ gewertet:
     // Stufe 0 = rechte Hand, 1 = linke Hand, 2 = beide
     { id: 'klavier-pruefung', bereich: 'Piano', titel: 'In the End', stufen: ['Rechte Hand', 'Linke Hand', 'Beide Hände'] },
+    // Jingle Bells (Weihnachten, im music-trainer nur Nov–Jan sichtbar): Melodie, Stufe 0
+    { id: 'klavier-jingle-bells', bereich: 'Piano', titel: 'Jingle Bells', stufen: ['Melodie'] },
     // Drumgrooves (music-trainer js/drumgrooves.js, Stunde „Der Drumgroove“): Groove-Trainer
     // „Sterne sammeln“ je Groove (Stufe 0–4 = Groove 1–5 = Note 5–1) und Hör-Quiz; alles im Bereich „Drums“
     { id: 'drumgrooves', bereich: 'Drums', titel: 'Drumgrooves · Sterne sammeln', stufen: [1, 2, 3, 4, 5].map(g => `Groove ${g} · Note ${6 - g}`) },
@@ -396,7 +398,7 @@ const Musiktrainer = {
     // Neue Spiele (z. B. die Rhythmus Prüfung, 11.2026) kommen bei schon eingerichteten Klassen
     // erst abgewählt dazu – sonst änderte sich die Notenspalte (etwa mit „Nicht gespielt zählt als 6“)
     const k = mt.kategorien;
-    if (!k.gesehen) k.gesehen = MT_SPIELE.map(sp => sp.id).filter(id => !id.startsWith('rhythmus-pruefung') && id !== 'klavier-pruefung');
+    if (!k.gesehen) k.gesehen = MT_SPIELE.map(sp => sp.id).filter(id => !id.startsWith('rhythmus-pruefung') && !id.startsWith('klavier-'));
     const neu = MT_SPIELE.map(sp => sp.id).filter(id => !k.gesehen.includes(id));
     if (neu.length) {
       k.ohne = [...new Set([...(k.ohne || []), ...neu])];
