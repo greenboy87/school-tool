@@ -18,6 +18,8 @@ const Band = {
   save() { Classes.persist(); },
 
   init() {
+    const frueher = document.getElementById('btn-proben-frueher');
+    if (frueher) frueher.addEventListener('click', () => this.fruehereStaende());
     // Unterreiter
     document.querySelectorAll('.bandtab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1786,6 +1788,111 @@ const Band = {
           ]))
       : '<p>Für diese Probe sind noch keine Songs eingetragen.</p>');
     this.printHtml('Probe', inhalt, this.fmt(r.date) + (done.length ? ` · ${done.length} Songs` : ''));
+  },
+
+  /* ---------- Probennotizen in früheren Ständen suchen ----------
+     Nur ansehen und kopieren: Es wird nichts zurückgeholt oder überschrieben.
+     Quellen: die Sicherungen dieses Geräts (Store.sicherungen) und der Verlauf
+     auf dem Server (Tresor, Sync → 5). Gezeigt wird je Stand, was sich vom
+     vorigen unterscheidet: Notizen für alle Proben und Notizen/Songs je Probe. */
+  async fruehereStaende() {
+    const dlg = this.fruehDialog();
+    const inhalt = dlg.querySelector('.frueh-inhalt');
+    inhalt.innerHTML = '<p class="hint">Suche in den Sicherungen dieses Geräts …</p>';
+    dlg.showModal();
+    const staende = [];
+    for (const x of Store.sicherungen()) {
+      try { staende.push({ zeit: x.zeit, quelle: 'dieses Gerät, ' + x.grund, daten: JSON.parse(x.daten) }); } catch (e) { /* kaputt */ }
+    }
+    this.fruehZeigen(inhalt, staende, 'Suche im Verlauf auf dem Server …');
+    if (typeof Tresor !== 'undefined' && Tresor.aktiv() && window.FB) {
+      try {
+        const { db, ref, get } = window.FB;
+        const basis = `schoolTool/tresor/${Tresor.id}/verlauf`;
+        const faecher = [...Array(48).keys()].map(i => 'h' + i).concat([...Array(14).keys()].map(i => 't' + i));
+        const koepfe = await Promise.all(faecher.map(f => get(ref(db, `${basis}/${f}/stand`))
+          .then(sn => ({ f, stand: sn.val() })).catch(() => ({ f, stand: null }))));
+        const gesehen = new Set();
+        const liste = koepfe.filter(k => k.stand && !gesehen.has(k.stand) && gesehen.add(k.stand))
+          .sort((a, b) => b.stand - a.stand).slice(0, 30);
+        for (const k of liste) {
+          try {
+            const [chiffre, iv, geraet] = await Promise.all(['chiffre', 'iv', 'geraet'].map(f => get(ref(db, `${basis}/${k.f}/${f}`)).then(sn => sn.val())));
+            const daten = await Tresor.entschluesseln({ chiffre, iv, salz: Tresor.nachB64(Tresor.salz) });
+            staende.push({ zeit: k.stand, quelle: 'Server' + (geraet ? ', ' + geraet : ''), daten });
+          } catch (e) { /* dieses Fach nicht lesbar */ }
+        }
+        this.fruehZeigen(inhalt, staende, '');
+      } catch (e) {
+        this.fruehZeigen(inhalt, staende, 'Der Verlauf auf dem Server ließ sich nicht laden: ' + (e.message || e));
+      }
+    } else {
+      this.fruehZeigen(inhalt, staende, 'Sync ist auf diesem Gerät nicht aktiv – nur die Sicherungen dieses Geräts.');
+    }
+  },
+
+  fruehDialog() {
+    let dlg = document.getElementById('proben-frueh-dialog');
+    if (dlg) return dlg;
+    dlg = document.createElement('dialog');
+    dlg.id = 'proben-frueh-dialog';
+    dlg.className = 'proben-frueh-dialog';
+    dlg.innerHTML = `<div class="projekt-header"><h3>Probennotizen in früheren Ständen</h3>
+      <button type="button" class="small" data-zu>Schließen</button></div>
+      <p class="hint">Nur zum Ansehen: Text markieren oder „kopieren“ und dann ins Feld einfügen. Hier wird nichts überschrieben.</p>
+      <div class="frueh-inhalt"></div>`;
+    document.body.appendChild(dlg);
+    dlg.addEventListener('click', e => {
+      if (e.target.closest('[data-zu]') || e.target === dlg) { dlg.close(); return; }
+      const k = e.target.closest('[data-kopie]');
+      if (k) {
+        const text = k.closest('.frueh-block').querySelector('pre').textContent;
+        navigator.clipboard.writeText(text).then(() => { k.textContent = 'kopiert ✓'; }, () => { k.textContent = 'bitte markieren'; });
+      }
+    });
+    return dlg;
+  },
+
+  /* Was ein Stand zum Probenplan enthält, als Textblöcke { titel: text } */
+  fruehTexte(daten) {
+    const b = (daten && daten.band) || {};
+    const titel = (r, id) => {
+      const s = (b.songs || []).find(x => x.id === id) || (b.ideas || []).find(x => x.id === id) || (r.frei || {})[id];
+      return s ? s.title : '(Song)';
+    };
+    const t = {};
+    if ((b.probenNotizen || '').trim()) t['Notizen für alle Proben'] = b.probenNotizen.trim();
+    for (const r of [...(b.rehearsals || [])].sort((x, y) => (y.date || '').localeCompare(x.date || ''))) {
+      const teile = [];
+      if ((r.notes || '').trim()) teile.push(r.notes.trim());
+      const songs = Object.entries(r.songs || {}).map(([id, anm]) => '• ' + titel(r, id) + (anm ? ' – ' + anm : ''));
+      if (songs.length) teile.push(songs.join('\n'));
+      if (teile.length) t['Probe am ' + this.fmt(r.date)] = teile.join('\n\n');
+    }
+    return t;
+  },
+
+  fruehZeigen(ziel, staende, meldung) {
+    const jetzt = this.fruehTexte(Classes.data);
+    const liste = [...staende].sort((a, b) => b.zeit - a.zeit);
+    const gezeigt = new Set();
+    let html = meldung ? `<p class="hint">${this.esc(meldung)}</p>` : '';
+    let treffer = 0;
+    for (const st of liste) {
+      const texte = this.fruehTexte(st.daten);
+      // Nur zeigen, was es so heute nicht gibt und noch nicht weiter oben stand
+      const neu = Object.entries(texte).filter(([k, v]) => jetzt[k] !== v && !gezeigt.has(k + '\u0000' + v));
+      if (!neu.length) continue;
+      neu.forEach(([k, v]) => gezeigt.add(k + '\u0000' + v));
+      treffer++;
+      html += `<div class="frueh-stand"><h4>${this.esc(new Date(st.zeit).toLocaleString('de-DE', { weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }))}
+        <span class="hint">${this.esc(st.quelle)}</span></h4>` +
+        neu.map(([k, v]) => `<div class="frueh-block"><div class="frueh-kopf"><strong>${this.esc(k)}</strong>
+          <button type="button" class="small" data-kopie>kopieren</button></div><pre>${this.esc(v)}</pre></div>`).join('') +
+        '</div>';
+    }
+    if (!treffer) html += `<p class="hint">${staende.length ? 'In den früheren Ständen steht nichts zum Probenplan, was heute fehlt.' : 'Noch keine früheren Stände gefunden.'}</p>`;
+    ziel.innerHTML = html;
   },
 
   /* ---------- Drucken und Export ---------- */

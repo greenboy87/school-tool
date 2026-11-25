@@ -3396,3 +3396,12 @@ dialog.mt-noten-dialog::backdrop { background: rgba(8, 4, 24, .55); }
   .proben-notizen { position: static; border-left: 0; padding-left: 0; }
   .proben-notizen textarea { min-height: 10rem; }
 }
+
+/* Probenplan: Notizen in früheren Ständen (nur ansehen) */
+.proben-frueh-dialog { width: min(760px, 94vw); max-height: 86vh; overflow: auto; border: 1px solid var(--border); border-radius: 1rem; background: var(--card, var(--bg)); color: var(--text); padding: 1.1rem 1.3rem; }
+.proben-frueh-dialog::backdrop { background: rgba(0, 0, 0, .5); }
+.proben-frueh-dialog .frueh-stand { border-top: 1px solid var(--border); padding-top: .7rem; margin-top: .8rem; }
+.proben-frueh-dialog .frueh-stand h4 { margin: 0 0 .4rem; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.proben-frueh-dialog .frueh-block { margin: .4rem 0 .7rem; }
+.proben-frueh-dialog .frueh-kopf { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.proben-frueh-dialog pre { white-space: pre-wrap; font: inherit; margin: .3rem 0 0; padding: .5rem .7rem; border-radius: .5rem; background: var(--hover); user-select: text; }
