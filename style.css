@@ -2593,6 +2593,12 @@ button.plan-thema-wort.folge { color: var(--muted); font-style: normal; font-wei
 .plan-ferien { font-size: .82rem; font-weight: 700; color: var(--green); padding: .3rem .4rem; }
 .plan-tagkopf .plan-frei { display: block; font-size: .7rem; color: var(--green); opacity: 1; }
 .plan-tagkopf.heute .plan-frei { color: inherit; }
+.plan-tagnotiz { display: flex; align-items: center; gap: .45rem; width: 100%; margin: .2rem 0 .7rem; padding: .55rem .8rem; border: 1px solid var(--highlight); border-radius: .6rem; background: none; color: var(--highlight); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.plan-tagnotiz .icon { flex: none; }
+.plan-tagnotiz-plus { margin: .1rem 0 .6rem; opacity: .7; }
+.plan-tagnotiz-plus:hover { opacity: 1; }
+.plan-tagkopf .plan-tagnotiz-klein { display: block; margin-top: .15rem; font-size: .7rem; font-weight: 700; color: var(--highlight); white-space: normal; line-height: 1.2; }
+.plan-tagkopf.heute .plan-tagnotiz-klein { color: inherit; }
 
 /* ---------- music-trainer (Klassen → music-trainer, Extras) ---------- */
 .mt-zugang { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }

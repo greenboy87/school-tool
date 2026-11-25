@@ -249,6 +249,8 @@ const Stundenplan = {
       if (tagNav) { this.tag(parseInt(tagNav.dataset.tagnav, 10)); return; }
       const leer = e.target.closest('[data-leer]');
       if (leer && !e.target.closest('.plan-termin')) { this.neueStunde(leer.dataset.leer); return; }
+      const tagNotiz = e.target.closest('[data-tagnotiz]');
+      if (tagNotiz) { this.tagNotizBearbeiten(tagNotiz.dataset.tagnotiz); return; }
       // „KL“ im Wochenkopf: Übersicht aller KL-Stunden statt Tagesansicht
       if (e.target.closest('[data-kluebersicht]')) { this.klUebersicht(); return; }
       const tagKopf = e.target.closest('[data-tag]');
@@ -1406,6 +1408,24 @@ const Stundenplan = {
     if (n) n.scrollIntoView({ block: 'center' });
   },
 
+  /* Tagesnotiz: ein Eintrag für den ganzen Tag (Bühnenaufbau, Schulfest …) –
+     steht in der Tagesansicht oben und im Wochenraster unter dem Tag.
+     Classes.data.planTag: { '2026-11-30': 'Bühnenaufbau' } */
+  tagNotiz(tag) { return ((Classes.data && Classes.data.planTag) || {})[tag] || ''; },
+
+  tagNotizBearbeiten(tag) {
+    const alt = this.tagNotiz(tag);
+    const neu = prompt(`Eintrag für ${this.tagName(new Date(tag + 'T12:00'))} (z. B. Bühnenaufbau, Schulfest)\nLeer lassen zum Löschen:`, alt);
+    if (neu === null || neu.trim() === alt) return;
+    this.merken('Tagesnotiz');
+    const d = Classes.data;
+    if (!d.planTag) d.planTag = {};
+    if (neu.trim()) d.planTag[tag] = neu.trim().slice(0, 200);
+    else delete d.planTag[tag];
+    Classes.persist();
+    this.render();
+  },
+
   freiUmschalten(tage) {
     this.merken('Freie Tage');
     const frei = Classes.data.planFrei || (Classes.data.planFrei = {});
@@ -2127,7 +2147,7 @@ const Stundenplan = {
     return JSON.stringify({
       klassen: Object.fromEntries(d.classes.map(c => [c.id, { stundenbuch: c.stundenbuch || null, lessons: c.lessons || {} }])),
       planKlassen: d.planKlassen || null, planFrei: d.planFrei || null, planStunden: d.planStunden || null,
-      planKL: d.planKL || null,
+      planKL: d.planKL || null, planTag: d.planTag || null,
     });
   },
 
@@ -2147,7 +2167,7 @@ const Stundenplan = {
       if (a.stundenbuch) c.stundenbuch = a.stundenbuch; else delete c.stundenbuch;
       c.lessons = a.lessons;
     }
-    for (const feld of ['planKlassen', 'planFrei', 'planStunden', 'planKL']) {
+    for (const feld of ['planKlassen', 'planFrei', 'planStunden', 'planKL', 'planTag']) {
       if (alt[feld]) d[feld] = alt[feld]; else delete d[feld];
     }
     this._ohne = null;
@@ -2888,7 +2908,11 @@ const Stundenplan = {
       ${vorschau ? `<span class="plan-vorschau-hinweis" title="Noch nicht im Schulmanager-Abo – aus der Regelwoche">Vorschau</span>
       <button type="button" class="small" data-frei="${tag}" title="Ferien oder Feiertag: an diesem Tag keine Stunden vorsehen">${istFrei ? 'Doch Unterricht' : 'Tag frei'}</button>` : ''}
     </div>`;
-    return `${kopf}${tagKopf}
+    const notiz = this.tagNotiz(tag);
+    const tagNotiz = notiz
+      ? `<button type="button" class="plan-tagnotiz" data-tagnotiz="${tag}" title="Eintrag für den ganzen Tag – klicken zum Ändern">${Icons.raw('alert')}${this.esc(notiz)}</button>`
+      : `<button type="button" class="small plan-tagnotiz-plus" data-tagnotiz="${tag}" title="Etwas für den ganzen Tag eintragen (Bühnenaufbau, Schulfest …)">${Icons.raw('plus')}Eintrag für den Tag</button>`;
+    return `${kopf}${tagKopf}${tagNotiz}
       <ul class="plan-liste">${zeilen.length ? zeilen : `<li class="hint">${istFrei ? this.esc(this.ferienName(tag) || 'Als unterrichtsfrei markiert.') : 'Keine Stunden an diesem Tag.'}</li>`}</ul>${aenderungen}`;
   },
 
@@ -2935,7 +2959,7 @@ const Stundenplan = {
     const heute = this.tagSchluessel(jetzt);
     const tage = [0, 1, 2, 3, 4].map(i => { const d = new Date(mo); d.setDate(d.getDate() + i); return d; });
     const kopf = '<div class="plan-ecke"></div>' + tage.map(d =>
-      `<button type="button" class="plan-tagkopf${this.tagSchluessel(d) === heute ? ' heute' : ''}" data-tag="${this.tagSchluessel(d)}" title="Diesen Tag als Tagesansicht">${this.tagName(d)}${this.istKL(this.tagSchluessel(d)) ? ` <span class="plan-kl-marke" data-kluebersicht title="Klassenleiterstunde 11:10–11:40, Kurzstunden${this.klAnlass(this.tagSchluessel(d)) ? ' – ' + this.esc(this.klAnlass(this.tagSchluessel(d))) : ''} – anklicken: alle KL-Stunden">KL${this.klAnlass(this.tagSchluessel(d)) ? ' ★' : ''}</span>` : ''}${this.istFrei(this.tagSchluessel(d)) ? ` <span class="plan-frei">${this.esc(this.ferienName(this.tagSchluessel(d)) || 'frei')}</span>` : ''}</button>`).join('');
+      `<button type="button" class="plan-tagkopf${this.tagSchluessel(d) === heute ? ' heute' : ''}" data-tag="${this.tagSchluessel(d)}" title="Diesen Tag als Tagesansicht">${this.tagName(d)}${this.istKL(this.tagSchluessel(d)) ? ` <span class="plan-kl-marke" data-kluebersicht title="Klassenleiterstunde 11:10–11:40, Kurzstunden${this.klAnlass(this.tagSchluessel(d)) ? ' – ' + this.esc(this.klAnlass(this.tagSchluessel(d))) : ''} – anklicken: alle KL-Stunden">KL${this.klAnlass(this.tagSchluessel(d)) ? ' ★' : ''}</span>` : ''}${this.istFrei(this.tagSchluessel(d)) ? ` <span class="plan-frei">${this.esc(this.ferienName(this.tagSchluessel(d)) || 'frei')}</span>` : ''}${this.tagNotiz(this.tagSchluessel(d)) ? `<span class="plan-tagnotiz-klein" data-tagnotiz="${this.tagSchluessel(d)}" title="Eintrag für den Tag – klicken zum Ändern">${this.esc(this.tagNotiz(this.tagSchluessel(d)))}</span>` : ''}</button>`).join('');
     const zellen = zeiten.map(z => {
       const zeile = tage.map(d => {
         const tag = this.tagSchluessel(d);
