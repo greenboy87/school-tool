@@ -1589,7 +1589,11 @@ const Band = {
       const cnt = document.createElement('span');
       cnt.className = 'pavg';
       const n = this.probeEintraege(r).length;
-      cnt.textContent = n ? `${n} Songs geprobt` : 'nichts eingetragen';
+      // Auch die Notiz zur Probe zählt – sonst sieht eine Probe mit Notiz leer aus
+      const notiz = (r.notes || '').trim().replace(/\s+/g, ' ');
+      const kurz = notiz.length > 60 ? notiz.slice(0, 60) + ' …' : notiz;
+      cnt.textContent = [n ? `${n} Songs geprobt` : '', kurz].filter(Boolean).join(' · ') || 'nichts eingetragen';
+      if (notiz) cnt.title = notiz;
       li.append(name, cnt);
       li.addEventListener('click', () => { this.currentRehearsalId = r.id; this.renderRehearsals(); });
       ul.appendChild(li);
