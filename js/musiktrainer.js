@@ -59,6 +59,9 @@ const MT_SPIELE = (() => {
     { id: 'klavier-pruefung', bereich: 'Piano', titel: 'In the End', stufen: ['Rechte Hand', 'Linke Hand', 'Beide Hände'] },
     // Jingle Bells (Weihnachten, im music-trainer nur Nov–Jan sichtbar): Stufe 0 = Melodie (rechte Hand)
     { id: 'klavier-jingle-bells', bereich: 'Piano', titel: 'Jingle Bells', stufen: ['Melodie'] },
+    // Yellow Submarine (Noten nur für angemeldete Kinder) und Leise rieselt der Schnee (Weihnachten): Stufe 0 = Melodie
+    { id: 'klavier-yellow-submarine', bereich: 'Piano', titel: 'Yellow Submarine', stufen: ['Melodie'] },
+    { id: 'klavier-leise-rieselt', bereich: 'Piano', titel: 'Leise rieselt der Schnee', stufen: ['Melodie'] },
     // Drumgrooves (music-trainer js/drumgrooves.js, Stunde „Der Drumgroove“): Groove-Trainer
     // „Sterne sammeln“ je Groove (Stufe 0–4 = Groove 1–5 = Note 5–1) und Hör-Quiz; alles im Bereich „Drums“
     { id: 'drumgrooves', bereich: 'Drums', titel: 'Drumgrooves · Sterne sammeln', stufen: [1, 2, 3, 4, 5].map(g => `Groove ${g} · Note ${6 - g}`) },
